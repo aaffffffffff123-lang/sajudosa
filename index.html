@@ -303,8 +303,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
   <form id="birth-form" class="card" novalidate>
    <div class="field"><label for="birth-name">이름 <span>선택</span></label><input id="birth-name" class="input" type="text" placeholder="이름" maxlength="12" autocomplete="off"></div>
    <div class="field"><div class="lbl">생년월일 <span>양력</span></div><button type="button" class="pickbtn" id="dateBtn" aria-haspopup="dialog"><span class="v empty" id="dateVal">생년월일 선택</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
-   <div class="field"><div class="lbl">성별 <span>전통 대운 순행·역행 계산 기준</span></div><div class="seg" role="radiogroup" aria-label="성별"><label><input type="radio" name="birth-gender" value="1"><span>남명</span></label><label><input type="radio" name="birth-gender" value="0"><span>여명</span></label></div></div>
-   <div class="field"><label for="birth-place">출생지 <span>진태양시 보정</span></label><select id="birth-place" class="input select"><option value="">가장 가까운 도시 선택</option><optgroup label="수도권"><option value="seoul">서울</option><option value="incheon">인천</option><option value="suwon">수원</option><option value="chuncheon">춘천</option></optgroup><optgroup label="충청·강원"><option value="gangneung">강릉</option><option value="daejeon">대전</option><option value="sejong">세종</option><option value="cheongju">청주</option></optgroup><optgroup label="호남"><option value="gwangju">광주</option><option value="jeonju">전주</option><option value="mokpo">목포</option><option value="yeosu">여수</option></optgroup><optgroup label="영남"><option value="busan">부산</option><option value="daegu">대구</option><option value="ulsan">울산</option><option value="pohang">포항</option><option value="andong">안동</option><option value="changwon">창원</option><option value="jinju">진주</option><option value="ulleung">울릉도</option></optgroup><optgroup label="제주"><option value="jeju">제주</option><option value="seogwipo">서귀포</option></optgroup><option value="custom">해외·기타 직접 입력</option></select><div id="custom-place" class="custom-place" hidden><label for="custom-place-name">도시명<input id="custom-place-name" class="input" type="text" maxlength="24" placeholder="예: 도쿄"></label><label for="custom-longitude">동경 + / 서경 −<input id="custom-longitude" class="input" type="number" min="-180" max="180" step="0.01" placeholder="139.69"></label><label for="custom-utc">출생 당시 UTC차<input id="custom-utc" class="input" type="number" min="-12" max="14" step="0.25" placeholder="9"></label></div></div>
+   <div class="field"><div class="lbl">성별 <span>대운 계산에 씁니다</span></div><div class="seg" role="radiogroup" aria-label="성별"><label><input type="radio" name="birth-gender" value="1"><span>남자</span></label><label><input type="radio" name="birth-gender" value="0"><span>여자</span></label></div></div>
+   <div class="field"><label for="birth-place">출생지 <span>태어난 곳에 맞춰 시간 보정</span></label><select id="birth-place" class="input select"><option value="">가장 가까운 도시 선택</option><optgroup label="수도권"><option value="seoul">서울</option><option value="incheon">인천</option><option value="suwon">수원</option><option value="chuncheon">춘천</option></optgroup><optgroup label="충청·강원"><option value="gangneung">강릉</option><option value="daejeon">대전</option><option value="sejong">세종</option><option value="cheongju">청주</option></optgroup><optgroup label="호남"><option value="gwangju">광주</option><option value="jeonju">전주</option><option value="mokpo">목포</option><option value="yeosu">여수</option></optgroup><optgroup label="영남"><option value="busan">부산</option><option value="daegu">대구</option><option value="ulsan">울산</option><option value="pohang">포항</option><option value="andong">안동</option><option value="changwon">창원</option><option value="jinju">진주</option><option value="ulleung">울릉도</option></optgroup><optgroup label="제주"><option value="jeju">제주</option><option value="seogwipo">서귀포</option></optgroup><option value="custom">해외·기타 직접 입력</option></select><div id="custom-place" class="custom-place" hidden><label for="custom-place-name">도시명<input id="custom-place-name" class="input" type="text" maxlength="24" placeholder="예: 도쿄"></label><label for="custom-longitude">동경 + / 서경 −<input id="custom-longitude" class="input" type="number" min="-180" max="180" step="0.01" placeholder="139.69"></label><label for="custom-utc">출생 당시 UTC차<input id="custom-utc" class="input" type="number" min="-12" max="14" step="0.25" placeholder="9"></label></div></div>
    <div class="field"><div class="lbl">태어난 시간 <span>출생지 현지 시각</span></div><div class="timerow"><button type="button" class="pickbtn" id="timeBtn" aria-haspopup="dialog"><span class="v empty" id="timeVal">시간 선택</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button><button type="button" class="chip" id="unknownChip" aria-pressed="false">모름</button></div></div>
    <div class="field" id="occurrence-field" hidden><div class="lbl">같은 시각이 두 번 있었던 날 <span>서머타임 종료</span></div><div class="seg" role="radiogroup" aria-label="중복 출생 시각"><label><input type="radio" name="birth-occurrence" value="0"><span>먼저 온 시각</span></label><label><input type="radio" name="birth-occurrence" value="1"><span>한 시간 뒤 시각</span></label></div></div>
    <p id="form-error" class="error" role="alert" hidden></p>
@@ -340,11 +340,11 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid 
 <main id="result-screen" class="doc-screen" hidden>
  <div class="wrap">
   <header class="appbar"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="#5b3d6b" stroke-width="3"/><circle cx="32" cy="32" r="11" fill="#5b3d6b"/><circle cx="32" cy="10" r="4" fill="#4caf64"/><circle cx="53" cy="25" r="4" fill="#ff7a3d"/><circle cx="45" cy="50" r="4" fill="#c98c4e"/><circle cx="19" cy="50" r="4" fill="#9aa7b5"/><circle cx="11" cy="25" r="4" fill="#4f8fe0"/></svg><span class="name">사주팔자</span></header>
-  <section class="result-top"><p class="eyebrow">四 柱 八 字</p><h1 id="result-name"></h1><p id="birth-label"></p><p class="malice-note">성립하는 해석 가운데 가장 나쁜 갈래만 골랐습니다</p></section>
-  <section class="sec"><h2>사주 원국 <small>네 기둥 · 태어난 해·달·날·시간</small></h2><div id="pillars" class="pillars"></div><p class="note">위 칸은 하늘의 기운(천간), 아래 칸은 땅의 기운(지지·띠)입니다. 한 사람에게 여덟 글자가 있어서 사주팔자라고 부릅니다.</p></section>
-  <section class="sec"><h2>나의 일간 <small>태어난 날의 천간</small></h2><div class="me-card" id="me-card"></div><p id="me-text"></p></section>
-  <section class="sec"><h2>오행 분포 <small>五行</small></h2><div id="elements" class="elements"></div><p class="note" id="elements-remark"></p></section>
-  <section class="sec"><h2>최악의 판국 <small>월령·통근·십성·합충형파해 종합</small></h2><div class="doom"><p class="kicker" id="doom-label">凶局 判定</p><h3 id="doom-title"></h3><p id="core-text"></p><div id="evidence-list" class="evidence"></div></div><div id="logic-list" class="logic"></div></section>
+  <section class="result-top"><p class="eyebrow">사 주 팔 자</p><h1 id="result-name"></h1><p id="birth-label"></p><p class="malice-note">가능한 풀이 가운데 가장 나쁜 쪽만 골랐습니다</p></section>
+  <section class="sec"><h2>내 사주 여덟 글자 <small>태어난 해·달·날·시간</small></h2><div id="pillars" class="pillars"></div><p class="note">위 칸은 하늘의 기운, 아래 칸은 땅의 기운(띠 동물)입니다. 해·달·날·시간마다 두 글자씩, 모두 여덟 글자라서 사주팔자라고 부릅니다.</p></section>
+  <section class="sec"><h2>나를 뜻하는 글자 <small>태어난 날의 위 칸</small></h2><div class="me-card" id="me-card"></div><p id="me-text"></p></section>
+  <section class="sec"><h2>오행 분포 <small>다섯 가지 기운</small></h2><div id="elements" class="elements"></div><p class="note" id="elements-remark"></p></section>
+  <section class="sec"><h2>최악의 판국 <small>계절·뿌리·기운 비율·부딪히는 글자를 모두 따짐</small></h2><div class="doom"><p class="kicker" id="doom-label">판정 결과</p><h3 id="doom-title"></h3><p id="core-text"></p><div id="evidence-list" class="evidence"></div></div><div id="logic-list" class="logic"></div></section>
   <section class="sec"><h2>성격의 파국</h2><p id="nature-text"></p></section>
   <section class="sec"><h2>일과 자리</h2><p id="work-text"></p></section>
   <section class="sec"><h2>재물</h2><p id="money-text"></p></section>
@@ -9047,7 +9047,20 @@ const ELEMENTS={
  '금':{name:'쇠',hj:'金',icon:'e-metal',color:'#9aa7b5'},
  '수':{name:'물',hj:'水',icon:'e-water',color:'#4f8fe0'}
 };
-const ORDER=['목','화','토','금','수'];
+/* ---------- 쉬운 말 표기 (풀이 화면용) ---------- */
+function bat(w){const s=String(w),c=s.charCodeAt(s.length-1);return c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28!==0;}
+function jo(w,a,b){return w+(bat(w)?a:b);}
+const FAMILY_KO={비겁:'나와 같은 기운',식상:'표현 기운',재성:'돈 기운',관성:'압박 기운',인성:'보호 기운'};
+const STRENGTH_KO={극약:'아주 약함',신약:'약한 편',중화:'균형',신강:'강한 편',극강:'아주 강함'};
+const PLACE_KO=['태어난 해','태어난 달','태어난 날','태어난 시간'];
+const KIND_KO={충:'정면충돌',형:'마찰',자형:'같은 동물끼리 마찰',해:'숨은 갈등',파:'금이 가는 사이',합:'서로 끌어당김'};
+const SEASON_KO={寅:'초봄 · 나무 기운이 가장 센 때',卯:'봄 · 나무 기운이 가장 센 때',辰:'늦봄 · 흙이 축축한 때',巳:'초여름 · 불 기운이 가장 센 때',午:'여름 · 불 기운이 가장 센 때',未:'늦여름 · 흙이 마른 때',申:'초가을 · 쇠 기운이 가장 센 때',酉:'가을 · 쇠 기운이 가장 센 때',戌:'늦가을 · 흙이 마른 때',亥:'초겨울 · 물 기운이 가장 센 때',子:'겨울 · 물 기운이 가장 센 때',丑:'늦겨울 · 흙이 차고 축축한 때'};
+const COLOR_KO={목:'푸른',화:'붉은',토:'황금',금:'흰',수:'검은'};
+function animal(b){return BRANCHES[b]?BRANCHES[b].name:'';}
+function gzName(gz){return gz&&STEMS[gz[0]]&&BRANCHES[gz[1]]?COLOR_KO[STEMS[gz[0]].el]+' '+BRANCHES[gz[1]].name:'';}
+function whoText(x){const p=x.positions.map(function(n,i){return PLACE_KO[n]+'의 '+animal(x.branches[i]||x.branches[0]);});return p.length===2?jo(p[0],'과','와')+' '+p[1]:p.join(', ');}
+function clashLine(a,b,type){if(type==='파')return jo(a,'과','와')+' '+b+' 사이에 조금씩 금이 갑니다.';return jo(a,'이','가')+' '+jo(b,'과','와')+' '+({충:'정면으로 부딪칩니다',형:'마찰을 일으킵니다',자형:'같은 동물끼리 마찰을 일으킵니다',해:'뒤에서 서로를 깎아 먹습니다'}[type]||'부딪칩니다')+'.';}
+
 /* ================= 심층 사주 판독 엔진 =================
  * 달력/사주 네 기둥은 lunar-javascript가 계산한다.
  * 해석은 일간 중심 억부법을 기본으로 월령, 지장간, 통근, 십성,
@@ -9081,7 +9094,7 @@ const TEN_LABEL={비견:'비견',겁재:'겁재',식신:'식신',상관:'상관'
 const TEN_FAMILY={비견:'비겁',겁재:'비겁',식신:'식상',상관:'식상',편재:'재성',정재:'재성',편관:'관성',정관:'관성',편인:'인성',정인:'인성'};
 const FAMILY_LABEL={비겁:'비겁(자기·경쟁)',식상:'식상(표현·성과)',재성:'재성(돈·현실)',관성:'관성(규칙·압박)',인성:'인성(보호·생각)'};
 const POS=['년지','월지','일지','시지'];
-const PILLAR_LABEL=[['해','년주 年柱'],['달','월주 月柱'],['날','일주 日柱'],['시간','시주 時柱']];
+const PILLAR_LABEL=[['해','조상·어릴 때'],['달','부모·사회'],['날','나·배우자'],['시간','자식·말년']];
 const VISIBLE_WEIGHT=[.85,1.18,1,.82],BRANCH_WEIGHT=[.9,1.55,1.16,.86];
 const BIRTH_PLACES={
  seoul:{name:'서울',lon:126.9658,country:'KR'},incheon:{name:'인천',lon:126.6249,country:'KR'},suwon:{name:'수원',lon:126.983,country:'KR'},chuncheon:{name:'춘천',lon:127.7357,country:'KR'},
@@ -9220,15 +9233,19 @@ function tenGod(dayStem,otherStem){
 }
 function familyLevel(share){return share>=.31?'excess':share>=.225?'strong':share>=.105?'normal':share>=.045?'weak':'absent';}
 function relationKo(role){return {self:'같은 편',resource:'나를 살리는 기운',output:'내 힘을 빼는 기운',wealth:'내가 붙잡아야 하는 현실',officer:'나를 누르는 기운'}[role];}
+
 function strengthText(s){
- if(s.stable===false)return '태어난 시간이 없어 가능한 시주를 모두 대입하면 일간 힘이 '+s.range[0]+'점에서 '+s.range[1]+'점까지 움직입니다. 강약 등급이 한 칸에 고정되지 않으므로, 이번 판결은 시주에 기대는 결론을 버리고 세 기둥에서 공통으로 남는 결함만 썼습니다.';
- const root=s.rootCount===0?'지지에 뿌리가 없습니다':s.rootCount===1?'지지 한 곳에만 가느다랗게 통근합니다':'지지 '+s.rootCount+'곳에 통근합니다';
- if(s.label==='극약')return '일간의 버팀은 '+s.supportScore+'점뿐이고 소모·압박이 '+s.pressureScore+'점입니다. '+root+'. 자기 뜻을 세우기 전에 환경이 요구하는 역할부터 떠안는 쪽으로 기웁니다.';
- if(s.label==='신약')return '일간의 버팀 '+s.supportScore+'점보다 소모·압박 '+s.pressureScore+'점이 큽니다. '+root+'. 적응은 해내지만 판을 자기 쪽으로 돌릴 여유가 부족합니다.';
- if(s.label==='극강')return '일간의 버팀이 '+s.supportScore+'점으로 판을 압도합니다. '+root+'. 꺾어 줄 힘이 부족해 확신이 생긴 뒤에는 틀렸다는 증거도 방해로 취급합니다.';
- if(s.label==='신강')return '일간의 버팀 '+s.supportScore+'점이 소모·압박 '+s.pressureScore+'점을 앞섭니다. '+root+'. 자기 기준을 밀 힘은 있지만 수정 신호를 늦게 받아들입니다.';
- return '일간의 버팀 '+s.supportScore+'점과 소모·압박 '+s.pressureScore+'점이 팽팽합니다. 힘의 총량보다 어디에서 충돌하고 새는지가 더 크게 작동하는 명식입니다.';
+ if(s.stable===false)return '태어난 시간을 몰라 가능한 시간을 모두 넣어 보면 나의 힘이 '+s.range[0]+'점에서 '+s.range[1]+'점까지 오갑니다. 강한지 약한지 하나로 정할 수 없어서, 태어난 시간에 따라 달라지는 결론은 버리고 해·달·날 세 기둥에서 똑같이 나오는 결함만 골랐습니다.';
+ const root=s.rootCount===0?'아래 칸 띠 동물 속에 나와 같은 기운이 하나도 없어 뿌리가 없습니다':s.rootCount===1?'아래 칸 한 곳에만 나와 같은 기운이 숨어 있어 뿌리가 가늡니다':'아래 칸 '+s.rootCount+'곳에 나와 같은 기운이 숨어 있어 뿌리를 내렸습니다';
+ if(s.label==='극약')return '버티는 힘은 '+s.supportScore+'점뿐이고 깎는 힘이 '+s.pressureScore+'점입니다. '+root+'. 자기 뜻을 세우기 전에 주변이 요구하는 역할부터 떠안는 쪽으로 기웁니다.';
+ if(s.label==='신약')return '버티는 힘 '+s.supportScore+'점보다 깎는 힘 '+s.pressureScore+'점이 큽니다. '+root+'. 적응은 해내지만 판을 자기 쪽으로 돌릴 여유가 부족합니다.';
+ if(s.label==='극강')return '버티는 힘이 '+s.supportScore+'점으로 판을 압도합니다. '+root+'. 꺾어 줄 힘이 부족해 확신이 생긴 뒤에는 틀렸다는 증거도 방해로 취급합니다.';
+ if(s.label==='신강')return '버티는 힘 '+s.supportScore+'점이 깎는 힘 '+s.pressureScore+'점을 앞섭니다. '+root+'. 자기 기준을 밀 힘은 있지만 고치라는 신호를 늦게 받아들입니다.';
+ return '버티는 힘 '+s.supportScore+'점과 깎는 힘 '+s.pressureScore+'점이 팽팽합니다. 힘의 크기보다 어디서 부딪히고 새는지가 더 크게 작동하는 사주입니다.';
 }
+
+
+
 function strengthBand(score){return score<=24?'극약':score<=39?'신약':score<=60?'중화':score<=75?'신강':'극강';}
 
 function inspectInteractions(pillars){
@@ -9241,7 +9258,7 @@ function inspectInteractions(pillars){
  function add(type,a,b,base,tail){
   const k=type+':'+Math.min(a.i,b.i)+'-'+Math.max(a.i,b.i);if(seen[k])return;seen[k]=1;
   const bonus=(a.i===2||b.i===2?13:0)+(a.i===1||b.i===1?8:0)+(Math.abs(a.i-b.i)===1?3:0);
-  const names=POS[a.i]+'–'+POS[b.i]+' '+a.b+b.b+tail;
+  const names=whoText({positions:[a.i,b.i],branches:[a.b,b.b]})+' · '+KIND_KO[type];
   out.push({type:type,positions:[a.i,b.i],branches:[a.b,b.b],label:names,severity:base+bonus});
  }
  for(let x=0;x<known.length;x++)for(let y=x+1;y<known.length;y++){
@@ -9253,8 +9270,8 @@ function inspectInteractions(pillars){
   if(!destructive){const c=combines.find(function(q){return pairIs(a.b,b.b,[q]);});if(c){add('합',a,b,35,'합');out[out.length-1].element=c[2];}}
  }
  const groups=[['寅','巳','申'],['丑','未','戌']];
- groups.forEach(function(g){const hits=g.map(function(char){return known.filter(function(x){return x.b===char;}).sort(function(a,b){const pa=a.i===2?3:a.i===1?2:1,pb=b.i===2?3:b.i===1?2:1;return pb-pa;})[0];}).filter(Boolean);if(hits.length>=2){const key='형단:'+g.join('');if(!seen[key]){seen[key]=1;out.push({type:'형',positions:hits.map(function(x){return x.i;}),branches:hits.map(function(x){return x.b;}),label:hits.map(function(x){return x.b;}).join('')+(hits.length===3?' 삼형의 고리':' 형의 고리'),severity:hits.length===3?94:73});}}});
- ['辰','午','酉','亥'].forEach(function(b){const hits=known.filter(function(x){return x.b===b;});if(hits.length>=2)out.push({type:'자형',positions:hits.map(function(x){return x.i;}),branches:[b,b],label:b+b+' 자형',severity:72+(hits.some(function(x){return x.i===2;})?9:0)});});
+ groups.forEach(function(g){const hits=g.map(function(char){return known.filter(function(x){return x.b===char;}).sort(function(a,b){const pa=a.i===2?3:a.i===1?2:1,pb=b.i===2?3:b.i===1?2:1;return pb-pa;})[0];}).filter(Boolean);if(hits.length>=2){const key='형단:'+g.join('');if(!seen[key]){seen[key]=1;out.push({type:'형',positions:hits.map(function(x){return x.i;}),branches:hits.map(function(x){return x.b;}),label:whoText({positions:hits.map(function(x){return x.i;}),branches:hits.map(function(x){return x.b;})})+(hits.length===3?' · 셋이 엮인 마찰':' · 마찰'),severity:hits.length===3?94:73});}}});
+ ['辰','午','酉','亥'].forEach(function(b){const hits=known.filter(function(x){return x.b===b;});if(hits.length>=2)out.push({type:'자형',positions:hits.map(function(x){return x.i;}),branches:[b,b],label:whoText({positions:hits.map(function(x){return x.i;}),branches:[b,b]})+' · 같은 동물끼리 마찰',severity:72+(hits.some(function(x){return x.i===2;})?9:0)});});
  return out.sort(function(a,b){return b.severity-a.severity;});
 }
 
@@ -9300,43 +9317,45 @@ function analyzeChart(pillars,dayStem,unknownTime){
 
 function buildCandidates(a,dayStem){
  const s=a.strength,f=a.tenGods.families,topInt=a.interactions[0],c=a.candidates;
+ const power='나의 힘 '+s.supportScore+'점 · '+STRENGTH_KO[s.label],bal='버티는 힘 '+s.supportScore+' · 깎는 힘 '+s.pressureScore,fam=function(k){return FAMILY_KO[k]+' '+f[k].pct+'%';};
  function add(key,severity,title,motif,theme,evidence,core,verdict,category){const value=Math.round(severity);c.push({id:key,key:key,score:value,severity:value,title:title,motif:motif,theme:theme,evidence:evidence,core:core,verdict:verdict,category:category||key});}
- if(s.ratio<.43&&f.재성.share>.24)add('weak_wealth',108+(f.재성.share-.24)*45,'기회를 잡는 순간부터 빚으로 바꾸는 판','감당할 힘보다 현실의 요구가 먼저 커짐','overload',['일간 '+s.label+' · 버팀 '+s.supportScore,'재성 '+f.재성.pct+'%'],'일간은 현실과 돈을 감당할 힘이 약한데 재성은 판의 큰 몫을 차지합니다. 기회가 없는 명식이 아니라, 기회를 잡는 순간 책임과 지출이 먼저 불어나 돈이 사람을 부리는 구조입니다.','당신의 불운은 기회가 없는 데 있지 않습니다. 감당할 힘보다 먼저 기회가 와서, 손에 쥐는 순간부터 빚처럼 변한다는 데 있습니다.','복합');
- if(s.ratio<.43&&f.관성.share>.23)add('weak_officer',106+(f.관성.share-.23)*45,'평가가 끝나도 스스로를 계속 심사하는 판','남의 기준이 자기 힘보다 큼','pressure',['일간 '+s.label+' · 버팀 '+s.supportScore,'관성 '+f.관성.pct+'%'],'일간이 버틸 힘보다 관성의 규칙과 압박이 큽니다. 남의 기준을 빨리 읽지만 거기서 빠져나올 힘은 부족해, 평가가 끝난 뒤에도 스스로를 계속 심사합니다.','남의 기준을 이기려고 평생 애쓰지만, 이 명식에서 인정은 보상이 아니라 다음 의무가 시작됐다는 통지서입니다.','복합');
- if(s.ratio<.42&&f.식상.share>.26)add('weak_output',101+(f.식상.share-.26)*40,'성과를 낼수록 본체부터 닳는 판','내보내는 힘이 채우는 힘을 압도함','depletion',['일간 '+s.label+' · 버팀 '+s.supportScore,'식상 '+f.식상.pct+'%'],'버티고 채우는 힘보다 밖으로 쏟아내는 식상이 큽니다. 결과를 만들수록 회복할 몫이 먼저 줄어, 능력이 있다는 사실이 과소모를 멈추지 못하게 합니다.','남기는 것은 많아도 남아 있는 자신은 적습니다. 이 명식의 성과는 보상이 아니라 다음 방전을 예약하는 방식으로 쌓입니다.','복합');
- if(s.ratio>.6&&f.비겁.share>.25)add('strong_peer',105+(f.비겁.share-.25)*45,'이길수록 말려 줄 사람이 사라지는 판','자기 확신과 경쟁이 제동을 밀어냄','isolation',['일간 '+s.label+' · 버팀 '+s.supportScore,'비겁 '+f.비겁.pct+'%'],'일간의 힘이 강한데 비겁까지 몰려 자기 기준과 경쟁심이 판을 차지합니다. 반대 의견을 수정 재료로 쓰지 못해, 이길수록 판단을 교정해 줄 사람이 먼저 사라집니다.','끝까지 자기 방식대로 살아남을 수는 있습니다. 마지막에 남는 것은 승리가 아니라, 더는 아무도 옆에서 말리지 않는 상태입니다.','복합');
- if(f.인성.share>.31&&f.식상.share<.12)add('resource_trap',103+(f.인성.share-.31)*40,'답을 다 알고도 출발하지 못하는 판','준비가 실행을 잡아먹음','paralysis',['인성 '+f.인성.pct+'%','식상 '+f.식상.pct+'%'],'인성은 과한데 생각을 결과로 내보낼 식상이 약합니다. 준비와 해석은 쌓이지만 시작 조건도 함께 늘어, 가장 잘 아는 사람이 가장 늦게 움직이는 꼴이 됩니다.','답을 많이 알고도 삶은 움직이지 않습니다. 준비는 쌓이고 시기는 지나가며, 끝에는 가장 잘 설명된 실패만 남습니다.','복합');
- if(f.식상.share>.25&&f.관성.share>.17)add('output_officer',98+(f.식상.share+f.관성.share-.42)*35,'맞는 말로 자기 자리를 없애는 판','표현과 규칙이 정면으로 충돌함','conflict',['식상 '+f.식상.pct+'%','관성 '+f.관성.pct+'%'],'밖으로 말하고 움직이는 식상과 그것을 누르는 관성이 동시에 강합니다. 틀린 말을 해서가 아니라 받아 줄 수 없는 자리에서 맞는 말을 끝까지 반복해 자기 자리를 없애는 구조입니다.','무너뜨리는 것은 능력 부족이 아닙니다. 멈춰야 할 순간에도 옳음을 증명하려는 반응이 끝내 자기 자리를 없앱니다.','복합');
+ if(s.ratio<.43&&f.재성.share>.24)add('weak_wealth',108+(f.재성.share-.24)*45,'기회를 잡는 순간부터 빚으로 바꾸는 판','감당할 힘보다 현실의 요구가 먼저 커짐','overload',[power,fam('재성')],'나의 힘은 현실과 돈을 감당하기에 약한데, 돈 기운은 사주에서 큰 몫을 차지합니다. 기회를 잡는 순간 책임과 지출이 먼저 불어나 돈이 사람을 부리는 구조입니다.','당신의 불운은 기회가 없는 데 있지 않습니다. 감당할 힘보다 먼저 기회가 와서, 손에 쥐는 순간부터 빚처럼 변한다는 데 있습니다.','복합');
+ if(s.ratio<.43&&f.관성.share>.23)add('weak_officer',106+(f.관성.share-.23)*45,'평가가 끝나도 스스로를 계속 심사하는 판','남의 기준이 자기 힘보다 큼','pressure',[power,fam('관성')],'버티는 힘보다 압박 기운(규칙·평가·책임)이 큽니다. 남의 기준을 빨리 읽지만 거기서 빠져나올 힘은 부족해, 평가가 끝난 뒤에도 스스로를 계속 심사합니다.','남의 기준을 이기려고 평생 애쓰지만, 이 사주에서 인정은 보상이 아니라 다음 의무가 시작됐다는 통지서입니다.','복합');
+ if(s.ratio<.42&&f.식상.share>.26)add('weak_output',101+(f.식상.share-.26)*40,'성과를 낼수록 본체부터 닳는 판','내보내는 힘이 채우는 힘을 압도함','depletion',[power,fam('식상')],'버티고 채우는 힘보다 밖으로 쏟아내는 표현 기운(말·행동·성과)이 큽니다. 결과를 만들수록 회복할 몫이 먼저 줄어드는데, 능력이 있다는 이유로 계속 쏟아붓습니다.','남기는 것은 많아도 남아 있는 자신은 적습니다. 이 사주의 성과는 보상이 아니라 다음 방전을 예약하는 방식으로 쌓입니다.','복합');
+ if(s.ratio>.6&&f.비겁.share>.25)add('strong_peer',105+(f.비겁.share-.25)*45,'이길수록 말려 줄 사람이 사라지는 판','자기 확신과 경쟁이 제동을 밀어냄','isolation',[power,fam('비겁')],'나의 힘이 강한데 나와 같은 기운(자존심·경쟁)까지 몰려, 자기 기준과 경쟁심이 판을 차지합니다. 반대 의견을 고칠 재료로 쓰지 못해, 이길수록 판단을 바로잡아 줄 사람이 먼저 사라집니다.','끝까지 자기 방식대로 살아남을 수는 있습니다. 마지막에 남는 것은 승리가 아니라, 더는 아무도 옆에서 말리지 않는 상태입니다.','복합');
+ if(f.인성.share>.31&&f.식상.share<.12)add('resource_trap',103+(f.인성.share-.31)*40,'답을 다 알고도 출발하지 못하는 판','준비가 실행을 잡아먹음','paralysis',[fam('인성'),fam('식상')],'생각과 준비를 맡는 보호 기운은 넘치는데, 생각을 결과로 내보낼 표현 기운이 약합니다. 준비와 해석은 쌓이지만 시작 조건도 함께 늘어, 가장 잘 아는 사람이 가장 늦게 움직이는 꼴이 됩니다.','답을 많이 알고도 삶은 움직이지 않습니다. 준비는 쌓이고 시기는 지나가며, 끝에는 가장 잘 설명된 실패만 남습니다.','복합');
+ if(f.식상.share>.25&&f.관성.share>.17)add('output_officer',98+(f.식상.share+f.관성.share-.42)*35,'맞는 말로 자기 자리를 없애는 판','표현과 규칙이 정면으로 충돌함','conflict',[fam('식상'),fam('관성')],'밖으로 말하고 움직이는 표현 기운과 그것을 누르는 압박 기운이 둘 다 강합니다. 받아 줄 수 없는 자리에서 맞는 말을 끝까지 반복해 자기 자리를 없애는 구조입니다.','무너뜨리는 것은 능력 부족이 아닙니다. 멈춰야 할 순간에도 옳음을 증명하려는 반응이 끝내 자기 자리를 없앱니다.','복합');
  const md=a.interactions.find(function(x){return x.type==='충'&&x.positions.includes(1)&&x.positions.includes(2);});
- if(md)add('month_day_clash',110,'사회 역할과 사생활이 서로의 기반을 깨는 판','일과 생활의 두 축이 정면충돌함','rupture',[md.label],'월지와 일지가 정면으로 충합니다. 사회에서 요구받는 역할과 사적인 생활이 같은 방향으로 가지 않아, 한쪽을 살리면 다른 쪽 기반이 바로 흔들립니다.','한쪽을 고칠 때마다 다른 쪽이 무너집니다. 이 명식은 실패를 한 번 크게 주는 대신, 겨우 세운 기반을 여러 번 끊어 먹습니다.','충형');
+ if(md)add('month_day_clash',110,'사회 역할과 사생활이 서로의 기반을 깨는 판','일과 생활의 두 축이 정면충돌함','rupture',[md.label],jo(whoText(md),'이','가')+' 정면으로 부딪칩니다. 사회에서 요구받는 역할과 사적인 생활이 같은 방향으로 가지 않아, 한쪽을 살리면 다른 쪽 기반이 바로 흔들립니다.','한쪽을 고칠 때마다 다른 쪽이 무너집니다. 이 사주는 실패를 한 번 크게 주는 대신, 겨우 세운 기반을 여러 번 끊어 먹습니다.','충형');
  const dayClash=a.interactions.find(function(x){return x.type==='충'&&x.positions.includes(2);});
- if(dayClash&&!md)add('day_clash',96+dayClash.severity/10,'가까워질수록 생활 기반이 흔들리는 판','가장 가까운 자리에서 충돌이 반복됨','rupture',[dayClash.label],'일지가 충을 받아 가장 가까운 관계와 일상의 기반이 안정되기 어렵습니다. 감정이 있어도 생활 방식과 기대가 어긋나, 친해질수록 조정 비용이 커집니다.','멀리 있는 적보다 가까운 약속이 더 오래 흔듭니다. 관계를 얻을수록 생활 기반이 갈라지는 것이 이 판의 가장 질긴 손실입니다.','충형');
+ if(dayClash&&!md)add('day_clash',96+dayClash.severity/10,'가까워질수록 생활 기반이 흔들리는 판','가장 가까운 자리에서 충돌이 반복됨','rupture',[dayClash.label],jo(whoText(dayClash),'이','가')+' 정면으로 부딪쳐, 가장 가까운 관계와 일상의 기반이 안정되기 어렵습니다. 감정이 있어도 생활 방식과 기대가 어긋나, 친해질수록 서로 맞추는 비용이 커집니다.','멀리 있는 적보다 가까운 약속이 더 오래 흔듭니다. 관계를 얻을수록 생활 기반이 갈라지는 것이 이 판의 가장 질긴 손실입니다.','충형');
  const punish=a.interactions.find(function(x){return x.type==='형'||x.type==='자형';});
- if(punish)add('punishment',92+punish.severity/12,'환경을 바꿔도 같은 결말을 다시 만드는 판','같은 대응이 문제를 안에서 재생산함','repetition',[punish.label],'명식 안에 형의 고리가 걸려 있습니다. 문제가 밖에서 한 번 오는 것이 아니라, 같은 선택과 반응을 되풀이할 때마다 안에서 비슷한 결말을 다시 만듭니다.','사람과 장소를 바꿔도 끝 장면은 닮습니다. 운이 같은 것이 아니라, 이 판이 같은 반응으로 같은 파국을 계속 생산합니다.','충형');
+ if(punish)add('punishment',92+punish.severity/12,'환경을 바꿔도 같은 결말을 다시 만드는 판','같은 대응이 문제를 안에서 재생산함','repetition',[punish.label],jo(whoText(punish),'이','가')+' '+(punish.type==='자형'?'같은 동물끼리':'서로')+' 마찰을 일으킵니다. 같은 선택과 반응을 되풀이할 때마다 비슷한 결말이 안에서 다시 만들어집니다.','사람과 장소를 바꿔도 끝 장면은 닮습니다. 운이 같은 것이 아니라, 이 판이 같은 반응으로 같은 파국을 계속 생산합니다.','충형');
  if(['cold','hot','dry','damp'].includes(a.climate)){
-  const map={cold:['차갑게 굳어 시작까지 얼리는 판','차가운 월령을 덥힐 불이 약함','생각과 대비가 행동보다 먼저 굳음'],hot:['달아오른 뒤 전부 태워 버리는 판','뜨거운 월령을 식힐 물이 약함','속도와 반응이 지속력을 태움'],dry:['메마른 기준으로 관계와 여유를 깎는 판','마른 계절을 적실 물이 약함','융통성과 회복 통로가 마름'],damp:['결정을 미루며 생활 전체를 눅이는 판','젖은 흙을 말릴 불이 약함','정체된 생각과 미룬 일이 쌓임']},m=map[a.climate];
-  add('climate_'+a.climate,76,m[0],m[1],'imbalance',[a.season,m[2]],m[1]+'입니다. '+m[2]+' 쪽으로 생활 리듬이 기울어, 한쪽 방식만 과용하고 반대 상황에 대응할 여유가 줄어듭니다.','이 명식은 큰 재능 하나로 버티지만, 그 재능이 통하지 않는 계절을 만났을 때 쓸 두 번째 방식이 없습니다.','조후');
+  const map={cold:['차갑게 굳어 시작까지 얼리는 판','추운 계절을 덥힐 불이 약함','생각과 대비가 행동보다 먼저 굳음','추운 계절에 태어났는데 덥혀 줄 불 기운이 약합니다. 생각과 대비가 행동보다 먼저 굳어,'],hot:['달아오른 뒤 전부 태워 버리는 판','더운 계절을 식힐 물이 약함','속도와 반응이 지속력을 태움','더운 계절에 태어났는데 식혀 줄 물 기운이 약합니다. 속도와 반응이 오래 버틸 힘까지 태워,'],dry:['메마른 기준으로 관계와 여유를 깎는 판','마른 계절을 적실 물이 약함','융통성과 회복할 틈이 마름','마른 계절에 태어났는데 적셔 줄 물 기운이 약합니다. 융통성과 회복할 틈이 말라,'],damp:['결정을 미루며 생활 전체를 눅이는 판','젖은 흙을 말릴 불이 약함','고인 생각과 미룬 일이 쌓임','흙이 축축한 계절에 태어났는데 말려 줄 불 기운이 약합니다. 고인 생각과 미룬 일이 쌓여,']},m=map[a.climate];
+  add('climate_'+a.climate,76,m[0],m[1],'imbalance',[SEASON_KO[a.monthBranch],m[2]],m[3]+' 생활 리듬이 한쪽으로 기웁니다. 한쪽 방식만 지나치게 쓰고 반대 상황에 대응할 여유가 줄어듭니다.','이 사주는 큰 재능 하나로 버티지만, 그 재능이 통하지 않는 계절을 만났을 때 쓸 두 번째 방식이 없습니다.','조후');
  }
- if(s.label==='극약')add('very_weak',88,'자기 몫보다 남의 요구를 먼저 사는 판','버팀보다 소모와 압박이 큼','pressure',['버팀 '+s.supportScore+' · 소모 '+s.pressureScore,'통근 '+s.rootCount+'곳'],'월령과 지지에서 받는 도움이 부족해 자기 뜻을 세우기 전에 환경의 요구부터 받아들입니다. 버티는 힘보다 빠져나가는 힘이 커서, 수습을 잘할수록 자기 선택은 뒤로 밀립니다.','평생 견딜 수는 있어도 자기 삶을 산다는 감각은 남기 어렵습니다. 이 판에서 버팀은 해결이 아니라 손실을 늦게 확인하는 방식입니다.','강약');
- else if(s.label==='극강')add('very_strong',88,'자기 확신이 모든 출구를 막는 판','버팀이 지나쳐 수정이 불가능해짐','isolation',['버팀 '+s.supportScore+' · 소모 '+s.pressureScore,'통근 '+s.rootCount+'곳'],'일간을 받치는 힘이 판을 압도해 자기 방식 밖의 해결책을 받아들이기 어렵습니다. 강해서 무너지지 않는 대신, 틀린 방향에서도 오래 버팁니다.','무너지지 않는 것이 복은 아닙니다. 잘못된 자리에 끝까지 서 있을 힘까지 충분하다는 것이 이 명식의 가장 큰 흉입니다.','강약');
- else if(s.label==='신약')add('weak',67,'선택보다 수습을 더 많이 하게 되는 판','자기 힘보다 환경 반응이 앞섬','pressure',['버팀 '+s.supportScore+' · 소모 '+s.pressureScore],'상황을 읽고 적응하는 힘은 있지만 판을 자기 쪽으로 돌릴 여유가 부족합니다. 선택한 일보다 떠밀려 수습한 일이 더 많이 남습니다.','원하는 길을 잃는 순간은 거창하지 않습니다. 매번 급한 것부터 처리하다가 자기 차례가 끝내 오지 않는 식으로 사라집니다.','강약');
- else if(s.label==='신강')add('strong',67,'옳음을 지키다 출구까지 닫는 판','자기 기준이 수정 신호를 늦춤','isolation',['버팀 '+s.supportScore+' · 소모 '+s.pressureScore],'자기 기준을 밀어붙일 힘은 충분하지만 제동이 늦습니다. 확신이 생긴 뒤에는 틀렸다는 증거도 일시적 방해로 처리해 손실을 키웁니다.','실패해도 버틸 힘이 있어 더 늦게 돌아섭니다. 이 판에서는 약함보다 오래 버티는 능력이 손실을 크게 만듭니다.','강약');
+ if(s.label==='극약')add('very_weak',88,'자기 몫보다 남의 요구를 먼저 사는 판','버팀보다 소모와 압박이 큼','pressure',[bal,s.rootCount?'뿌리 '+s.rootCount+'곳':'뿌리 없음'],'태어난 계절과 아래 칸에서 받는 도움이 부족해, 자기 뜻을 세우기 전에 주변의 요구부터 받아들입니다. 버티는 힘보다 빠져나가는 힘이 커서, 수습을 잘할수록 자기 선택은 뒤로 밀립니다.','평생 견딜 수는 있어도 자기 삶을 산다는 감각은 남기 어렵습니다. 이 판에서 버팀은 해결이 아니라 손실을 늦게 확인하는 방식입니다.','강약');
+ else if(s.label==='극강')add('very_strong',88,'자기 확신이 모든 출구를 막는 판','버팀이 지나쳐 수정이 불가능해짐','isolation',[bal,s.rootCount?'뿌리 '+s.rootCount+'곳':'뿌리 없음'],'나를 받치는 힘이 판을 압도해 자기 방식 밖의 해결책을 받아들이기 어렵습니다. 강해서 무너지지 않는 대신, 틀린 방향에서도 오래 버팁니다.','무너지지 않는 것이 복은 아닙니다. 잘못된 자리에 끝까지 서 있을 힘까지 충분하다는 것이 이 사주의 가장 나쁜 점입니다.','강약');
+ else if(s.label==='신약')add('weak',67,'선택보다 수습을 더 많이 하게 되는 판','자기 힘보다 환경 반응이 앞섬','pressure',[bal],'상황을 읽고 적응하는 힘은 있지만 판을 자기 쪽으로 돌릴 여유가 부족합니다. 선택한 일보다 떠밀려 수습한 일이 더 많이 남습니다.','원하는 길을 잃는 순간은 거창하지 않습니다. 매번 급한 것부터 처리하다가 자기 차례가 끝내 오지 않는 식으로 사라집니다.','강약');
+ else if(s.label==='신강')add('strong',67,'옳음을 지키다 출구까지 닫는 판','자기 기준이 수정 신호를 늦춤','isolation',[bal],'자기 기준을 밀어붙일 힘은 충분하지만 제동이 늦습니다. 확신이 생긴 뒤에는 틀렸다는 증거도 일시적 방해로 처리해 손실을 키웁니다.','실패해도 버틸 힘이 있어 더 늦게 돌아섭니다. 이 판에서는 약함보다 오래 버티는 능력이 손실을 크게 만듭니다.','강약');
  const top=a.tenGods.rank[0],low=a.tenGods.rank[a.tenGods.rank.length-1];
- if(f[top].level==='excess')add('excess_'+top,74+(f[top].share-.31)*60,FAMILY_LABEL[top]+'이 판 전체를 잡아먹는 구조',top+' 과다가 다른 기능을 밀어냄','imbalance',[top+' '+f[top].pct+'%'],FAMILY_COPY[top].excess,'가장 많은 기운이 장점으로 끝나지 않습니다. '+FAMILY_LABEL[top]+'이 다른 기능을 밀어내, 잘하는 방식 하나로 자기 삶의 나머지를 망칩니다.','십성');
- if(f[low].level==='absent')add('absent_'+low,69,FAMILY_LABEL[low]+'이 비어 우회 비용이 쌓이는 구조',low+'의 빈자리를 다른 기능이 과로로 메움','scarcity',[low+' '+f[low].pct+'%'],FAMILY_COPY[low].absent,'없는 기능은 사라지는 것이 아니라 다른 능력의 과로로 청구됩니다. 이 판은 부족함보다 그것을 끝까지 인정하지 않는 방식으로 더 크게 손해 봅니다.','십성');
+ if(f[top].level==='excess')add('excess_'+top,74+(f[top].share-.31)*60,jo(FAMILY_KO[top],'이','가')+' 판 전체를 잡아먹는 구조',top+' 과다가 다른 기능을 밀어냄','imbalance',[fam(top)],FAMILY_COPY[top].excess,'가장 많은 기운이 장점으로 끝나지 않습니다. '+jo(FAMILY_KO[top],'이','가')+' 다른 기능을 밀어내, 잘하는 방식 하나로 자기 삶의 나머지를 망칩니다.','십성');
+ if(f[low].level==='absent')add('absent_'+low,69,jo(FAMILY_KO[low],'이','가')+' 비어 우회 비용이 쌓이는 구조',low+'의 빈자리를 다른 기능이 과로로 메움','scarcity',[fam(low)],FAMILY_COPY[low].absent,'없는 기능은 사라지는 것이 아니라 다른 능력의 과로로 청구됩니다. 이 판은 부족함보다 그것을 끝까지 인정하지 않는 방식으로 더 크게 손해 봅니다.','십성');
  const topEl=ORDER.slice().sort(function(x,y){return a.elements.shares[y]-a.elements.shares[x];})[0];
- if(a.elements.shares[topEl]>.39)add('element_'+topEl,66+(a.elements.shares[topEl]-.39)*70,ELEMENTS[topEl].name+' 한쪽으로 기운 판','한 가지 방식이 다른 선택지를 밀어냄','imbalance',[ELEMENTS[topEl].name+' '+pct(a.elements.shares[topEl])+'%'],'지장간과 계절 세력까지 합치면 '+ELEMENTS[topEl].name+' 기운이 판의 '+pct(a.elements.shares[topEl])+'%를 차지합니다. 한 가지 방식이 너무 강해 상황이 바뀌어도 다른 대응으로 전환하기 어렵습니다.','한 가지 힘으로 여기까지 버티지만, 끝내 무너뜨리는 것도 바로 그 힘입니다. 장점이 클수록 실패의 모양도 한쪽으로 깊어집니다.','오행');
- add('day_'+dayStem,50,'타고난 방식이 스스로를 물어뜯는 판','일간의 장점이 교정 없이 과용됨','imbalance',[dayStem+'일간'],DAY_FLAW[dayStem],'타고난 방식은 무기가 되지만 멈출 줄 모르면 가장 익숙한 자해가 됩니다. 이 판은 자기 장점을 의심하지 않는 순간부터 손실이 시작됩니다.','일간');
+ if(a.elements.shares[topEl]>.39)add('element_'+topEl,66+(a.elements.shares[topEl]-.39)*70,ELEMENTS[topEl].name+' 한쪽으로 기운 판','한 가지 방식이 다른 선택지를 밀어냄','imbalance',[ELEMENTS[topEl].name+' 기운 '+pct(a.elements.shares[topEl])+'%'],'띠 동물 속에 숨은 기운과 계절의 힘까지 합치면 '+ELEMENTS[topEl].name+' 기운이 판의 '+pct(a.elements.shares[topEl])+'%를 차지합니다. 한 가지 방식이 너무 강해 상황이 바뀌어도 다른 대응으로 전환하기 어렵습니다.','한 가지 힘으로 여기까지 버티지만, 끝내 무너뜨리는 것도 바로 그 힘입니다. 장점이 클수록 실패의 모양도 한쪽으로 깊어집니다.','오행');
+ add('day_'+dayStem,50,'타고난 방식이 스스로를 물어뜯는 판','일간의 장점이 교정 없이 과용됨','imbalance',['나를 뜻하는 글자 · '+STEMS[dayStem].name],DAY_FLAW[dayStem],'타고난 방식은 무기가 되지만 멈출 줄 모르면 가장 익숙한 자해가 됩니다. 이 판은 자기 장점을 의심하지 않는 순간부터 손실이 시작됩니다.','일간');
  c.sort(function(x,y){return y.severity-x.severity;});a.dominant=c[0];
  const cats={};cats[a.dominant.category]=1;a.secondary=c.filter(function(x){if(cats[x.category])return false;cats[x.category]=1;return true;}).slice(0,3);
  const topFamily=a.tenGods.rank[0],lowFamily=a.tenGods.rank[a.tenGods.rank.length-1];
+ const clashTop=a.interactions.find(function(x){return x.type!=='합';});
  a.diagnostics=[
-  {label:'일간 '+s.label,value:'버팀 '+s.supportScore+' / 소모 '+s.pressureScore},
-  {label:'월령',value:a.monthBranch?a.monthBranch+'월 · '+a.season:'시간 없이는 월령 미확정'},
-  {label:'통근',value:s.rootCount+'곳 · 뿌리 '+s.rootWeight},
-  {label:'십성 과다',value:topFamily+' '+f[topFamily].pct+'%'},
-  {label:'십성 결핍',value:lowFamily+' '+f[lowFamily].pct+'%'},
-  {label:'충형',value:a.interactions.length?a.interactions[0].label:'큰 충·형 없음'}
+  {label:'나의 힘 · '+STRENGTH_KO[s.label],value:'버티는 힘 '+s.supportScore+' / 깎는 힘 '+s.pressureScore},
+  {label:'태어난 계절',value:a.monthBranch?SEASON_KO[a.monthBranch]:'태어난 시간을 몰라 정할 수 없음'},
+  {label:'내 뿌리',value:s.rootCount?'아래 칸 '+s.rootCount+'곳':'없음'},
+  {label:'가장 넘치는 기운',value:fam(topFamily)},
+  {label:'가장 모자란 기운',value:fam(lowFamily)},
+  {label:'부딪히는 글자',value:clashTop?clashTop.label:'크게 부딪히는 글자 없음'}
  ];
  a.signals=c;
 }
@@ -9346,32 +9365,32 @@ function buildReading(a,dayStem){
  const topIssue=f[top].level==='excess'||f[top].level==='strong'?FAMILY_COPY[top].excess:FAMILY_COPY[low].absent;
  const relationInt=a.interactions.find(function(x){return x.positions.includes(2)&&(x.type==='충'||x.type==='형'||x.type==='자형'||x.type==='해'||x.type==='파');});
  let relationDetail;
- if(relationInt){const m={충:'가까운 관계의 기대와 생활 방식이 정면으로 부딪힙니다.',형:'같은 불편을 참다가 같은 방식으로 터뜨리는 장면이 반복됩니다.',자형:'상대가 만든 문제보다 자기 해석과 반응으로 갈등을 되감습니다.',해:'말하지 않은 불만이 오래 남아 관계가 끝난 뒤에야 손실이 드러납니다.',파:'한꺼번에 깨지기보다 약속과 신뢰가 조금씩 빠져나갑니다.'};relationDetail=relationInt.label+'가 걸려 있어 '+m[relationInt.type];}
- else if(f.비겁.level==='excess'||f.비겁.level==='strong')relationDetail='비겁이 '+f.비겁.pct+'%로 강해 가까운 사람까지 비교와 경쟁의 틀 안에 넣기 쉽습니다. 함께 버티기보다 누가 더 옳고 더 많이 했는지를 세다가 정이 먼저 닳습니다.';
- else if(f.비겁.level==='absent'||f.비겁.level==='weak')relationDetail='비겁이 '+f.비겁.pct+'%에 그쳐 자기 편을 만들고 도움을 청하는 기능이 약합니다. 혼자 견딘 시간을 상대가 알아주길 바라지만, 말하지 않은 희생은 관계에서 증거가 되지 못합니다.';
+ if(relationInt){const m={충:'가까운 사람과 바라는 것도, 사는 방식도 자꾸 엇갈립니다.',형:'같은 불편을 참다가 같은 방식으로 터뜨리는 장면이 반복됩니다.',자형:'상대가 만든 문제보다 자기 해석과 반응으로 갈등을 키웁니다.',해:'말하지 않은 불만이 오래 남아 관계가 끝난 뒤에야 손실이 드러납니다.',파:'한꺼번에 깨지기보다 약속과 신뢰가 조금씩 빠져나갑니다.'};relationDetail=(relationInt.type==='파'?whoText(relationInt)+' 사이에 조금씩 금이 갑니다. ':jo(whoText(relationInt),'이','가')+' '+{충:'정면으로 부딪칩니다. ',형:'서로 마찰을 일으킵니다. ',자형:'같은 동물끼리 마찰을 일으킵니다. ',해:'뒤에서 서로를 깎아 먹습니다. '}[relationInt.type])+m[relationInt.type];}
+ else if(f.비겁.level==='excess'||f.비겁.level==='strong')relationDetail='나와 같은 기운(자존심·경쟁)이 '+f.비겁.pct+'%로 강해 가까운 사람까지 비교와 경쟁의 대상으로 보기 쉽습니다. 함께 버티기보다 누가 더 옳고 더 많이 했는지를 세다가 정이 먼저 닳습니다.';
+ else if(f.비겁.level==='absent'||f.비겁.level==='weak')relationDetail='나와 같은 기운이 '+f.비겁.pct+'%에 그쳐 내 편을 만들고 도움을 청하는 힘이 약합니다. 혼자 견딘 시간을 상대가 알아주길 바라지만, 말하지 않은 희생은 관계에서 증거가 되지 못합니다.';
  else relationDetail='관계를 망치는 큰 사건보다 자기 방식으로 상대를 해석하는 습관이 더 오래 작동합니다. 확인보다 추측을 먼저 택하는 순간 작은 어긋남이 생활 전체의 불신으로 번집니다.';
  let workDetail;
- if(f.관성.level==='excess'||f.관성.level==='strong')workDetail='관성 '+f.관성.pct+'%가 강해 직함·평가·마감을 실제 크기보다 무겁게 받습니다. 책임을 잘 지는 만큼 책임에서 빠져나오는 법은 배우지 못합니다.';
- else if(f.관성.level==='absent'||f.관성.level==='weak')workDetail='관성이 '+f.관성.pct+'%에 그쳐 외부 마감과 역할이 느슨해지면 지속력도 함께 떨어집니다. 재능보다 반복 신뢰에서 손해가 납니다.';
- else if(f.식상.level==='excess'||f.식상.level==='strong')workDetail='식상 '+f.식상.pct+'%가 강해 결과와 발언은 빠르지만 멈춰야 할 지점을 늦게 봅니다. 일을 잘하는 속도와 자리를 지키는 속도가 맞지 않습니다.';
- else workDetail='성과를 만드는 식상과 그것을 묶는 관성 어느 쪽도 결정적으로 판을 장악하지 못해, 일의 방향이 능력보다 주변 요구에 따라 흔들립니다.';
+ if(f.관성.level==='excess'||f.관성.level==='strong')workDetail='압박 기운(규칙·평가·책임)이 '+f.관성.pct+'%로 강해 직함·평가·마감을 실제보다 무겁게 받아들입니다. 책임을 잘 지는 만큼 책임에서 빠져나오는 법은 배우지 못합니다.';
+ else if(f.관성.level==='absent'||f.관성.level==='weak')workDetail='압박 기운(규칙·평가·책임)이 '+f.관성.pct+'%에 그쳐, 밖에서 정해 주는 마감과 역할이 느슨해지면 꾸준함도 함께 떨어집니다. 재능이 모자라서보다 믿음을 꾸준히 쌓지 못해서 손해를 봅니다.';
+ else if(f.식상.level==='excess'||f.식상.level==='strong')workDetail='표현 기운(말·행동·성과)이 '+f.식상.pct+'%로 강해 결과와 말은 빠르지만 멈춰야 할 지점을 늦게 봅니다. 일을 잘하는 속도와 자리를 지키는 속도가 맞지 않습니다.';
+ else workDetail='성과를 내는 표현 기운도, 그것을 묶는 압박 기운도 판을 확실히 잡지 못해, 일의 방향이 능력보다 주변 요구에 따라 흔들립니다.';
  let moneyDetail;
- if(f.재성.level==='excess'||f.재성.level==='strong')moneyDetail='재성 '+f.재성.pct+'%가 강합니다. 돈이 들어올 통로와 함께 관리할 대상도 늘어나, 수입의 증가가 자유의 증가로 이어지지 않습니다.';
- else if(f.재성.level==='absent'||f.재성.level==='weak')moneyDetail='재성 '+f.재성.pct+'%가 약합니다. 가치를 가격으로 닫고 보상을 회수하는 단계에서 밀려, 실력과 잔액 사이가 자꾸 벌어집니다.';
- else if(f.비겁.level==='excess'||f.비겁.level==='strong')moneyDetail='비겁이 재물의 몫을 나누므로 벌어도 경쟁·사람·공동 책임으로 새기 쉽습니다. 돈 문제에 관계가 끼는 순간 계산보다 체면이 앞섭니다.';
- else moneyDetail='재성 자체는 극단적이지 않지만 핵심 결함이 돈을 다루는 순간 그대로 반복됩니다. 수입의 크기보다 결정이 늦거나 유지 비용이 커지는 데서 손실이 납니다.';
+ if(f.재성.level==='excess'||f.재성.level==='strong')moneyDetail='돈 기운이 '+f.재성.pct+'%로 강합니다. 돈이 들어올 길과 함께 관리할 것도 늘어나, 수입이 늘어도 자유는 늘지 않습니다.';
+ else if(f.재성.level==='absent'||f.재성.level==='weak')moneyDetail='돈 기운이 '+f.재성.pct+'%로 약합니다. 내 일에 값을 매기고 대가를 받아 내는 단계에서 밀려, 실력과 통장 잔액 사이가 자꾸 벌어집니다.';
+ else if(f.비겁.level==='excess'||f.비겁.level==='strong')moneyDetail='나와 같은 기운이 강해 돈의 몫을 나누게 됩니다. 벌어도 경쟁·사람·함께 진 책임으로 새기 쉽습니다. 돈 문제에 관계가 끼는 순간 계산보다 체면이 앞섭니다.';
+ else moneyDetail='돈 기운 자체는 지나치지 않지만 핵심 결함이 돈을 다루는 순간 그대로 반복됩니다. 수입의 크기보다 결정이 늦거나 유지 비용이 커지는 데서 손실이 납니다.';
  let energyDetail;
- if(a.climate==='cold')energyDetail='차가운 월령에 불 기운이 '+pct(a.elements.shares.화)+'%뿐이라 전통 명리의 한난조습 기준에서는 데우는 힘이 부족합니다. 시작 전 생각과 대비가 길어지고 생활 리듬이 굳기 쉽습니다.';
- else if(a.climate==='hot')energyDetail='뜨거운 월령에 물 기운이 '+pct(a.elements.shares.수)+'%뿐이라 식히고 멈추는 힘이 부족합니다. 과속한 뒤 긴 정지로 갚는 생활 리듬이 되기 쉽습니다.';
- else if(a.climate==='dry')energyDetail='마른 계절에 물 기운이 '+pct(a.elements.shares.수)+'%뿐이라 완충과 회복 통로가 좁습니다. 기준은 날카로워지고 생활의 여유는 가장 먼저 잘립니다.';
- else if(a.climate==='damp')energyDetail='한습한 흙을 말릴 불 기운이 '+pct(a.elements.shares.화)+'%뿐이라 결정과 시작이 무거워집니다. 미룬 일이 생활 전체의 습기처럼 남습니다.';
- else if(f.인성.level==='absent'||f.인성.level==='weak')energyDetail='회복과 축적을 뜻하는 인성이 '+f.인성.pct+'%에 그칩니다. 일을 끝내도 경험이 보호막으로 남기보다 다음 일을 버틸 체력만 줄어드는 쪽으로 흐릅니다.';
- else if(f.인성.level==='excess'||f.인성.level==='strong')energyDetail='인성이 '+f.인성.pct+'%로 강해 쉬는 동안에도 해석과 준비가 멈추지 않습니다. 몸은 멈춰 있어도 머리가 계속 일해 회복이 닫히지 않습니다.';
+ if(a.climate==='cold')energyDetail='추운 계절에 태어났는데 불 기운이 '+pct(a.elements.shares.화)+'%뿐이라 몸과 마음을 데우는 힘이 부족합니다. 시작 전 생각과 대비가 길어지고 생활 리듬이 굳기 쉽습니다.';
+ else if(a.climate==='hot')energyDetail='더운 계절에 태어났는데 물 기운이 '+pct(a.elements.shares.수)+'%뿐이라 식히고 멈추는 힘이 부족합니다. 과속한 뒤 긴 정지로 갚는 생활 리듬이 되기 쉽습니다.';
+ else if(a.climate==='dry')energyDetail='마른 계절에 태어났는데 물 기운이 '+pct(a.elements.shares.수)+'%뿐이라 숨 돌리고 회복할 틈이 좁습니다. 기준은 날카로워지고 생활의 여유는 가장 먼저 잘립니다.';
+ else if(a.climate==='damp')energyDetail='흙이 축축한 계절에 태어났는데 말려 줄 불 기운이 '+pct(a.elements.shares.화)+'%뿐이라 결정과 시작이 무거워집니다. 미룬 일이 생활 전체의 습기처럼 남습니다.';
+ else if(f.인성.level==='absent'||f.인성.level==='weak')energyDetail='회복과 배움을 돕는 보호 기운이 '+f.인성.pct+'%에 그칩니다. 일을 끝내도 경험이 보호막으로 남기보다 다음 일을 버틸 체력만 줄어드는 쪽으로 흐릅니다.';
+ else if(f.인성.level==='excess'||f.인성.level==='strong')energyDetail='보호 기운(생각·준비)이 '+f.인성.pct+'%로 강해 쉬는 동안에도 생각과 준비가 멈추지 않습니다. 몸은 쉬어도 머리가 계속 일해 회복이 끝나지 않습니다.';
  else energyDetail='회복을 완전히 잃은 판은 아니지만 한계를 느끼는 시점이 늦습니다. 괜찮은 동안 너무 많이 쓰고, 멈춘 뒤에야 손실을 계산합니다.';
- const uncertainty=a.pillarsKnown<4?' 태어난 시간이 없어 시주에서 달라질 수 있는 결론은 제외했습니다.':'',secondaryMotifs=a.secondary.map(function(x){return x.motif;}).slice(0,2);
+ const uncertainty=a.pillarsKnown<4&&s.stable!==false?' 태어난 시간을 몰라 시간에 따라 달라질 수 있는 결론은 뺐습니다.':'',secondaryMotifs=a.secondary.map(function(x){return '‘'+x.title+'’';}).slice(0,2);
  a.sections={
   core:d.core+' '+strengthText(s)+uncertainty,
-  personality:DAY_FLAW[dayStem]+' '+topIssue+' 이 두 성향은 따로 움직이지 않습니다. '+d.motif+'이라는 한 방향으로 합쳐져, 압박이 커질수록 가장 익숙한 단점을 더 세게 사용합니다.',
+  personality:DAY_FLAW[dayStem]+' '+topIssue+' 이 두 성향은 따로 움직이지 않고 서로를 키워, 압박이 커질수록 가장 익숙한 단점을 더 세게 씁니다.',
   work:theme.work+' '+workDetail,
   money:theme.money+' '+moneyDetail,
   relationships:theme.relationships+' '+relationDetail,
@@ -9380,6 +9399,8 @@ function buildReading(a,dayStem){
  };
  a.reading={title:d.title,evidence:d.evidence.concat(a.secondary.slice(0,2).map(function(x){return x.title;})),core:a.sections.core,nature:a.sections.personality,work:a.sections.work,money:a.sections.money,workMoney:a.sections.work+' '+a.sections.money,people:a.sections.relationships,body:a.sections.energy,loop:a.sections.pattern,verdict:d.verdict};
 }
+
+
 
 function parseInput(input){
   const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(String(input.date||''));
@@ -9473,9 +9494,10 @@ function localDateTimeText(x){const z=function(n){return String(n).padStart(2,'0
 function firstLuckGanZhi(yun){try{return yun.getDaYun(2)[1].getGanZhi();}catch(_){return '';}}
 function solarYearGanZhi(year){return Solar.fromYmdHms(year,7,1,12,0,0).getLunar().getYearInGanZhiExact();}
 function branchSubjectParticle(branch){return ['丑','寅','辰','申','戌'].includes(branch)?'이':'가';}
+
 function luckCollision(branch,pillars){
  const clash=[['子','午'],['丑','未'],['寅','申'],['卯','酉'],['辰','戌'],['巳','亥']],harm=[['子','未'],['丑','午'],['寅','巳'],['卯','辰'],['申','亥'],['酉','戌']],brk=[['子','酉'],['卯','午'],['辰','丑'],['未','戌'],['寅','亥'],['巳','申']],pun=[['子','卯'],['寅','巳'],['巳','申'],['寅','申'],['丑','戌'],['戌','未'],['丑','未']];
- const hits=[],self={辰:1,午:1,酉:1,亥:1};pillars.forEach(function(p,i){if(!p||p.unknown)return;let type='';if(pairIs(branch,p.branch,clash))type='충';else if(pairIs(branch,p.branch,pun))type='형';else if(branch===p.branch&&self[branch])type='자형';else if(pairIs(branch,p.branch,harm))type='해';else if(pairIs(branch,p.branch,brk))type='파';if(type)hits.push({type:type,position:i,label:branch+p.branch+type});});
+ const hits=[],self={辰:1,午:1,酉:1,亥:1};pillars.forEach(function(p,i){if(!p||p.unknown)return;let type='';if(pairIs(branch,p.branch,clash))type='충';else if(pairIs(branch,p.branch,pun))type='형';else if(branch===p.branch&&self[branch])type='자형';else if(pairIs(branch,p.branch,harm))type='해';else if(pairIs(branch,p.branch,brk))type='파';if(type)hits.push({type:type,position:i,branch:p.branch,label:branch+p.branch+type});});
  return hits.sort(function(a,b){return ((b.position===2?3:b.position===1?2:1)-(a.position===2?3:a.position===1?2:1));});
 }
 function interpretLuck(ganZhi,dayStem,pillars,analysis){
@@ -9485,14 +9507,14 @@ function interpretLuck(ganZhi,dayStem,pillars,analysis){
  if(hits[0])score+=hits[0].position===2?27:hits[0].position===1?22:14;
  if(stemFamily===branchFamily)score+=6;
  let title,body;
- if(hits[0]&&hits[0].position===2){title='가까운 관계와 생활 기반을 깨는 대운';body=ganZhi+' 대운의 '+branch+branchSubjectParticle(branch)+' 일지를 '+hits[0].type+'합니다. 가장 가까운 관계와 일상의 규칙이 흔들려, 다른 일이 잘되어도 사적인 기반에서 비용을 치르게 됩니다.';}
- else if(hits[0]&&hits[0].position===1){title='직업과 사회적 자리를 뒤흔드는 대운';body=ganZhi+' 대운의 '+branch+branchSubjectParticle(branch)+' 월지를 '+hits[0].type+'합니다. 일의 방식과 조직의 요구가 충돌해, 자리를 지키면 생활이 무너지고 생활을 지키면 자리를 바꿔야 하는 선택이 생깁니다.';}
- else if(stemFamily==='관성'){title='평가와 의무가 사람을 먼저 쓰는 대운';body='대운 '+ganZhi+'에서는 '+stemGod+'·'+branchGod+' 기운으로 관성의 압박이 커집니다. 책임과 직함은 늘지만 자유는 같이 늘지 않아, 인정받는 만큼 다음 의무에 더 단단히 묶입니다.';}
- else if(stemFamily==='재성'){title='돈이 들어와도 주인이 되지 못하는 대운';body='대운 '+ganZhi+'에서는 '+stemGod+' 기운이 돈·성과·유지비를 키웁니다. 벌 기회와 지출할 이유가 같이 와서, 숫자가 커질수록 선택권은 오히려 줄어듭니다.';}
- else if(stemFamily==='식상'){title='성과를 내다가 본체가 먼저 닳는 대운';body='대운 '+ganZhi+'에서는 '+stemGod+'의 출력과 반응이 빨라집니다. 말하고 만들고 움직이는 양은 늘지만 회복 속도가 따라오지 않아, 결과 뒤에 긴 공백을 남깁니다.';}
- else if(stemFamily==='비겁'){title='경쟁에서 이기고 몫과 사람을 잃는 대운';body='대운 '+ganZhi+'에서는 '+stemGod+' 기운으로 자기 주장과 경쟁이 커집니다. 지지 않으려는 선택이 사람과 돈을 동시에 소모시켜, 이긴 뒤 나눌 몫이 줄어듭니다.';}
- else {title='생각이 기회를 붙잡아 썩히는 대운';body='대운 '+ganZhi+'에서는 '+stemGod+'의 해석과 준비가 두꺼워집니다. 틀리지 않으려는 시간이 길어져, 답을 얻었을 때는 이미 선택할 시기가 지나기 쉽습니다.';}
-  if(hits.length>1)body+=' 원국의 '+hits.slice(0,2).map(function(h){return POS[h.position]+' '+h.label;}).join('·')+'까지 함께 건드려 한 문제의 여파가 다른 영역으로 번집니다.';
+ if(hits[0]&&hits[0].position===2){title='가까운 관계와 생활 기반을 깨는 대운';body=clashLine('이 10년의 '+animal(branch),'태어난 날의 '+animal(hits[0].branch),hits[0].type)+' 가장 가까운 관계와 일상의 규칙이 흔들려, 다른 일이 잘되어도 사적인 기반에서 비용을 치르게 됩니다.';}
+ else if(hits[0]&&hits[0].position===1){title='직업과 사회적 자리를 뒤흔드는 대운';body=clashLine('이 10년의 '+animal(branch),'태어난 달의 '+animal(hits[0].branch),hits[0].type)+' 일의 방식과 조직의 요구가 충돌해, 자리를 지키면 생활이 무너지고 생활을 지키면 자리를 바꿔야 하는 선택이 생깁니다.';}
+ else if(stemFamily==='관성'){title='평가와 의무가 사람을 먼저 쓰는 대운';body='이 10년은 압박 기운(규칙·평가·책임)이 커집니다. 책임과 직함은 늘지만 자유는 같이 늘지 않아, 인정받는 만큼 다음 의무에 더 단단히 묶입니다.';}
+ else if(stemFamily==='재성'){title='돈이 들어와도 주인이 되지 못하는 대운';body='이 10년은 돈 기운이 커져 벌이·성과·유지비가 함께 불어납니다. 벌 기회와 지출할 이유가 같이 와서, 숫자가 커질수록 선택권은 오히려 줄어듭니다.';}
+ else if(stemFamily==='식상'){title='성과를 내다가 본체가 먼저 닳는 대운';body='이 10년은 표현 기운(말·행동·성과)이 커집니다. 말하고 만들고 움직이는 양은 늘지만 회복 속도가 따라오지 않아, 결과 뒤에 긴 공백을 남깁니다.';}
+ else if(stemFamily==='비겁'){title='경쟁에서 이기고 몫과 사람을 잃는 대운';body='이 10년은 나와 같은 기운(자존심·경쟁)이 커져 자기 주장과 경쟁이 세집니다. 지지 않으려는 선택이 사람과 돈을 동시에 소모시켜, 이긴 뒤 나눌 몫이 줄어듭니다.';}
+ else {title='생각이 기회를 붙잡아 썩히는 대운';body='이 10년은 보호 기운(생각·준비)이 두꺼워집니다. 틀리지 않으려는 시간이 길어져, 답을 얻었을 때는 이미 선택할 시기가 지나기 쉽습니다.';}
+  if(hits.length>1){const told=hits[0].position===2||hits[0].position===1,list=(told?hits.slice(1,2):hits.slice(0,2)).map(function(h){return PLACE_KO[h.position]+'의 '+animal(h.branch);});body+=' '+(list.length===2?jo(list[0],'과','와')+' '+list[1]:list[0])+'까지 함께 건드려, 한 문제의 여파가 다른 영역으로 번집니다.';}
  return {title:title,text:body,score:Math.min(100,Math.round(score)),stemGod:stemGod,branchGod:branchGod,collisions:hits};
 }
 function pickWorstYears(cycleGanZhi,startLocal,endLocal,p,dayStem,pillars,analysis){
@@ -9504,14 +9526,18 @@ function pickWorstYears(cycleGanZhi,startLocal,endLocal,p,dayStem,pillars,analys
   const natalHit=read.collisions[0]||null;
   const severity=Math.min(100,Math.round(read.score*.62+(repeat?26:0)+(cycleHit?(weights[cycleHit.type]||0):0)));
   let title,text;
-  if(repeat){title='대운과 같은 글자가 겹치는 해';text=year+'년 '+ganZhi+' 세운이 '+cycleGanZhi+' 대운과 복음이라 같은 문제가 한 해 안에서 반복되고 굳어집니다.';}
-  else if(cycleHit){title='10년 흐름을 정면으로 건드리는 해';text=year+'년 '+ganZhi+' 세운의 '+ganZhi[1]+branchSubjectParticle(ganZhi[1])+' '+cycleGanZhi+' 대운의 '+cycleGanZhi[1]+'와 '+cycleHit.type+'을 이루어, 한 해의 사건이 10년 흐름 전체로 번집니다.';}
-  else if(natalHit){title='원국의 약한 자리를 다시 치는 해';text=year+'년 '+ganZhi+' 세운의 '+ganZhi[1]+branchSubjectParticle(ganZhi[1])+' 원국 '+POS[natalHit.position]+'를 '+natalHit.type+'해 '+(natalHit.position===2?'관계와 생활 기반':natalHit.position===1?'직업과 사회적 자리':'가족·장기 계획')+'을 흔듭니다.';}
-  else{title='불리한 십성이 전면에 나오는 해';text=year+'년 '+ganZhi+' 세운은 '+read.stemGod+'·'+read.branchGod+' 기운을 앞세워 이 대운의 약점을 가장 거칠게 드러냅니다.';}
+  if(repeat){title='대운과 같은 글자가 겹치는 해';text='그해의 글자가 이 10년 운과 똑같아서, 같은 문제가 한 해 안에서 되풀이되고 굳어집니다.';}
+  else if(cycleHit){title='10년 흐름을 정면으로 건드리는 해';text=clashLine('그해의 '+animal(ganZhi[1]),'이 10년의 '+animal(cycleGanZhi[1]),cycleHit.type)+' 한 해의 사건이 10년 흐름 전체로 번집니다.';}
+  else if(natalHit){title='타고난 약한 자리를 다시 치는 해';text=clashLine('그해의 '+animal(ganZhi[1]),PLACE_KO[natalHit.position]+'의 '+animal(natalHit.branch),natalHit.type)+' 그래서 '+(natalHit.position===2?'관계와 생활 기반이':natalHit.position===1?'직업과 사회적 자리가':'가족과 오래 세운 계획이')+' 흔들립니다.';}
+  else{title='불리한 기운이 앞에 나오는 해';const fa=FAMILY_KO[TEN_FAMILY[read.stemGod]],fb=FAMILY_KO[TEN_FAMILY[read.branchGod]];text='그해는 '+(fa===fb?jo(fa,'이','가')+' 위아래로 겹쳐':jo(fa,'과','와')+' '+jo(fb,'이','가')+' 함께 앞에 나와')+' 이 10년의 약점을 가장 거칠게 드러냅니다.';}
   rows.push({year:year,age:year-p.year+1,ganZhi:ganZhi,severity:severity,title:title,text:text,partial:year===startLocal.year||year===endLocal.year,evidence:[read.stemGod,read.branchGod].concat(cycleHit?[cycleHit.label]:[]).concat(natalHit?[natalHit.label]:[])});
  }
  return rows.sort(function(a,b){return b.severity-a.severity||a.year-b.year;}).slice(0,2);
 }
+
+
+
+
 function buildLuckCycles(p,yun,pillars,analysis,conditional){
  const raw=yun.getDaYun(9).slice(1,9),first=yun.getStartSolar(),now=Date.now(),dayStem=analysis.dayStem||pillars[2].stem,cycles=[];
  raw.forEach(function(d,i){
@@ -9558,23 +9584,23 @@ function mergeUnknownCycleRanges(base,a,b){
  });return base;
 }
 function calculateLuck(p,termEight,pillars,analysis,boundary){
- let yun;try{yun=termEight.getYun(p.gender,2);}catch(_){return {available:false,note:'대운 계산 모듈에서 값을 얻지 못했습니다.',cycles:[]};}
+ let yun;try{yun=termEight.getYun(p.gender,2);}catch(_){return {available:false,note:'대운을 계산하지 못했습니다.',cycles:[]};}
  let units=luckStartUnits(yun),range=[units,units],uncertain=p.unknown||boundary,endpointA=null,endpointB=null;
  if(p.unknown){
   try{
-   endpointA=endpointLuckScenario(p,0,0,'출생시각이 00:00인 경우');endpointB=endpointLuckScenario(p,23,59,'출생시각이 23:59인 경우');
+   endpointA=endpointLuckScenario(p,0,0,'0시 0분에 태어났다면');endpointB=endpointLuckScenario(p,23,59,'밤 11시 59분에 태어났다면');
    range=[Math.min(endpointA.startUnits,endpointB.startUnits),Math.max(endpointA.startUnits,endpointB.startUnits)];
   }catch(_){}
  }
  const exact=formatLuckStart(units),rangeText=Math.abs(range[1]-range[0])>.08?formatLuckStart(range[0])+'~'+formatLuckStart(range[1]):exact;
  if(endpointA&&endpointB&&(endpointA.direction!==endpointB.direction||endpointA.firstGanZhi!==endpointB.firstGanZhi)){
   const dateStarts=localRangeText(endpointA.startDate,endpointB.startDate),instantStarts=dateRangeText(endpointA.startInstant,endpointB.startInstant);
-  return {available:false,scenarioAvailable:true,branched:true,direction:'미확정',representativeStartUnits:units,startRange:range,startText:rangeText,startDateRange:dateStarts,startInstantRange:instantStarts,uncertain:true,note:'출생시간에 따라 대운의 방향 또는 첫 간지가 달라집니다. 한 목록으로 확정하지 않고 00:00·23:59 두 끝점 시나리오를 표시합니다.',cycles:[],scenarios:[endpointA,endpointB]};
+  return {available:false,scenarioAvailable:true,branched:true,direction:'미확정',representativeStartUnits:units,startRange:range,startText:rangeText,startDateRange:dateStarts,startInstantRange:instantStarts,uncertain:true,note:'태어난 시간에 따라 대운이 달라집니다. 하나로 정할 수 없어서 하루의 맨 처음(0시 0분)과 맨 끝(밤 11시 59분)에 태어난 경우를 둘 다 보여 드립니다.',cycles:[],scenarios:[endpointA,endpointB]};
  }
  const scenario=buildLuckScenario(p,yun,pillars,analysis,'',uncertain),cycles=scenario.cycles;
  let startDateRange=scenario.startDate?[scenario.startDate,scenario.startDate]:null,startInstantRange=scenario.startInstant?[scenario.startInstant,scenario.startInstant]:null;
  if(endpointA&&endpointB){mergeUnknownCycleRanges(cycles,endpointA,endpointB);startDateRange=localRangeText(endpointA.startDate,endpointB.startDate);startInstantRange=dateRangeText(endpointA.startInstant,endpointB.startInstant);}
- return {available:cycles.length>0,scenarioAvailable:false,branched:false,direction:scenario.direction,startUnits:units,startRange:range,startText:rangeText,startDate:scenario.startDate,startInstant:scenario.startInstant,startDateRange:startDateRange,startInstantRange:startInstantRange,uncertain:uncertain,note:boundary?'절기 경계일이지만 두 끝점의 대운 방향과 첫 간지는 같습니다. 시작 날짜는 범위로 표시했습니다.':p.unknown?'출생시간이 없어 하루 안에서 가능한 대운 시작 범위와 전환 날짜 범위로 표시했습니다.':'출생 시각과 진태양시를 반영해 현지 대운 전환 시각을 계산했습니다.',cycles:cycles,scenarios:[],worst:scenario.worst};
+ return {available:cycles.length>0,scenarioAvailable:false,branched:false,direction:scenario.direction,startUnits:units,startRange:range,startText:rangeText,startDate:scenario.startDate,startInstant:scenario.startInstant,startDateRange:startDateRange,startInstantRange:startInstantRange,uncertain:uncertain,note:boundary?'절기가 바뀌는 날에 태어났지만, 몇 시에 태어났든 대운의 순서는 같습니다. 시작 날짜만 범위로 보여 드립니다.':p.unknown?'태어난 시간을 몰라 대운이 시작하고 바뀌는 날짜를 범위로 보여 드립니다.':'대운이 바뀌는 날짜도 같은 기준으로 계산했습니다.',cycles:cycles,scenarios:[],worst:scenario.worst};
 }
 function unknownStrengthRange(p,baseScore){
  const samples=[],dayStems=[],months=[],times=[[0,0],[1,0],[3,0],[5,0],[7,0],[9,0],[11,0],[13,0],[15,0],[17,0],[19,0],[21,0],[23,0],[23,59]];
@@ -9607,13 +9633,13 @@ function calculate(input){
   const counts={목:0,화:0,토:0,금:0,수:0};
   pillars.forEach(function(c){if(c.unknown)return;counts[c.stemInfo.el]++;counts[c.branchInfo.el]++;});
   const dayStem=local.getDay()[0],me=STEMS[dayStem],dayEl=me.el,analysis=analyzeChart(pillars,dayStem,p.unknown);analysis.dayStem=dayStem;
-  if(p.unknown){const uncertain=unknownStrengthRange(p,analysis.strength.score);analysis.strength.range=uncertain.range;analysis.strength.stable=uncertain.stable;analysis.dayAmbiguous=uncertain.dayAmbiguous;analysis.monthAmbiguous=uncertain.monthAmbiguous;if(analysis.diagnostics[0])analysis.diagnostics[0].value=uncertain.stable?'버팀 '+analysis.strength.score+' / 소모 '+analysis.strength.pressureScore:'가능 범위 '+uncertain.range[0]+'~'+uncertain.range[1];if(!uncertain.stable){const safe=analysis.candidates.find(function(x){return !['강약','복합','조후'].includes(x.category);})||analysis.candidates.find(function(x){return x.key==='day_'+dayStem;});if(safe){analysis.dominant=safe;analysis.secondary=analysis.candidates.filter(function(x){return x!==safe&&!['강약','복합','조후'].includes(x.category);}).slice(0,2);buildReading(analysis,dayStem);}}}
+  if(p.unknown){const uncertain=unknownStrengthRange(p,analysis.strength.score);analysis.strength.range=uncertain.range;analysis.strength.stable=uncertain.stable;analysis.dayAmbiguous=uncertain.dayAmbiguous;analysis.monthAmbiguous=uncertain.monthAmbiguous;if(analysis.diagnostics[0])analysis.diagnostics[0].value=uncertain.stable?'버티는 힘 '+analysis.strength.score+' / 깎는 힘 '+analysis.strength.pressureScore:'태어난 시간에 따라 '+uncertain.range[0]+'~'+uncertain.range[1]+'점';if(!uncertain.stable&&analysis.diagnostics[0])analysis.diagnostics[0].label='나의 힘';if(!uncertain.stable){const safe=analysis.candidates.find(function(x){return !['강약','복합','조후'].includes(x.category);})||analysis.candidates.find(function(x){return x.key==='day_'+dayStem;});if(safe){analysis.dominant=safe;analysis.secondary=analysis.candidates.filter(function(x){return x!==safe&&!['강약','복합','조후'].includes(x.category);}).slice(0,2);buildReading(analysis,dayStem);}}}
   if(boundary){analysis.confidence='low';const fallback=analysis.candidates.find(function(x){return x.key==='day_'+dayStem;});if(fallback){analysis.dominant=fallback;analysis.secondary=analysis.candidates.filter(function(x){return x!==fallback&&!['강약','복합','조후'].includes(x.category);}).slice(0,2);buildReading(analysis,dayStem);}}
   const max=Math.max.apply(null,ORDER.map(function(k){return counts[k];}));
   const tied=ORDER.filter(function(k){return counts[k]===max;}),strongest=tied.includes(dayEl)?dayEl:tied[0],missing=ORDER.filter(function(k){return counts[k]===0;});
   const weightedRank=ORDER.slice().sort(function(a,b){return analysis.elements.shares[b]-analysis.elements.shares[a];});
-  let remark='겉으로 드러난 여덟 글자에서는 '+ELEMENTS[strongest].name+'이 가장 많습니다. 지장간과 월령의 세력까지 합치면 '+ELEMENTS[weightedRank[0]].name+'이 '+pct(analysis.elements.shares[weightedRank[0]])+'%로 판을 주도합니다.';
-  if(missing.length)remark+=' 겉글자에 없는 기운은 '+missing.map(function(k){return ELEMENTS[k].name;}).join('·')+'입니다.';
+  let remark='사주 칸에 보이는 글자 중에는 '+jo(ELEMENTS[strongest].name,'이','가')+' 가장 많습니다. 띠 동물 속에 숨은 기운과 태어난 계절의 힘까지 합치면 '+jo(ELEMENTS[weightedRank[0]].name,'이','가')+' '+pct(analysis.elements.shares[weightedRank[0]])+'%로 가장 셉니다.';
+  if(missing.length)remark+=' 사주 칸에 하나도 없는 기운은 '+missing.map(function(k){return ELEMENTS[k].name;}).join('·')+'입니다.';
   if(p.unknown)remark+=' 태어난 시간은 계산에서 제외했습니다.';
   const yearPillar=pillars[0],zodiac=yearPillar.unknown?'':yearPillar.branchInfo.name+'띠',pad=function(n){return String(n).padStart(2,'0');};
   const sections=analysis.sections,verdict=analysis.dominant.verdict,luck=calculateLuck(p,term,pillars,analysis,boundary);analysis.luck=luck;
@@ -9622,7 +9648,7 @@ function calculate(input){
   return {
     name:p.name,pillars:pillars,counts:counts,strongest:strongest,missing:missing,dayStem:dayStem,me:me,dayEl:dayEl,zodiac:zodiac,analysis:analysis,reading:analysis.reading,
     nature:sections.personality,work:sections.work,money:sections.money,people:sections.relationships,energy:sections.energy,flow:sections.pattern,verdict:verdict,remark:remark,
-    birthLabel:p.year+'년 '+p.month+'월 '+p.day+'일 '+(p.unknown?'(시간 모름)':pad(p.hour)+':'+pad(p.minute))+' · '+p.place.name+' · '+(p.gender?'남명':'여명'),
+    birthLabel:p.year+'년 '+p.month+'월 '+p.day+'일 '+(p.unknown?'(시간 모름)':pad(p.hour)+':'+pad(p.minute))+' · '+p.place.name+' · '+(p.gender?'남자':'여자'),
     gender:p.gender,place:p.place,luck:luck,trueSolar:{label:solarLabel,correctionMinutes:correction,clock:solarPack.context.clock,historicalApprox:p.place.country==='KR'&&p.year<1908},unknownTime:p.unknown,boundary:boundary,
     grievances:[analysis.dominant.title,verdict,analysis.secondary[0]?analysis.secondary[0].title:'왜 내 판만 이렇게 짰어!',analysis.secondary[1]?analysis.secondary[1].title:'이걸 운명이라고 써 놨어!']
   };
@@ -9722,9 +9748,11 @@ function error(msg){$('form-error').textContent=msg;$('form-error').hidden=false
 function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
 function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 function icon(id,cls){return '<svg class="'+(cls||'')+'" viewBox="0 0 64 64" aria-hidden="true"><use href="#'+id+'"/></svg>';}
+
+
 function glyph(info,hanja){
   const e=ELEMENTS[info.el];
-  return '<div class="glyph">'+icon(info.icon)+'<span class="ko">'+esc(info.name)+'</span><span class="hj">'+esc(hanja)+' '+esc(info.ko)+'</span><span class="el" style="background:'+e.color+'">'+esc(e.name)+'</span></div>';
+  return '<div class="glyph">'+icon(info.icon)+'<span class="ko">'+esc(info.name)+'</span><span class="hj">'+esc(info.ko)+'</span><span class="el" style="background:'+e.color+'">'+esc(e.name)+'</span></div>';
 }
 function renderResult(d){
   $('result-name').textContent=(d.name?d.name+'님의 사주':'나의 사주');
@@ -9741,15 +9769,15 @@ function renderResult(d){
     }
     card.innerHTML=html;P.append(card);
   });
-  $('me-card').innerHTML=icon(d.me.icon)+'<div><div class="big">'+esc(d.me.name)+'<small>'+esc(d.dayStem)+' '+esc(d.me.ko)+'</small></div><div class="sub">'+esc(d.me.desc)+'<br>'+(d.me.yin?'음(陰) · 조용히 안으로 향하는 쪽':'양(陽) · 밖으로 드러나는 쪽')+'</div></div>';
+  $('me-card').innerHTML=icon(d.me.icon)+'<div><div class="big">'+esc(d.me.name)+'<small>'+esc(d.me.ko+d.me.el)+'</small></div><div class="sub">'+esc(d.me.desc)+'<br>'+(d.me.yin?'음 · 조용히 안으로 향하는 쪽':'양 · 밖으로 드러나는 쪽')+'</div></div>';
   const strength=d.analysis.strength;
-  $('me-text').textContent='태어난 날의 천간을 일간이라고 하고, 사주에서 "나"를 뜻합니다. 당신의 일간은 '+d.me.name+'이며, 월령과 지장간까지 반영한 힘은 '+(strength.stable===false?strength.range[0]+'~'+strength.range[1]+'/100 사이로 시주에 따라 변합니다':strength.label+'('+strength.score+'/100)로 판정됐습니다')+'.';
+  $('me-text').textContent='태어난 날의 위 칸 글자가 사주에서 "나"를 뜻합니다. 당신은 '+d.me.name+'입니다. 태어난 계절과 띠 동물 속에 숨은 기운까지 따져 본 나의 힘은 '+(strength.stable===false?'태어난 시간에 따라 100점 중 '+strength.range[0]+'~'+strength.range[1]+'점 사이에서 달라집니다':'100점 중 '+strength.score+'점('+STRENGTH_KO[strength.label]+')입니다')+'.';
   const E=$('elements');E.replaceChildren();
   for(const k of ORDER){
     const e=ELEMENTS[k],n=d.counts[k];
     const card=el('div','elem'+(n===0?' zero':''));
     let dots='';for(let i=0;i<Math.max(4,n);i++)dots+='<i class="'+(i<n?'':'off')+'" style="--c:'+e.color+'"></i>';
-    card.innerHTML=icon(e.icon)+'<div class="nm">'+esc(e.name)+'<small>'+e.hj+'</small></div><div class="dots">'+dots+'</div><div class="cnt">'+(n===0?'없음':n+'개')+'</div>';
+    card.innerHTML=icon(e.icon)+'<div class="nm">'+esc(e.name)+'</div><div class="dots">'+dots+'</div><div class="cnt">'+(n===0?'없음':n+'개')+'</div>';
     E.append(card);
   }
   $('elements-remark').textContent=d.remark;
@@ -9773,27 +9801,30 @@ function renderResult(d){
     const card=el('article','luck-card'+(isCurrent?' current':'')+(isWorst?' worst':'')+(branched?' luck-scenario':''));
     const period=el('div','period'),years=el('span'),bad=el('b');
     years.textContent=rangeToken(c.startYearRange,c.startYear)+'–'+rangeToken(c.endYearRange,c.endYear)+'년 · '+rangeToken(c.startAgeRange,c.startAge)+'–'+rangeToken(c.endAgeRange,c.endAge)+'세';
-    bad.textContent=(c.current?'현재 · ':c.currentPossible?'현재 가능 · ':'')+(isWorst?'최악 · ':'')+'흉도 '+c.severity;period.append(years,bad);
-    const h=el('h3');h.textContent=c.ganZhi+' · '+c.title;
+    bad.textContent=(c.current?'지금 · ':c.currentPossible?'지금일 수도 · ':'')+(isWorst?'최악 · ':'')+'위험도 '+c.severity;period.append(years,bad);
+    const h=el('h3');h.textContent=gzName(c.ganZhi)+' · '+c.title;
     const p=el('p');p.textContent=c.text;
-    const turn=el('div','turn-date');turn.textContent='교운 '+dateToken(c.startDateRange,c.startDate)+(c.transitionUncertain?' · 출생시각에 따른 범위':'');
+    const turn=el('div','turn-date');turn.textContent='시작 '+dateToken(c.startDateRange,c.startDate)+(c.transitionUncertain?' · 태어난 시간에 따라 달라지는 범위':'');
     card.append(period,h,p,turn);
-    if(c.worstYears&&c.worstYears.length){const wy=el('div','bad-years'),label=el('b');label.textContent='이 10년에서 가장 거친 세운';wy.append(label);c.worstYears.forEach(y=>{const row=el('span');row.textContent=y.year+'년 '+y.ganZhi+' · '+y.title+' — '+y.text+(y.partial?' (교운 전후 일부 기간)':'');wy.append(row);});card.append(wy);}
+    if(c.worstYears&&c.worstYears.length){const wy=el('div','bad-years'),label=el('b');label.textContent='이 10년 중 가장 거친 해';wy.append(label);c.worstYears.forEach(y=>{const row=el('span');row.textContent=y.year+'년('+gzName(y.ganZhi)+'의 해) · '+y.title+' — '+y.text+(y.partial?' (대운이 바뀌는 해라 일부 기간만 해당)':'');wy.append(row);});card.append(wy);}
     target.append(card);
   };
   if(d.luck&&d.luck.available){
     d.luck.cycles.forEach(c=>appendLuckCard(c,d.luck.worst,false));
     const firstTurn=dateToken(d.luck.startDateRange,d.luck.startDate);
-    $('luck-start').textContent=d.luck.direction+' · 생후 '+d.luck.startText+' 시작'+(firstTurn?' · 첫 교운 '+firstTurn:'')+(d.luck.uncertain?' 추정':'');
+    $('luck-start').textContent='태어나고 '+d.luck.startText+' 뒤부터 시작'+(firstTurn?' · 첫 대운 '+firstTurn:'')+(d.luck.uncertain?' (추정)':'');
   }else if(d.luck&&d.luck.scenarioAvailable){
-    $('luck-start').textContent='출생시간에 따라 두 갈래 · 생후 '+d.luck.startText+' 시작 범위';
+    $('luck-start').textContent='태어난 시간에 따라 두 가지 경우 · 태어나고 '+d.luck.startText+' 뒤부터 시작';
     luckList.classList.add('branched');
-    d.luck.scenarios.forEach(s=>{const group=el('section','scenario-group'),label=el('div','scenario-label'),cycles=el('div','scenario-cycles');label.textContent=s.condition+' · '+s.direction+' · 생후 '+s.startText+' 시작 · 첫 교운 '+s.startDate;s.cycles.forEach(c=>appendLuckCard(c,s.worst,true,cycles));group.append(label,cycles);luckList.append(group);});
+    d.luck.scenarios.forEach(s=>{const group=el('section','scenario-group'),label=el('div','scenario-label'),cycles=el('div','scenario-cycles');label.textContent=s.condition+' · 태어나고 '+s.startText+' 뒤부터 시작 · 첫 대운 '+s.startDate;s.cycles.forEach(c=>appendLuckCard(c,s.worst,true,cycles));group.append(label,cycles);luckList.append(group);});
   }else{$('luck-start').textContent=d.luck?d.luck.note:'대운을 계산하지 못했습니다.';}
-  const sign=d.trueSolar.correctionMinutes>=0?'+':'';
-  $('solar-note').textContent=d.place.name+' 경도 '+d.place.lon.toFixed(3)+'° · '+(d.unknownTime?'출생시간 미상이라 정오 기준 보정량 ':'진태양시 '+d.trueSolar.label+' (')+sign+d.trueSolar.correctionMinutes+'분'+(d.unknownTime?'': ' 보정)')+'. '+(d.luck?d.luck.note:'')+(d.trueSolar.historicalApprox?' 1908년 이전 시각은 서울 지방평균시 기록을 써서 오차 가능성이 있습니다.':'');
-  $('method-note').textContent='양력 생년월일, 출생지 현지 시각, 성별로 계산했습니다. 출생지 경도와 당시 표준시·일광절약시간, 균시차를 반영해 진태양시를 구하고, 해와 달은 실제 출생 순간의 절기 기준으로 나눴습니다. 상세 풀이는 일간 중심 억부법에 월령, 지장간, 통근, 십성, 합충형파해와 한난조습을 반영했습니다. 합은 합화로 단정하지 않고 결집 신호로만 썼습니다. 대운은 전통 성별 기준으로 순행·역행과 시작 시점을 계산했습니다. 오행 점은 겉으로 드러난 글자 수이고 상세 판독의 비율은 지장간과 계절 가중치까지 포함합니다. 모든 문장은 가능한 해석 중 부정적인 갈래만 고른 오락용 판독이며 과학적 예측이 아닙니다.'+(d.boundary?' 절기가 바뀌는 날에 태어나서 시간 없이는 월주와 첫 대운을 확정할 수 없습니다.':'');
+  const corr=d.trueSolar.correctionMinutes,adj=corr<0?'시계 시각에서 '+(-corr)+'분을 뺀':corr>0?'시계 시각에 '+corr+'분을 더한':'시계 시각 그대로인';
+  $('solar-note').textContent=d.place.name+'(경도 '+d.place.lon.toFixed(1)+'°)의 실제 해 위치에 맞춰 '+(d.unknownTime?'시간을 보정했습니다. 태어난 시간을 몰라 낮 12시를 기준으로 삼았습니다.':adj+' '+d.trueSolar.label+' 기준으로 계산했습니다.')+' '+(d.luck?d.luck.note:'')+(d.trueSolar.historicalApprox?' 1908년 이전 시각은 그때의 서울 기준 시각 기록을 써서 조금 틀릴 수 있습니다.':'');
+  $('method-note').textContent='양력 생년월일, 태어난 곳의 그때 시각, 성별로 계산했습니다. 태어난 곳의 경도와 그때의 표준시·서머타임, 계절마다 해가 조금씩 빨라지고 늦어지는 차이까지 반영해 실제 해의 위치에 맞는 시각을 구했습니다. 해와 달 글자는 실제 태어난 순간의 절기(계절이 바뀌는 날)를 기준으로 나눴습니다. 풀이는 나를 뜻하는 글자의 힘을 중심으로 태어난 계절, 띠 동물 속에 숨은 기운, 아래 칸의 뿌리, 다섯 기운의 비율, 글자끼리 부딪치거나 끌어당기는 관계, 계절이 춥고 더운 정도까지 따졌습니다. 서로 끌어당기는 글자는 다른 기운으로 바뀐다고 단정하지 않고 뭉치는 신호로만 봤습니다. 대운은 전통 방식대로 성별에 따라 흐르는 방향과 시작 시점을 계산했습니다. 오행 칸의 점은 사주 칸에 보이는 글자 수이고, 풀이 속 퍼센트는 숨은 기운과 계절의 힘까지 넣은 비율입니다. 모든 문장은 가능한 풀이 가운데 나쁜 쪽만 고른 재미용 풀이이며 과학적 예측이 아닙니다.'+(d.boundary?' 절기가 바뀌는 날에 태어나서, 태어난 시간을 모르면 태어난 달 글자와 첫 대운을 정할 수 없습니다.':'');
 }
+
+
+
 $('birth-form').addEventListener('submit',e=>{
   e.preventDefault();$('form-error').hidden=true;
   if(!picked.date){error('생년월일을 선택해 주세요.');return;}
