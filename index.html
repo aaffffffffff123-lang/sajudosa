@@ -9047,7 +9047,7 @@ const ELEMENTS={
  '금':{name:'쇠',hj:'金',icon:'e-metal',color:'#9aa7b5'},
  '수':{name:'물',hj:'水',icon:'e-water',color:'#4f8fe0'}
 };
-/* ---------- 쉬운 말 표기 (풀이 화면용) ---------- */
+const ORDER=['목','화','토','금','수'];/* ---------- 쉬운 말 표기 (풀이 화면용) ---------- */
 function bat(w){const s=String(w),c=s.charCodeAt(s.length-1);return c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28!==0;}
 function jo(w,a,b){return w+(bat(w)?a:b);}
 const FAMILY_KO={비겁:'나와 같은 기운',식상:'표현 기운',재성:'돈 기운',관성:'압박 기운',인성:'보호 기운'};
