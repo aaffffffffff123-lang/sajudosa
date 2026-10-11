@@ -1036,22 +1036,32 @@ const BLOOD=(()=>{
  const DORDER={soak:2,bruise:3,red:3,scrape:3,dent:4,cut:6,hole:7};
  const DLIFT={soak:.0007,bruise:.001,red:.001,scrape:.0011,dent:.00135,cut:.00175,hole:.002};
 
- for(const k in T)DM[k]=new THREE.MeshStandardMaterial({
-  map:T[k],
-  transparent:true,
-  depthWrite:false,
-  depthTest:true,
-  alphaTest:(k==='hole'||k==='cut')?.025:0,
-  polygonOffset:true,
-  polygonOffsetFactor:-4,
-  polygonOffsetUnits:-4,
-  roughness:(k==='hole'||k==='cut')?.18:k==='soak'?.35:.55
- });
+ for(const k in T){
+  const opt={
+   map:T[k],
+   transparent:true,
+   depthWrite:false,
+   depthTest:true,
+   alphaTest:(k==='hole'||k==='cut')?.025:0,
+   polygonOffset:true,
+   polygonOffsetFactor:-4,
+   polygonOffsetUnits:-4
+  };
+
+  if(k==='hole'){
+   DM[k]=new THREE.MeshBasicMaterial(opt);
+  }else{
+   opt.roughness=k==='cut'?.18:k==='soak'?.35:.55;
+   DM[k]=new THREE.MeshStandardMaterial(opt);
+  }
+ }
 
 
 
 
  const decals=[];
+ const DECAL_MAX=96;
+ const DECAL_KEEP=new Set(['hole','cut']);
  function decal(type,seg,pW,nW,size,o={}){
   if(!E)return null;if(!PREF.blood&&(type==='hole'||type==='cut'||type==='soak'))type='bruise';
   const bone=E.bones[seg];if(!bone)return null;bone.updateWorldMatrix(true,false);
@@ -1067,7 +1077,17 @@ const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);po
   // 뒤집힌 법선이면 뒤집기
   const nn=g.attributes.normal;if(nn.count){const t=V3(nn.getX(0),nn.getY(0),nn.getZ(0)).transformDirection(bone.matrixWorld);if(t.dot(n)<0){idx.reverse();g.setIndex(idx);g.computeVertexNormals();}}
   if(o.grow){m.scale.setScalar(.01);m.userData.grow={t:0,dur:o.grow,center:bone.worldToLocal(pW.clone())};}
-  decals.push(m);if(decals.length>64){const old=decals.shift();old.removeFromParent();old.geometry.dispose();}
+  decals.push(m);
+
+  if(decals.length>DECAL_MAX){
+   const low=decals.findIndex(
+    x=>!DECAL_KEEP.has(x.userData.decal)
+   );
+
+   const old=decals.splice(low>=0?low:0,1)[0];
+   old.removeFromParent();
+   old.geometry.dispose();
+  }
   return m;
  }
 
@@ -2165,10 +2185,10 @@ Object.assign(Emperor.prototype,{
   const gun=tool==='gun',isHead=HEADS.test(h.part);
   const artery=h.part==='neck'||(/^thigh/.test(h.part)&&gun&&Math.random()<.5);
   if(gun){
-const hs=isHead?.042:.054;
+const hs=isHead?.021:.027;
 BLOOD.decal('soak',seg,pt,n,isHead?.06:.12,{grow:isHead?1:5});
 BLOOD.decal('hole',seg,pt,n,hs,{grid:7});
-BLOOD.rim('hole',seg,pt,n,hs*.65,hs*.62,rnd(0,TAU));
+
 
 
 
@@ -2185,7 +2205,7 @@ BLOOD.decal('cut',seg,mid,n,cw,{
  angle:ang,
  grid:8
 });
-BLOOD.rim('cut',seg,mid,n,half,cw*.52,ang);
+
    const bone=this.bones[seg];bone.updateWorldMatrix(true,false);const inv=_invB(bone);
    const w_=BLOOD.addWound(seg,mid,n,{rate:clamp(len*.3,.006,.02)*(artery?2.5:1),tau:22,artery,kind:'cut',line:[bone.worldToLocal(a.clone()),bone.worldToLocal(b.clone())]});
    for(let i=0;i<Math.min(3,Math.ceil(len*40));i++){const q=V3().copy(a).lerp(b,rnd(.1,.9));const pr=BLOOD.project(q,n,.05);if(pr)BLOOD.startRiv(pr.seg||seg,pr.point,pr.normal,{w:rnd(.003,.0048),maxLen:rnd(.08,.3)});}
@@ -2198,7 +2218,7 @@ BLOOD.decal('cut',seg,pt,n,sw,{
  angle:ca,
  grid:7
 });
-BLOOD.rim('cut',seg,pt,n,sw*2.6,sw*.52,ca);
+
    if(!isHead)BLOOD.decal('soak',seg,pt,n,.08,{grow:4});
    BLOOD.addWound(seg,pt,n,{rate:artery?.045:.012,tau:artery?20:26,artery,kind:'stab'});
    BLOOD.spray(pt,n,12,{max:2.6});
