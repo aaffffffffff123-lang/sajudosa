@@ -112,7 +112,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="tool" type="button" data-tool="pipe"><svg viewBox="0 0 48 48"><use href="#fi-pipe"/></svg>쇠파이프</button>
    <button class="tool" type="button" data-tool="hammer"><svg viewBox="0 0 48 48"><use href="#fi-hammer"/></svg>망치</button>
    <button class="tool" type="button" data-tool="knife"><svg viewBox="0 0 48 48"><use href="#fi-knife"/></svg>칼</button>
-   <button class="tool" type="button" data-tool="gun"><svg viewBox="0 0 48 48"><use href="#fi-gun"/></svg>총<span class="ammo" id="ammo">8</span></button>
+   <button class="tool" type="button" data-tool="gun"><svg viewBox="0 0 48 48"><use href="#fi-gun"/></svg>총<span class="ammo" id="ammo" hidden>8</span></button>
   </div></div>
  </div>
  <div class="dock" id="submitDock" hidden><button type="button" class="btn danger" id="submitFight">운명 설계자 족치기</button></div>
@@ -2092,9 +2092,12 @@ const VM=(()=>{
   mk(new THREE.BoxGeometry(.026,.03,.01),M.steelD,k,{p:[0,.004,.05]});
   const sh=new THREE.Shape();sh.moveTo(0,-.016);sh.lineTo(.17,-.016);sh.quadraticCurveTo(.215,-.014,.235,.004);sh.lineTo(.2,.016);sh.lineTo(0,.017);sh.closePath();
   const bg=new THREE.ExtrudeGeometry(sh,{depth:.0026,bevelEnabled:true,bevelThickness:.0008,bevelSize:.0012,bevelSegments:1,curveSegments:10});bg.translate(0,0,-.0013);
-  mk(bg,M.blade,k,{p:[0,.004,.054],r:[0,-PI/2,0]});
-  mk(new THREE.BoxGeometry(.0009,.0035,.175),M.edge,k,{p:[0,-.011,.145],cast:false});
-  const bl=grp(k);for(const x of [-.0024,.0024])mk(new THREE.BoxGeometry(.0006,.02,.12),M.blood,bl,{p:[x,-.004,.19],cast:false});bl.visible=false;k.userData.blood=bl;k.userData.tip=V3(0,0,.29);}
+ 
+const bladeRig=grp(k,[0,0,.054]);
+mk(bg,M.blade,bladeRig,{p:[0,.004,0],r:[0,-PI/2,0]});
+mk(new THREE.BoxGeometry(.0009,.0035,.175),M.edge,bladeRig,{p:[0,-.011,.091],cast:false});
+const bl=grp(bladeRig);for(const x of [-.0024,.0024])mk(new THREE.BoxGeometry(.0006,.02,.12),M.blood,bl,{p:[x,-.004,.136],cast:false});bl.visible=false;k.userData.blood=bl;k.userData.bladeRig=bladeRig;k.userData.tip=V3(0,0,.29);}
+
  // 권총: 옆모습을 깎아 만든 슬라이드·몸통
  const gun=grp(R.hand);
  {const g=gun;
@@ -2175,7 +2178,7 @@ const VM=(()=>{
    a.L=L_;a.dur=tool==='pipe'?[.13,.085,.07,.24]:[.14,.08,.08,.26];
   }else if(tool==='knife'){
    const H0=at(pr?.42:.38,-.74,.42);const dir=V3().subVectors(target,H0).normalize();a.dir1=dir;a.hand1=V3().copy(target).addScaledVector(dir,-.33);
-   a.hand0=V3().copy(rest.R.p).add(V3(.01,.02,.07));a.dir0=V3(-.15,.3,-1).normalize();a.dur=[.05,.06,.08,.15];
+   a.hand0=V3().copy(rest.R.p).add(V3(.01,.02,.07));a.dir0=V3(-.15,.3,-1).normalize();a.penDepth=.19;a.dur=[.05,.06,.13,.17];
   }
   a.W=W;a.C=C;a.Q0=Q0;a.Q1=Q1;a.contact=a.dur[0]+a.dur[1];a.total=a.dur.reduce((x,y)=>x+y,0);
   st.acts.push(a);AUDIO.whoosh(tool==='hand'?.6:tool==='knife'?.5:1.1,kind);
@@ -2186,7 +2189,7 @@ const VM=(()=>{
  function fire(sx,sy,info){
   if(st.reload>0||fireCool>0)return false;
   if(st.ammo<=0){AUDIO.dry();reload();return false;}
-  st.ammo--;fireCool=.15;st.recoil=1;st.slide=1;st.flash=.05;
+  fireCool=.15;st.recoil=1;st.slide=1;st.flash=.05;
   const [nx,ny]=ndc(sx,sy);st.aimGoal.copy(at(nx,ny,3)).normalize();st.aim.copy(st.aimGoal);
   const sh=shells[shellI++%shells.length];sh.life=.9;sh.m.visible=true;gun.updateWorldMatrix(true,false);sh.m.position.copy(gun.localToWorld(V3(.016,.052,.03)));sh.v.set(rnd(.6,.9),rnd(.7,1.1),rnd(.1,.3));sh.w.set(rnd(10,20),rnd(5,10),rnd(10,20));
   AUDIO.gunshot();
@@ -2196,7 +2199,7 @@ const VM=(()=>{
  }
  function reload(){if(st.reload>0||st.ammo===8)return;st.reload=1.15;AUDIO.reload();if(st.onAmmo)st.onAmmo();}
  /* 칼로 긋기: 손가락을 따라 칼끝이 움직인다 */
- function slashStart(sx,sy){st.slash={sx,sy,px:sx,py:sy,t:0,len:0,lastWhoosh:st.time};AUDIO.whoosh(.5,'slash');}
+ function slashStart(sx,sy){st.slash={sx,sy,px:sx,py:sy,t:0,len:0,lastWhoosh:st.time,touching:false,bite:0};AUDIO.whoosh(.5,'slash');}
  function slashMove(sx,sy){const s=st.slash;if(!s)return;const d=Math.hypot(sx-s.sx,sy-s.sy);s.len+=d;s.px=s.sx;s.py=s.sy;s.sx=sx;s.sy=sy;if(d>14&&st.time-s.lastWhoosh>.18){s.lastWhoosh=st.time;AUDIO.whoosh(.4,'slash');}}
  function slashEnd(){st.slash=null;}
 
@@ -2212,7 +2215,7 @@ const VM=(()=>{
   if(st.autoReloadAt&&st.time>=st.autoReloadAt){st.autoReloadAt=0;if(st.ammo<=0&&st.tool==='gun')reload();}
   if(st.reload>0){st.reload=Math.max(0,st.reload-dt);if(st.reload===0){st.ammo=8;if(st.onAmmo)st.onAmmo();}}
   const sway=Math.sin(st.time*1.6)*.004,sway2=Math.cos(st.time*1.1)*.003,dropIn=(1-easeOut3(st.swapT))*.25;
-  for(const k of ['R','L']){H[k].p.copy(rest[k].p);H[k].p.y+=sway*(k==='R'?1:-1)-dropIn;H[k].p.x+=sway2;H[k].q.copy(rest[k].q);}
+  knife.userData.bladeRig.scale.z=1;
   // 진행 중인 공격
   for(let i=st.acts.length-1;i>=0;i--){const a=st.acts[i];if(!frozen)a.t+=dt;const t=a.t,[d0,d1,d2,d3]=a.dur,c=a.contact;
    if(!a.done&&t>=c){a.done=true;a.hit=st.onContact?st.onContact(a):null;if(a.hit&&a.hit.hit&&a.tool!=='hand')st.bloody[a.tool]=st.bloody[a.tool]||a.hit.blood;}
@@ -2226,10 +2229,15 @@ const VM=(()=>{
     let hand,dir;
     if(t<d0){const u=easeOut(t/d0);hand=tv.copy(h.p).lerp(a.hand0,u);dir=tv2.set(-.25,.35,-1).normalize().lerp(a.dir0,u).normalize();}
     else if(t<c){const u=a.tool==='knife'?easeIn((t-d0)/d1):easeIn3((t-d0)/d1);hand=tv.copy(a.hand0).lerp(a.hand1,u);tmpQ.setFromUnitVectors(_fz,a.dir0);tmpQ2.setFromUnitVectors(_fz,a.dir1);tmpQ.slerp(tmpQ2,u);dir=tv2.copy(_fz).applyQuaternion(tmpQ);}
-    else if(t<c+d2){const u=(t-c)/d2,hit=a.hit&&a.hit.hit;dir=tv2.copy(a.dir1);
-     if(a.tool==='knife'){hand=tv.copy(a.hand1).addScaledVector(a.dir1,hit?Math.sin(u*PI*.5)*.035:Math.sin(u*PI)*.05);}
-     else{const k=hit?-Math.sin(u*PI)*.12:Math.sin(u*PI*.5)*.35;tmpQ.setFromAxisAngle(tv.set(1,0,0),k);dir.applyQuaternion(tmpQ).normalize();hand=tv.copy(a.hand1).addScaledVector(V3(0,-1,0),hit?0:Math.sin(u*PI*.5)*.06);}}
-    else{const u=smooth((t-c-d2)/d3);dir=tv2.copy(a.dir1).lerp(V3(-.25,.35,-1).normalize(),u).normalize();hand=tv.copy(a.hand1).lerp(h.p,u);}
+   
+  else if(t<c+d2){const u=(t-c)/d2,hit=a.hit&&a.hit.hit;dir=tv2.copy(a.dir1);
+ if(a.tool==='knife'){const bite=hit?easeOut(u*1.45):0;hand=tv.copy(a.hand1).addScaledVector(a.dir1,hit?bite*a.penDepth:Math.sin(u*PI)*.05);knife.userData.bladeRig.scale.z=hit?lerp(1,.25,bite):1;}
+ else{const k=hit?-Math.sin(u*PI)*.12:Math.sin(u*PI*.5)*.35;tmpQ.setFromAxisAngle(tv.set(1,0,0),k);dir.applyQuaternion(tmpQ).normalize();hand=tv.copy(a.hand1).addScaledVector(V3(0,-1,0),hit?0:Math.sin(u*PI*.5)*.06);}}
+else{const u=smooth((t-c-d2)/d3);dir=tv2.copy(a.dir1).lerp(V3(-.25,.35,-1).normalize(),u).normalize();if(a.tool==='knife'&&a.hit&&a.hit.hit){hand=tv.copy(a.hand1).addScaledVector(a.dir1,a.penDepth).lerp(h.p,u);knife.userData.bladeRig.scale.z=lerp(.25,1,u);}else hand=tv.copy(a.hand1).lerp(h.p,u);}
+
+
+
+
     h.p.copy(hand);
     // 도구 방향 → 손 회전(도구는 손 x축)
     const up=a.tool==='knife'?V3(.35,1,0):V3(.2,1,.3);
@@ -2238,7 +2246,7 @@ const VM=(()=>{
    if(a.t>=a.total)st.acts.splice(i,1);
   }
   // 칼로 긋기
-  if(st.tool==='knife'&&st.slash){const s=st.slash,[nx,ny]=ndc(s.sx,s.sy),T=at(nx,ny,.74),H0=at(.45,-.8,.3);const dir=tv.subVectors(T,H0).normalize();H.R.p.copy(T).addScaledVector(dir,-.33);
+  if(st.tool==='knife'&&st.slash){const s=st.slash,[nx,ny]=ndc(s.sx,s.sy),T=at(nx,ny,.74),H0=at(.45,-.8,.3);const dir=tv.subVectors(T,H0).normalize();s.bite=damp(s.bite,s.touching?1:0,s.touching?28:16,dt);H.R.p.copy(T).addScaledVector(dir,lerp(-.33,-.22,s.bite));knife.userData.bladeRig.scale.z=lerp(1,.62,s.bite);
    const mv=tv2.set(s.sx-s.px,-(s.sy-s.py),0);if(mv.lengthSq()>1)mv.normalize();else mv.set(1,0,0);orient(H.R.q,dir,V3(-mv.y,mv.x,0).lerp(V3(0,1,0),.3));}
   // 총: 겨냥·반동·재장전
   if(st.tool==='gun'){
@@ -2367,7 +2375,7 @@ function gunLight(){gunLT=.06;}
 
 /* ---- 칼로 긋기 ---- */
 function slashContact(p,x,y){
- const info=pickAt(x,y);const now=G.time;
+ if(VM.st.slash)VM.st.slash.touching=!!info;
  if(!info){p.lastCut=null;return;}
  if(!p.lastCut){p.lastCut={point:info.point.clone(),t:now,part:info.part};return;}
  const d=info.point.distanceTo(p.lastCut.point);
