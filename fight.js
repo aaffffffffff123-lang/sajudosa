@@ -1587,6 +1587,7 @@ Object.assign(Emperor.prototype,{
   return out;
  },
  updateFace(dt,time,instant){
+    if(this.headDestroyed)return;
   const f=this.fx,T=this._ft||(this._ft={});this._exprTargets(T);
   this.emoT=Math.min(1,this.emoT+dt/.28);this.flinch=Math.max(0,this.flinch-dt*2.6);
   // 깜빡임
@@ -1966,6 +1967,7 @@ Object.assign(Emperor.prototype,{
  /* ---- 행동(손을 쓰는 짧은 동작) ---- */
  armUsable(side){const a=this.arms[side==='L'?0:1];return !!(a&&!a.sh.userData.detached&&!a.el.userData.detached&&!a.wr.userData.detached);},
 doAct(name,o={}){
+   if(this.headDestroyed&&/^(face|wipe|spit|crown|laugh)$/.test(name))return false;
  if(o.side&&!this.armUsable(o.side)&&/^(clutch|face|wipe|look|shake|crown)$/.test(name)){const other=o.side==='L'?'R':'L';if(!this.armUsable(other))return false;o=Object.assign({},o,{side:other,both:false});}
  if(this.state!=='stand'&&!o.any)return false;if(this.act&&this.act.prio>(o.prio||0))return false;this.endAct();this.act=Object.assign({name,t:0,dur:o.dur||1.5,prio:o.prio||0},o);return true;
 },
@@ -2031,6 +2033,7 @@ doAct(name,o={}){
  /* ---- 가만히 있을 때 하는 짓 ---- */
  updateIdle(dt,time){
   this.idleT=(this.idleT==null?2.5:this.idleT)-dt;
+  if(this.headDestroyed)return;
   // 우는 소리
   if(this.phase>=3&&time>(this.sobT||0)){this.sobT=time+rnd(2.6,4.5);if(this.sinceHit>.8)AUDIO.voice('sob',.7);}
   if(this.act||this.sinceHit<1.2||this.guard>.1||this.idleT>0)return;
@@ -2059,16 +2062,18 @@ doAct(name,o={}){
  },
  /* 울 때: 아래 눈꺼풀에서 눈물이 볼을 타고 흐른다 */
  updateTears(time){
+  if(this.headDestroyed)return;
   const crying=this.emo==='cry'||this.emo==='beg'||(this.emo==='scared'&&this.phase>=2)||(this.emo==='hurt'&&this.phase>=3);
   if(!crying||time<(this.tearT||0))return;
   this.tearT=time+rnd(.6,1.3);
-  const e=this.eyes[Math.random()<.5?0:1];if(e.ruined)return;
+  const live=this.eyes.filter(e=>!e.ruined&&!e.ejected);if(!live.length)return;const e=pick(live);
   e.eg.updateWorldMatrix(true,false);this.face.updateWorldMatrix(true,false);
   const p=e.eg.localToWorld(V3(rnd(-.012,.012),-.052,.018));
   const n=V3(0,-.25,1).applyQuaternion(this.face.getWorldQuaternion(new THREE.Quaternion())).normalize();
   const pr=BLOOD.project(p,n,.05);if(pr)BLOOD.startRiv(pr.seg||'head',pr.point,pr.normal,{kind:'tear',w:.0056,speed:.11,maxLen:rnd(.12,.24)});
  },
  spitOut(s){
+    if(this.headDestroyed)return;
   this.face.updateWorldMatrix(true,false);const m=this.face.localToWorld(V3(s*.03,-.1,.22));
   const dir=V3(s*.8,.15,.7).normalize();
   BLOOD.spray(m,dir,10,{kind:this.lipSplit||this.toothSpit>0?'blood':'spit',min:.8,max:2,spread:.3});
@@ -2151,7 +2156,7 @@ Object.assign(Emperor.prototype,{
     if(gun&&HEAD_FLESH.test(part))this.progressHeadGun(part,seg,pt,n,dir);
   if(sharp&&!down&&(kind==='stab')&&!/^(arm|hand)/.test(part)&&Math.random()<.85){const side=this.handFor(pt);this.doAct('clutch',{side,seg,lp:this.bones[seg].worldToLocal(pt.clone()),ln:n.clone().transformDirection(_invB(this.bones[seg])),dur:1.4,prio:1});}
   // 막기 시작(두 번째 다운 이후, 얼굴을 연달아 맞으면)
-  if(isHead&&!down&&this.phase>=2&&this.guardCool<=0){const now=G.time;this.hitsRecent=this.hitsRecent.filter(t=>now-t<1.1);this.hitsRecent.push(now);if(this.hitsRecent.length>=2&&Math.random()<.5+this.phase*.08){this.guardHold=rnd(1.4,2.4);this.guardHP=2+this.phase;this.guardCool=rnd(2.5,4);this.hitsRecent.length=0;if(this.act&&this.act.prio<2)this.endAct();}}
+  if(isHead&&!this.headDestroyed&&!down&&this.phase>=2&&this.guardCool<=0){const now=G.time;this.hitsRecent=this.hitsRecent.filter(t=>now-t<1.1);this.hitsRecent.push(now);if(this.hitsRecent.length>=2&&Math.random()<.5+this.phase*.08){this.guardHold=rnd(1.4,2.4);this.guardHP=2+this.phase;this.guardCool=rnd(2.5,4);this.hitsRecent.length=0;if(this.act&&this.act.prio<2)this.endAct();}}
   // 크게 휘청
   out.heavy=P>=1.8||gun;
   // 게이지 피해
@@ -2163,6 +2168,7 @@ Object.assign(Emperor.prototype,{
  const l=this.root.worldToLocal(pt.clone());let side=l.x<0?'L':'R',other=side==='L'?'R':'L';if(!this.armUsable(side)||(this.armHurt[side==='L'?0:1]>.5&&this.armUsable(other)))side=other;return side;
 },
  voiceHit(tool,part,P,cut){
+    if(this.headDestroyed)return;
   const now=G.time;if(now<(this.voiceCool||0))return;
   if(this.state==='dead'){if(Math.random()<.3){AUDIO.voice('groan',.4);this.voiceCool=now+1;}return;}
   if(part==='belly'&&(tool==='hand'||tool==='pipe'||tool==='hammer')){AUDIO.voice('oof',clamp(P*.6,.4,1.2));this.voiceCool=now+.32;return;}
@@ -2560,6 +2566,7 @@ progressHeadGun(part,seg,pt,n,dir){
  if(this.headGunHits>=3&&this.headDamageStage<1){this.headDamageStage=1;if(this.crownOn!==false)this.knockCrown(dir);this.spawnHeadSpall(seg,pt,n,3,.034);}
  if(this.headGunHits>=6&&this.headDamageStage<2){this.headDamageStage=2;if(this.eyes.every(e=>!e.ejected)){const i=nearestEye();if(i>=0)this.ejectEye(i,n,dir);}this.spawnHeadSpall(seg,pt,n,3,.043);}
  if(this.headGunHits>=9&&this.headDamageStage<3){this.headDamageStage=3;const i=nearestEye();if(i>=0)this.ejectEye(i,n,dir);this.spawnHeadSpall(seg,pt,n,4,.052);}
+   if(this.headGunHits>=12&&this.headDamageStage<4){this.headDamageStage=4;this.destroyHead(pt,n,dir);}
  return true;
 },
 
@@ -2638,7 +2645,7 @@ BLOOD.decal('cut',seg,pt,n,sw,{
  /* 총 맞는 반응: 머리·목·몸통·팔·다리 */
  gunReact(part,seg,pt,n,dir){
   const lp=this.bones[seg].worldToLocal(pt.clone()),ln=n.clone().transformDirection(_invB(this.bones[seg]));
-  if(HEADS.test(part)){this.rootVel.z-=1.05;this.sp.head.kick(-9,dir.x*6,0);this.doAct('face',{side:this.handFor(pt),dur:1.5,prio:2});this.setEmotion('shock');this.shockT=1;}
+  if(HEADS.test(part)){this.rootVel.z-=1.05;this.sp.head.kick(-9,dir.x*6,0);if(!this.headDestroyed){this.doAct('face',{side:this.handFor(pt),dur:1.5,prio:2});this.setEmotion('shock');this.shockT=1;}}
   else if(part==='neck'){this.doAct('clutch',{side:'R',both:true,seg,lp,ln,dur:2.4,prio:2});this.rootVel.z-=.6;}
   else if(part==='chest'||part==='belly'||part==='pelvis'){this.doAct('clutch',{side:this.handFor(pt),seg,lp,ln,dur:2,prio:2});this.rootVel.z-=.9;this.sp.spine.kick(3.2,0,0);this.sp.head.kick(-1.5,0,0);}
   else if(/^(arm|hand)/.test(part)){const i=part.endsWith('L')?0:1;this.armHurt[i]=1;this.sp[i?'R':'L'].kick(-10,0,(i?1:-1)*8);if(this.act&&this.act.side===(i?'R':'L'))this.endAct();
@@ -2727,6 +2734,12 @@ updateBits(dt){
     }else if(b.sound==='limb'&&!b.landed){
      b.landed=true;
      AUDIO.crack(.65);
+    }else if(b.sound==='head'&&!b.landed){
+     b.landed=true;
+     AUDIO.crack(.35);
+    }else if(b.sound==='eye'&&!b.landed){
+     b.landed=true;
+     AUDIO.drip(.45);
     }
    }
 
@@ -3063,7 +3076,7 @@ function knockdown(){
  const E=G.E,type=KD_TYPE[G.kd];G.kd++;
  E.startFall(type);setFrame(type==='final'?'final':type);
  G.hitstop=Math.max(G.hitstop,.12);flash(type==='final'?.35:.18);camShake(.03);
- if(type==='final'){G.slow=.9;AUDIO.voice('final',1);}else AUDIO.voice('scream',1.1);
+ if(type==='final'){G.slow=.9;if(!E.headDestroyed)AUDIO.voice('final',1);}else if(!E.headDestroyed)AUDIO.voice('scream',1.1);
  updateGauge();
 }
 function onRiseStart(){setFrame('stand');}
@@ -3228,7 +3241,7 @@ function startRound(mode){
  G.round++;ptrs.clear();
  if(G.E){G.E.destroy();}
  G.E=new Emperor(G.result);
- const E=G.E;E.onImpact=onImpact;E.onDead=onDead;E.onRise=onRise;E.onRiseStart=onRiseStart;E.onCough=()=>{AUDIO.voice('cough',1);E.face.updateWorldMatrix(true,false);BLOOD.spray(E.face.localToWorld(V3(0,-.12,.2)),V3(0,.1,1),PREF.blood?16:6,{max:1.6});};
+ const E=G.E;E.onImpact=onImpact;E.onDead=onDead;E.onRise=onRise;E.onRiseStart=onRiseStart;E.onCough=()=>{if(E.headDestroyed)return;AUDIO.voice('cough',1);E.face.updateWorldMatrix(true,false);BLOOD.spray(E.face.localToWorld(V3(0,-.12,.2)),V3(0,.1,1),PREF.blood?16:6,{max:1.6});};
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
  Object.assign(G,{mode,bar:100,lag:100,kd:0,active:0,started:false,hits:0,t0:G.time,tEnd:0,hitstop:0,slow:0,ended:false,cardShown:false,paused:false,cardAt:0,laughAt:0});
  $('#ending').hidden=true;$('#settingsModal').hidden=true;
