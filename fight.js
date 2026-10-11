@@ -2106,6 +2106,7 @@ const _bv1=V3(),_bv2=V3(),_bv3=V3(),_bv4=V3(),_bv5=V3(),_bv6=V3(),_bm=new THREE.
  * 부위·무기·방향에 따라: 몸 반응(스프링·행동), 상처(멍·혹·베인 자국·총알 구멍·흐르는 피), 이빨·코·눈·면류관, 목소리.
  * 돌려주는 값: 버팀 게이지를 얼마나 깎을지(dmg), 크게 휘청였는지(heavy) */
 const HEADS=/^(head|face|nose|mouth|chin|eyeL|eyeR|crown|beard)$/;
+const HEAD_FLESH=/^(head|face|nose|mouth|chin|eyeL|eyeR)$/;
 const CUT_JOINTS={
  shoulderL:['shoulderL','elbowL'],elbowL:['elbowL','wristL'],wristL:['wristL'],
  shoulderR:['shoulderR','elbowR'],elbowR:['elbowR','wristR'],wristR:['wristR']
@@ -2147,6 +2148,7 @@ Object.assign(Emperor.prototype,{
   else this.makeWound(seg,pt,n,dir,tool,kind,h,false);
   // 총 맞는 반응(부위별)
   if(gun&&!down)this.gunReact(part,seg,pt,n,dir);
+    if(gun&&HEAD_FLESH.test(part))this.progressHeadGun(part,seg,pt,n,dir);
   if(sharp&&!down&&(kind==='stab')&&!/^(arm|hand)/.test(part)&&Math.random()<.85){const side=this.handFor(pt);this.doAct('clutch',{side,seg,lp:this.bones[seg].worldToLocal(pt.clone()),ln:n.clone().transformDirection(_invB(this.bones[seg])),dur:1.4,prio:1});}
   // 막기 시작(두 번째 다운 이후, 얼굴을 연달아 맞으면)
   if(isHead&&!down&&this.phase>=2&&this.guardCool<=0){const now=G.time;this.hitsRecent=this.hitsRecent.filter(t=>now-t<1.1);this.hitsRecent.push(now);if(this.hitsRecent.length>=2&&Math.random()<.5+this.phase*.08){this.guardHold=rnd(1.4,2.4);this.guardHP=2+this.phase;this.guardCool=rnd(2.5,4);this.hitsRecent.length=0;if(this.act&&this.act.prio<2)this.endAct();}}
@@ -2510,6 +2512,78 @@ ejectEye(i,n,dir){
  BLOOD.addWound('head',p,sn,{rate:.026,tau:45,kind:'hole'});BLOOD.spray(p,sn,18,{min:1.1,max:3.8,spread:.75});
  this.screenSplat(p,.75);AUDIO.spurt(.9);return true;
 },
+
+makeHeadCavity(seg,pt,n,size){
+ if(this.headDestroyed)return null;const anchor=seg==='jaw'?this.bones.jaw:this.face;anchor.updateWorldMatrix(true,false);
+ BLOOD.clearDecalsNear(seg,pt,size*1.25,'hole');
+ const g=grp(anchor,null,'headCavity'),nn=n.clone().normalize();
+ g.position.copy(anchor.worldToLocal(pt.clone().addScaledVector(nn,.002)));
+ const up=Math.abs(nn.y)>.9?V3(1,0,0):V3(0,1,0),x=V3().crossVectors(up,nn).normalize(),y=V3().crossVectors(nn,x).normalize();
+ const qW=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,nn));
+ g.quaternion.copy(anchor.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(qW));
+ const cavity=mk(sphereGeo(18),this.M.socket,g,{p:[0,0,size*.3],s:[size,size*.82,size*.24],cast:false,receive:false});
+ cavity.userData.noHit=true;
+ for(let k=0;k<8;k++){
+  const a=k/8*TAU+rnd(-.12,.12),m=mk(sphereGeo(8),k%5===0?this.M.cutBone:this.M.cutFlesh,g,{p:[Math.cos(a)*size*.82,Math.sin(a)*size*.68,size*.22+rnd(-size*.035,size*.035)],s:[rnd(.16,.3)*size,rnd(.12,.24)*size,rnd(.08,.16)*size],cast:false});
+  m.rotation.z=a;m.userData.noHit=true;if(k%5!==0){m.visible=PREF.blood;this.goreMeshes.push(m);}
+ }
+ return g;
+},
+
+throwHeadBits(pt,n,count,scale){
+ const nn=n?n.clone().normalize():V3(0,0,1);this.bits=this.bits||[];
+ for(let i=0;i<count;i++){
+  const bone=i%4===0,brain=!bone&&i%3===0,mat=bone?this.M.cutBone:brain?this.M.brain:this.M.cutFlesh;
+  const s=scale*rnd(.45,1),m=mk(sphereGeo(8),mat,scene,{s:[s*rnd(.65,1.25),s*rnd(.45,1),s*rnd(.5,1.15)],cast:true});
+  m.position.copy(pt).add(V3(rnd(-scale,scale),rnd(-scale,scale),rnd(-scale,scale)));m.rotation.set(rnd(0,PI),rnd(0,PI),rnd(0,PI));
+  if(!bone){m.visible=PREF.blood;this.goreMeshes.push(m);}
+  const v=nn.clone().multiplyScalar(rnd(1.4,3.6)).add(V3(rnd(-1.4,1.4),rnd(.6,2.5),rnd(-.9,.9)));
+  this.bits.push({obj:m,v,w:V3(rnd(-14,14),rnd(-14,14),rnd(-14,14)),r:s,bounce:.18,sound:i===0?'head':null,bleed:bone?null:{lp:V3(),ln:V3(0,0,1),t:0,life:rnd(2,4)}});
+ }
+},
+
+spawnHeadSpall(seg,pt,n,count,size){
+ this.makeHeadCavity(seg,pt,n,size);this.throwHeadBits(pt,n,count,size*.72);
+ BLOOD.spray(pt,n,count*5,{min:1.2,max:4.2,spread:.9});AUDIO.crack(.75);
+},
+
+progressHeadGun(part,seg,pt,n,dir){
+ if(this.headDestroyed)return false;this.headGunHits++;
+ if(part==='eyeL'||part==='eyeR'){
+  const i=part==='eyeL'?0:1;this.eyeGunHits[i]++;
+  if(this.eyeGunHits[i]>=2)this.ejectEye(i,n,dir);
+ }
+ const nearestEye=()=>{
+  const live=this.eyes.map((e,i)=>({e,i})).filter(x=>!x.e.ejected);if(!live.length)return -1;
+  live.sort((a,b)=>a.e.eg.getWorldPosition(V3()).distanceToSquared(pt)-b.e.eg.getWorldPosition(V3()).distanceToSquared(pt));return live[0].i;
+ };
+ if(this.headGunHits>=3&&this.headDamageStage<1){this.headDamageStage=1;if(this.crownOn!==false)this.knockCrown(dir);this.spawnHeadSpall(seg,pt,n,3,.034);}
+ if(this.headGunHits>=6&&this.headDamageStage<2){this.headDamageStage=2;if(this.eyes.every(e=>!e.ejected)){const i=nearestEye();if(i>=0)this.ejectEye(i,n,dir);}this.spawnHeadSpall(seg,pt,n,3,.043);}
+ if(this.headGunHits>=9&&this.headDamageStage<3){this.headDamageStage=3;const i=nearestEye();if(i>=0)this.ejectEye(i,n,dir);this.spawnHeadSpall(seg,pt,n,4,.052);}
+ return true;
+},
+
+destroyHead(pt,n,dir){
+ if(this.headDestroyed)return false;
+ this.endAct();this.guardHold=0;this.guard=0;this.releaseIK('L',10);this.releaseIK('R',10);
+ if(this.crownOn!==false)this.knockCrown(dir||V3(0,.5,1));
+ for(let i=0;i<2;i++)if(!this.eyes[i].ejected)this.ejectEye(i,n,dir);
+ BLOOD.clearSegment('head');BLOOD.clearSegment('jaw');
+ this.face.updateWorldMatrix(true,false);const center=this.face.localToWorld(V3(0,.04,.02));
+ const gone=new Set();this.face.traverse(o=>{if(o.isMesh){gone.add(o);o.userData.headGone=true;}});this.parts=this.parts.filter(o=>!gone.has(o));
+ this.face.visible=false;this.headDestroyed=true;this.wiped=true;this.toothSpit=0;this.noseBleeding=false;this.lipSplit=false;
+ const ruin=this.headRuin=grp(this.bones.head,[this.faceRest.x,this.faceRest.y,this.faceRest.z],'headRuin');
+ const core=mk(new THREE.IcosahedronGeometry(1,1),this.M.skinD,ruin,{p:[0,-.105,-.012],s:[.145,.085,.12],part:'head',flow:true});
+ core.userData.seg='head';this.headCore=core;this.parts.push(core);(this.flow.head||(this.flow.head=[])).push(core);FASTRAY.grid(core.geometry);
+ const cavity=mk(sphereGeo(20),this.M.socket,ruin,{p:[0,.02,.035],s:[.15,.125,.12],cast:false,receive:false});cavity.userData.noHit=true;
+ for(let i=0;i<4;i++){const s=i<2?-1:1,x=s*rnd(.025,.072),y=rnd(-.005,.065),z=rnd(.035,.07);const b=mk(sphereGeo(10),i%2?this.M.brainD:this.M.brain,ruin,{p:[x,y,z],s:[rnd(.032,.052),rnd(.024,.043),rnd(.022,.038)],cast:false});b.userData.noHit=true;b.visible=PREF.blood;this.goreMeshes.push(b);}
+ for(let i=0;i<11;i++){const a=i/11*TAU+rnd(-.12,.12),bone=i%4===0,m=mk(sphereGeo(8),bone?this.M.cutBone:this.M.cutFlesh,ruin,{p:[Math.cos(a)*rnd(.115,.145),.02+Math.sin(a)*rnd(.09,.12),.115+rnd(-.012,.012)],s:[rnd(.015,.03),rnd(.01,.024),rnd(.009,.02)],cast:false});m.rotation.z=a;m.userData.noHit=true;if(!bone){m.visible=PREF.blood;this.goreMeshes.push(m);}}
+ this._flowAll=null;this.throwHeadBits(center,n,11,.047);
+ ruin.updateWorldMatrix(true,false);const p=ruin.localToWorld(V3(0,-.04,.1)),hn=V3(0,.25,1).applyQuaternion(this.bones.head.getWorldQuaternion(new THREE.Quaternion())).normalize();
+ BLOOD.addWound('head',p,hn,{rate:.07,tau:70,artery:true,kind:'cut'});BLOOD.spray(center,n||hn,52,{min:1.5,max:5.5,spread:1.25});this.screenSplat(center,1.5);
+ AUDIO.crack(1.6);AUDIO.spurt(1.4);this.hitFlash=1;this.rootVel.z-=.5;return true;
+},
+
 
 /* 칼·총: 상처 + 계속 흐르는 피 */
  makeWound(seg,pt,n,dir,tool,kind,h,onGuard){
