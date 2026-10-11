@@ -1073,7 +1073,7 @@ const BLOOD=(()=>{
 const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);pos.push(p.x,p.y,p.z);uv.push(i/G,j/G);}
   for(let j=0;j<G;j++)for(let i=0;i<G;i++){const a=j*(G+1)+i,b=a+1,c=a+G+1,d=c+1;idx.push(a,b,c,b,d,c);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-  const m=new THREE.Mesh(g,DM[type]);m.renderOrder=DORDER[type]||3;m.castShadow=false;m.receiveShadow=true;m.userData.gore=type==='hole'||type==='cut'||type==='soak';m.userData.decal=type;bone.add(m);
+  const m=new THREE.Mesh(g,DM[type]);m.renderOrder=DORDER[type]||3;m.castShadow=false;m.receiveShadow=true;m.userData.gore=type==='hole'||type==='cut'||type==='soak';m.userData.decal=type;m.userData.seg=seg;m.userData.center=bone.worldToLocal(pW.clone());bone.add(m);
   // 뒤집힌 법선이면 뒤집기
   const nn=g.attributes.normal;if(nn.count){const t=V3(nn.getX(0),nn.getY(0),nn.getZ(0)).transformDirection(bone.matrixWorld);if(t.dot(n)<0){idx.reverse();g.setIndex(idx);g.computeVertexNormals();}}
   if(o.grow){m.scale.setScalar(.01);m.userData.grow={t:0,dur:o.grow,center:bone.worldToLocal(pW.clone())};}
@@ -1219,6 +1219,9 @@ const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);po
 for(const m of rims)m.visible=gv;
 flMesh.visible=gv;
  }
+
+
+ 
  function reset(emp){
   E=emp;for(const k in parts)for(const d of parts[k])d.on=false;
   for(const b of bankList){b.mesh.removeFromParent();b.g.dispose();}bankList.length=0;for(const key in banks)delete banks[key];
@@ -1320,6 +1323,10 @@ class Emperor{
    beadJ:S('#5fc59a',{roughness:.2}),beadR:S('#d2402f',{roughness:.25}),beadW:S('#f6f0e2',{roughness:.25}),cord:S('#cf2f24',{roughness:.6}),
    tablet:S('#ffffff',{roughness:.22}),
 cutFlesh:S('#8d1722',{roughness:.94,side:THREE.DoubleSide}),cutDeep:S('#3d050b',{roughness:1,side:THREE.DoubleSide}),cutBone:S('#d8c6a5',{roughness:.82,side:THREE.DoubleSide}),
+
+   socket:S('#120104',{roughness:1,metalness:0,envMapIntensity:0,side:THREE.BackSide}),
+   optic:S('#6d0712',{roughness:.98,metalness:0}),brain:S('#a85164',{roughness:.94,metalness:0}),brainD:S('#57202c',{roughness:1,metalness:0}),
+
   };
   this.M.tablet.map=makeTabletTex(this.result);D.push(this.M.tablet.map);
   // 맞을 때 번쩍이는 재질
@@ -1452,15 +1459,15 @@ cutFlesh:S('#8d1722',{roughness:.94,side:THREE.DoubleSide}),cutDeep:S('#3d050b',
    mk(sphereGeo(20),M.skinD,F,{p:[s*.078,.006,.158],s:[.05,.022,.03],part:'face',cast:false});// 눈밑 주머니
    const gaze=grp(eg);
    const r=.041;
-   mk(sphereGeo(28),M.eyeW,gaze,{s:r,part:'eye'+(s<0?'L':'R')});
+   const orb=mk(sphereGeo(28),M.eyeW,gaze,{s:r,part:'eye'+(s<0?'L':'R')});
    const iris=mk(sphereGeo(24),M.iris,gaze,{p:[0,0,r*.9],s:[.022,.022,.01],part:'eye'+(s<0?'L':'R'),cast:false});
    const pupil=mk(sphereGeo(16),M.pupil,gaze,{p:[0,0,r*.98],s:[.0115,.0115,.004],cast:false,part:'eye'+(s<0?'L':'R')});
-   mk(sphereGeo(10),M.hl,eg,{p:[-.012,.013,r+.004],s:.0055,cast:false});
+   const hl=mk(sphereGeo(10),M.hl,eg,{p:[-.012,.013,r+.004],s:.0055,cast:false});
    const up=grp(eg),lo=grp(eg);
    const upLid=mk(capGeo(r*1.13,0,PI/2,28),M.skin,up,{part:'eye'+(s<0?'L':'R'),flow:true});
    const lash=mk(new THREE.TorusGeometry(r*1.13,.0042,6,28,PI),M.lash,up,{r:[PI/2,0,0],cast:false});
    const loLid=mk(capGeo(r*1.1,PI/2,PI/2,28),M.skin,lo,{part:'eye'+(s<0?'L':'R'),flow:true});
-   this.eyes.push({s,eg,gaze,iris,pupil,up,lo,upLid,loLid,lash,r,open:1,swell:0,ruined:false});
+   this.eyes.push({s,eg,gaze,orb,iris,pupil,hl,up,lo,upLid,loLid,lash,r,open:1,swell:0,ruined:false,ejected:false,socket:null});
   }
   // 눈썹(움직이는 관)
   this.brows=[];
@@ -1611,6 +1618,7 @@ Object.assign(Emperor.prototype,{
   this.gazeJitT-=dt;if(this.gazeJitT<=0){this.gazeJitT=this.emo==='scared'||this.emo==='beg'?rnd(.18,.5):rnd(.6,2.2);this.gazeJit.set(rnd(-1,1),rnd(-.6,.6),0).multiplyScalar(this.emo==='scared'?.12:.035);}
   const tgt=_fv1.copy(this.gazeTarget).add(this.gazeJit);
   for(let i=0;i<2;i++){const e=this.eyes[i];
+   if(e.ejected){const r=e.r,yl=-.38*r,yu=.38*r;e.up.rotation.x=Math.asin(clamp(-yu/(r*1.13),-1,1));e.lo.rotation.x=Math.asin(clamp(-yl/(r*1.1),-1,1));e.up.scale.set(1.08,1.12,1.08);e.lo.scale.set(1.08,1.14,1.08);continue;}
    e.eg.updateWorldMatrix(true,false);
    const l=_fv2.copy(tgt);e.eg.worldToLocal(l);
    let yaw=Math.atan2(l.x,l.z),pitch=-Math.atan2(l.y,Math.hypot(l.x,l.z));
@@ -1695,6 +1703,7 @@ Object.assign(Emperor.prototype,{
   this.act=null;this.actQueue=[];this.guard=0;this.guardGoal=0;this.guardHP=3;this.guardCool=0;this.guardHold=0;
   this.limp=[0,0];this.armHurt=[0,0];this.hunch=0;this.weak=0;this.mood=0;this.sinceHit=99;this.hitsRecent=[];
 this.cutZones=[];this.cutStrokeFallback=0;this.detached=new Set();
+  this.headGunHits=0;this.eyeGunHits=[0,0];this.headDamageStage=0;this.headDestroyed=false;this.headRuin=null;
   this.laughing=0;this.taunt=true;this.phase=0;this.breath=rnd(0,TAU);
   this.prevHeadQ=new THREE.Quaternion();this.headAngVel=V3();
   this.initFace();
@@ -2465,6 +2474,41 @@ detachArm(joint,hitN,dir){
  this.hitFlash=1;
  this.rootVel.z-=.28;
  return true;
+},
+
+
+makeEyeSocket(i){
+ const e=this.eyes[i];if(e.socket)return e.socket;
+ const g=e.socket=grp(e.eg,null,'emptySocket');
+ const cavity=mk(sphereGeo(18),this.M.socket,g,{p:[0,0,.041],s:[.039,.034,.012],cast:false,receive:false});
+ cavity.userData.noHit=true;
+ for(let k=0;k<9;k++){
+  const a=k/9*TAU+rnd(-.09,.09),x=Math.cos(a)*.039,y=Math.sin(a)*.032;
+  const m=mk(sphereGeo(8),k%4===0?this.M.cutBone:this.M.cutFlesh,g,{p:[x,y,.041+rnd(-.002,.002)],s:[rnd(.006,.011),rnd(.004,.008),rnd(.003,.006)],cast:false});
+  m.rotation.z=a;m.userData.noHit=true;if(k%4!==0){m.visible=PREF.blood;this.goreMeshes.push(m);}
+ }
+ e.upLid.userData.part='face';e.loLid.userData.part='face';
+ return g;
+},
+
+ejectEye(i,n,dir){
+ const e=this.eyes[i];if(!e||e.ejected||this.headDestroyed)return false;
+ e.ejected=true;e.ruined=true;this.swellU[i]=1;this.makeEyeSocket(i);
+ const nerve=mk(taperTube([[0,0,-.025],[e.s*.004,-.008,-.056],[-e.s*.006,-.02,-.092]],.0065,.0028,8,6),this.M.optic,e.gaze,{cast:false});
+ nerve.userData.noHit=true;nerve.visible=PREF.blood;this.goreMeshes.push(nerve);
+ e.gaze.attach(e.hl);e.gaze.updateWorldMatrix(true,true);
+ const wp=e.gaze.getWorldPosition(V3()),wq=e.gaze.getWorldQuaternion(new THREE.Quaternion());
+ scene.add(e.gaze);e.gaze.position.copy(wp);e.gaze.quaternion.copy(wq);e.gaze.scale.set(1,1,1);
+ const removed=new Set();e.gaze.traverse(o=>{o.userData.detached=true;if(o.isMesh)removed.add(o);});
+ this.parts=this.parts.filter(o=>!removed.has(o));
+ e.eg.updateWorldMatrix(true,false);const eyeN=V3(0,0,1).applyQuaternion(e.eg.getWorldQuaternion(new THREE.Quaternion())).normalize();if(n)eyeN.lerp(n,.2).normalize();
+ const push=eyeN.clone().multiplyScalar(rnd(1.25,1.75));
+ push.add(V3(rnd(-.35,.35),rnd(.5,1),rnd(-.18,.18)));if(dir)push.addScaledVector(dir,-.18);
+ this.bits=this.bits||[];this.bits.push({obj:e.gaze,v:push,w:V3(rnd(-9,9),rnd(-12,12),rnd(-8,8)),r:.043,bounce:.2,sound:'eye',bleed:{lp:V3(0,0,-.045),ln:V3(0,0,-1),t:0,life:8}});
+ const p=e.eg.getWorldPosition(V3()),sn=eyeN;
+ BLOOD.clearDecalsNear('head',p,.07,'hole');
+ BLOOD.addWound('head',p,sn,{rate:.026,tau:45,kind:'hole'});BLOOD.spray(p,sn,18,{min:1.1,max:3.8,spread:.75});
+ this.screenSplat(p,.75);AUDIO.spurt(.9);return true;
 },
 
 /* 칼·총: 상처 + 계속 흐르는 피 */
