@@ -54,7 +54,7 @@ const FIGHT_CSS = `
 #fight .hint{align-self:center;pointer-events:none!important;background:rgba(36,28,58,.86);color:#fff;font-size:12px;font-weight:600;line-height:1.35;border-radius:99px;padding:6px 13px;text-align:center;max-width:100%;transition:opacity .35s}
 #fight .hint.off{opacity:0}
 #fight .panel{background:rgba(255,253,246,.96);border:1px solid rgba(120,86,30,.14);border-radius:18px;box-shadow:0 3px 14px rgba(40,30,60,.24);padding:6px}
-#fight .tools{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+#fight .tools{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
 #fight .tool{position:relative;min-width:0;border:0;border-radius:13px;background:transparent;padding:5px 0 5px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11.5px;font-weight:800;letter-spacing:-.3px;color:var(--ink)}
 #fight .tool svg{width:40px;height:40px}
 #fight .tool.on{background:#fde7b0;box-shadow:inset 0 0 0 2px #c48a1c}
@@ -107,12 +107,9 @@ const FIGHT_HTML = `<section id="fight" hidden>
  </header>
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
-  <div class="panel"><div class="tools" id="tools" role="group" aria-label="도구">
-   <button class="tool on" type="button" data-tool="hand"><svg viewBox="0 0 48 48"><use href="#fi-fist"/></svg>맨손</button>
-   <button class="tool" type="button" data-tool="pipe"><svg viewBox="0 0 48 48"><use href="#fi-pipe"/></svg>쇠파이프</button>
-   <button class="tool" type="button" data-tool="hammer"><svg viewBox="0 0 48 48"><use href="#fi-hammer"/></svg>망치</button>
-   <button class="tool" type="button" data-tool="knife"><svg viewBox="0 0 48 48"><use href="#fi-knife"/></svg>칼</button>
-   <button class="tool" type="button" data-tool="gun"><svg viewBox="0 0 48 48"><use href="#fi-gun"/></svg>총<span class="ammo" id="ammo" hidden>8</span></button>
+  <<button class="tool on" type="button" data-tool="hand"><svg viewBox="0 0 48 48"><use href="#fi-fist"/></svg>너클</button>
+<button class="tool" type="button" data-tool="knife"><svg viewBox="0 0 48 48"><use href="#fi-knife"/></svg>칼</button>
+<button class="tool" type="button" data-tool="gun"><svg viewBox="0 0 48 48"><use href="#fi-gun"/></svg>총<span class="ammo" id="ammo" hidden>8</span></button>
   </div></div>
  </div>
  <div class="dock" id="submitDock" hidden><button type="button" class="btn danger" id="submitFight">운명 설계자 족치기</button></div>
@@ -139,7 +136,19 @@ const FIGHT_HTML = `<section id="fight" hidden>
 </section>`;
 
 const FIGHT_ICONS = `
-<symbol id="fi-fist" viewBox="0 0 48 48"><path d="M13 35c-4-3-5-8-4-13l2-7c1-2 4-2 5 0 1-3 4-3 6-1 1-2 5-2 6 0 2-1 5 0 5 3v3c3 0 5 2 5 5 0 7-4 12-9 13l-1 4H15z" fill="#ffc9a3" stroke="#27242b" stroke-width="2.6" stroke-linejoin="round"/><path d="M16 15v7M22 14v8M28 14v8M34 18c-4 0-9 1-10 5 4 1 7 3 7 6" fill="none" stroke="#27242b" stroke-width="2.3" stroke-linecap="round"/><path d="M14 41h16v5H14z" fill="#2b3a67" stroke="#27242b" stroke-width="2.6" stroke-linejoin="round"/></symbol>
+<symbol id="fi-fist" viewBox="0 0 48 48">
+ <path d="M13 35c-4-3-5-8-4-13l2-7c1-2 4-2 5 0 1-3 4-3 6-1 1-2 5-2 6 0 2-1 5 0 5 3v3c3 0 5 2 5 5 0 7-4 12-9 13l-1 4H15z" fill="#ffc9a3" stroke="#27242b" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M16 15v7M22 14v8M28 14v8M34 18c-4 0-9 1-10 5 4 1 7 3 7 6" fill="none" stroke="#27242b" stroke-width="2.3" stroke-linecap="round"/>
+ <path d="M13 27h23" fill="none" stroke="#27242b" stroke-width="7" stroke-linecap="round"/>
+ <path d="M13 27h23" fill="none" stroke="#bd8b2d" stroke-width="4" stroke-linecap="round"/>
+ <g fill="none" stroke="#27242b" stroke-width="6">
+  <circle cx="15" cy="20" r="4.7"/><circle cx="22" cy="19" r="4.7"/><circle cx="29" cy="19" r="4.7"/><circle cx="36" cy="21" r="4.7"/>
+ </g>
+ <g fill="none" stroke="#d7aa49" stroke-width="3.2">
+  <circle cx="15" cy="20" r="4.7"/><circle cx="22" cy="19" r="4.7"/><circle cx="29" cy="19" r="4.7"/><circle cx="36" cy="21" r="4.7"/>
+ </g>
+ <path d="M14 41h16v5H14z" fill="#2b3a67" stroke="#27242b" stroke-width="2.6" stroke-linejoin="round"/>
+</symbol>
 <symbol id="fi-pipe" viewBox="0 0 48 48"><path d="M9 39L38 10" stroke="#27242b" stroke-width="11" stroke-linecap="round"/><path d="M9 39L38 10" stroke="#9aa1aa" stroke-width="6.6" stroke-linecap="round"/><path d="M13 33L35 11" stroke="#d6dbe0" stroke-width="1.8" stroke-linecap="round"/><path d="M26 22l3 3M20 27l2 2" stroke="#9a5a2c" stroke-width="2.4" stroke-linecap="round"/><path d="M8.5 39.5l6-6" stroke="#27242b" stroke-width="12" stroke-linecap="round"/><path d="M8.5 39.5l6-6" stroke="#2f2f36" stroke-width="7.6" stroke-linecap="round"/><path d="M10.5 37.5l2-2" stroke="#d8352a" stroke-width="7.6"/><ellipse cx="38.5" cy="9.5" rx="4.2" ry="3" transform="rotate(-45 38.5 9.5)" fill="#3a3d44" stroke="#27242b" stroke-width="2"/></symbol>
 <symbol id="fi-hammer" viewBox="0 0 48 48"><path d="M11 42L27 24" stroke="#27242b" stroke-width="9" stroke-linecap="round"/><path d="M11 42L27 24" stroke="#c88a4a" stroke-width="5.2" stroke-linecap="round"/><path d="M13 39l3-3" stroke="#8a5528" stroke-width="5.2"/><path d="M19 13l9-6 14 13-6 9z" fill="#c4cad2" stroke="#27242b" stroke-width="2.6" stroke-linejoin="round"/><path d="M28 8l12 11" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M19 13c-6-3-11 0-11 6 3-2 7-2 9 0z" fill="#8e959e" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/></symbol>
 <symbol id="fi-knife" viewBox="0 0 48 48"><path d="M5 43l9-9" stroke="#27242b" stroke-width="8" stroke-linecap="round"/><path d="M5 43l9-9" stroke="#2f2a28" stroke-width="4.8" stroke-linecap="round"/><circle cx="8.6" cy="39.4" r="1.2" fill="#d9c08a"/><circle cx="11.4" cy="36.6" r="1.2" fill="#d9c08a"/><path d="M13 31L33 7c6-2 11 3 9 9L18 36z" fill="#e6edf2" stroke="#27242b" stroke-width="2.6" stroke-linejoin="round"/><path d="M18 31L36 10" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M13 31l5 5" stroke="#27242b" stroke-width="2.8" stroke-linecap="round"/></symbol>
@@ -463,7 +472,10 @@ const AUDIO=(()=>{
   const o=out(R(-.15,.15),tool==='gun'?.25:.16);p=clamp(p,.4,2.4);
   if(blocked){block(p);return;}
   if(part==='crown'){crownT(o,t,p);return;}
-  if(tool==='hand'){if(head)punchFace(o,t,p);else punchBody(o,t,p);}
+  if(tool==='hand'){
+ if(head)punchFace(o,t,p);else punchBody(o,t,p);
+ ring(o,t+.003,[1750,3100,4450],.055,.045*p);
+}
   else if(tool==='pipe'){
    if(head)punchFace(o,t,p*.9);else punchBody(o,t,p*.9);
    ring(o,t+.002,[1180,2960,4870],.18,.07);osc(o,t,{type:'triangle',f0:420,f1:170,dur:.07,peak:.5});nz(o,t,{dur:.02,peak:.6,f:3300,q:.8});
@@ -910,13 +922,129 @@ const BLOOD=(()=>{
  const T={
   bruise:canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(92,30,96,.72)');r.addColorStop(.45,'rgba(130,40,86,.5)');r.addColorStop(.75,'rgba(176,58,70,.22)');r.addColorStop(1,'rgba(176,58,70,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}),
   red:canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(214,52,62,.6)');r.addColorStop(.6,'rgba(220,70,70,.28)');r.addColorStop(1,'rgba(220,70,70,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}),
-  hole:canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,2,64,64,60);r.addColorStop(0,'rgba(18,0,3,1)');r.addColorStop(.22,'rgba(40,2,8,1)');r.addColorStop(.36,'rgba(108,10,20,.95)');r.addColorStop(.6,'rgba(110,12,22,.55)');r.addColorStop(1,'rgba(110,12,22,0)');g.fillStyle=r;g.fillRect(0,0,w,h);g.strokeStyle='rgba(60,4,10,.8)';g.lineWidth=3;for(let i=0;i<9;i++){const a=i/9*TAU+Math.random()*.4;g.beginPath();g.moveTo(64+Math.cos(a)*14,64+Math.sin(a)*14);g.lineTo(64+Math.cos(a)*rnd(22,30),64+Math.sin(a)*rnd(22,30));g.stroke();}}),
-  cut:canvasTex(256,64,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(150,20,30,0)');gr.addColorStop(.35,'rgba(150,20,30,.85)');gr.addColorStop(.5,'rgba(40,0,6,1)');gr.addColorStop(.65,'rgba(150,20,30,.85)');gr.addColorStop(1,'rgba(150,20,30,0)');g.fillStyle=gr;g.beginPath();g.moveTo(4,h/2);g.quadraticCurveTo(w/2,4,w-4,h/2);g.quadraticCurveTo(w/2,h-4,4,h/2);g.fill();}),
+    dent:canvasTex(128,128,(g,w,h)=>{
+   const halo=g.createRadialGradient(64,64,18,64,64,62);
+   halo.addColorStop(0,'rgba(86,24,52,.34)');
+   halo.addColorStop(.62,'rgba(116,40,70,.24)');
+   halo.addColorStop(1,'rgba(116,40,70,0)');
+   g.fillStyle=halo;g.fillRect(0,0,w,h);
+
+   g.save();g.translate(64,64);g.scale(1,.8);
+   const pit=g.createRadialGradient(-8,-9,2,0,0,45);
+   pit.addColorStop(0,'rgba(40,8,20,.86)');
+   pit.addColorStop(.46,'rgba(76,22,43,.7)');
+   pit.addColorStop(.78,'rgba(133,62,76,.38)');
+   pit.addColorStop(1,'rgba(133,62,76,0)');
+   g.fillStyle=pit;g.beginPath();g.arc(0,0,45,0,TAU);g.fill();
+
+   g.lineCap='round';
+   g.lineWidth=8;g.strokeStyle='rgba(43,8,18,.5)';
+   g.beginPath();g.arc(0,0,35,PI*1.05,PI*1.95);g.stroke();
+   g.lineWidth=6;g.strokeStyle='rgba(245,147,132,.42)';
+   g.beginPath();g.arc(0,0,35,.08*PI,.92*PI);g.stroke();
+   g.restore();
+  }),
+  
+  
+  hole:canvasTex(128,128,(g,w,h)=>{
+   const halo=g.createRadialGradient(64,64,16,64,64,63);
+   halo.addColorStop(0,'rgba(116,5,16,.62)');
+   halo.addColorStop(.62,'rgba(104,6,18,.34)');
+   halo.addColorStop(1,'rgba(104,6,18,0)');
+   g.fillStyle=halo;g.fillRect(0,0,w,h);
+
+   const jag=(r,j,fill)=>{
+    g.beginPath();
+    for(let i=0;i<32;i++){
+     const a=i/32*TAU,rr=r+rnd(-j,j);
+     const x=64+Math.cos(a)*rr,y=64+Math.sin(a)*rr;
+     if(i)g.lineTo(x,y);else g.moveTo(x,y);
+    }
+    g.closePath();g.fillStyle=fill;g.fill();
+   };
+
+   jag(39,5,'rgba(112,6,17,.98)');
+   g.lineCap='round';
+   g.lineWidth=6;g.strokeStyle='rgba(235,79,84,.72)';
+   g.beginPath();g.arc(64,66,34,.08*PI,.92*PI);g.stroke();
+   g.lineWidth=7;g.strokeStyle='rgba(46,0,6,.72)';
+   g.beginPath();g.arc(64,61,33,1.08*PI,1.92*PI);g.stroke();
+
+   jag(26,3,'rgba(14,0,2,1)');
+   const core=g.createRadialGradient(58,58,1,64,64,25);
+   core.addColorStop(0,'rgba(0,0,0,1)');
+   core.addColorStop(.68,'rgba(8,0,1,1)');
+   core.addColorStop(1,'rgba(38,0,5,.98)');
+   g.fillStyle=core;g.beginPath();g.arc(64,64,25,0,TAU);g.fill();
+  }),
+
+
+
+
+  cut:canvasTex(256,96,(g,w,h)=>{
+   const cy=h/2,N=32,top=[],bot=[];
+   for(let i=0;i<=N;i++){
+    const q=i/N,e=Math.sin(q*PI),x=4+q*(w-8);
+    top.push([x,cy-e*rnd(25,34)]);
+    bot.push([x,cy+e*rnd(25,35)]);
+   }
+   const fillPoly=(a,b,fill)=>{
+    g.beginPath();
+    for(let i=0;i<a.length;i++){
+     if(i)g.lineTo(a[i][0],a[i][1]);else g.moveTo(a[i][0],a[i][1]);
+    }
+    for(let i=b.length-1;i>=0;i--)g.lineTo(b[i][0],b[i][1]);
+    g.closePath();g.fillStyle=fill;g.fill();
+   };
+
+   const lip=g.createLinearGradient(0,8,0,h-8);
+   lip.addColorStop(0,'rgba(72,0,8,.98)');
+   lip.addColorStop(.42,'rgba(184,26,38,.98)');
+   lip.addColorStop(.58,'rgba(112,3,13,.98)');
+   lip.addColorStop(1,'rgba(229,65,70,.86)');
+   fillPoly(top,bot,lip);
+
+   const it=[],ib=[];
+   for(let i=0;i<=N;i++){
+    const q=i/N,e=Math.sin(q*PI),x=12+q*(w-24);
+    it.push([x,cy-e*rnd(8,12)]);
+    ib.push([x,cy+e*rnd(9,13)]);
+   }
+   fillPoly(it,ib,'rgba(12,0,2,1)');
+
+   g.lineCap='round';
+   g.lineWidth=4;g.strokeStyle='rgba(244,99,99,.78)';
+   g.beginPath();g.moveTo(18,cy+2);g.bezierCurveTo(72,cy+17,184,cy+17,w-18,cy+2);g.stroke();
+   g.lineWidth=3;g.strokeStyle='rgba(48,0,7,.82)';
+   g.beginPath();g.moveTo(18,cy-2);g.bezierCurveTo(72,cy-17,184,cy-17,w-18,cy-2);g.stroke();
+  }),
+
+
+
   soak:canvasTex(128,128,(g,w,h)=>{for(let i=0;i<9;i++){const x=64+rnd(-22,22),y=64+rnd(-22,22),r=rnd(18,36);const gr=g.createRadialGradient(x,y,2,x,y,r);gr.addColorStop(0,'rgba(108,8,18,.5)');gr.addColorStop(.7,'rgba(108,8,18,.32)');gr.addColorStop(1,'rgba(108,8,18,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();}}),
   scrape:canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,4,64,64,58);r.addColorStop(0,'rgba(196,40,46,.55)');r.addColorStop(1,'rgba(196,40,46,0)');g.fillStyle=r;g.fillRect(0,0,w,h);g.strokeStyle='rgba(150,10,22,.6)';g.lineWidth=2;for(let i=0;i<10;i++){g.beginPath();const y=rnd(36,92);g.moveTo(rnd(24,44),y);g.lineTo(rnd(84,104),y+rnd(-6,6));g.stroke();}}),
  };
+
+
  const DM={};
- for(const k in T)DM[k]=new THREE.MeshStandardMaterial({map:T[k],transparent:true,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-4,polygonOffsetUnits:-4,roughness:k==='hole'||k==='cut'?.18:k==='soak'?.35:.55});
+ const DORDER={soak:2,bruise:3,red:3,scrape:3,dent:4,cut:6,hole:7};
+ const DLIFT={soak:.0007,bruise:.001,red:.001,scrape:.0011,dent:.00135,cut:.00175,hole:.002};
+
+ for(const k in T)DM[k]=new THREE.MeshStandardMaterial({
+  map:T[k],
+  transparent:true,
+  depthWrite:false,
+  depthTest:true,
+  alphaTest:(k==='hole'||k==='cut')?.025:0,
+  polygonOffset:true,
+  polygonOffsetFactor:-4,
+  polygonOffsetUnits:-4,
+  roughness:(k==='hole'||k==='cut')?.18:k==='soak'?.35:.55
+ });
+
+
+
+
  const decals=[];
  function decal(type,seg,pW,nW,size,o={}){
   if(!E)return null;if(!PREF.blood&&(type==='hole'||type==='cut'||type==='soak'))type='bruise';
@@ -925,16 +1053,63 @@ const BLOOD=(()=>{
   const ang=o.angle!=null?o.angle:rnd(0,TAU);const cu=u.clone().multiplyScalar(Math.cos(ang)).addScaledVector(v,Math.sin(ang)),cv=v.clone().multiplyScalar(Math.cos(ang)).addScaledVector(u,-Math.sin(ang));
   const sx=size*(o.aspect||1),sy=size,G=o.grid||5,pos=[],uv=[],idx=[],inv=_inv(bone).clone();
   for(let j=0;j<=G;j++)for(let i=0;i<=G;i++){const a=i/G-.5,b=j/G-.5;const guess=pW.clone().addScaledVector(cu,a*sx*2).addScaledVector(cv,b*sy*2);
-   const hit=project(guess,n,.05,o.meshes);const p=hit?hit.point.addScaledVector(hit.normal,.0012):guess;p.applyMatrix4(inv);pos.push(p.x,p.y,p.z);uv.push(i/G,j/G);}
+   const hit=project(guess,n,.05,o.meshes),hp=hit?hit.point:guess,hn=hit?hit.normal:n;
+const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);pos.push(p.x,p.y,p.z);uv.push(i/G,j/G);}
   for(let j=0;j<G;j++)for(let i=0;i<G;i++){const a=j*(G+1)+i,b=a+1,c=a+G+1,d=c+1;idx.push(a,b,c,b,d,c);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-  const m=new THREE.Mesh(g,DM[type]);m.renderOrder=3;m.castShadow=false;m.receiveShadow=true;m.userData.gore=type==='hole'||type==='cut'||type==='soak';m.userData.decal=type;bone.add(m);
+  const m=new THREE.Mesh(g,DM[type]);m.renderOrder=DORDER[type]||3;m.castShadow=false;m.receiveShadow=true;m.userData.gore=type==='hole'||type==='cut'||type==='soak';m.userData.decal=type;bone.add(m);
   // 뒤집힌 법선이면 뒤집기
   const nn=g.attributes.normal;if(nn.count){const t=V3(nn.getX(0),nn.getY(0),nn.getZ(0)).transformDirection(bone.matrixWorld);if(t.dot(n)<0){idx.reverse();g.setIndex(idx);g.computeVertexNormals();}}
   if(o.grow){m.scale.setScalar(.01);m.userData.grow={t:0,dur:o.grow,center:bone.worldToLocal(pW.clone())};}
   decals.push(m);if(decals.length>64){const old=decals.shift();old.removeFromParent();old.geometry.dispose();}
   return m;
  }
+
+ /* ---- 벌어진 상처의 입체 테두리 ---- */
+ const rimGeo=GEO.woundRim||(GEO.woundRim=new THREE.TorusGeometry(.82,.18,8,32));
+ const rimMats={
+  hole:STD('#68101a',{roughness:.28}),
+  cut:STD('#981421',{roughness:.22})
+ };
+ const rims=[];
+
+ function rim(type,seg,pW,nW,rx,ry,angle=0){
+  if(!E||!PREF.blood)return null;
+  const bone=E.bones[seg];if(!bone)return null;
+  bone.updateWorldMatrix(true,false);
+
+  const n=nW.clone().normalize();
+  const u=V3().crossVectors(
+   n,Math.abs(n.y)>.9?V3(1,0,0):V3(0,1,0)
+  ).normalize();
+  const v=V3().crossVectors(n,u).normalize();
+  const ca=Math.cos(angle),sa=Math.sin(angle);
+  const cu=u.clone().multiplyScalar(ca).addScaledVector(v,sa);
+  const cv=v.clone().multiplyScalar(ca).addScaledVector(u,-sa);
+
+  const qW=new THREE.Quaternion().setFromRotationMatrix(
+   new THREE.Matrix4().makeBasis(cu,cv,n)
+  );
+  const qB=new THREE.Quaternion();
+  bone.getWorldQuaternion(qB).invert();
+
+  const m=mk(rimGeo,rimMats[type]||rimMats.cut,bone,{
+   cast:false,receive:false
+  });
+  m.position.copy(
+   bone.worldToLocal(pW.clone().addScaledVector(n,.0025))
+  );
+  m.quaternion.copy(qB.multiply(qW));
+  m.scale.set(rx,ry,Math.min(rx,ry)*.7);
+  m.renderOrder=8;
+  m.userData.gore=true;
+
+  rims.push(m);
+  if(rims.length>32)rims.shift().removeFromParent();
+  return m;
+ }
+
+
  /* ---- 혹(부어오름) ---- */
  const lumpMats=[STD('#efa585',{roughness:.48}),STD('#df8f86',{roughness:.48}),STD('#c07a8a',{roughness:.48})];
  const lumps=[];
@@ -1014,19 +1189,23 @@ const BLOOD=(()=>{
   for(const l of lumps){l.t+=dt;const s=damp(l.mesh.scale.x,l.target,6,dt);l.mesh.scale.set(s,s*.85,s*.42);}
   if(flDirty){flTex.needsUpdate=true;flDirty=false;}
   const gv=PREF.blood;for(const b of bankList){b.mesh.visible=b.kind==='tear'||gv;}
-  for(const m of decals)if(m.userData.gore)m.visible=gv;flMesh.visible=gv;
+  for(const m of decals)if(m.userData.gore)m.visible=gv;
+for(const m of rims)m.visible=gv;
+flMesh.visible=gv;
  }
  function reset(emp){
   E=emp;for(const k in parts)for(const d of parts[k])d.on=false;
   for(const b of bankList){b.mesh.removeFromParent();b.g.dispose();}bankList.length=0;for(const key in banks)delete banks[key];
   rivs.length=0;drips.length=0;wounds.length=0;beads.length=0;
   for(const m of decals){m.removeFromParent();m.geometry.dispose();}decals.length=0;
+for(const m of rims)m.removeFromParent();
+rims.length=0;
   for(const l of lumps)l.mesh.removeFromParent();lumps.length=0;
   flCtx.clearRect(0,0,FL.res,FL.res);flTex.needsUpdate=true;pool.fill(0);
   if(pnCtx&&pnSaved){pnCtx.clearRect(0,0,pnCanvas.width,pnCanvas.height);pnCtx.drawImage(pnSaved,0,0);WORLD.panelTex.needsUpdate=true;}
   SB.clear();lostRaw=0;heart=0;
  }
- return {spray,emit,startRiv,addWound,decal,lump,project,paintFloor,paintPanel,update,reset,screen:SB,get lost(){return LOSTMAX*(1-Math.exp(-lostRaw/2.4));},get bleedRate(){let t=0;for(const w of wounds)t+=w.rate0*Math.exp(-w.age/w.tau);return t;},wounds,rivs};
+ return {spray,emit,startRiv,addWound,decal,rim,lump,project,paintFloor,paintPanel,update,reset,screen:SB,get lost(){return LOSTMAX*(1-Math.exp(-lostRaw/2.4));},get bleedRate(){let t=0;for(const w of wounds)t+=w.rate0*Math.exp(-w.age/w.tau);return t;},wounds,rivs};
 })();
 const SBLOOD=BLOOD.screen;
 /* ===== 6. 옥황상제 — 모양 ===== */
@@ -1934,11 +2113,22 @@ Object.assign(Emperor.prototype,{
  bluntHit(part,seg,pt,n,dir,tool,kind,P,h){
   const heavy=tool!=='hand';
   this.hitCount=(this.hitCount||0)+1;
+
+  const knuckle=tool==='hand'&&part!=='crown'&&part!=='beard';
+  if(knuckle){
+   const ds=HEADS.test(part)?.037:.047;
+   BLOOD.decal('dent',seg,pt,n,ds*(kind==='jab'?.9:1.08),{
+    aspect:kind==='hook'?1.2:.95,
+    angle:rnd(-.22,.22),
+    grid:7
+   });
+  }
+
   if(HEADS.test(part)){
-   if(part!=='crown'&&part!=='beard'){
+   if(part!=='crown'&&part!=='beard'&&!knuckle){
     BLOOD.decal(Math.random()<.5&&!heavy?'red':'bruise',seg,pt,n,heavy?.05:.035);
     const lumpOK=(part==='head'||(part==='face'&&pt.y>this.face.getWorldPosition(V3()).y-.01));
-    if(lumpOK&&(heavy||((this.hitCount%5)===0)))BLOOD.lump(seg,pt,n,heavy?.02:.014,heavy?1:0);
+    if(lumpOK&&heavy)BLOOD.lump(seg,pt,n,.02,1);
    }
    if(part==='nose'){this.noseHits=(this.noseHits||0)+(heavy?2:1);
     if(this.noseHits>=2&&!this.noseBleeding){this.noseBleeding=true;for(const nn of this.nostrils){nn.updateWorldMatrix(true,false);BLOOD.addWound('head',nn.getWorldPosition(V3()),V3(0,-.4,1).normalize(),{rate:.0042,tau:60,kind:'nose'});}}
@@ -1969,8 +2159,13 @@ Object.assign(Emperor.prototype,{
   const gun=tool==='gun',isHead=HEADS.test(h.part);
   const artery=h.part==='neck'||(/^thigh/.test(h.part)&&gun&&Math.random()<.5);
   if(gun){
-   BLOOD.decal('hole',seg,pt,n,isHead?.032:.038);
-   BLOOD.decal('soak',seg,pt,n,isHead?.05:.11,{grow:isHead?1:5});
+const hs=isHead?.042:.054;
+BLOOD.decal('soak',seg,pt,n,isHead?.06:.12,{grow:isHead?1:5});
+BLOOD.decal('hole',seg,pt,n,hs,{grid:7});
+BLOOD.rim('hole',seg,pt,n,hs*.65,hs*.62,rnd(0,TAU));
+
+
+
    BLOOD.addWound(seg,pt,n,{rate:artery?.05:isHead?.026:.022,tau:artery?22:30,artery,kind:'hole'});
    // 뒤로 뚫고 나가 옥좌에 튄다
    const back=V3().copy(pt).addScaledVector(dir,.35);for(let i=0;i<10;i++){const v=V3().copy(dir).multiplyScalar(rnd(4,7.5)).add(V3(rnd(-.9,.9),rnd(-.3,1),rnd(-.4,.4)));BLOOD.emit('blood',back,v,rnd(.003,.007),1.2);}
@@ -1978,14 +2173,26 @@ Object.assign(Emperor.prototype,{
    if(isHead||h.part==='neck'||h.part==='chest')this.screenSplat(pt,isHead?1:.7);
   }else if(kind==='slash'&&h.slashFrom){
    const a=h.slashFrom,b=pt,mid=V3().addVectors(a,b).multiplyScalar(.5),len=a.distanceTo(b),ang=this.angleOnSurface(a,b,n);
-   const half=Math.max(.012,len*.55);BLOOD.decal('cut',seg,mid,n,.0075,{aspect:half/.0075,angle:ang,grid:6});
+   const half=Math.max(.012,len*.55),cw=isHead?.011:.014;
+BLOOD.decal('cut',seg,mid,n,cw,{
+ aspect:Math.max(1.8,half/cw),
+ angle:ang,
+ grid:8
+});
+BLOOD.rim('cut',seg,mid,n,half,cw*.52,ang);
    const bone=this.bones[seg];bone.updateWorldMatrix(true,false);const inv=_invB(bone);
    const w_=BLOOD.addWound(seg,mid,n,{rate:clamp(len*.3,.006,.02)*(artery?2.5:1),tau:22,artery,kind:'cut',line:[bone.worldToLocal(a.clone()),bone.worldToLocal(b.clone())]});
    for(let i=0;i<Math.min(3,Math.ceil(len*40));i++){const q=V3().copy(a).lerp(b,rnd(.1,.9));const pr=BLOOD.project(q,n,.05);if(pr)BLOOD.startRiv(pr.seg||seg,pr.point,pr.normal,{w:rnd(.003,.0048),maxLen:rnd(.08,.3)});}
    BLOOD.spray(mid,n,clamp(Math.round(len*120),4,14),{max:2.2});
    if(isHead&&Math.random()<.6)this.screenSplat(mid,.45);
   }else{
-   BLOOD.decal('cut',seg,pt,n,.0075,{aspect:2.6,angle:rnd(0,PI),grid:4});
+   const ca=rnd(0,PI),sw=.013;
+BLOOD.decal('cut',seg,pt,n,sw,{
+ aspect:2.6,
+ angle:ca,
+ grid:7
+});
+BLOOD.rim('cut',seg,pt,n,sw*2.6,sw*.52,ca);
    if(!isHead)BLOOD.decal('soak',seg,pt,n,.08,{grow:4});
    BLOOD.addWound(seg,pt,n,{rate:artery?.045:.012,tau:artery?20:26,artery,kind:'stab'});
    BLOOD.spray(pt,n,12,{max:2.6});
@@ -2064,6 +2271,13 @@ const VM=(()=>{
   mk(capsuleGeo(.015,.035,10),M.skin,th,{p:[0,0,.018],r:[PI/2,0,0]});
   mk(sphereGeo(10),M.nail,th,{p:[0,.008,.042],s:[.008,.005,.009],cast:false});
   mk(cylGeo(.032,.034,.07,18),M.skin,g,{p:[0,-.002,-.075],r:[PI/2,0,0]});
+    // 황동 너클: 검은 받침 + 황동 링과 연결 바
+  mk(new THREE.BoxGeometry(.088,.013,.012),M.gunD,g,{p:[0,-.004,.045]});
+  mk(new THREE.BoxGeometry(.084,.008,.014),M.brass,g,{p:[0,-.003,.052]});
+  for(let i=0;i<4;i++){const x=s*(-.03+i*.02);
+   mk(new THREE.TorusGeometry(.0115,.0042,8,18),M.gunD,g,{p:[x,.003,.052]});
+   mk(new THREE.TorusGeometry(.0112,.0026,8,18),M.brass,g,{p:[x,.003,.057]});
+  }
   // 엄지 조각을 주먹 그룹으로 옮긴 뒤 재질별로 합친다
   g.updateMatrixWorld(true);for(const m of [...th.children]){g.attach(m);}th.removeFromParent();mergeChildren(g);
   return g;
@@ -2282,7 +2496,7 @@ metalEnv(VM.root);
 try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof p[k]==='boolean')PREF[k]=p[k];}catch(_){}
 const KD_AT=[75,50,25,0],KD_TYPE=['throne','kneel','floor','final'],T_TOTAL=142;
 const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,lag:100,kd:0,active:0,started:false,hits:0,t0:0,tEnd:0,hitstop:0,slow:0,ended:false,paused:false,cardShown:false,result:null,round:0};
-const HINTS={hand:'누르면 주먹 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',pipe:'누르면 내려치기 · 옆으로 밀면 후려치기',hammer:'누르면 내려찍기 · 옆으로 밀면 후려치기',knife:'누르면 찌르기 · 누른 채 그으면 베기',gun:'누르면 쏘기 · 꾹 누르면 연사'};
+const HINTS={hand:'누르면 너클 잽 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',knife:'누르면 찌르기 · 누른 채 그으면 베기',gun:'누르면 쏘기 · 꾹 누르면 연사'};
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
 
@@ -2435,8 +2649,8 @@ function pollPointers(){
   if((G.tool==='pipe'||G.tool==='hammer')&&!p.decided&&p.decideAt&&G.time>=p.decideAt){p.decided=true;VM.attack('smash',p.x0,p.y0);}
  }
 }
-// 키보드(PC): 1~5 도구, R 장전
-addEventListener('keydown',e=>{if($('#fight').hidden||G.paused)return;const k=e.key;const map={'1':'hand','2':'pipe','3':'hammer','4':'knife','5':'gun'};if(map[k]){setTool(map[k]);}else if((k==='r'||k==='R')&&G.tool==='gun')VM.reload();});
+// 키보드(PC): 1~3 도구, R 장전
+addEventListener('keydown',e=>{if($('#fight').hidden||G.paused)return;const k=e.key;const map={'1':'hand','2':'knife','3':'gun'};if(map[k]){setTool(map[k]);}else if((k==='r'||k==='R')&&G.tool==='gun')VM.reload();});
 
 function setTool(t){
  if(!HINTS[t])return;for(const p of ptrs.values())if(p.slashing)VM.slashEnd();ptrs.clear();
