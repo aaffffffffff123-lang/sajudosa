@@ -2214,9 +2214,14 @@ const bl=grp(bladeRig);for(const x of [-.0024,.0024])mk(new THREE.BoxGeometry(.0
   st.time+=dt;fireCool=Math.max(0,fireCool-dt);st.swapT=Math.min(1,st.swapT+dt*4);
   if(st.autoReloadAt&&st.time>=st.autoReloadAt){st.autoReloadAt=0;if(st.ammo<=0&&st.tool==='gun')reload();}
   if(st.reload>0){st.reload=Math.max(0,st.reload-dt);if(st.reload===0){st.ammo=8;if(st.onAmmo)st.onAmmo();}}
-  const sway=Math.sin(st.time*1.6)*.004,sway2=Math.cos(st.time*1.1)*.003,dropIn=(1-easeOut3(st.swapT))*.25;
-  knife.userData.bladeRig.scale.z=1;
-  // 진행 중인 공격
+ 
+const sway=Math.sin(st.time*1.6)*.004,sway2=Math.cos(st.time*1.1)*.003,dropIn=(1-easeOut3(st.swapT))*.25;
+for(const k of ['R','L']){H[k].p.copy(rest[k].p);H[k].p.y+=sway*(k==='R'?1:-1)-dropIn;H[k].p.x+=sway2;H[k].q.copy(rest[k].q);}
+knife.userData.bladeRig.scale.z=1;
+// 진행 중인 공격
+
+
+
   for(let i=st.acts.length-1;i>=0;i--){const a=st.acts[i];if(!frozen)a.t+=dt;const t=a.t,[d0,d1,d2,d3]=a.dur,c=a.contact;
    if(!a.done&&t>=c){a.done=true;a.hit=st.onContact?st.onContact(a):null;if(a.hit&&a.hit.hit&&a.tool!=='hand')st.bloody[a.tool]=st.bloody[a.tool]||a.hit.blood;}
    const h=H[a.side];
@@ -2375,6 +2380,7 @@ function gunLight(){gunLT=.06;}
 
 /* ---- 칼로 긋기 ---- */
 function slashContact(p,x,y){
+ const info=pickAt(x,y);const now=G.time;
  if(VM.st.slash)VM.st.slash.touching=!!info;
  if(!info){p.lastCut=null;return;}
  if(!p.lastCut){p.lastCut={point:info.point.clone(),t:now,part:info.part};return;}
