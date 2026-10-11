@@ -590,7 +590,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div></section>
   <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol></section>
   <section class="block"><h2 class="sec-label">반복되는 경향</h2><div class="loop" id="loop"></div></section>
-  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><ul class="also" id="also"></ul><div class="caution"><b>조심할 것</b><p>같이 시작한 사람이 먼저 올라가도 비교하지 마세요. 당신은 좋은 학교도 든든한 인맥도 물려받지 못해 밑에서 받쳐 주는 팔자입니다.</p><p>성과급을 두고 다투는 사람들 얘기는 흘려들으세요. 당신은 쉬는 시간 몇 분을 지키는 데도 힘을 다 써야 하는 팔자입니다.</p><p>다툼이 생겨도 법으로 가져가지 마세요. 좋은 변호사를 붙일 형편이 못 돼서 오래 끌수록 지는 팔자입니다.</p><p>쉬는 시간을 더 달라는 말은 꺼내지 마세요. 정해진 만큼만 쉬고 버텨야 무탈한 팔자입니다.</p><p>당신은 윗사람에게 따지거나 여럿이 모여 목소리를 내면 화를 입는 팔자입니다. 억울한 일이 있어도 참고 넘기세요. 지금은 때를 기다리세요.</p></div></section>
+  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><ul class="also" id="also"></ul><div class="caution" id="caution"></div></section>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
   <div class="choices"><button id="submit-fate" type="button" class="btn ghost">이 운명대로 살기</button><button id="fight-fate" type="button" class="btn red">운명 설계자 족치기</button></div>
   <button id="start-over" type="button" class="textbtn">다른 사주 보기</button>
@@ -2020,7 +2020,7 @@ const FATE_V3={
   inherit:'태어난 해와 태어난 달은 집안과 부모를 나타내는 자리입니다. 이 두 자리에 돈·생활 기운이 하나도 없으니 물려받을 것 없이 맨손으로 시작해서 남들이 서른에 가진 것을 마흔이 넘어서도 갖지 못하는 팔자입니다.',
   child:'자녀를 나타내는 태어난 시간 자리에도 돈·생활 기운이 없습니다. 가난을 물려받아 자식에게 그대로 물려주는 팔자입니다.',
   poor:'목돈이 없어 같은 집에 살아도 다달이 더 많이 내고 급할 때 빌린 돈에는 이자가 더 붙습니다. 가진 게 적을수록 돈이 더 새는 팔자입니다.',
-  squeeze:'태어난 해와 태어난 달에 돈·생활 기운이 있어 집안에서 받는 것은 있습니다. 받은 돈은 집값과 교육비로 고스란히 빠져나가고 당신 대에서는 한 칸도 올라가지 못하는 팔자입니다.'
+  squeeze:'태어난 해나 태어난 달에 돈·생활 기운이 있어 집안에서 받는 것은 있습니다. 받은 돈은 집값과 교육비로 고스란히 빠져나가고 당신 대에서는 한 칸도 올라가지 못하는 팔자입니다.'
  },
  love:[
   ['돈 쓰는 방식','둘이 쓸 돈이 늘 빠듯해서 같은 문제로 되풀이해 다투는 팔자입니다.'],
@@ -2111,6 +2111,75 @@ const FIX_V3=[
  ['세 기운이 모두 모인 경우보다는 영향이 약합니다.','세 기운이 다 모이지 않아 영향은 약한 편입니다.'],
  ['처음에는 대정면 충돌 나눕니다.','처음에는 적당히 나눕니다.']
 ];
+/* ---------- 전체 풀이 문장과 조심할 것: 그 사람에게 붙은 팔자 줄로 만든다 ---------- */
+const FATE_SUM_V3={
+ origin:{
+  A1:'물려받을 것도 물려줄 것도 없이',
+  A2:'물려받은 것 없이 시작해서',
+  B0:'윗대에서 내려온 것은 집값과 교육비로 다 쓰고',
+  B1:'부모님이 모아 둔 것은 집값과 교육비로 다 쓰고',
+  B2:'물려받은 것은 집값과 교육비로 다 쓰고'
+ },
+ work:{
+  식상:'먼저 말했다가 뒷수습까지 떠맡고',
+  비겁:'시키는 대로 하다 혼자 남고',
+  인성:'준비한 시간을 인정받지 못하고',
+  wealth_weak_self:'남이 미룬 잡일까지 떠안고',
+  officer_overload:'일을 잘할수록 일이 늘어나고',
+  palace_clash:'옮길 때마다 처음부터 다시 시작하고',
+  month_day_clash:'일자리를 따라 떠돌고',
+  strong_peer:'빠진 사람 몫까지 혼자 치우고',
+  palace_self:'바꿀 틈도 없이 끌려다니고',
+  hurt_officer:'바른말을 해도 찍히고',
+  wealth_breaks_resource:'생활비를 버느라 준비가 끊기고',
+  killer_unchecked:'급한 일마다 먼저 불려 가고',
+  weak_wealth:'잠을 줄여 가며 일하고',
+  resource_blocks_output:'준비만 하다 몇 해를 보내고',
+  palace_punish:'궂은 역할을 도맡고',
+  weak_officer:'남의 요구에 내 계획을 미루고',
+  owl_food:'다 해 놓고도 늦었다는 말을 듣고',
+  mixed_officer:'남이 시킨 일의 책임까지 떠안고',
+  small:'작은 회사를 전전하며 덜 받고'
+ },
+ love:{
+  '근무 시간이 바뀌면':'일에 끌려다니는',
+  '답장을 늦춥니다':'소리 없이 멀어지는',
+  '상대의 일정':'양가 부담까지 짊어지는',
+  '돈 쓰는 방식':'돈 문제로 되풀이해 다투는',
+  '집 문제':['집 장만에 밀려 늦어지는','대출에 묶여 같이 보낼 시간이 없는'],
+  '연락 간격만':'형편이 안 돼 흐지부지 끝나는',
+  '만나는 날짜는':'쉬는 날이 달라 자꾸 밀리는',
+  '연락 횟수부터':'지쳐서 먼저 물러나는'
+ },
+ caution:{
+  A:'같이 시작한 사람이 먼저 올라가도 비교하지 마세요. 당신은 좋은 학교도 든든한 인맥도 물려받지 못해 밑에서 받쳐 주는 팔자입니다.',
+  B:'물려받은 것만 믿고 쉬어 가지 마세요. 받은 돈은 이미 집값과 교육비로 다 나가서 한 번 멈추면 아래로만 내려가는 팔자입니다.',
+  small:'성과급을 두고 다투는 사람들 얘기는 흘려들으세요. 당신은 쉬는 시간 몇 분을 지키는 데도 힘을 다 써야 하는 팔자입니다.',
+  poor:'다툼이 생겨도 법으로 가져가지 마세요. 좋은 변호사를 붙일 형편이 못 돼서 오래 끌수록 지는 팔자입니다.',
+  weak:'쉬는 시간을 더 달라는 말은 꺼내지 마세요. 정해진 만큼만 쉬고 버텨야 무탈한 팔자입니다.',
+  all:'당신은 윗사람에게 따지거나 여럿이 모여 목소리를 내면 화를 입는 팔자입니다. 억울한 일이 있어도 참고 넘기세요. 지금은 때를 기다리세요.'
+ }
+};
+function sumFateV3(sections,a,pillars){
+ const S=FATE_SUM_V3,body=id=>{const s=sections.find(x=>x.id===id);return s?s.body:[];},has=(id,t)=>!!t&&body(id).indexOf(t)>=0;
+ const wTag=i=>!!(pillars[i]&&pillars[i].known&&(pillars[i].stemTag===FAMILY_SHORT.재성||pillars[i].branchTag===FAMILY_SHORT.재성));
+ // 집안 자리: 돈 칸에 붙은 줄과 태어난 해·달 칸의 돈·생활 표시로 정함
+ const o=has('money',FATE_V3.money.inherit)?(has('money',FATE_V3.money.child)?'A1':'A2'):(wTag(0)&&wTag(1)?'B2':wTag(0)?'B0':'B1');
+ // 일: 일과 직업 칸에 실제로 붙은 팔자 줄을 찾아서 그 짧은 말을 씀
+ const small=has('work',FATE_V3.small),wk=small?'small':Object.keys(S.work).find(k=>has('work',FATE_V3.work[k]));
+ // 연애: 연애와 결혼 칸에 붙은 팔자 줄을 찾아서 그 짧은 말을 씀 (집 문제는 태어난 해에 따라 둘 중 하나)
+ const le=FATE_V3.love.find(x=>has('love',x[1])||has('love',x[2]));
+ let lv=le&&S.love[le[0]];if(Array.isArray(lv))lv=has('love',le[1])?lv[0]:lv[1];
+ const out={cautions:[S.caution[o.charAt(0)]]};
+ if(wk&&lv)out.verdict='당신은 '+S.origin[o]+' '+S.work[wk]+' 인연은 '+lv+' 팔자입니다.';
+ // 조심할 것: 윗사람 줄만 모두에게, 나머지는 사주 조건에 맞을 때만
+ const wl=a.families.재성.level;
+ if(small)out.cautions.push(S.caution.small);
+ if(wl==='weak'||wl==='absent')out.cautions.push(S.caution.poor);
+ if(a.strength.label==='신약'||a.strength.label==='극약')out.cautions.push(S.caution.weak);
+ out.cautions.push(S.caution.all);
+ return out;
+}
 function addFateV3(sections,a,P,findings,inp,sinsal){
  const sec=id=>sections.find(s=>s.id===id),put=(s,i,t)=>{if(s&&t)s.body.splice(Math.min(i,s.body.length),0,t);};
  const born=inp.date&&inp.date.y,pick=(s,list)=>{if(!s||!s.body.length)return;const h=list.find(x=>s.body[0].indexOf(x[0])>=0);if(h)put(s,1,h[2]&&born<1985?h[2]:h[1]);};
@@ -2190,7 +2259,7 @@ function makeReading(chart,inp,now){
   core:{title:d.title,text:dayBoundaryNote+d.verdict,strength:strengthTextV2(a),tags:unique([uiStructureName(a.structure.name),STRENGTH_DESC[s.label]].concat(dayBoundaryNote?['날짜 경계에 걸릴 수 있음']:[],(d.tags||[]).map(plainSajuText))),facts:facts},
   sections:sections,sinsal:sinsal,pastHits:pastHits,years:years,
   luck:{forward:chart.yun.forward,years:chart.yun.years,months:chart.yun.months,days:chart.yun.days,start:chart.yun.start,cycles:cycles,worst:worstCycle&&worstCycle.score>=45?worstCycle.i:-1,current:cur?cur.i:-1},
-  loop:d.loop,verdict:closingVerdictV2(d,a,P),secondary:findings.slice(1,4).map(x=>x.title),dominant:d,schemaVersion:2,
+  loop:d.loop,verdict:closingVerdictV2(d,a,P),...sumFateV3(sections,a,pillars),secondary:findings.slice(1,4).map(x=>x.title),dominant:d,schemaVersion:2,
   ziping:{profile:profile,uncertainty:{timeUnknown:!!inp.unknown,boundary:chart.boundary||null},monthCommand:{branch:a.month,stem:HIDDEN[a.month][0][0],god:tenGod(dayStem,HIDDEN[a.month][0][0]),family:TEN_FAMILY[tenGod(dayStem,HIDDEN[a.month][0][0])]},patternAnchor:{stem:a.structure.stem,god:a.structure.god,family:a.structure.family,layer:a.structure.qiLayer,exposed:a.structure.exposed,places:a.structure.places},roots:a.strength.roots,interactions:a.interactions,strength:a.strength,structure:a.structure,use:a.use,findings:findings}};
 }
 
@@ -2646,6 +2715,7 @@ function renderResult(R){
  $('loop').innerHTML=r.loop.map(t=>'<span>'+plainEsc(t)+'</span>').join('<i>→</i>')+'<i>→</i><span class="again">반복</span>';
  $('verdict').textContent=plainSajuText(r.verdict);
  $('also').innerHTML=r.secondary.length?'<b>함께 나타나는 특징</b>'+r.secondary.map(t=>'<li>'+plainEsc(t)+'</li>').join(''):'';
+ const cz=$('caution'),cs=r.cautions||[];cz.hidden=!cs.length;cz.innerHTML=cs.length?'<b>조심할 것</b>'+cs.map(t=>'<p>'+plainEsc(t)+'</p>').join(''):'';
 }
 function luckGraph(L,cycles,worstIndex){
  const cyc=cycles||L.cycles,W=420,H=230,pl=22,pr=22,pt=44,pb=50,n=cyc.length;
