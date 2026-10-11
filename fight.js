@@ -815,7 +815,7 @@ const BLOOD=(()=>{
   const mid=_pm.addVectors(a,b).multiplyScalar(.5),rad=reach*1.3+.003;
   let best=null,bestD=1e9;
   for(const m of (meshes||allFlow())){
-   if(!m.parent)continue;const s=wsphere(m);if(s.center.distanceTo(mid)>s.radius+rad)continue;if(!visibleChain(m))continue;
+   if(!m.parent||m.userData.detached)continue;const s=wsphere(m);if(s.center.distanceTo(mid)>s.radius+rad)continue;if(!visibleChain(m))continue;
    _pinv.copy(m.matrixWorld).invert();_pla.copy(a).applyMatrix4(_pinv);_plb.copy(b).applyMatrix4(_pinv);
    if(!FASTRAY.segment(FASTRAY.grid(m.geometry),_pla,_plb,_ph))continue;
    const pt=_pla.lerp(_plb,_ph.t).applyMatrix4(m.matrixWorld),d=pt.distanceTo(a);if(d>=bestD)continue;
@@ -1294,7 +1294,7 @@ class Emperor{
  constructor(result){
   this.result=result;
   this.root=grp(scene,null,'emperor');
-  this.bones={};this.parts=[];this.flow={};this.decals=[];this.lumps=[];this.disposables=[];
+  this.bones={};this.parts=[];this.flow={};this.decals=[];this.lumps=[];this.goreMeshes=[];this.disposables=[];
   this._materials();
   this._body();this._arms();this._legs();this._head();this._crown();this._tablet();
   // 같은 뼈에 붙은 움직이지 않는 조각은 합쳐서 그리기 횟수를 줄인다
@@ -1319,6 +1319,7 @@ class Emperor{
    boot:S('#1b1718',{roughness:.42}),sole:S('#efe8dc',{roughness:.7}),trouser:S('#7e1d1a',{roughness:.7}),
    beadJ:S('#5fc59a',{roughness:.2}),beadR:S('#d2402f',{roughness:.25}),beadW:S('#f6f0e2',{roughness:.25}),cord:S('#cf2f24',{roughness:.6}),
    tablet:S('#ffffff',{roughness:.22}),
+cutFlesh:S('#8d1722',{roughness:.94,side:THREE.DoubleSide}),cutDeep:S('#3d050b',{roughness:1,side:THREE.DoubleSide}),cutBone:S('#d8c6a5',{roughness:.82,side:THREE.DoubleSide}),
   };
   this.M.tablet.map=makeTabletTex(this.result);D.push(this.M.tablet.map);
   // 맞을 때 번쩍이는 재질
@@ -1693,6 +1694,7 @@ Object.assign(Emperor.prototype,{
   this.ik={L:{w:0,goal:0,target:V3(),fd:V3(0,-1,0),pd:V3(),curl:.3,space:'root'},R:{w:0,goal:0,target:V3(),fd:V3(0,-1,0),pd:V3(),curl:.3,space:'root'}};
   this.act=null;this.actQueue=[];this.guard=0;this.guardGoal=0;this.guardHP=3;this.guardCool=0;this.guardHold=0;
   this.limp=[0,0];this.armHurt=[0,0];this.hunch=0;this.weak=0;this.mood=0;this.sinceHit=99;this.hitsRecent=[];
+this.cutZones=[];this.cutStrokeFallback=0;this.detached=new Set();
   this.laughing=0;this.taunt=true;this.phase=0;this.breath=rnd(0,TAU);
   this.prevHeadQ=new THREE.Quaternion();this.headAngVel=V3();
   this.initFace();
@@ -1711,10 +1713,16 @@ Object.assign(Emperor.prototype,{
   B.chest.rotation.set(p.cF+sp.chest.X,p.cT+sp.chest.Y,-p.cR+sp.chest.Z);
   B.neck.rotation.set(p.nF+sp.neck.X,p.nT+sp.neck.Y,-p.nR+sp.neck.Z);
   B.head.rotation.set(p.hF+sp.head.X,p.hT+sp.head.Y,-p.hR+sp.head.Z);
-  for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
-   a.sh.rotation.set(-(p[n+'sF'])+j.X,s*p[n+'sT']+j.Y,s*p[n+'sA']+j.Z);
-   a.el.rotation.set(-p[n+'eB'],0,0);a.wr.rotation.set(-p[n+'wF'],0,s*p[n+'wA']);
-  }
+  
+  
+for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
+ if(!a.sh.userData.detached)a.sh.rotation.set(-(p[n+'sF'])+j.X,s*p[n+'sT']+j.Y,s*p[n+'sA']+j.Z);
+ if(!a.el.userData.detached)a.el.rotation.set(-p[n+'eB'],0,0);
+ if(!a.wr.userData.detached)a.wr.rotation.set(-p[n+'wF'],0,s*p[n+'wA']);
+}
+
+
+
   for(const l of this.legs){const n=l.nm,s=l.s;
    l.hip.rotation.set(-p[n+'hF'],0,s*p[n+'hA']);l.knee.rotation.set(p[n+'kB']+sp[n+'k'].x,0,0);l.ank.rotation.set(-p[n+'aF'],0,0);
   }
@@ -1726,14 +1734,14 @@ Object.assign(Emperor.prototype,{
   const sq=sp.squash;this.face.scale.set(1+sq.X,1+sq.Y,1+sq.Z);
   const bj=sp.belly;this.belly.scale.set(.345*(1+bj.X),.295*(1+bj.Y),.325*(1+bj.Z));
  },
- setCurl(a,c){const s=a.s,h=a.hand,cc=clamp(c,-.1,1.2);
+ setCurl(a,c){if(a.wr.userData.detached)return;const s=a.s,h=a.hand,cc=clamp(c,-.1,1.2);
   for(let i=0;i<4;i++){const f=h.fingers[i];const k=cc*(1+i*.04);f.f.rotation.set(0,0,-s*k*1.45);f.f2.rotation.set(0,0,-s*k*1.55);}
   h.thumb.t.rotation.set(-.5-cc*.5,0,-s*(.5+cc*.55));h.thumb.t2.rotation.set(0,0,-s*cc*.9);
  },
 
  /* ---- 팔 IK: 손을 정해진 자리에 ---- */
  solveArm(a,ik){
-  if(ik.w<.001)return;
+  if(ik.w<.001||a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
   const chest=this.bones.chest;chest.updateWorldMatrix(true,false);
   const T=_av1.copy(ik.target);
   if(ik.space==='root')this.root.localToWorld(T);
@@ -1760,7 +1768,7 @@ Object.assign(Emperor.prototype,{
   const w=smooth(ik.w);
   a.sh.quaternion.slerp(qU,w);a.el.quaternion.slerp(qE,w);if(qH)a.wr.quaternion.slerp(qH,w);
  },
- setIK(side,o){const ik=this.ik[side];ik.goal=o.w==null?1:o.w;if(o.target)ik.target.copy(o.target);if(o.fd)ik.fd.copy(o.fd);if(o.pd)ik.pd.copy(o.pd);if(o.curl!=null)ik.curl=o.curl;ik.space=o.space||'root';ik.pole=o.pole||null;ik.rate=o.rate||8;},
+ setIK(side,o){const a=this.arms[side==='L'?0:1],ik=this.ik[side];if(a&&(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)){ik.goal=0;return;}ik.goal=o.w==null?1:o.w;if(o.target)ik.target.copy(o.target);if(o.fd)ik.fd.copy(o.fd);if(o.pd)ik.pd.copy(o.pd);if(o.curl!=null)ik.curl=o.curl;ik.space=o.space||'root';ik.pole=o.pole||null;ik.rate=o.rate||8;},
  releaseIK(side,rate=6){const ik=this.ik[side];ik.goal=0;ik.rate=rate;},
 
  /* ---- 홀(내 사주가 적힌 옥판) ---- */
@@ -1860,7 +1868,7 @@ Object.assign(Emperor.prototype,{
   for(const c of this.cords)if(c.piv.parent)hang(c.piv,c.sx,c.sz);
   for(const strand of this.beard)for(let i=0;i<strand.length;i++){const s=strand[i];hang(s.g,s.sx,s.sz);}
   // 소매 자락: 아래팔이 수평에 가까울수록 크게 늘어진다
-  for(const a of this.arms){const d=a.drape;
+  for(const a of this.arms){if(a.el.userData.detached)continue;const d=a.drape;
    a.el.matrixWorld.decompose(_av6,_aq4,_av7);
    const fa=_av2.set(0,-1,0).applyQuaternion(_aq4);const horiz=1-Math.abs(fa.y);
    const k=smooth((horiz-.15)/.6);const zf=_av3.set(fa.x,0,fa.z);if(zf.lengthSq()<1e-6)zf.set(0,0,1);zf.normalize();
@@ -1874,6 +1882,7 @@ Object.assign(Emperor.prototype,{
   const pale=sat(this.bloodLost/4.4)*.55;
   if(this._pale!==Math.round(pale*50)){this._pale=Math.round(pale*50);this.M.skin.color.copy(col('#f1b48c')).lerp(col('#d9c0b0'),pale);this.M.skinD.color.copy(col('#dc9572')).lerp(col('#c4a596'),pale);this.M.blush.color.copy(col('#ef8f7a')).lerp(col('#d8a99e'),pale);this.M.lip.color.copy(col('#c65f55')).lerp(col('#a7787a'),pale);}
   for(const m of this.flashMats){m.emissive.setRGB(f*.42,f*.07,f*.05);}
+for(const m of this.goreMeshes)m.visible=PREF.blood;
  },
 });
 const _down=V3(0,-1,0),_av1=V3(),_av2=V3(),_av3=V3(),_av4=V3(),_av5=V3(),_av6=V3(),_av7=V3(),_av8=V3(),_av9=V3(),_av10=V3();
@@ -1946,7 +1955,11 @@ Object.assign(Emperor.prototype,{
  },
 
  /* ---- 행동(손을 쓰는 짧은 동작) ---- */
- doAct(name,o={}){if(this.state!=='stand'&&!o.any)return false;if(this.act&&this.act.prio>(o.prio||0))return false;this.endAct();this.act=Object.assign({name,t:0,dur:o.dur||1.5,prio:o.prio||0},o);return true;},
+ armUsable(side){const a=this.arms[side==='L'?0:1];return !!(a&&!a.sh.userData.detached&&!a.el.userData.detached&&!a.wr.userData.detached);},
+doAct(name,o={}){
+ if(o.side&&!this.armUsable(o.side)&&/^(clutch|face|wipe|look|shake|crown)$/.test(name)){const other=o.side==='L'?'R':'L';if(!this.armUsable(other))return false;o=Object.assign({},o,{side:other,both:false});}
+ if(this.state!=='stand'&&!o.any)return false;if(this.act&&this.act.prio>(o.prio||0))return false;this.endAct();this.act=Object.assign({name,t:0,dur:o.dur||1.5,prio:o.prio||0},o);return true;
+},
  endAct(){const a=this.act;if(!a)return;this.act=null;if(a.L!==false)this.releaseIK('L');if(a.R!==false)this.releaseIK('R');this.laughAmt=0;this.laughing=0;this.talk=0;},
  updateActions(out,dt,time){
   // 홀을 들고 있으면 두 손으로 받친다
@@ -2084,6 +2097,14 @@ const _bv1=V3(),_bv2=V3(),_bv3=V3(),_bv4=V3(),_bv5=V3(),_bv6=V3(),_bm=new THREE.
  * 부위·무기·방향에 따라: 몸 반응(스프링·행동), 상처(멍·혹·베인 자국·총알 구멍·흐르는 피), 이빨·코·눈·면류관, 목소리.
  * 돌려주는 값: 버팀 게이지를 얼마나 깎을지(dmg), 크게 휘청였는지(heavy) */
 const HEADS=/^(head|face|nose|mouth|chin|eyeL|eyeR|crown|beard)$/;
+const CUT_JOINTS={
+ shoulderL:['shoulderL','elbowL'],elbowL:['elbowL','wristL'],wristL:['wristL'],
+ shoulderR:['shoulderR','elbowR'],elbowR:['elbowR','wristR'],wristR:['wristR']
+};
+const CUT_CLUSTER_R={shoulder:.085,elbow:.072,wrist:.052};
+const CUT_CAP_R={shoulder:.115,elbow:.092,wrist:.047};
+const CUT_CAP_BODY={shoulder:.01,elbow:.012,wrist:.032};
+const CUT_CAP_PIECE={shoulder:.108,elbow:.103,wrist:.033};
 Object.assign(Emperor.prototype,{
  takeHit(h){
   const tool=h.tool,kind=h.kind,part=h.part,pt=h.point,n=h.normal,dir=h.dir;
@@ -2127,7 +2148,9 @@ Object.assign(Emperor.prototype,{
   out.dmg=base*(isHead?1.15:1)*(down?.35:1);
   return out;
  },
- handFor(pt){const l=this.root.worldToLocal(pt.clone());let side=l.x<0?'L':'R';if(this.armHurt[side==='L'?0:1]>.5)side=side==='L'?'R':'L';return side;},
+ handFor(pt){
+ const l=this.root.worldToLocal(pt.clone());let side=l.x<0?'L':'R',other=side==='L'?'R':'L';if(!this.armUsable(side)||(this.armHurt[side==='L'?0:1]>.5&&this.armUsable(other)))side=other;return side;
+},
  voiceHit(tool,part,P,cut){
   const now=G.time;if(now<(this.voiceCool||0))return;
   if(this.state==='dead'){if(Math.random()<.3){AUDIO.voice('groan',.4);this.voiceCool=now+1;}return;}
@@ -2180,7 +2203,271 @@ Object.assign(Emperor.prototype,{
    if(/^(arm|hand)/.test(part)&&heavy&&Math.random()<.5){const side=part.endsWith('L')?'L':'R';this.doAct('shake',{side,dur:.9,prio:1});}
   }
  },
- /* 칼·총: 상처 + 계속 흐르는 피 */
+ /* 같은 팔 부위를 여러 번 그으면 얕은 상처 → 깊은 상처 → 관절 절단 */
+cutJointFor(seg,pW){
+ const names=CUT_JOINTS[seg];if(!names)return null;
+ let best=null,bestD=Infinity;
+ for(const name of names){
+  const b=this.bones[name];
+  if(!b||b.userData.detached)continue;
+  b.updateWorldMatrix(true,false);
+  const d=b.getWorldPosition(V3()).distanceToSquared(pW);
+  if(d<bestD){bestD=d;best=name;}
+ }
+ return best;
+},
+progressCut(seg,pW,nW,angle,strokeId,len,dir){
+ const candidates=CUT_JOINTS[seg];if(!candidates)return 0;
+ let z=null,joint=null,bestD=Infinity;
+
+ for(const x of this.cutZones){
+  if(!candidates.includes(x.joint)||this.detached.has(x.joint))continue;
+  const xb=this.bones[x.joint];
+  if(!xb||xb.userData.detached)continue;
+  xb.updateWorldMatrix(true,false);
+
+  const d=x.lp.clone().applyMatrix4(xb.matrixWorld).distanceToSquared(pW);
+  const rad=CUT_CLUSTER_R[x.joint.replace(/[LR]$/,'')]||.065;
+  if(d>=rad*rad||d>=bestD)continue;
+
+  const wn=x.ln.clone().transformDirection(xb.matrixWorld);
+  if(wn.dot(nW)<.2)continue;
+
+  z=x;joint=x.joint;bestD=d;
+ }
+
+ if(!joint)joint=this.cutJointFor(seg,pW);
+ if(!joint||this.detached.has(joint))return 0;
+
+ const bone=this.bones[joint];
+ bone.updateWorldMatrix(true,false);
+
+ const lp=bone.worldToLocal(pW.clone());
+ const ln=nW.clone().transformDirection(_invB(bone)).normalize();
+
+ if(!z){
+  z={joint,seg,lp:lp.clone(),ln:ln.clone(),hits:0,lastStroke:null};
+  this.cutZones.push(z);
+  if(this.cutZones.length>48)this.cutZones.shift();
+ }
+
+ const sid=strokeId==null?'fallback-'+(++this.cutStrokeFallback):strokeId;
+ if(z.lastStroke===sid)return z.hits;
+
+ z.lastStroke=sid;
+ z.hits++;
+ z.lp.lerp(lp,.22);
+ z.ln.lerp(ln,.22).normalize();
+ z.seg=seg;
+
+ const cutLen=clamp(len||.05,.03,.11);
+
+ if(z.hits===2){
+  const w=.018;
+  BLOOD.decal('cut',seg,pW,nW,w,{
+   aspect:clamp(cutLen/w,2.5,5.5),
+   angle,
+   grid:8
+  });
+  BLOOD.addWound(seg,pW,nW,{rate:.018,tau:36,kind:'cut'});
+  BLOOD.spray(pW,nW,7,{max:2.4});
+ }else if(z.hits===4){
+  const w=.024;
+  BLOOD.decal('soak',seg,pW,nW,.085,{grow:1.2});
+  BLOOD.decal('cut',seg,pW,nW,w,{
+   aspect:clamp(cutLen/w,2.4,5),
+   angle,
+   grid:9
+  });
+  BLOOD.addWound(seg,pW,nW,{rate:.032,tau:52,kind:'cut'});
+  BLOOD.spray(pW,nW,15,{max:3.4});
+  AUDIO.spurt(.7);
+ }else if(z.hits>=6){
+  this.detachArm(joint,nW,dir);
+ }
+
+ return z.hits;
+},
+
+makeCutCap(parent,pos,q,r,distal,offset){
+ const g=grp(parent);
+ g.position.copy(pos);
+ g.quaternion.copy(q);
+ g.translateY((distal?1:-1)*(offset||0));
+
+ const s=distal?1:-1;
+ const rx=distal?-PI/2:PI/2;
+
+ const add=(rr,mat,d)=>{
+  const m=mk(
+   new THREE.CircleGeometry(rr,24),
+   mat,
+   g,
+   {p:[0,s*d,0],r:[rx,0,0],cast:false}
+  );
+  m.userData.noHit=true;
+  m.userData.gore=true;
+  m.visible=PREF.blood;
+  this.goreMeshes.push(m);
+  return m;
+ };
+
+ add(r,this.M.cutFlesh,.001);
+ add(r*.73,this.M.cutDeep,.002);
+ add(r*.18,this.M.cutBone,.003);
+ return g;
+},
+
+limbCorners(root){
+ root.updateWorldMatrix(true,true);
+
+ const inv=root.matrixWorld.clone().invert();
+ const rel=new THREE.Matrix4();
+ const out=[];
+
+ root.traverse(o=>{
+  if(!o.isMesh||!o.visible||!o.geometry)return;
+
+  for(let n=o;n&&n!==root;n=n.parent){
+   if(!n.visible)return;
+  }
+
+  if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();
+  const b=o.geometry.boundingBox;
+
+  rel.multiplyMatrices(inv,o.matrixWorld);
+
+  for(const x of [b.min.x,b.max.x]){
+   for(const y of [b.min.y,b.max.y]){
+    for(const z of [b.min.z,b.max.z]){
+     out.push(V3(x,y,z).applyMatrix4(rel));
+    }
+   }
+  }
+ });
+
+ return out.length?out:null;
+},
+
+detachArm(joint,hitN,dir){
+ const bone=this.bones[joint];
+ if(!bone||bone.userData.detached||this.detached.has(joint))return false;
+
+ const parent=bone.parent;
+ if(!parent||!parent.userData.bone)return false;
+
+ bone.updateWorldMatrix(true,true);
+ parent.updateWorldMatrix(true,false);
+
+ const jointW=bone.getWorldPosition(V3());
+ const qW=bone.getWorldQuaternion(new THREE.Quaternion());
+ const pLocal=bone.position.clone();
+ const qLocal=bone.quaternion.clone();
+ const corners=this.limbCorners(bone);
+
+ const base=joint.replace(/[LR]$/,'');
+ const r=CUT_CAP_R[base]||.07;
+ const bodyOff=CUT_CAP_BODY[base]||.01;
+ const pieceOff=CUT_CAP_PIECE[base]||.04;
+
+ this.makeCutCap(parent,pLocal,qLocal,r,false,bodyOff);
+ this.makeCutCap(bone,V3(),new THREE.Quaternion(),r,true,pieceOff);
+
+ this.endAct();
+ if(this.tabletHeld)this.dropTablet();
+
+ scene.attach(bone);
+
+ const removed=new Set();
+ const matClones=new Map();
+
+ const ownMat=m=>{
+  if(!m)return m;
+  if(!matClones.has(m)){
+   const c=m.clone();
+   matClones.set(m,c);
+   this.disposables.push(c);
+  }
+  return matClones.get(m);
+ };
+
+ bone.traverse(o=>{
+  o.userData.detached=true;
+  if(o.isMesh){
+   removed.add(o);
+   o.material=Array.isArray(o.material)
+    ?o.material.map(ownMat)
+    :ownMat(o.material);
+  }
+ });
+
+ this.parts=this.parts.filter(o=>!removed.has(o));
+ this.detached.add(joint);
+
+ const side=joint.endsWith('L')?'L':'R';
+ this.releaseIK(side,20);
+ this.armHurt[side==='L'?0:1]=1;
+
+ const push=(dir?dir.clone():V3(0,0,1)).multiplyScalar(1.1);
+ push.x+=rnd(-.45,.45);
+ push.y=Math.max(.8,push.y+.95);
+ push.z+=rnd(-.25,.25);
+
+ this.bits=this.bits||[];
+ this.bits.push({
+  obj:bone,
+  v:push,
+  w:V3(rnd(-7,7),rnd(-9,9),rnd(-7,7)),
+  r:.03,
+  bounce:.16,
+  sound:'limb',
+  corners,
+  bleed:{
+   lp:V3(0,pieceOff+.007,0),
+   ln:V3(0,1,0),
+   t:0,
+   life:12
+  }
+ });
+
+ const nParent=V3(0,-1,0).applyQuaternion(qW).normalize();
+ const nPiece=nParent.clone().negate();
+ const parentSeg=parent.userData.bone;
+
+ const bodyW=jointW.clone().addScaledVector(nParent,bodyOff+.004);
+ const pieceW=jointW.clone().addScaledVector(nPiece,pieceOff+.004);
+
+ BLOOD.addWound(parentSeg,bodyW,nParent,{
+  rate:.055,
+  tau:70,
+  artery:true,
+  kind:'cut'
+ });
+
+ BLOOD.addWound(joint,pieceW,nPiece,{
+  rate:.02,
+  tau:35,
+  kind:'cut'
+ });
+
+ const sprayN=hitN
+  ?hitN.clone().lerp(nParent,.35).normalize()
+  :nParent;
+
+ BLOOD.spray(bodyW,sprayN,28,{
+  min:1.4,
+  max:4.8,
+  spread:1.15
+ });
+
+ AUDIO.crack(1.4);
+ AUDIO.spurt(1.2);
+ this.hitFlash=1;
+ this.rootVel.z-=.28;
+ return true;
+},
+
+/* 칼·총: 상처 + 계속 흐르는 피 */
  makeWound(seg,pt,n,dir,tool,kind,h,onGuard){
   const gun=tool==='gun',isHead=HEADS.test(h.part);
   const artery=h.part==='neck'||(/^thigh/.test(h.part)&&gun&&Math.random()<.5);
@@ -2211,6 +2498,7 @@ BLOOD.decal('cut',seg,mid,n,cw,{
    for(let i=0;i<Math.min(3,Math.ceil(len*40));i++){const q=V3().copy(a).lerp(b,rnd(.1,.9));const pr=BLOOD.project(q,n,.05);if(pr)BLOOD.startRiv(pr.seg||seg,pr.point,pr.normal,{w:rnd(.003,.0048),maxLen:rnd(.08,.3)});}
    BLOOD.spray(mid,n,clamp(Math.round(len*120),4,14),{max:2.2});
    if(isHead&&Math.random()<.6)this.screenSplat(mid,.45);
+this.progressCut(seg,mid,n,ang,h.strokeId,len,dir);
   }else{
    const ca=rnd(0,PI),sw=.013;
 BLOOD.decal('cut',seg,pt,n,sw,{
@@ -2258,12 +2546,95 @@ BLOOD.decal('cut',seg,pt,n,sw,{
   this.topknot=mk(sphereGeo(20),this.M.hair,this.face,{p:[0,.235,-.03],s:[.075,.06,.075],part:'head'});this.topknot.userData.seg='head';this.parts.push(this.topknot);
   mk(cylGeo(.004,.004,.2,6),this.M.gold,this.topknot,{r:[0,0,PI/2],s:[1/.075,1/.06,1/.075],cast:false});
  },
- updateBits(dt){
-  if(!this.bits)return;
-  for(const b of this.bits){if(b.rest)continue;b.v.y-=9.8*dt;b.obj.position.addScaledVector(b.v,dt);b.obj.rotation.x+=b.w.x*dt;b.obj.rotation.y+=b.w.y*dt;b.obj.rotation.z+=b.w.z*dt;
-   const floorY=b.r;if(b.obj.position.y<floorY){b.obj.position.y=floorY;if(Math.abs(b.v.y)>.8){if(b.sound==='tooth')AUDIO.toothBounce();else if(b.sound==='crown')AUDIO.crownLand();}
-    b.v.y*=-b.bounce;b.v.x*=.6;b.v.z*=.6;b.w.multiplyScalar(.5);if(Math.abs(b.v.y)<.25){b.v.set(0,0,0);b.rest=true;if(b.crown){b.obj.rotation.set(rnd(-.3,.3),b.obj.rotation.y,rnd(-.6,.6)+.4);}}}}
- },
+
+updateBits(dt){
+ if(!this.bits)return;
+
+ for(const b of this.bits){
+  if(b.bleed&&b.bleed.life>0){
+   const q=b.bleed;
+   q.life-=dt;
+   q.t-=dt;
+
+   if(PREF.blood&&q.t<=0){
+    q.t=rnd(.08,.16)*(1+(12-q.life)*.12);
+    b.obj.updateWorldMatrix(true,false);
+
+    const p=q.lp.clone().applyMatrix4(b.obj.matrixWorld);
+    const v=q.ln.clone()
+     .transformDirection(b.obj.matrixWorld)
+     .multiplyScalar(rnd(.25,.75));
+
+    v.y-=rnd(.25,.7);
+    BLOOD.emit('blood',p,v,rnd(.0035,.0065),rnd(.7,1.1));
+   }
+  }
+
+  if(b.rest)continue;
+
+  b.v.y-=9.8*dt;
+  b.obj.position.addScaledVector(b.v,dt);
+  b.obj.rotation.x+=b.w.x*dt;
+  b.obj.rotation.y+=b.w.y*dt;
+  b.obj.rotation.z+=b.w.z*dt;
+
+  let floorHit=false;
+
+  if(b.corners){
+   b.obj.updateWorldMatrix(true,false);
+   let minY=Infinity;
+
+   for(const c of b.corners){
+    minY=Math.min(
+     minY,
+     _bv6.copy(c).applyMatrix4(b.obj.matrixWorld).y
+    );
+   }
+
+   if(minY<.004){
+    b.obj.position.y+=.004-minY;
+    floorHit=true;
+   }
+  }else if(b.obj.position.y<b.r){
+   b.obj.position.y=b.r;
+   floorHit=true;
+  }
+
+  if(floorHit){
+   if(Math.abs(b.v.y)>.8){
+    if(b.sound==='tooth'){
+     AUDIO.toothBounce();
+    }else if(b.sound==='crown'){
+     AUDIO.crownLand();
+    }else if(b.sound==='limb'&&!b.landed){
+     b.landed=true;
+     AUDIO.crack(.65);
+    }
+   }
+
+   b.v.y*=-b.bounce;
+   b.v.x*=.6;
+   b.v.z*=.6;
+   b.w.multiplyScalar(.5);
+
+   if(Math.abs(b.v.y)<.25){
+    b.v.set(0,0,0);
+    b.rest=true;
+
+    if(b.crown){
+     b.obj.rotation.set(
+      rnd(-.3,.3),
+      b.obj.rotation.y,
+      rnd(-.6,.6)+.4
+     );
+    }
+   }
+  }
+ }
+},
+
+
+
  crownUpdate(dt){
   if(this.crownOn===false)return;const t=this.crownTilt||0;
   this.crownTilt=Math.max(0,t-dt*.01);
@@ -2532,7 +2903,7 @@ function visibleChain(o){for(let n=o;n;n=n.parent)if(!n.visible)return false;ret
 function pickAt(x,y){
  const E=G.E;if(!E)return null;scene.updateMatrixWorld(true);camera.updateMatrixWorld(true);
  ray.setFromCamera(new THREE.Vector2(x/innerWidth*2-1,1-y/innerHeight*2),camera);
- const list=E.parts.filter(o=>o.parent&&visibleChain(o)&&(o.userData.part!=='tablet'||E.tabletHeld)&&(o.userData.part!=='crown'||E.crownOn!==false));
+ const list=E.parts.filter(o=>o.parent&&!o.userData.detached&&visibleChain(o)&&(o.userData.part!=='tablet'||E.tabletHeld)&&(o.userData.part!=='crown'||E.crownOn!==false));
  const hits=ray.intersectObjects(list,false);if(!hits.length)return null;
  const h=hits[0];nmat.getNormalMatrix(h.object.matrixWorld);const n=h.face?h.face.normal.clone().applyMatrix3(nmat).normalize():ray.ray.direction.clone().negate();
  if(n.dot(ray.ray.direction)>0)n.negate();
@@ -2547,7 +2918,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  dir.normalize();
  const power=(POWER[tool]||{})[kind]||1;
  if(!G.started){G.started=true;G.t0=G.time;}
- const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom});
+ const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,strokeId:extra.strokeId});
  G.hits++;
  // 타격감: 멈춤·반동·흔들림·소리·진동
  const heavy=r.heavy||power>=1.8;
@@ -2619,15 +2990,47 @@ const gunL=new THREE.PointLight(col('#ffbe70'),0,6,2);scene.add(gunL);let gunLT=
 function gunLight(){gunLT=.06;}
 
 /* ---- 칼로 긋기 ---- */
+let slashSerial=0;
+
 function slashContact(p,x,y){
- const info=pickAt(x,y);const now=G.time;
+ if(p.slashId==null)p.slashId=++slashSerial;
+
+ const info=pickAt(x,y);
+ const now=G.time;
+
  if(VM.st.slash)VM.st.slash.touching=!!info;
  if(!info){p.lastCut=null;return;}
- if(!p.lastCut){p.lastCut={point:info.point.clone(),t:now,part:info.part};return;}
+
+ const seg=info.obj&&info.obj.userData.seg;
+
+ if(!p.lastCut||p.lastCut.seg!==seg){
+  p.lastCut={
+   point:info.point.clone(),
+   t:now,
+   part:info.part,
+   seg
+  };
+  return;
+ }
+
  const d=info.point.distanceTo(p.lastCut.point);
+
  if(d>.045||now-p.lastCut.t>.12){
-  if(d>.015){const from=p.lastCut.point.clone();resolveHit('knife','slash',info,'R',{slashFrom:from});}
-  p.lastCut={point:info.point.clone(),t:now,part:info.part};
+  if(d>.015){
+   const from=p.lastCut.point.clone();
+
+   resolveHit('knife','slash',info,'R',{
+    slashFrom:from,
+    strokeId:p.slashId
+   });
+  }
+
+  p.lastCut={
+   point:info.point.clone(),
+   t:now,
+   part:info.part,
+   seg
+  };
  }
 }
 
