@@ -1220,7 +1220,23 @@ for(const m of rims)m.visible=gv;
 flMesh.visible=gv;
  }
 
-
+ function clearSegment(seg){
+  if(!E)return;const bone=E.bones[seg];if(!bone)return;
+  for(let i=decals.length-1;i>=0;i--){const m=decals[i];if(m.parent!==bone)continue;m.removeFromParent();m.geometry.dispose();decals.splice(i,1);}
+  for(let i=rims.length-1;i>=0;i--){const m=rims[i];if(m.parent!==bone)continue;m.removeFromParent();rims.splice(i,1);}
+  for(let i=lumps.length-1;i>=0;i--){const l=lumps[i];if(l.bone!==bone)continue;l.mesh.removeFromParent();lumps.splice(i,1);}
+  for(let i=bankList.length-1;i>=0;i--){const b=bankList[i];if(b.seg!==seg&&b.bone!==bone)continue;b.mesh.removeFromParent();b.g.dispose();bankList.splice(i,1);}
+  for(const key in banks)if(banks[key].seg===seg||banks[key].bone===bone)delete banks[key];
+  for(let i=rivs.length-1;i>=0;i--)if(rivs[i].seg===seg||rivs[i].bone===bone)rivs.splice(i,1);
+  for(let i=drips.length-1;i>=0;i--)if(drips[i].seg===seg||drips[i].bone===bone)drips.splice(i,1);
+  for(let i=wounds.length-1;i>=0;i--)if(wounds[i].seg===seg||wounds[i].bone===bone)wounds.splice(i,1);
+  for(let i=beads.length-1;i>=0;i--)if(beads[i].bone===bone)beads.splice(i,1);
+ }
+ function clearDecalsNear(seg,pW,r,type='hole'){
+  if(!E)return 0;const bone=E.bones[seg];if(!bone)return 0;bone.updateWorldMatrix(true,false);const lp=bone.worldToLocal(pW.clone());let removed=0;
+  for(let i=decals.length-1;i>=0;i--){const m=decals[i];if(m.parent!==bone||(type&&m.userData.decal!==type)||!m.userData.center||m.userData.center.distanceToSquared(lp)>r*r)continue;m.removeFromParent();m.geometry.dispose();decals.splice(i,1);removed++;}
+  return removed;
+ }
  
  function reset(emp){
   E=emp;for(const k in parts)for(const d of parts[k])d.on=false;
@@ -1234,7 +1250,7 @@ rims.length=0;
   if(pnCtx&&pnSaved){pnCtx.clearRect(0,0,pnCanvas.width,pnCanvas.height);pnCtx.drawImage(pnSaved,0,0);WORLD.panelTex.needsUpdate=true;}
   SB.clear();lostRaw=0;heart=0;
  }
- return {spray,emit,startRiv,addWound,decal,rim,lump,project,paintFloor,paintPanel,update,reset,screen:SB,get lost(){return LOSTMAX*(1-Math.exp(-lostRaw/2.4));},get bleedRate(){let t=0;for(const w of wounds)t+=w.rate0*Math.exp(-w.age/w.tau);return t;},wounds,rivs};
+ return {spray,emit,startRiv,addWound,decal,rim,lump,project,paintFloor,paintPanel,clearSegment,clearDecalsNear,update,reset,screen:SB,get lost(){return LOSTMAX*(1-Math.exp(-lostRaw/2.4));},get bleedRate(){let t=0;for(const w of wounds)t+=w.rate0*Math.exp(-w.age/w.tau);return t;},wounds,rivs};
 })();
 const SBLOOD=BLOOD.screen;
 /* ===== 6. 옥황상제 — 모양 ===== */
