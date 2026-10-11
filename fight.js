@@ -105,13 +105,19 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
  </header>
+
+
+
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
-  <<button class="tool on" type="button" data-tool="hand"><svg viewBox="0 0 48 48"><use href="#fi-fist"/></svg>너클</button>
-<button class="tool" type="button" data-tool="knife"><svg viewBox="0 0 48 48"><use href="#fi-knife"/></svg>칼</button>
-<button class="tool" type="button" data-tool="gun"><svg viewBox="0 0 48 48"><use href="#fi-gun"/></svg>총<span class="ammo" id="ammo" hidden>8</span></button>
-  </div></div>
+  <div class="panel tools" id="tools">
+   <button class="tool on" type="button" data-tool="hand"><svg viewBox="0 0 48 48"><use href="#fi-fist"/></svg>너클</button>
+   <button class="tool" type="button" data-tool="knife"><svg viewBox="0 0 48 48"><use href="#fi-knife"/></svg>칼</button>
+   <button class="tool" type="button" data-tool="gun"><svg viewBox="0 0 48 48"><use href="#fi-gun"/></svg>총<span class="ammo" id="ammo" hidden>8</span></button>
+  </div>
  </div>
+
+
  <div class="dock" id="submitDock" hidden><button type="button" class="btn danger" id="submitFight">운명 설계자 족치기</button></div>
  <div class="modal" id="settingsModal" hidden>
   <div class="msheet" role="dialog" aria-modal="true" aria-labelledby="fSetTitle">
