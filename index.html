@@ -280,6 +280,13 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .also b{display:block;font-size:13.5px;color:var(--muted);margin-bottom:6px}
 .also li{font-size:15.5px;line-height:1.6;padding:3px 0 3px 18px;position:relative;color:var(--ink-2)}
 .also li::before{content:"";position:absolute;left:3px;top:.62em;width:7px;height:7px;border-radius:2px;background:var(--red)}
+.also:empty{display:none}
+.caution{margin:18px 0 0;padding:16px 0 0;border-top:2px dashed var(--line-2)}
+.caution b{display:block;font-size:13.5px;color:var(--muted);margin-bottom:8px}
+.caution p{position:relative;margin:0 0 10px;padding-left:18px;font-size:15.5px;line-height:1.65;color:var(--ink-2);word-break:keep-all}
+.caution p::before{content:"";position:absolute;left:3px;top:.64em;width:7px;height:7px;border-radius:2px;background:var(--red)}
+.caution p:last-child{margin-bottom:0}
+.fate-end{margin:30px 6px 0;text-align:center;font-family:var(--serif);font-weight:700;font-size:clamp(23px,6.4vw,27px);line-height:1.45;letter-spacing:-.03em;word-break:keep-all;color:var(--ink)}
 
 /* 선택 */
 .choices{margin-top:36px;display:grid;gap:12px}
@@ -583,7 +590,8 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div></section>
   <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol></section>
   <section class="block"><h2 class="sec-label">반복되는 경향</h2><div class="loop" id="loop"></div></section>
-  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><ul class="also" id="also"></ul></section>
+  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><ul class="also" id="also"></ul><div class="caution"><b>조심할 것</b><p>같이 시작한 사람이 먼저 올라가도 비교하지 마세요. 당신은 좋은 학교도 든든한 인맥도 물려받지 못해 밑에서 받쳐 주는 팔자입니다.</p><p>성과급을 두고 다투는 사람들 얘기는 흘려들으세요. 당신은 쉬는 시간 몇 분을 지키는 데도 힘을 다 써야 하는 팔자입니다.</p><p>다툼이 생겨도 법으로 가져가지 마세요. 좋은 변호사를 붙일 형편이 못 돼서 오래 끌수록 지는 팔자입니다.</p><p>쉬는 시간을 더 달라는 말은 꺼내지 마세요. 정해진 만큼만 쉬고 버텨야 무탈한 팔자입니다.</p><p>당신은 윗사람에게 따지거나 여럿이 모여 목소리를 내면 화를 입는 팔자입니다. 억울한 일이 있어도 참고 넘기세요. 지금은 때를 기다리세요.</p></div></section>
+  <p class="fate-end">당신은 그렇게 태어났습니다.</p>
   <div class="choices"><button id="submit-fate" type="button" class="btn ghost">이 운명대로 살기</button><button id="fight-fate" type="button" class="btn red">운명 설계자 족치기</button></div>
   <button id="start-over" type="button" class="textbtn">다른 사주 보기</button>
  </div>
@@ -2012,6 +2020,7 @@ function makeReading(chart,inp,now){
   loveSectionV2(a,P,findings),peopleSectionV2(a,P,findings),bodySectionV2(a,P,findings)
  ];
  // 대운
+ addFateV3(sections,a,P,findings,inp,sinsal);
  let curYear;try{curYear=yearMonthAt(now).sajuYear;}catch(_){curYear=new Date(now+9*HOUR).getUTCFullYear();}
  const cycles=chart.yun.cycles.map((c,i)=>{
   const g=gz(c.idx),r=composeTransitV2(g,a,P,'대운',''),sd=localYmd(inp.place,c.start),ed=localYmd(inp.place,c.end-1),sy=sd.y,ey=ed.y;
@@ -2141,6 +2150,7 @@ function plainOutcomeTextV2(value){
  text=text.replace(/손해를 보기 쉽습니다/g,'손해를 봅니다').replace(/불편해지기 쉽습니다/g,'불편해집니다').replace(/커지기 쉽습니다/g,'커집니다').replace(/어긋나기 쉽습니다/g,'어긋납니다');
  text=text.replace(/([가-힣]+)기 쉽습니다/g,'$1는 쪽으로 갑니다');
  text=text.replace(/책임과 평가 기준이 둘로 갈려 책임 기준이 둘로 갈려/g,'책임 기준이 둘로 갈려');
+ FIX_V3.forEach(p=>{text=text.split(p[0]).join(p[1]);});
  return text.replace(/[ ]{2,}/g,' ').trim();
 }
 function plainEsc(s){return esc(plainOutcomeTextV2(s));}
@@ -2476,7 +2486,7 @@ function renderResult(R){
  });
  // 대운
  const L=r.luck,currentCycle=L.cycles.find(c=>c.i===L.current),cyc=L.cycles,fd=localYmd(inp.place,L.start),currentAt=cyc.findIndex(c=>c.i===L.current),nearby=currentAt>=0?cyc.slice(currentAt,currentAt+3):cyc.slice(0,3),worstNearby=nearby.slice().sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||x.i-y.i)[0],worstShown=worstNearby&&worstNearby.score>=45?worstNearby.i:-1;
- $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년 '+fd.m+'월**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':''));
+ $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년 '+fd.m+'월**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':'')+' 직장은 여러 번 바뀌어도 하는 일과 받는 대우는 늘 비슷한 자리를 맴도는 팔자입니다.');
  $('luck-graph').innerHTML=luckGraph(L,nearby,worstShown);
  const LL=$('luck-list');LL.replaceChildren();
  nearby.forEach(cy=>{const now=cy.i===L.current,worst=cy.i===worstShown,ageBits=['만 '+cy.age+'세'];if(cy.ageMonths)ageBits.push(cy.ageMonths+'개월');if(cy.ageDays)ageBits.push(cy.ageDays+'일');if(cy.ageHours)ageBits.push(cy.ageHours+'시간');const showWorstYear=cy.worstYear&&!(r.pastHits||[]).some(x=>x.year===cy.worstYear.year);
