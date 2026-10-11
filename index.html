@@ -282,6 +282,45 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 #fightWait small{font-weight:500;color:var(--muted);font-size:14px;line-height:1.6}
 #fightWait .sbtn{width:auto;padding:0 22px}
 
+/* 평생 운 점수 */
+.judge{margin-top:18px;background:var(--card);border:2.5px solid var(--ink);border-radius:20px;padding:16px 16px 17px;box-shadow:0 5px 0 var(--ink)}
+.judge .jt{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.judge .jt span{font-size:15.5px;font-weight:700;color:var(--ink-2)}
+.judge .jt b{font-family:var(--serif);font-size:46px;line-height:1;color:var(--red-d);letter-spacing:-.02em}
+.judge .jt b small{font-family:var(--sans);font-size:16px;font-weight:700;color:var(--muted);margin-left:2px;letter-spacing:0}
+.judge .jr{margin-top:6px;font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.judge .jr em{font-style:normal;color:var(--red-d)}
+.jbar{position:relative;height:16px;border:2px solid var(--ink);border-radius:9px;background:#f4ecd4;margin:36px 0 2px}
+.jbar i{position:absolute;left:0;top:0;bottom:0;background:var(--red);border-radius:7px 0 0 7px}
+.jbar .avg{position:absolute;top:-9px;bottom:-9px;width:0;border-left:2.5px dashed var(--ink)}
+.jbar .avg em{position:absolute;bottom:calc(100% + 3px);left:0;transform:translateX(-50%);font-style:normal;font-size:12.5px;font-weight:700;white-space:nowrap;color:var(--ink)}
+.judge p{margin:16px 0 0;font-size:16px;line-height:1.75;color:var(--ink-2);word-break:keep-all}
+
+/* 지금 · 이유 · 앞으로 */
+.pt{display:inline-block;margin:0 7px 0 0;padding:1px 8px 2px;border-radius:7px;font-family:var(--sans);font-size:13px;font-weight:700;line-height:1.45;color:#fff;vertical-align:1.5px}
+.pt.now{background:var(--indigo)}
+.pt.why{background:var(--ink-2)}
+.pt.next{background:var(--red)}
+
+/* 이 해에 생기기 쉬운 일 */
+.evs{margin-top:12px;border-top:2px dashed var(--line-2);padding-top:10px}
+.evs b{display:block;font-size:13px;color:var(--red-d);margin-bottom:4px}
+.evs ul{margin:0;padding:0;list-style:none}
+.evs li{position:relative;padding:3px 0 3px 17px;font-size:15px;line-height:1.55;color:var(--ink);word-break:keep-all}
+.evs li::before{content:"";position:absolute;left:2px;top:.66em;width:7px;height:7px;border-radius:2px;background:var(--red)}
+
+/* 대운 더하기 */
+.luck li.best{border-color:var(--gold-d);background:#fffbea}
+.luck .flag.gold{background:var(--gold-d)}
+.luck .when .lp{display:block;width:fit-content;margin-top:6px;font-size:12.5px;font-weight:700;line-height:1.5;color:#fff;background:var(--ink);border-radius:99px;padding:1px 8px}
+
+/* 해 카드 이름표: 원래 회색으로 덮이던 글자를 흰색으로 */
+.year .yh .badge{color:#fff}
+
+/* 총평 더하기 */
+.verdict .vsum p{margin:14px 0 0;font-size:16px;line-height:1.8;color:var(--ink-2);word-break:keep-all}
+.verdict .vlast{margin:18px 0 0;padding:13px 15px;border:2.5px solid var(--red);border-radius:14px;background:#fff4f1;color:var(--red-d);font-weight:700;font-size:16.5px;line-height:1.6;word-break:keep-all}
+
 @media (min-width:760px){
   .wrap{max-width:640px}
   .years{grid-template-columns:1fr 1fr}
@@ -435,6 +474,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
  <header class="topbar"><button type="button" class="home" id="go-home" aria-label="처음 화면으로"><svg class="mark" viewBox="0 0 188 200" aria-hidden="true"><use href="#dosa-mark"/></svg><b>사주도사</b></button></header>
  <div class="wrap">
   <section class="r-head"><h1 id="r-title"></h1><p id="r-birth"></p></section>
+  <section class="judge" id="judge" aria-label="평생 운 점수"></section>
   <section class="block"><h2 class="sec-label">사주 여덟 글자</h2><div id="pillars" class="pillars"></div><p class="pnote" id="pillar-note" hidden></p></section>
   <section class="block"><h2 class="sec-label">나를 뜻하는 글자 <small>태어난 날의 위 칸</small></h2><div class="me-card" id="me-card"></div></section>
   <section class="block"><h2 class="sec-label">다섯 가지 기운</h2><div id="elements" class="elements"></div><div class="share" id="share" aria-hidden="true"></div><div class="share-leg" id="share-leg"></div><p class="remark" id="el-remark"></p></section>
@@ -443,8 +483,9 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <section class="block"><h2 class="sec-label">타고난 살</h2><div class="sal" id="sinsal"></div></section>
   <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div></section>
   <section class="block"><h2 class="sec-label">대운 <small>10년마다 바뀌는 큰 흐름</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol></section>
+  <section class="block reading" id="old-age"><h2 class="sec-label">말년</h2><h3 class="head" id="old-head"></h3><div id="old-body"></div></section>
   <section class="block"><h2 class="sec-label">되풀이되는 장면</h2><div class="loop" id="loop"></div></section>
-  <section class="block verdict"><h2 class="sec-label">총평</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><ul class="also" id="also"></ul></section>
+  <section class="block verdict"><h2 class="sec-label">총평</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><div class="vsum" id="verdict-sum"></div><ul class="also" id="also"></ul><p class="vlast" id="verdict-last"></p></section>
   <div class="choices"><button id="submit-fate" type="button" class="btn ghost">운명에 순응하기</button><button id="fight-fate" type="button" class="btn red">운명 설계자 족치기</button></div>
   <button id="start-over" type="button" class="textbtn">다른 사주 보기</button>
  </div>
@@ -705,10 +746,13 @@ function computeYun(t,ym,male){
 }
 
 /* ===== 3. 풀이 =====
- * 계산된 여덟 글자로 성향·돈·연애·건강·살·올해·대운 풀이를 만든다.
- * 문장 안의 **글자**는 굵게, ==글자==는 형광펜으로 표시된다.
+ * 계산된 여덟 글자로 성향·일·돈·연애·사람·건강·살·올해·대운·말년 풀이를 만든다.
+ * 문장 안의 **글자**는 굵게 표시된다.
  * 판단 기준: 나(태어난 날의 위 칸)를 중심으로 계절, 숨은 기운, 뿌리, 다섯 기운 비율, 글자끼리 부딪힘, 춥고 더움.
  * 풀이는 모두 불리한 쪽으로 읽는다.
+ *  - 영역마다 지금 모습 → 사주에서 그런 이유 → 앞으로(대운에서 고른 나이와 해) 순서로 쓴다.
+ *  - 지금 모습은 지금 나이대에 맞춰 고른다. 만 19세 미만은 학교·친구 위주로 덜 세게 쓰고, 말년·가장 나았던/힘든 10년은 빼다.
+ *  - 운 그래프: 가장 나았던 10년은 지나간 쪽에, 가장 힘든 10년은 앞으로 30년 안쪽에 오도록 맞추고, 모든 점은 또래 평균(50점) 아래에 둔다.
  */
 const STEMS={
  '甲':{ko:'갑',name:'큰 나무',icon:'g-jia',el:'목',yin:false,desc:'곧게 자라는 큰 나무'},
@@ -857,40 +901,47 @@ function analyzeChart(P,dayStem,male){
 
 /* ---------- 나를 뜻하는 글자 ---------- */
 const DAY_TEXT={
- '甲':{trait:'곧게 밀고 올라가는 사람입니다. 한번 정한 방향을 잘 바꾸지 않습니다.',head:'손해를 보면서도 가던 길을 계속 갑니다.',flaw:'정한 방향을 바꾸면 지는 것처럼 느낍니다. **틀린 걸 알고도 고집으로 버티는 시간**이 깁니다.'},
- '乙':{trait:'바람에 맞춰 휘어지는 사람입니다. 어디에 가도 적응합니다.',head:'적응을 잘하는 만큼 내 몫을 먼저 내줍니다.',flaw:'부딪히기 싫어서 한발씩 물러섭니다. **양보가 쌓인 뒤에야 내 자리가 없어진 걸 압니다**.'},
- '丙':{trait:'밝고 크게 드러나는 사람입니다. 일을 시작할 때 힘이 가장 셉니다.',head:'반응이 없으면 금방 식습니다.',flaw:'시작할 때는 크게 벌입니다. **기대한 반응이 안 오면 책임까지 같이 식어서**, 크게 벌인 일일수록 뒷수습이 길어집니다.'},
- '丁':{trait:'작은 것까지 섬세하게 보는 사람입니다.',head:'확인하지 않은 뜻을 혼자 해석하고 상처받습니다.',flaw:'남의 표정과 말투를 오래 붙들고 있습니다. **실제 관계보다 머릿속 관계를 더 오래 끌고 갑니다**.'},
- '戊':{trait:'묵직하게 버티는 사람입니다. 주변이 믿고 기댑니다.',head:'버티는 것을 해결로 착각합니다.',flaw:'도움을 청할 때를 놓칩니다. 남들이 믿음직하다고 하는 동안 **혼자 감당할 수 없는 무게를 떠안습니다**.'},
- '己':{trait:'남에게 필요한 것을 먼저 알아채고 채워 주는 사람입니다.',head:'누구나 편하게 가져다 쓰는 사람이 됩니다.',flaw:'필요한 걸 먼저 채워 주면서 대가는 말하지 못합니다. **거절은 지쳐 쓰러진 뒤에야 나옵니다**.'},
- '庚':{trait:'판단이 빠르고 맺고 끊는 게 분명한 사람입니다.',head:'사람과 상황을 너무 일찍 잘라 냅니다.',flaw:'판단이 빠른 만큼 사정까지 베어 버립니다. **맞는 결론을 들고도 내 편을 잃습니다**.'},
- '辛':{trait:'기준이 높고 흠을 잘 찾는 사람입니다.',head:'잘된 것보다 모자란 한 점이 먼저 보입니다.',flaw:'잘 끝낸 일도 금방 기준 미달로 보입니다. **스스로 만족하는 날이 거의 없습니다**.'},
- '壬':{trait:'생각의 폭이 넓고 판을 크게 보는 사람입니다.',head:'벌인 것은 많고 끝까지 간 것은 적습니다.',flaw:'길이 많다는 데 만족합니다. **하나를 골라 끝까지 책임지는 일은 계속 미룹니다**.'},
- '癸':{trait:'조용히 스며들고 미리 대비하는 사람입니다.',head:'대비가 늘수록 시작이 늦어집니다.',flaw:'아직 오지 않은 위험까지 미리 계산합니다. **피한 실패보다 해 보지 못한 일이 더 크게 쌓입니다**.'}
+ '甲':{trait:'곧게 밀고 올라가는 사람입니다. 굽힐 줄 몰라서 손해도 끝까지 봅니다.',head:'틀린 길인 걸 알고도 계속 갑니다.',flaw:'방향을 바꾸면 지는 것처럼 느낍니다. **틀린 걸 알고도 고집으로 버틴 시간**이 지금까지 가장 많은 걸 빼앗아 갔습니다.',verdict:'고집으로 버틴 만큼 잃고, 잃은 뒤에도 방향을 바꾸지 못합니다.'},
+ '乙':{trait:'어디에 가도 맞춰 사는 사람입니다. 맞추는 동안 내 뜻은 늘 뒤로 밀립니다.',head:'양보하다가 내 자리를 잃습니다.',flaw:'부딪히기 싫어서 한발씩 물러섭니다. **물러선 자리를 남이 차지한 뒤에야** 내 몫이 없어진 걸 압니다.',verdict:'양보한 자리는 돌아오지 않습니다. 끝까지 남의 뜻대로 삽니다.'},
+ '丙':{trait:'밝고 크게 드러나는 사람입니다. 반응이 없으면 금방 식습니다.',head:'크게 벌이고 끝을 내지 못합니다.',flaw:'시작할 때는 크게 벌입니다. **기대한 반응이 안 오면 책임까지 같이 식어서**, 벌여 놓고 끝내지 못한 일이 뒤에 쌓여 있습니다.',verdict:'벌여 놓은 일만 남고 끝낸 일은 없습니다.'},
+ '丁':{trait:'작은 것까지 섬세하게 보는 사람입니다. 그만큼 작은 일에도 오래 다칩니다.',head:'남의 말 한마디를 몇 년씩 붙들고 삽니다.',flaw:'남의 표정과 말투를 오래 붙들고 있습니다. **상대는 잊은 일을 혼자 몇 번이고 다시 겪습니다**.',verdict:'남의 말 한마디에 다친 채로 평생을 삽니다.'},
+ '戊':{trait:'묵직하게 버티는 사람입니다. 버티기만 하고 움직이지 못합니다.',head:'버티는 걸 해결로 착각합니다.',flaw:'도와 달라고 할 때를 놓칩니다. 남들이 믿음직하다고 하는 동안 **혼자 감당 못 할 무게를 떠안고**, 무너질 때도 혼자 무너집니다.',verdict:'혼자 버티다 혼자 무너집니다. 아무도 그 무게를 알아주지 않습니다.'},
+ '己':{trait:'남에게 필요한 걸 먼저 알아채고 채워 주는 사람입니다. 채워 준 만큼 돌려받지 못합니다.',head:'누구나 편하게 가져다 쓰는 사람이 됩니다.',flaw:'필요한 걸 먼저 채워 주면서 대가는 말하지 못합니다. **고맙다는 말은 처음 몇 번뿐이고, 그 뒤로는 당연한 일이 됩니다**.',verdict:'다 내주고 나면 내 몫은 남지 않습니다.'},
+ '庚':{trait:'판단이 빠르고 맺고 끊는 게 분명한 사람입니다. 끊어 낸 사람은 다시 돌아오지 않습니다.',head:'사람과 기회를 너무 일찍 잘라 냅니다.',flaw:'판단이 빠른 만큼 사정까지 베어 버립니다. **맞는 결론을 들고도 곁에 남는 사람이 줄어듭니다**.',verdict:'맞는 판단을 하고도 곁에 아무도 남지 않습니다.'},
+ '辛':{trait:'기준이 높고 흠을 잘 찾는 사람입니다. 그 기준을 자기에게 가장 세게 들이댑니다.',head:'스스로 만족하는 날이 거의 없습니다.',flaw:'잘 끝낸 일도 금방 모자란 점만 보입니다. **칭찬은 금방 잊고, 지적은 몇 년을 기억합니다**.',verdict:'어떤 결과를 내도 스스로 만족하지 못한 채 끝납니다.'},
+ '壬':{trait:'생각의 폭이 넓고 판을 크게 보는 사람입니다. 계획은 크고 손에 쥔 건 적습니다.',head:'벌인 건 많고 끝낸 건 없습니다.',flaw:'갈 수 있는 길이 많다는 데서 안심합니다. **하나를 골라 끝까지 간 적이 드물어서** 내세울 만한 게 쌓이지 않았습니다.',verdict:'갈 수 있던 길은 많았는데 끝까지 간 길이 없습니다.'},
+ '癸':{trait:'조용히 스며들고 미리 대비하는 사람입니다. 걱정이 앞서서 늘 한발 늦습니다.',head:'대비만 하다 시작도 못 합니다.',flaw:'아직 오지 않은 위험까지 미리 계산합니다. **피한 실패보다 해 보지도 못한 일이 훨씬 많고**, 그 목록은 해마다 길어집니다.',verdict:'대비하다 끝납니다. 해 본 것보다 피한 것이 많습니다.'}
 };
 function seasonText(a){
  if(!a.month)return '';
- const me=STEMS[a.dayStem],se=BRANCHES[a.month].el,role=elementRole(me.el,se),S=SEASON_KO[a.month],M=me.name,SE=ELEMENTS[se].name;
- if(role==='self')return jo(M,'이','가')+' '+S+'에 태어났습니다. 나와 같은 기운이 가장 센 계절이라 힘이 넘칩니다. 넘치는 힘을 쓸 데가 없으면 **고집과 충돌로 샙니다**.';
- if(role==='resource')return jo(M,'이','가')+' '+S+'에 태어났습니다. 계절이 나를 키워 주는 '+SE+' 기운이라 받으면서 자랐습니다. 받는 데 익숙해 **혼자 버티는 힘은 덜 자랐습니다**.';
- if(role==='output')return jo(M,'이','가')+' '+S+'에 태어났습니다. 이 계절은 '+jo(SE,'이','가')+' 자라는 때라 '+jo(M,'은','는')+' 그걸 키우느라 힘이 계속 빠져나갑니다. 벌여 놓은 것에 비해 **늘 힘이 모자랍니다**.';
- if(role==='wealth')return jo(M,'이','가')+' '+S+'에 태어났습니다. 이 계절은 '+jo(SE,'이','가')+' 가장 센 때라 '+jo(M,'은','는')+' 그걸 상대하느라 힘을 씁니다. **해야 할 일과 돈 문제가 사방에 깔려** 있습니다.';
- return jo(M,'이','가')+' '+S+'에 태어났습니다. 이 계절의 '+jo(SE,'은','는')+' 나를 누르는 기운입니다. **태어날 때부터 눌린 자리에서 시작합니다**.';
+ const me=STEMS[a.dayStem],se=BRANCHES[a.month].el,role=elementRole(me.el,se),S=SEASON_KO[a.month],M=me.name,SE=ELEMENTS[se].name,lead=jo(M,'이','가')+' '+S+'에 태어났습니다. ';
+ if(role==='self')return lead+'나와 같은 기운이 가장 센 계절이라 힘이 넘칩니다. 넘치는 힘을 쓸 데가 없어서 **고집과 다툼으로 새고**, 그 뒷수습에 시간을 다 씁니다.';
+ if(role==='resource')return lead+'계절이 나를 키워 주는 '+SE+' 기운이라 받으면서 자랐습니다. 받는 데 익숙해 **혼자 버티는 힘이 자라지 않았고**, 기댈 곳이 없어지면 바로 흔들립니다.';
+ if(role==='output')return lead+'이 계절은 '+jo(SE,'이','가')+' 자라는 때라 '+jo(M,'은','는')+' 그걸 키우느라 힘이 계속 빠져나갑니다. **태어날 때부터 주는 쪽으로 정해져** 늘 힘이 모자랍니다.';
+ if(role==='wealth')return lead+'이 계절은 '+jo(SE,'이','가')+' 가장 센 때라 '+jo(M,'은','는')+' 그걸 상대하느라 힘을 다 씁니다. **할 일과 돈 문제가 사방에 깔린 자리**에서 시작했습니다.';
+ return lead+'이 계절의 '+jo(SE,'은','는')+' 나를 누르는 기운입니다. **태어난 날부터 눌린 자리에서 시작했고**, 그 자리는 지금도 크게 다르지 않습니다.';
 }
 function strengthText(a){   // 점수는 화면의 막대가 보여 주므로 문장에는 이유와 결과만
  const s=a.strength,root=s.rootCount===0?'땅(아래 칸)에 나와 같은 기운이 하나도 없어 뿌리가 없습니다. ':s.rootCount===1?'나와 같은 기운이 아래 칸 한 곳에만 있어 뿌리가 가늡니다. ':'';
- if(s.label==='극약')return root+'내 뜻을 세우기 전에 **주변 요구에 먼저 끌려갑니다**.';
- if(s.label==='신약')return root+'적응은 하지만 **판을 내 쪽으로 돌릴 힘이 모자랍니다**.';
- if(s.label==='중화')return root+'힘은 균형에 가깝습니다. 그래서 힘의 크기보다 **어디서 부딪히고 새는지**가 운을 가릅니다.';
- if(s.label==='신강')return '나를 받치는 힘이 넉넉합니다. 밀어붙일 힘은 있는데 **멈추라는 신호를 늦게 듣습니다**.';
- return '나를 받치는 힘이 판을 압도합니다. 꺾어 줄 기운이 없어서 **틀린 길에서도 끝까지 갑니다**.';
+ if(s.label==='극약')return root+'내 뜻을 세우기 전에 **주변 요구에 먼저 끌려갑니다**. 지금까지 한 선택 가운데 정말 내가 고른 건 많지 않습니다.';
+ if(s.label==='신약')return root+'적응은 하지만 **판을 내 쪽으로 돌릴 힘이 없습니다**. 그래서 늘 남이 정한 판 위에서 삽니다.';
+ if(s.label==='중화')return root+'힘은 균형에 가깝습니다. 크게 무너지지 않는 대신 **크게 이길 힘도 없습니다**. 그래서 운은 어디서 새는지에 달렸는데, 이 사주는 새는 곳이 많습니다.';
+ if(s.label==='신강')return '나를 받치는 힘이 넉넉합니다. 밀어붙일 힘은 있는데 **멈추라는 신호를 늦게 듣고**, 그래서 잃을 때 크게 잃습니다.';
+ return '나를 받치는 힘이 판을 압도합니다. 꺾어 줄 기운이 없어서 **틀린 길에서도 끝까지 가고**, 돌아올 때는 혼자입니다.';
 }
 const FAMILY_TEXT={
- 비겁:{excess:'나와 같은 기운(자존심·경쟁)이 {p}%로 넘칩니다. 함께하는 사람을 동료보다 **경쟁 상대로 봅니다**. 내 몫을 지키려다 관계가 승부가 됩니다.',absent:'나와 같은 기운이 {p}%밖에 없습니다. **혼자 판단하고 혼자 버팁니다**. 사람이 곁에 있어도 내 편으로 쓰지 못합니다.'},
- 식상:{excess:'표현 기운(말·행동·결과물)이 {p}%로 넘칩니다. **말과 행동이 생각보다 먼저 나갑니다**. 일을 빨리 만들지만 멈출 줄을 몰라, 실력으로 얻은 기회를 말 한마디로 잃습니다.',absent:'표현 기운이 {p}%밖에 없습니다. **속에 든 것을 밖으로 꺼내는 길이 좁습니다**. 머릿속으로 끝낸 일을 밖에서는 시작도 못 합니다.'},
- 재성:{excess:'돈 기운이 {p}%로 넘칩니다. **돈과 현실 문제가 한꺼번에 몰려옵니다**. 가진 것이 늘수록 챙길 것도 늘어 오히려 선택지가 줄어듭니다.',absent:'돈 기운이 {p}%밖에 없습니다. **내 일에 값을 매기고 받아 내는 감각이 약합니다**. 고생한 만큼 돈으로 남지 않습니다.'},
- 관성:{excess:'압박 기운(규칙·평가·책임)이 {p}%로 넘칩니다. **남의 평가를 실제보다 무겁게 받습니다**. 시험을 통과해도 스스로 다음 시험을 만듭니다.',absent:'압박 기운이 {p}%밖에 없습니다. **나를 붙잡아 줄 틀이 약합니다**. 하고 싶은 마음이 식으면 약속도 같이 느슨해집니다.'},
- 인성:{excess:'보호 기운(생각·준비)이 {p}%로 넘칩니다. **준비하고 이해하는 데서만 안심합니다**. 그래서 아는 것은 많은데 출발은 늘 늦습니다.',absent:'보호 기운이 {p}%밖에 없습니다. **쉬고 회복하고 배운 걸 쌓아 두는 장치가 약합니다**. 같은 충격을 매번 처음처럼 맞습니다.'}
+ 비겁:{excess:'나와 같은 기운(자존심·경쟁)이 {p}%로 넘칩니다. 함께하는 사람을 동료보다 **경쟁 상대로 봅니다**. 내 몫을 지키려다 관계가 승부가 되고, 그 승부에서 사람을 잃습니다.',absent:'나와 같은 기운이 {p}%밖에 없습니다. **혼자 판단하고 혼자 버팁니다**. 사람이 곁에 있어도 내 편이 되어 주지 않습니다.'},
+ 식상:{excess:'표현 기운(말·행동·결과물)이 {p}%로 넘칩니다. **말과 행동이 생각보다 먼저 나갑니다**. 실력으로 얻은 기회를 말 한마디로 잃습니다.',absent:'표현 기운이 {p}%밖에 없습니다. **속에 든 것을 밖으로 꺼내지 못합니다**. 머릿속에서는 끝낸 일을 밖에서는 시작도 못 했습니다.'},
+ 재성:{excess:'돈 기운이 {p}%로 넘칩니다. **돈과 현실 문제가 한꺼번에 몰려옵니다**. 가진 것이 늘수록 챙길 것도 늘어 오히려 숨이 막힙니다.',absent:'돈 기운이 {p}%밖에 없습니다. **내 일에 값을 매기고 받아 내는 감각이 없습니다**. 고생한 만큼 돈으로 남은 적이 없습니다.'},
+ 관성:{excess:'압박 기운(규칙·평가·책임)이 {p}%로 넘칩니다. **남의 평가를 실제보다 무겁게 받습니다**. 시험 하나를 통과하면 스스로 다음 시험을 만듭니다.',absent:'압박 기운이 {p}%밖에 없습니다. **나를 붙잡아 줄 틀이 없습니다**. 마음이 식으면 약속도 같이 식고, 그렇게 놓친 기회가 많습니다.'},
+ 인성:{excess:'보호 기운(생각·준비)이 {p}%로 넘칩니다. **준비하고 이해하는 데서만 안심합니다**. 아는 것은 많은데 출발은 늘 남보다 늦었습니다.',absent:'보호 기운이 {p}%밖에 없습니다. **쉬고 회복하는 장치가 없습니다**. 같은 충격을 매번 처음처럼 맞고, 회복할 틈 없이 다음 일이 옵니다.'}
+};
+const FAMILY_VERDICT={
+ 비겁:{excess:'지기 싫어서 버티다가 곁에 있던 사람을 다 잃습니다.',absent:'기댈 사람 없이 혼자 버티다 혼자 무너집니다.'},
+ 식상:{excess:'말과 행동이 앞서서 쌓은 것을 스스로 무너뜨립니다.',absent:'하고 싶은 말과 해 보고 싶은 일을 끝내 밖으로 꺼내지 못합니다.'},
+ 재성:{excess:'돈과 현실 문제에 끌려다니다 내 삶은 뒤로 밀립니다.',absent:'일한 만큼 남지 않습니다. 평생 그 차이를 메우며 삽니다.'},
+ 관성:{excess:'남의 평가에 맞추다 평생을 씁니다. 내 기준으로 살아 본 날이 없습니다.',absent:'붙잡아 줄 틀이 없어 놓친 기회가 쌓입니다.'},
+ 인성:{excess:'준비만 하다 끝납니다. 해 본 것보다 할 뻔한 것이 많습니다.',absent:'쉬어 갈 곳이 없어 같은 충격을 매번 처음처럼 맞습니다.'}
 };
 const famText=(a,k,lv)=>FAMILY_TEXT[k][lv].replace('{p}',a.families[k].pct);
 
@@ -899,57 +950,57 @@ function buildCandidates(a,P){
  const s=a.strength,f=a.families,c=[];
  const add=(key,sev,cat,title,core,verdict,tags,theme)=>c.push({key:key,severity:Math.round(sev),category:cat,title:title,core:core,verdict:verdict,tags:tags||[],theme:theme});
  const fp=k=>FAMILY_KO[k]+' '+f[k].pct+'%';
- if(s.ratio<.43&&f.재성.share>.24)add('weak_wealth',108+(f.재성.share-.24)*45,'복합','돈에 끌려다니는 사주','나를 버티게 하는 힘은 약한데 **돈 기운이 '+f.재성.pct+'%**나 됩니다. 감당할 힘보다 돈 문제가 먼저 커집니다. 기회를 잡으면 **책임과 지출이 같이 불어납니다**.','돈이 들어올 길은 열려 있습니다. 들어올 때마다 짐도 같이 들어옵니다.',['나의 힘 '+s.score+'점',fp('재성')],'overload');
- if(s.ratio<.43&&f.관성.share>.23)add('weak_officer',106+(f.관성.share-.23)*45,'복합','평가에 짓눌려 사는 사주','버티는 힘보다 **압박 기운(규칙·평가·책임)이 '+f.관성.pct+'%로 더 큽니다**. 남의 기준은 빨리 읽는데 거기서 빠져나올 힘은 없습니다. 평가가 끝나도 **혼자 계속 자신을 심사합니다**.','남의 기준을 맞추느라 평생 바쁩니다. 하나를 통과하면 다음 기준이 기다립니다.',['나의 힘 '+s.score+'점',fp('관성')],'pressure');
- if(s.ratio<.42&&f.식상.share>.26)add('weak_output',101+(f.식상.share-.26)*40,'복합','쏟아내다 먼저 닳는 사주','버티는 힘보다 **밖으로 쏟아내는 표현 기운이 '+f.식상.pct+'%로 큽니다**. 결과를 낼수록 내 몫의 체력이 먼저 줄어듭니다. 할 줄 안다는 이유로 **계속 더 쏟아붓습니다**.','만든 것이 쌓일수록 몸이 먼저 바닥납니다.',['나의 힘 '+s.score+'점',fp('식상')],'depletion');
- if(s.ratio>.6&&f.비겁.share>.25)add('strong_peer',105+(f.비겁.share-.25)*45,'복합','이길수록 혼자 남는 사주','나의 힘이 강한데 **자존심과 경쟁 기운까지 '+f.비겁.pct+'%로 몰려 있습니다**. 반대 의견을 고칠 재료로 쓰지 못합니다. 이길수록 **말려 줄 사람이 먼저 떠납니다**.','끝까지 버티지만, 마지막에는 곁에 남는 사람이 없습니다.',['나의 힘 '+s.score+'점',fp('비겁')],'isolation');
- if(f.인성.share>.31&&f.식상.share<.12)add('resource_trap',103+(f.인성.share-.31)*40,'복합','생각만 하다 때를 놓치는 사주','생각과 준비를 맡는 **보호 기운은 '+f.인성.pct+'%로 넘치고**, 생각을 밖으로 꺼낼 **표현 기운은 '+f.식상.pct+'%뿐입니다**. 준비가 쌓일수록 시작할 조건도 늘어납니다. **아는 것은 많은데 움직이는 건 늘 늦습니다**.','답을 알고도 늘 늦게 움직입니다.',[fp('인성'),fp('식상')],'paralysis');
- if(f.식상.share>.25&&f.관성.share>.17)add('output_officer',98+(f.식상.share+f.관성.share-.42)*35,'복합','맞는 말로 자리를 잃는 사주','**표현 기운('+f.식상.pct+'%)과 압박 기운('+f.관성.pct+'%)이 둘 다 강해서 정면으로 부딪칩니다**. 받아 줄 수 없는 자리에서 맞는 말을 끝까지 합니다. 그 말 때문에 **내 자리가 없어집니다**.','맞는 말을 해서는 안 될 때 해서 자리를 잃습니다.',[fp('식상'),fp('관성')],'conflict');
+ if(s.ratio<.43&&f.재성.share>.24)add('weak_wealth',108+(f.재성.share-.24)*45,'복합','돈에 끌려다니는 사주','나를 버티게 하는 힘은 약한데 **돈 기운이 '+f.재성.pct+'%**나 됩니다. 감당할 힘보다 돈 문제가 먼저 커집니다. 돈이 들어올 때마다 **책임과 지출이 같이 불어나서**, 벌어도 내 것으로 남지 않습니다.','돈은 들어와도 머물지 않습니다. 들어올 때마다 짐이 같이 들어옵니다.',['나의 힘 '+s.score+'점',fp('재성')],'overload');
+ if(s.ratio<.43&&f.관성.share>.23)add('weak_officer',106+(f.관성.share-.23)*45,'복합','평가에 짓눌려 사는 사주','버티는 힘보다 **압박 기운(규칙·평가·책임)이 '+f.관성.pct+'%로 더 큽니다**. 남의 기준은 빨리 읽는데 거기서 빠져나올 힘은 없습니다. 평가가 끝나도 **혼자 계속 자신을 심사하고**, 그 심사를 한 번도 통과하지 못합니다.','남의 기준에 맞추느라 평생을 씁니다. 하나를 통과하면 다음 기준이 기다립니다.',['나의 힘 '+s.score+'점',fp('관성')],'pressure');
+ if(s.ratio<.42&&f.식상.share>.26)add('weak_output',101+(f.식상.share-.26)*40,'복합','쏟아내다 먼저 닳는 사주','버티는 힘보다 **밖으로 쏟아내는 표현 기운이 '+f.식상.pct+'%로 큽니다**. 결과를 낼수록 내 몫의 체력이 먼저 줄어듭니다. 할 줄 안다는 이유로 **계속 더 쏟아붓다가**, 정작 내 것은 남지 않습니다.','만든 것이 쌓일수록 몸이 먼저 바닥나고, 만든 것은 남이 가져갑니다.',['나의 힘 '+s.score+'점',fp('식상')],'depletion');
+ if(s.ratio>.6&&f.비겁.share>.25)add('strong_peer',105+(f.비겁.share-.25)*45,'복합','이길수록 혼자 남는 사주','나의 힘이 강한데 **자존심과 경쟁 기운까지 '+f.비겁.pct+'%로 몰려 있습니다**. 반대 의견을 고칠 재료로 쓰지 못합니다. 이길수록 **말려 줄 사람이 먼저 떠나고**, 마지막에는 이긴 자리에 혼자 서 있습니다.','끝까지 버티지만, 마지막에는 곁에 아무도 남지 않습니다.',['나의 힘 '+s.score+'점',fp('비겁')],'isolation');
+ if(f.인성.share>.31&&f.식상.share<.12)add('resource_trap',103+(f.인성.share-.31)*40,'복합','생각만 하다 때를 놓치는 사주','생각과 준비를 맡는 **보호 기운은 '+f.인성.pct+'%로 넘치고**, 생각을 밖으로 꺼낼 **표현 기운은 '+f.식상.pct+'%뿐입니다**. 준비가 쌓일수록 시작할 조건도 늘어납니다. **아는 것은 많은데 해 본 것은 적고**, 그 차이가 해마다 벌어집니다.','답을 알고도 움직이지 못한 채 때가 지나갑니다.',[fp('인성'),fp('식상')],'paralysis');
+ if(f.식상.share>.25&&f.관성.share>.17)add('output_officer',98+(f.식상.share+f.관성.share-.42)*35,'복합','맞는 말로 자리를 잃는 사주','**표현 기운('+f.식상.pct+'%)과 압박 기운('+f.관성.pct+'%)이 둘 다 강해서 정면으로 부딪칩니다**. 받아 줄 수 없는 자리에서 맞는 말을 끝까지 합니다. 그 말 때문에 **쌓아 온 자리가 무너지고**, 자리를 옮겨도 같은 일이 되풀이됩니다.','맞는 말을 하고 자리를 잃는 일이 평생 되풀이됩니다.',[fp('식상'),fp('관성')],'conflict');
  const md=a.interactions.find(x=>x.type==='충'&&x.positions.includes(1)&&x.positions.includes(2));
- if(md)add('month_day_clash',110,'충형','일과 집이 서로 깨뜨리는 사주',interactionLine(md)+' 태어난 달은 일과 사회, 태어난 날은 나와 배우자 자리입니다. **한쪽을 챙기는 동안 다른 쪽이 흔들립니다**.','겨우 세운 기반이 여러 번 끊깁니다.',[whoShort(md.positions,md.branches)+' 충돌'],'rupture');
+ if(md)add('month_day_clash',110,'충형','일과 집이 서로 깨뜨리는 사주',interactionLine(md)+' 태어난 달은 일과 사회, 태어난 날은 나와 배우자 자리입니다. **한쪽을 챙기는 동안 다른 쪽이 무너지고**, 둘 다 지킨 적은 없습니다.','겨우 세운 기반이 몇 번이고 처음으로 돌아갑니다.',[whoShort(md.positions,md.branches)+' 충돌'],'rupture');
  const dc=a.interactions.find(x=>x.type==='충'&&x.positions.includes(2));
- if(dc&&!md)add('day_clash',96+dc.severity/10,'충형','가까운 사이일수록 흔들리는 사주',interactionLine(dc)+' 태어난 날의 글자는 나와 배우자 자리입니다. **가장 가까운 관계와 생활 기반이 자리를 잡기 어렵습니다**.','가장 가까운 관계가 가장 오래 흔들립니다.',[whoShort(dc.positions,dc.branches)+' 충돌'],'rupture');
+ if(dc&&!md)add('day_clash',96+dc.severity/10,'충형','가까운 사이일수록 흔들리는 사주',interactionLine(dc)+' 태어난 날의 글자는 나와 배우자 자리입니다. **가장 가까운 관계와 생활 기반이 자리를 잡지 못하고**, 가까워질수록 더 크게 흔들립니다.','가장 가까운 사람이 가장 큰 상처를 남깁니다.',[whoShort(dc.positions,dc.branches)+' 충돌'],'rupture');
  const pu=a.interactions.find(x=>x.type==='형'||x.type==='자형');
- if(pu)add('punishment',92+pu.severity/12,'충형','같은 실수를 되풀이하는 사주',interactionLine(pu)+' 이런 마찰은 **같은 문제가 안에서 되풀이되는 구조**를 만듭니다. 사람과 장소를 바꿔도 **비슷한 장면이 다시 나옵니다**.','환경을 바꿔도 끝 장면이 닮아 있습니다.',[whoShort(pu.positions,pu.branches)+' 마찰'],'repetition');
+ if(pu)add('punishment',92+pu.severity/12,'충형','같은 실수를 되풀이하는 사주',interactionLine(pu)+' 이런 마찰은 **같은 문제가 안에서 되풀이되는 구조**를 만듭니다. 사람과 장소를 바꿔도 **비슷한 장면이 다시 나오고**, 그때마다 조금씩 더 잃습니다.','어디로 가도 끝 장면이 같습니다.',[whoShort(pu.positions,pu.branches)+' 마찰'],'repetition');
  if(a.climate!=='neutral'){
   const S=SEASON_KO[a.month],sh=a.elements.shares,m={
-   cold:['차갑게 굳어 있는 사주','**'+S+'에 태어났는데 덥혀 줄 불 기운이 '+pct(sh.화)+'%뿐입니다**. 몸과 마음이 데워지지 않습니다. **걱정과 계산이 행동보다 먼저 굳습니다**.','준비는 끝났는데 몸이 움직이지 않습니다.'],
-   hot:['달아올랐다 타 버리는 사주','**'+S+'에 태어났는데 식혀 줄 물 기운이 '+pct(sh.수)+'%뿐입니다**. 속도와 반응이 지나칩니다. **오래 버틸 힘까지 한꺼번에 태웁니다**.','빨리 타오르고 빨리 꺼집니다.'],
-   dry:['메말라 여유가 없는 사주','**마른 계절('+S+')에 태어났는데 적셔 줄 물 기운이 '+pct(sh.수)+'%뿐입니다**. 기준은 날카로워지고 **쉬어 갈 틈이 가장 먼저 사라집니다**.','여유가 생길 틈이 없습니다.'],
-   damp:['눅눅하게 미루는 사주','**축축한 흙의 계절('+S+')에 태어났는데 말려 줄 불 기운이 '+pct(sh.화)+'%뿐입니다**. 결정이 무거워지고 **미룬 일이 생활에 고입니다**.','할 일은 쌓이고 시작은 계속 미뤄집니다.']}[a.climate];
+   cold:['차갑게 굳어 있는 사주','**'+S+'에 태어났는데 덥혀 줄 불 기운이 '+pct(sh.화)+'%뿐입니다**. 몸과 마음이 데워지지 않습니다. **걱정과 계산이 행동보다 먼저 굳어서**, 움직여야 할 때 몸이 따라오지 않습니다.','준비는 끝났는데 몸이 움직이지 않은 채로 시간이 갑니다.'],
+   hot:['달아올랐다 타 버리는 사주','**'+S+'에 태어났는데 식혀 줄 물 기운이 '+pct(sh.수)+'%뿐입니다**. 속도와 반응이 지나칩니다. **오래 버틸 힘까지 한꺼번에 태워서**, 중요한 때에는 이미 지쳐 있습니다.','빨리 타오르고 빨리 꺼집니다. 꺼진 뒤에는 남는 게 없습니다.'],
+   dry:['메말라 여유가 없는 사주','**마른 계절('+S+')에 태어났는데 적셔 줄 물 기운이 '+pct(sh.수)+'%뿐입니다**. 기준은 날카로워지고 **쉬어 갈 틈이 가장 먼저 사라집니다**. 쉬는 날에도 쉬지 못합니다.','여유가 생길 틈 없이 하루가 끝납니다.'],
+   damp:['눅눅하게 미루는 사주','**축축한 흙의 계절('+S+')에 태어났는데 말려 줄 불 기운이 '+pct(sh.화)+'%뿐입니다**. 결정이 무거워지고 **미룬 일이 생활에 고입니다**. 고인 일은 한꺼번에 터집니다.','할 일은 쌓이고 시작은 계속 미뤄집니다.']}[a.climate];
   add('climate',76,'조후',m[0],m[1],m[2],[S+'생'],'imbalance');
  }
- if(s.label==='극약')add('very_weak',88,'강약','남의 요구에 먼저 끌려가는 사주','나를 받쳐 주는 기운이 거의 없습니다. **버티는 힘이 '+s.score+'점**뿐입니다. 내 뜻을 세우기 전에 주변 요구를 먼저 받아들입니다. **수습을 잘할수록 내 선택은 뒤로 밀립니다**.','견디며 살지만, 내 삶을 산다는 느낌은 들기 어렵습니다.',['나의 힘 '+s.score+'점'],'pressure');
- else if(s.label==='극강')add('very_strong',88,'강약','고집이 출구를 막는 사주','나를 받치는 힘이 **'+s.score+'점으로 판을 압도합니다**. 꺾어 줄 기운이 약해 **내 방식 밖의 답을 받아들이지 못합니다**. 틀린 방향에서도 오래 버팁니다.','잘못된 자리에서도 끝까지 버팁니다.',['나의 힘 '+s.score+'점'],'isolation');
- else if(s.label==='신약')add('weak',67,'강약','선택보다 수습이 많은 사주','버티는 힘이 **'+s.score+'점으로 약한 편**입니다. 상황을 읽고 적응하는 힘은 있습니다. 하지만 **내가 고른 일보다 떠밀려 수습한 일이 더 많습니다**.','급한 일부터 처리하다 보면 내 차례는 오지 않습니다.',['나의 힘 '+s.score+'점'],'pressure');
- else if(s.label==='신강')add('strong',67,'강약','옳다고 믿다 출구를 닫는 사주','버티는 힘이 **'+s.score+'점으로 강한 편**입니다. 밀어붙일 힘은 충분한데 **멈추라는 신호를 늦게 받아들입니다**. 확신이 생기면 반대 증거도 방해로 봅니다.','버틸 힘이 있어서 더 늦게 돌아섭니다.',['나의 힘 '+s.score+'점'],'isolation');
+ if(s.label==='극약')add('very_weak',88,'강약','남의 요구에 먼저 끌려가는 사주','나를 받쳐 주는 기운이 거의 없습니다. **버티는 힘이 '+s.score+'점**뿐입니다. 내 뜻을 세우기 전에 주변 요구를 먼저 받아들입니다. **수습을 잘할수록 내 선택은 뒤로 밀리고**, 돌아보면 내가 고른 삶이 아닙니다.','견디며 살지만, 끝까지 내 삶을 살지는 못합니다.',['나의 힘 '+s.score+'점'],'pressure');
+ else if(s.label==='극강')add('very_strong',88,'강약','고집이 출구를 막는 사주','나를 받치는 힘이 **'+s.score+'점으로 판을 압도합니다**. 꺾어 줄 기운이 약해 **내 방식 밖의 답을 받아들이지 못합니다**. 틀린 방향에서도 오래 버텨서, 돌아설 때는 이미 늦었습니다.','잘못된 자리에서 끝까지 버티다 늦게 돌아섭니다.',['나의 힘 '+s.score+'점'],'isolation');
+ else if(s.label==='신약')add('weak',67,'강약','선택보다 수습이 많은 사주','버티는 힘이 **'+s.score+'점으로 약한 편**입니다. 상황을 읽고 적응하는 힘은 있습니다. 하지만 **내가 고른 일보다 떠밀려 수습한 일이 훨씬 많고**, 지금 서 있는 자리도 떠밀려 온 자리입니다.','급한 일부터 처리하다 보면 내 차례는 끝내 오지 않습니다.',['나의 힘 '+s.score+'점'],'pressure');
+ else if(s.label==='신강')add('strong',67,'강약','옳다고 믿다 출구를 닫는 사주','버티는 힘이 **'+s.score+'점으로 강한 편**입니다. 밀어붙일 힘은 충분한데 **멈추라는 신호를 늦게 받아들입니다**. 확신이 생기면 반대 증거도 방해로 보고, 그 대가를 혼자 치릅니다.','버틸 힘이 있어서 더 늦게, 더 크게 잃습니다.',['나의 힘 '+s.score+'점'],'isolation');
  const top=a.rank[0],low=a.rank[a.rank.length-1];
- if(f[top].level==='excess')add('excess',74+(f[top].share-.31)*60,'십성',FAMILY_KO[top]+'에 잡아먹힌 사주',famText(a,top,'excess'),'가장 많은 기운 하나가 나머지를 다 밀어냅니다.',[fp(top)],'imbalance');
- if(f[low].level==='absent')add('absent',69,'십성',jo(FAMILY_KO[low],'이','가')+' 비어 있는 사주',famText(a,low,'absent'),'없는 기운은 다른 능력을 혹사시켜 메웁니다.',[fp(low)],'scarcity');
+ if(f[top].level==='excess')add('excess',74+(f[top].share-.31)*60,'십성',FAMILY_KO[top]+'에 잡아먹힌 사주',famText(a,top,'excess'),FAMILY_VERDICT[top].excess,[fp(top)],'imbalance');
+ if(f[low].level==='absent')add('absent',69,'십성',jo(FAMILY_KO[low],'이','가')+' 비어 있는 사주',famText(a,low,'absent'),FAMILY_VERDICT[low].absent,[fp(low)],'scarcity');
  const topEl=ORDER.slice().sort((x,y)=>a.elements.shares[y]-a.elements.shares[x])[0];
- if(a.elements.shares[topEl]>.39)add('element',66+(a.elements.shares[topEl]-.39)*70,'오행',ELEMENTS[topEl].name+' 한쪽으로 기운 사주','숨은 기운과 계절의 힘까지 합치면 **'+ELEMENTS[topEl].name+' 기운이 '+pct(a.elements.shares[topEl])+'%**입니다. 한 가지 방식이 너무 강해서 **상황이 바뀌어도 다른 방식으로 바꾸지 못합니다**.','강점이 그대로 약점이 됩니다.',[ELEMENTS[topEl].name+' '+pct(a.elements.shares[topEl])+'%'],'imbalance');
- add('day',50,'일간','타고난 성격이 발목을 잡는 사주','**'+DAY_TEXT[a.dayStem].head.replace(/\.$/,'')+'**. '+DAY_TEXT[a.dayStem].flaw,'가장 익숙한 방식이 가장 큰 손해를 냅니다.',[STEMS[a.dayStem].name],'imbalance');
+ if(a.elements.shares[topEl]>.39)add('element',66+(a.elements.shares[topEl]-.39)*70,'오행',ELEMENTS[topEl].name+' 한쪽으로 기운 사주','숨은 기운과 계절의 힘까지 합치면 **'+ELEMENTS[topEl].name+' 기운이 '+pct(a.elements.shares[topEl])+'%**입니다. 한 가지 방식이 너무 강해서 **상황이 바뀌어도 다른 방식으로 바꾸지 못합니다**. 통하던 방식이 안 통하게 되면 쓸 게 없습니다.','강점이 그대로 약점이 됩니다. 통하던 방식이 막히면 손쓸 방법이 없습니다.',[ELEMENTS[topEl].name+' '+pct(a.elements.shares[topEl])+'%'],'imbalance');
+ add('day',50,'일간','타고난 성격이 발목을 잡는 사주','**'+DAY_TEXT[a.dayStem].head.replace(/\.$/,'')+'**. '+DAY_TEXT[a.dayStem].flaw,DAY_TEXT[a.dayStem].verdict,[STEMS[a.dayStem].name],'imbalance');
  c.sort((x,y)=>y.severity-x.severity);
  const cats={};cats[c[0].category]=1;
  return {dominant:c[0],secondary:c.filter(x=>{if(cats[x.category])return false;cats[x.category]=1;return true;}).slice(0,3),all:c};
 }
 
-/* ---------- 영역별 문장 ---------- */
+/* ---------- 영역별 문장: 이유 ---------- */
 const THEME={
- overload:{workHead:'잘할수록 일이 더 쌓입니다.',work:'일이 들어오면 **권한보다 책임이 먼저 늘어납니다**. 잘해낼수록 일을 덜어 주는 대신 더 맡겨도 되는 사람이 됩니다.',
-  moneyHead:'돈이 보상보다 의무로 먼저 나갑니다.',money:'수입이 늘면 **부양·약속·고정비도 같이 불어납니다**. 벌었다는 느낌보다 메워야 한다는 압박이 오래 남습니다.',
+ overload:{workHead:'잘할수록 일만 더 쌓입니다.',work:'일이 들어오면 **권한보다 책임이 먼저 늘어납니다**. 잘해낼수록 일을 덜어 주는 대신 더 맡겨도 되는 사람이 됩니다.',
+  moneyHead:'벌어도 의무로 먼저 나갑니다.',money:'수입이 늘면 **부양·약속·고정비도 같이 불어납니다**. 벌었다는 느낌보다 메워야 한다는 압박이 오래 남습니다.',
   body:'쉴 때도 밀린 책임을 계산합니다. **한 번 버틴 대가가 다음 체력을 깎아**, 중요한 순간에 이미 지친 상태로 들어갑니다.',loop:['기회가 옴','책임을 다 받음','버팀','잠깐 인정받음','더 큰 책임이 옴']},
  pressure:{workHead:'남의 기준에 맞추느라 내 기준이 없습니다.',work:'일의 기준을 스스로 정하지 못하고 **평가하는 사람의 기준부터 읽습니다**. 실수를 줄이는 데 힘을 다 써서, 결과를 내도 안도감만 잠깐 남습니다.',
-  moneyHead:'불안해서 쓰고 불안해서 못 씁니다.',money:'**돈을 쓰는 기준이 필요보다 불안입니다**. 모자라 보일까 봐 쓰거나, 잃을까 봐 기회를 놓칩니다. 숫자가 늘어도 안심이 안 됩니다.',
+  moneyHead:'불안해서 쓰고 불안해서 못 씁니다.',money:'**돈을 쓰는 기준이 필요보다 불안입니다**. 모자라 보일까 봐 쓰고, 잃을까 봐 기회를 놓칩니다. 숫자가 늘어도 안심이 안 됩니다.',
   body:'**긴장이 풀린 뒤에야 피로를 알아차립니다**. 쉬는 시간에도 다음 평가를 미리 연습합니다.',loop:['기준을 읽음','맞추려 애씀','겨우 통과함','기준이 높아짐','나를 다시 깎음']},
- depletion:{workHead:'잘할수록 먼저 닳습니다.',work:'생각을 결과로 바꾸는 속도는 빠릅니다. 대신 **내 시간과 집중력까지 다 태웁니다**. 잘할수록 부탁이 몰리고, 만드는 사람이 먼저 지칩니다.',
-  moneyHead:'버는 만큼 지키지 못합니다.',money:'움직이는 만큼 벌 기회는 생기는데 **지키는 장치가 약합니다**. 번 돈을 지친 생활을 메우는 데 다시 씁니다.',
+ depletion:{workHead:'잘할수록 먼저 닳습니다.',work:'생각을 결과로 바꾸는 속도는 빠릅니다. 대신 **내 시간과 집중력까지 다 태웁니다**. 잘할수록 부탁이 몰리고, 만든 사람이 먼저 지칩니다.',
+  moneyHead:'버는 만큼 지키지 못합니다.',money:'움직이는 만큼 벌 기회는 생기는데 **지키는 장치가 없습니다**. 번 돈을 지친 생활을 메우는 데 다시 씁니다.',
   body:'**내보내는 힘이 채우는 힘보다 큽니다**. 멈추면 뒤처질 것 같아 회복을 미루다, 아무것도 하기 싫은 긴 공백으로 갚습니다.',loop:['먼저 움직임','빨리 성과 냄','부탁이 몰림','더 쏟아냄','갑자기 방전']},
  isolation:{workHead:'반대 의견을 듣지 않다가 혼자 남습니다.',work:'내 방식으로 밀어붙일 힘은 충분합니다. 하지만 **반대 의견을 고칠 재료로 쓰지 못합니다**. 틀렸을 때 같이 수습해 줄 사람이 먼저 떨어져 나갑니다.',
   moneyHead:'빠져나올 때를 놓칩니다.',money:'**내 판단을 믿다가 손절할 때를 놓칩니다**. 들인 돈과 자존심을 같은 걸로 여겨서, 방향을 바꾸는 대신 돈을 더 넣습니다.',
   body:'버틸 수 있다는 확신이 **몸이 보내는 신호를 무시하게 만듭니다**. 무너질 때는 도와 달라고 할 사람도 줄어 있습니다.',loop:['확신함','반대를 밀어냄','혼자 결정함','결과를 떠안음','더 세게 통제함']},
- paralysis:{workHead:'준비만 하다 마감에 쫓깁니다.',work:'준비와 분석은 쌓이는데 **내놓는 시점이 계속 늦어집니다**. 더 나은 답을 찾는 동안 마감이 대신 결정하고, 결국 미완성으로 급히 내놓습니다.',
-  moneyHead:'손해를 피하다 기회도 같이 놓칩니다.',money:'완전히 안전한 선택을 기다립니다. **손해를 피하는 동안 벌 기회도 같이 지나갑니다**. 현금은 지켜도 놓친 기회가 조용히 쌓입니다.',
+ paralysis:{workHead:'준비만 하다 마감에 쫓깁니다.',work:'준비와 분석은 쌓이는데 **내놓는 시점이 계속 늦어집니다**. 더 나은 답을 찾는 동안 마감이 대신 결정하고, 결국 덜 된 걸 급히 내놓습니다.',
+  moneyHead:'손해를 피하다 기회까지 놓칩니다.',money:'완전히 안전한 선택을 기다립니다. **손해를 피하는 동안 벌 기회도 같이 지나갑니다**. 현금은 지켜도 놓친 기회가 조용히 쌓입니다.',
   body:'머리는 쉬지 않는데 생활은 멈춰 있습니다. **생각으로 이미 여러 번 일을 끝낸 뒤라**, 막상 시작할 때는 피로가 먼저 옵니다.',loop:['정보를 모음','더 나은 답을 기다림','때를 놓침','급히 수습함','다음엔 더 준비함']},
  conflict:{workHead:'맞는 말을 하다 자리를 잃습니다.',work:'문제를 정확히 짚는 능력이 **윗사람의 체면과 부딪힙니다**. 받아 줄 수 없는 자리에서 맞는 말을 끝까지 합니다.',
   moneyHead:'이기는 데 몰두하다 실속을 놓칩니다.',money:'계약과 흥정에서 **옳다는 걸 증명하는 데 힘을 다 씁니다**. 끝나고 남는 돈보다 쓴 시간과 잃은 관계가 큽니다.',
@@ -957,74 +1008,75 @@ const THEME={
  rupture:{workHead:'일과 생활이 번갈아 무너집니다.',work:'일과 생활이 서로 다른 방향을 요구합니다. **한쪽을 살리면 다른 쪽 일정이 바로 무너집니다**. 쌓는 시간보다 고치는 시간이 깁니다.',
   moneyHead:'모아 둔 돈이 자주 다시 0이 됩니다.',money:'생활의 축이 바뀔 때마다 **이사·정리·다시 시작하는 비용이 새로 생깁니다**. 모을 만하면 쓸 일이 생깁니다.',
   body:'생활이 안정될 만하면 **역할이나 환경이 흔들립니다**. 매번 처음부터 질서를 세우느라 회복이 끊깁니다.',loop:['자리를 잡음','다른 쪽이 흔들림','한쪽을 포기함','다시 세움','또 흔들림']},
- repetition:{workHead:'직장을 옮겨도 같은 문제를 만납니다.',work:'문제의 원인을 밖에서 찾습니다. 그런데 **같은 선택을 되풀이할 때마다 비슷한 마찰이 생깁니다**. 자리를 바꿔도 결말이 닮습니다.',
-  moneyHead:'작은 실수를 반복해서 잃습니다.',money:'큰 실수 한 번보다 **같은 구멍으로 조금씩 오래 샙니다**. 익숙한 선택이라 경계하지 못하고, 합계를 볼 때야 압니다.',
-  body:'생활을 무너뜨리는 건 큰 사건보다 **반복되는 습관**입니다. 매번 회복할 만큼만 상해서 고치지 못합니다.',loop:['불편함을 미룸','늘 하던 대로 대응','잠깐 넘어감','문제가 커짐','환경 탓으로 정리']},
+ repetition:{workHead:'일터를 옮겨도 같은 문제를 만납니다.',work:'문제의 원인을 밖에서 찾습니다. 그런데 **같은 선택을 되풀이할 때마다 비슷한 마찰이 생깁니다**. 자리를 바꿔도 결말이 닮습니다.',
+  moneyHead:'같은 구멍으로 조금씩 오래 잃습니다.',money:'큰 실수 한 번보다 **같은 구멍으로 조금씩 오래 샙니다**. 익숙한 선택이라 경계하지 못하고, 합계를 볼 때야 압니다.',
+  body:'생활을 무너뜨리는 건 큰 사건보다 **되풀이되는 습관**입니다. 매번 회복할 만큼만 상해서 고치지 못합니다.',loop:['불편함을 미룸','늘 하던 대로 대응','잠깐 넘어감','문제가 커짐','환경 탓으로 정리']},
  imbalance:{workHead:'쓸 줄 아는 방식이 하나뿐입니다.',work:'한쪽 기운이 판을 다 차지해서 **상황에 맞춰 방식을 바꾸지 못합니다**. 맞는 환경에서는 과하게 밀고, 안 맞는 환경에서는 쓸 다른 방법이 없습니다.',
   moneyHead:'버는 방식이 하나뿐입니다.',money:'**수입이 한 가지 기질에 기대 있습니다**. 그 방식이 통할 때는 빠르지만, 판이 바뀌면 수입 전체가 흔들립니다.',
   body:'생활 리듬이 한쪽으로 몰려 **과속과 정지가 번갈아 옵니다**. 중간 속도를 오래 유지하지 못합니다.',loop:['익숙한 힘을 과용','잠깐 성과','반대 상황을 만남','대응 못 함','같은 힘을 더 씀']},
- scarcity:{workHead:'남보다 더 움직이고도 결과는 비슷합니다.',work:'꼭 필요한 기능 하나가 약해서 **다른 능력으로 계속 대신 메웁니다**. 돌아가는 비용이 쌓여 늘 남보다 늦습니다.',
+ scarcity:{workHead:'남보다 더 하고도 결과는 남보다 못합니다.',work:'꼭 필요한 기능 하나가 약해서 **다른 능력으로 계속 대신 메웁니다**. 돌아가는 비용이 쌓여 늘 남보다 늦습니다.',
   moneyHead:'노력한 만큼 통장에 남지 않습니다.',money:'일을 돈으로 바꾸는 과정 어딘가가 비어 있습니다. **값을 부르고, 받아 내고, 지키는 단계 중 하나가 샙니다**.',
   body:'모자란 기운을 의지로 메웁니다. 남들이 쉽게 넘기는 일에도 **더 많은 힘을 써서**, 사소한 일 뒤에도 피로가 큽니다.',loop:['부족함을 숨김','다른 힘으로 메움','당장은 통과','돌아가는 비용이 쌓임','더 세게 버팀']}
 };
 function workText(a,d){
  const f=a.families,th=THEME[d.theme]||THEME.imbalance;let x,bad;
- if(f.관성.level==='excess'||f.관성.level==='strong'){x='압박 기운이 '+f.관성.pct+'%로 강해 **직함·평가·마감을 실제보다 무겁게 받습니다**. 책임은 잘 지는데 책임에서 빠져나오는 법을 모릅니다.';bad='평가가 잦고 위계가 센 조직';}
- else if(f.관성.level==='absent'||f.관성.level==='weak'){x='압박 기운이 '+f.관성.pct+'%로 약해 **밖에서 마감을 정해 주지 않으면 꾸준함이 무너집니다**. 실력보다 신뢰를 못 쌓아서 손해를 봅니다.';bad='혼자 일정을 관리해야 하는 일';}
- else if(f.식상.level==='excess'||f.식상.level==='strong'){x='표현 기운이 '+f.식상.pct+'%로 강해 **결과와 말은 빠른데 멈출 지점을 늦게 봅니다**. 일하는 속도와 자리를 지키는 속도가 맞지 않습니다.';bad='말 한마디가 기록에 남는 자리';}
- else if(f.인성.level==='excess'){x='보호 기운이 '+f.인성.pct+'%로 넘쳐 **배우고 준비하는 데 오래 머뭅니다**. 자격과 지식은 쌓이는데 실전에 늦게 들어갑니다.';bad='속도로 승부하는 일';}
- else {x='일을 끌고 갈 기운도 묶어 줄 기운도 판을 잡지 못해 **일의 방향이 능력보다 주변 요구에 따라 흔들립니다**.';bad='역할이 자주 바뀌는 자리';}
- return {head:th.workHead,body:[th.work,x],bad:bad};
+ if(f.관성.level==='excess'||f.관성.level==='strong'){x='압박 기운이 '+f.관성.pct+'%로 강합니다. **직함·평가·마감을 실제보다 무겁게 받고**, 혼나지 않으려고 일합니다. 그래서 일을 잘해도 남는 건 안도감뿐이고 자리는 그대로입니다.';bad='평가가 잦고 위계가 센 조직';}
+ else if(f.관성.level==='absent'||f.관성.level==='weak'){x='압박 기운이 '+f.관성.pct+'%뿐입니다. **밖에서 마감을 정해 주지 않으면 꾸준함이 무너집니다**. 실력이 있어도 믿고 맡길 사람으로 남지 못해 늘 한 단계 아래에 머뭅니다.';bad='혼자 일정을 관리해야 하는 일';}
+ else if(f.식상.level==='excess'||f.식상.level==='strong'){x='표현 기운이 '+f.식상.pct+'%로 강합니다. **말과 행동이 판단보다 먼저 나갑니다**. 일은 빨리 하는데 한마디 때문에 쌓은 평판이 깎입니다.';bad='말 한마디가 기록에 남는 자리';}
+ else if(f.인성.level==='excess'){x='보호 기운이 '+f.인성.pct+'%로 넘칩니다. **배우고 준비하는 데 시간을 다 씁니다**. 자격증과 계획은 늘어나는데 실제로 바뀐 건 없습니다.';bad='속도로 승부하는 일';}
+ else {x='일을 끌고 갈 기운도 붙잡아 줄 기운도 판을 잡지 못합니다. 그래서 **지금 하는 일은 내 능력보다 주변 사정이 정해 준 일**입니다.';bad='역할이 자주 바뀌는 자리';}
+ return {head:th.workHead,why:[th.work,x],bad:bad};
 }
 function moneyText(a,d){
  const f=a.families,th=THEME[d.theme]||THEME.imbalance,s=a.strength;let x,leak;
- if((f.재성.level==='excess'||f.재성.level==='strong')&&s.ratio<.43){x='돈 기운은 '+f.재성.pct+'%로 큰데 나의 힘이 약합니다. **재물이 많아도 감당을 못 하는 구조**라, 큰돈일수록 오래 붙잡지 못합니다.';leak='감당 못 할 크기의 거래';}
- else if(f.재성.level==='excess'||f.재성.level==='strong'){x='돈 기운이 '+f.재성.pct+'%로 강합니다. **들어올 길과 함께 관리할 것도 늘어**, 수입이 늘어도 자유는 늘지 않습니다.';leak='유지비가 붙는 소유';}
- else if(f.재성.level==='absent'||f.재성.level==='weak'){x=(f.재성.pct?'돈 기운이 '+f.재성.pct+'%로 약합니다':'사주에 돈 기운이 하나도 없습니다')+'. **값을 부르고 대가를 받아 내는 단계에서 밀립니다**. 실력과 통장 잔액 사이가 자꾸 벌어집니다.';leak='제값을 못 받는 일';}
- else if(f.비겁.level==='excess'||f.비겁.level==='strong'){x='나와 같은 기운이 '+f.비겁.pct+'%로 강해 **번 돈을 사람과 나누게 됩니다**. 경쟁·동업·보증으로 새기 쉽습니다.';leak='동업과 보증';}
- else {x='돈 기운 자체는 지나치지 않습니다. 대신 **결정이 늦거나 유지비가 커지는 데서** 돈이 샙니다.';leak='미루다 커지는 지출';}
+ if((f.재성.level==='excess'||f.재성.level==='strong')&&s.ratio<.43){x='돈 기운은 '+f.재성.pct+'%로 큰데 나의 힘이 약합니다. **들어온 돈을 감당할 그릇이 없어서**, 큰돈일수록 빨리 빠져나갑니다.';leak='감당 못 할 크기의 거래';}
+ else if(f.재성.level==='excess'||f.재성.level==='strong'){x='돈 기운이 '+f.재성.pct+'%로 강합니다. **들어올 길과 함께 관리할 것도 늘어**, 수입이 늘어도 숨 쉴 틈은 늘지 않습니다.';leak='유지비가 붙는 소유';}
+ else if(f.재성.level==='absent'||f.재성.level==='weak'){x=(f.재성.pct?'돈 기운이 '+f.재성.pct+'%뿐입니다':'사주에 돈 기운이 하나도 없습니다')+'. **값을 부르고 받아 내는 단계에서 늘 밀립니다**. 일한 만큼 통장에 남은 적이 없고, 그 차이는 앞으로도 좁혀지지 않습니다.';leak='제값을 못 받는 일';}
+ else if(f.비겁.level==='excess'||f.비겁.level==='strong'){x='나와 같은 기운이 '+f.비겁.pct+'%로 강해 **번 돈을 사람과 나누게 됩니다**. 경쟁·동업·보증으로 샙니다.';leak='동업과 보증';}
+ else {x='돈 기운 자체는 지나치지 않습니다. 문제는 **결정이 늦고, 한번 붙은 고정비를 끊지 못하는 데** 있습니다.';leak='미루다 커지는 지출';}
  if(leak!=='동업과 보증'&&f.비겁.level==='excess'&&(f.재성.level==='weak'||f.재성.level==='normal'))x+=' 나와 같은 기운이 돈 기운을 빼앗는 구조라 **가까운 사람이 내 몫을 가져갑니다**.';
- return {head:th.moneyHead,body:[th.money,x],leak:leak};
+ return {head:th.moneyHead,why:[th.money,x],leak:leak};
 }
 function peopleText(a){
  const f=a.families,ints=a.interactions.filter(x=>x.type!=='합'&&!x.positions.includes(2));let head,x;
- if(f.비겁.level==='excess'||f.비겁.level==='strong'){head='친구와 동료도 경쟁 상대로 봅니다.';x='나와 같은 기운이 '+f.비겁.pct+'%로 강합니다. 같이 버티기보다 **누가 더 했는지를 세다가 정이 먼저 닳습니다**.';}
+ if(f.비겁.level==='excess'||f.비겁.level==='strong'){head='친구와 동료도 경쟁 상대로 봅니다.';x='나와 같은 기운이 '+f.비겁.pct+'%로 강합니다. 같이 버티기보다 **누가 더 했는지를 세다가 정이 먼저 닳습니다**. 이겨도 곁에 남는 사람이 없습니다.';}
  else if(f.비겁.level==='absent'||f.비겁.level==='weak'){head='도와 달라는 말을 못 합니다.';x='나와 같은 기운이 '+f.비겁.pct+'%뿐이라 **내 편을 만드는 힘이 약합니다**. 혼자 견딘 시간을 알아주길 바라지만, 말하지 않은 희생은 아무도 모릅니다.';}
- else {head='확인하기 전에 추측부터 합니다.';x='큰 사건보다 **내 방식으로 상대를 해석하는 습관**이 관계를 더 오래 망칩니다. 작은 어긋남이 불신으로 번집니다.';}
- const extra=ints[0]?interactionLine(ints[0])+' '+(ints[0].positions.includes(0)?'**집안과 윗사람 쪽 인연이 순탄하지 않습니다**.':ints[0].positions.includes(1)?'**부모·형제나 직장 사람과 부딪힐 일이 잦습니다**.':'**아랫사람이나 자식 쪽에서 마음고생이 생깁니다**.'):'';
- return {head:head,body:[x].concat(extra?[extra]:[])};
+ else {head='확인하기 전에 추측부터 합니다.';x='큰 사건보다 **내 방식으로 상대를 해석하는 습관**이 관계를 더 오래 망칩니다. 작은 어긋남이 불신으로 번지고, 한번 멀어진 사람은 돌아오지 않습니다.';}
+ const extra=ints[0]?interactionLine(ints[0])+' '+(ints[0].positions.includes(0)?'**집안과 윗사람 쪽 인연이 순탄하지 않습니다**.':ints[0].positions.includes(1)?'**부모·형제나 일터 사람과 부딪힐 일이 잦습니다**.':'**아랫사람이나 자식 쪽에서 마음고생이 생깁니다**.'):'';
+ return {head:head,why:[x].concat(extra?[extra]:[])};
 }
 function loveText(a,P,sinsal){
  const f=a.families,male=a.male,star=male?'재성':'관성',starName=male?'돈 기운(남자에게는 아내·여자 자리)':'압박 기운(여자에게는 남편·남자 자리)',lv=f[star].level,body=[];
  const dayB=P[2].branch,palace=a.interactions.filter(x=>x.positions.includes(2)&&x.type!=='합');
  const vt=a.visibleTen,mixed=male?(vt.정재&&vt.편재):(vt.정관&&vt.편관);
  let head;
- if(lv==='absent'||lv==='weak'){head='인연이 늦게 오거나 오래 머물지 않습니다.';body.push('사주에서 '+starName+'이 **'+f[star].pct+'%로 약합니다**. 인연이 늦게 오거나, 와도 **오래 붙잡아 두지 못합니다**.');}
- else if(lv==='excess'){head='이성 문제로 생활이 흔들리기 쉽습니다.';body.push(starName+'이 **'+f[star].pct+'%로 넘칩니다**. 인연이 많은 만큼 **감정과 돈을 같이 씁니다**. 고르지 못하고 끌려갑니다.');}
- else if(lv==='strong'){head='인연은 잘 붙는데 오래 가기 어렵습니다.';body.push(starName+'이 **'+f[star].pct+'%로 강합니다**. 사람이 쉽게 다가오는 만큼 **정리되지 않은 관계가 겹칩니다**.');}
- else if(mixed){head='한 사람에게 정착하기 어렵습니다.';body.push((male?'아내 자리와 여자 자리':'남편 자리와 남자 자리')+'가 둘 다 드러나 있습니다. **마음이 두 갈래로 나뉘고, 정리되지 않은 관계가 겹칩니다**.');}
- else {head='관계가 시작보다 유지에서 어긋납니다.';body.push(starName+'은 '+f[star].pct+'%로 지나치지도 모자라지도 않습니다. 문제는 **함께 사는 방식**에서 생깁니다.');}
+ if(lv==='absent'||lv==='weak'){head='인연이 늦게 오거나 오래 머물지 않습니다.';body.push('사주에서 '+starName+'이 **'+f[star].pct+'%로 약합니다**. 인연이 늦게 오고, 와도 **오래 붙잡아 두지 못합니다**.');}
+ else if(lv==='excess'){head='이성 문제로 생활이 흔들립니다.';body.push(starName+'이 **'+f[star].pct+'%로 넘칩니다**. 인연이 많은 만큼 **감정과 돈을 같이 씁니다**. 고르지 못하고 끌려갑니다.');}
+ else if(lv==='strong'){head='인연은 잘 붙는데 오래가지 않습니다.';body.push(starName+'이 **'+f[star].pct+'%로 강합니다**. 사람이 쉽게 다가오는 만큼 **정리되지 않은 관계가 겹칩니다**.');}
+ else if(mixed){head='한 사람에게 정착하지 못합니다.';body.push((male?'아내 자리와 여자 자리':'남편 자리와 남자 자리')+'가 둘 다 드러나 있습니다. **마음이 두 갈래로 나뉘고, 정리되지 않은 관계가 겹칩니다**.');}
+ else {head='관계가 시작보다 함께 사는 데서 어긋납니다.';body.push(starName+'은 '+f[star].pct+'%로 지나치지도 모자라지도 않습니다. 문제는 **함께 사는 방식**에서 생깁니다.');}
  if(palace.length){const x=palace[0];body.push('태어난 날은 배우자 자리입니다. '+interactionLine(x)+' 그래서 **가까워질수록 생활 방식과 기대가 엇갈립니다**.');}
  else if(male&&(f.비겁.level==='excess'||f.비겁.level==='strong'))body.push('나와 같은 기운이 '+f.비겁.pct+'%로 강해 **경쟁자가 내 사람을 넘봅니다**. 돈과 사람을 같이 지키느라 지칩니다.');
  else if(!male&&(f.식상.level==='excess'||f.식상.level==='strong'))body.push('표현 기운이 '+f.식상.pct+'%로 강해 **상대를 고치려 들고 말로 깎아 내립니다**. 내가 고른 사람을 내가 못 견딥니다.');
  else body.push('배우자 자리(태어난 날의 '+animal(dayB)+')는 조용합니다. 대신 **서운함을 말하지 않고 쌓아 두다** 한 번에 정리합니다.');
  const romance=sinsal.filter(x=>x.key==='dohwa'||x.key==='hongyeom');
- if(romance.length)body.push(romance.map(x=>x.name).join('과 ')+'이 있어 **원하지 않는 관심과 구설**이 따라붙습니다.');
- return {head:head,body:body};
+ if(romance.length)body.push(romance.map(x=>x.name).join('과 ')+'이 있어 **원하지 않는 관심과 뒷말**이 따라붙습니다.');
+ return {head:head,why:body};
 }
 const ORGAN={목:'간·눈·근육',화:'심장·혈관',토:'위장·소화기',금:'폐·호흡기·피부',수:'신장·방광'};
+function weakestElement(a){return ORDER.slice().sort((x,y)=>a.elements.shares[x]-a.elements.shares[y])[0];}
 function bodyText(a,d){
  const sh=a.elements.shares,th=THEME[d.theme]||THEME.imbalance;
- const low=ORDER.slice().sort((x,y)=>sh[x]-sh[y])[0],high=ORDER.slice().sort((x,y)=>sh[y]-sh[x])[0],hurt=CONTROLS[high];
+ const low=weakestElement(a),high=ORDER.slice().sort((x,y)=>sh[y]-sh[x])[0],hurt=CONTROLS[high],p=pct(sh[low]),LN=ELEMENTS[low].name;
  const body=[th.body];
- const lowTxt=ELEMENTS[low].name+' 기운이 '+(pct(sh[low])?pct(sh[low])+'%로 가장 약':'하나도 없');
- if(hurt===low)body.push('사주에서 '+lowTxt+'는데, 넘치는 '+ELEMENTS[high].name+' 기운이 그 '+ELEMENTS[low].name+' 기운을 한 번 더 누릅니다. **'+ORGAN[low]+'**'+(bat(ORGAN[low])?'이':'가')+' 가장 먼저 탈이 나는 자리입니다.');
- else body.push('사주에서 '+lowTxt+'어 **'+ORGAN[low]+'** 쪽이 약한 고리입니다. 넘치는 '+ELEMENTS[high].name+' 기운이 '+ELEMENTS[hurt].name+' 기운을 누르니 '+ORGAN[hurt]+'도 같이 살펴야 합니다.');
+ const lowA=p?LN+' 기운이 '+p+'%로 가장 약한데':LN+' 기운이 하나도 없는데',lowB=p?LN+' 기운이 '+p+'%로 가장 약해':LN+' 기운이 하나도 없어';
+ if(hurt===low)body.push('사주에서 '+lowA+', 넘치는 '+ELEMENTS[high].name+' 기운이 그 '+LN+' 기운을 한 번 더 누릅니다. **'+ORGAN[low]+'**'+(bat(ORGAN[low])?'이':'가')+' 가장 먼저 탈이 나는 자리입니다.');
+ else body.push('사주에서 '+lowB+' **'+ORGAN[low]+'** 쪽이 약한 고리입니다. 넘치는 '+ELEMENTS[high].name+' 기운이 '+ELEMENTS[hurt].name+' 기운을 누르니 '+ORGAN[hurt]+'도 같이 탈이 납니다.');
  if(a.climate==='cold')body.push('추운 사주라 **몸이 잘 식고 혈액순환이 더딥니다**.');
  else if(a.climate==='hot')body.push('뜨거운 사주라 **열이 오르고 염증이 잘 생깁니다**.');
  else if(a.climate==='dry')body.push('메마른 사주라 **피부와 호흡기가 쉽게 마릅니다**.');
  else if(a.climate==='damp')body.push('눅눅한 사주라 **잘 붓고 소화가 더딥니다**.');
- return {head:'몸에서는 '+ORGAN[low]+' 쪽이 약한 고리입니다.',body:body};
+ return {head:'몸에서는 '+ORGAN[low]+' 쪽이 가장 먼저 탈이 납니다.',why:body,low:low};
 }
 
 /* ---------- 살(煞) ---------- */
@@ -1039,24 +1091,24 @@ function findSinsal(P,male){
  const posList=ps=>ps.map(p=>PLACE_KO[p.pos]).filter((v,i,a)=>a.indexOf(v)===i).join('·');
  const add=(key,name,sev,where,text)=>out.push({key:key,name:name,severity:sev,where:where,text:text});
  [0,2].forEach(bi=>{const base=P[bi];if(!base.known)return;const g=SAMHAP[base.branch];
-  const ym=have(p=>p.pos!==bi&&p.branch===YEOKMA[g]);if(ym.length&&!out.some(x=>x.key==='yeokma'))add('yeokma','역마살',60+(ym.some(p=>p.pos===2)?10:0),posList(ym),'한곳에 오래 머물지 못합니다. **이사·이직·출장이 잦고**, 자리를 잡을 만하면 다시 떠날 일이 생깁니다.');
-  const dh=have(p=>p.pos!==bi&&p.branch===DOHWA[g]);if(dh.length&&!out.some(x=>x.key==='dohwa'))add('dohwa','도화살',62,posList(dh),'사람의 눈길을 끕니다. **원하지 않는 관심과 구설**도 같이 붙습니다. 관계가 쉽게 시작되고 쉽게 엉킵니다.');
+  const ym=have(p=>p.pos!==bi&&p.branch===YEOKMA[g]);if(ym.length&&!out.some(x=>x.key==='yeokma'))add('yeokma','역마살',60+(ym.some(p=>p.pos===2)?10:0),posList(ym),'한곳에 오래 머물지 못합니다. **이사·이직이 잦고**, 자리를 잡을 만하면 다시 떠날 일이 생깁니다. 정을 붙인 곳마다 떠나야 합니다.');
+  const dh=have(p=>p.pos!==bi&&p.branch===DOHWA[g]);if(dh.length&&!out.some(x=>x.key==='dohwa'))add('dohwa','도화살',62,posList(dh),'사람의 눈길을 끕니다. **원하지 않는 관심과 뒷말**도 같이 붙습니다. 관계가 쉽게 시작되고 쉽게 엉킵니다.');
   const hg=have(p=>p.pos!==bi&&p.branch===HWAGAE[g]);if(hg.length&&!out.some(x=>x.key==='hwagae'))add('hwagae','화개살',48,posList(hg),'혼자 파고드는 기질입니다. **생각·종교·예술 쪽으로 빠질수록 사람들과 멀어지고**, 외로움을 스스로 키웁니다.');
  });
- const bh=K.filter(p=>BAEKHO.includes(p.gz));if(bh.length)add('baekho','백호살',78+(bh.some(p=>p.pos===2)?8:0),posList(bh),'피를 보는 살입니다. **갑작스러운 사고·수술·다툼**을 조심해야 하는 기운이 '+bh.map(p=>PLACE_MEAN[p.pos]).join('·')+' 자리에 있습니다.');
- if(P[2].known&&GOEGANG.includes(P[2].gz))add('goegang','괴강살',72,'태어난 날','기가 아주 셉니다. **남 밑에서 숙이는 걸 못 견디고** 극단적인 선택을 합니다. 중간이 없어서 크게 무너지는 쪽으로 가기 쉽습니다.');
+ const bh=K.filter(p=>BAEKHO.includes(p.gz));if(bh.length)add('baekho','백호살',78+(bh.some(p=>p.pos===2)?8:0),posList(bh),'피를 보는 살입니다. **갑작스러운 사고·수술·다툼**이 '+bh.map(p=>PLACE_MEAN[p.pos]).join('·')+' 자리에 걸려 있습니다.');
+ if(P[2].known&&GOEGANG.includes(P[2].gz))add('goegang','괴강살',72,'태어난 날','기가 아주 셉니다. **남 밑에서 숙이는 걸 못 견디고** 크게 부딪칩니다. 중간이 없어서 무너질 때는 한꺼번에 무너집니다.');
  const yi=YANGIN[P[2].stem];if(yi){const h=have(p=>p.branch===yi);if(h.length)add('yangin','양인살',70,posList(h),'칼을 쥔 살입니다. **성격이 날카롭고 지기 싫어합니다**. 다툼과 다침, 큰 손해가 따라다닙니다.');}
- const hy=have(p=>p.branch===HONGYEOM[P[2].stem]);if(hy.length)add('hongyeom','홍염살',55,posList(hy),'이성을 강하게 끕니다. **연애가 복잡해지고 감정 소모가 큽니다**.');
+ const hy=have(p=>p.branch===HONGYEOM[P[2].stem]);if(hy.length)add('hongyeom','홍염살',55,posList(hy),'이성을 강하게 끕니다. **연애가 복잡해지고 감정 소모가 큽니다**. 끝난 관계도 깨끗하게 끝나지 않습니다.');
  const day=P[2];
  [1,3].forEach(i=>{const p=P[i];if(!p.known)return;
-  if(pairIs(day.branch,p.branch,WONJIN)&&!out.some(x=>x.key==='wonjin'))add('wonjin','원진살',64,'태어난 날·'+PLACE_KO[i],'서로 미워하고 원망하는 살입니다. **가까운 사람과 이유 없이 미워하는 사이**가 됩니다.');
+  if(pairIs(day.branch,p.branch,WONJIN)&&!out.some(x=>x.key==='wonjin'))add('wonjin','원진살',64,'태어난 날·'+PLACE_KO[i],'서로 미워하고 원망하는 살입니다. **가까운 사람과 이유 없이 미워하는 사이**가 되고, 가까울수록 더 그렇습니다.');
   if(pairIs(day.branch,p.branch,GWIMUN)&&!out.some(x=>x.key==='gwimun'))add('gwimun','귀문관살',66,'태어난 날·'+PLACE_KO[i],'신경이 예민한 살입니다. **잡생각과 불안이 잠을 깎습니다**. 작은 신호에도 크게 반응해서 쉽게 지칩니다.');
  });
  if(P[0].known){const g=GOSIN[P[0].branch],t=male?g[0]:g[1],h=have(p=>p.pos!==0&&p.branch===t);if(h.length)add(male?'gosin':'gwasuk',male?'고신살':'과숙살',58,posList(h),'홀로 지내는 살입니다. **가족이나 배우자 곁에 있어도 외롭습니다**. 정을 붙일 만하면 거리가 생깁니다.');}
  if(day.known){const xun=Math.floor(day.idx/10),void1=ZHI[mod(10-2*xun,12)],void2=ZHI[mod(11-2*xun,12)],h=K.filter(p=>p.pos!==2&&(p.branch===void1||p.branch===void2));
-  if(h.length){const p=h.sort((x,y)=>(y.pos===1?2:y.pos===0?1:0)-(x.pos===1?2:x.pos===0?1:0))[0];add('gongmang','공망',57,PLACE_KO[p.pos],'비어 있는 자리입니다. **'+PLACE_MEAN[p.pos]+'**에서 애써도 손에 잡히는 게 적습니다. 기대한 만큼 돌아오지 않습니다.');}}
+  if(h.length){const p=h.sort((x,y)=>(y.pos===1?2:y.pos===0?1:0)-(x.pos===1?2:x.pos===0?1:0))[0];add('gongmang','공망',57,PLACE_KO[p.pos],'비어 있는 자리입니다. **'+PLACE_MEAN[p.pos]+'**에서 애써도 손에 잡히는 게 없습니다. 기대한 만큼 돌아온 적이 없습니다.');}}
  const needle=K.reduce((n,p)=>n+('甲辛'.includes(p.stem)?1:0)+('卯午申'.includes(p.branch)?1:0),0);
- if(needle>=2&&(('甲辛'.includes(day.stem))||('卯午申'.includes(day.branch))))add('hyeonchim','현침살',52,'여러 칸','바늘처럼 찌르는 기운이 '+needle+'개 있습니다. **말이 날카로워** 생각보다 깊게 상처를 줍니다.');
+ if(needle>=2&&(('甲辛'.includes(day.stem))||('卯午申'.includes(day.branch))))add('hyeonchim','현침살',52,'여러 칸','바늘처럼 찌르는 기운이 '+needle+'개 있습니다. **말이 날카로워** 생각보다 깊게 상처를 주고, 그 말이 나에게 돌아옵니다.');
  return out.sort((a,b)=>b.severity-a.severity);
 }
 
@@ -1075,62 +1127,181 @@ function hitLine(subject,h){
  if(h.type==='파')return jo(subject,'과','와')+' '+target+' 사이에 조금씩 금이 갑니다.';
  return jo(subject,'이','가')+' '+jo(target,'과','와')+' '+({충:'정면으로 부딪칩니다',형:'마찰을 일으킵니다',자형:'같은 동물끼리 마찰을 일으킵니다',원진:'서로 미워하는 사이입니다',해:'뒤에서 서로를 깎아 먹습니다'}[h.type])+'.';
 }
-const EFFECT={관성:'책임과 평가가 늘어 자유가 줄어듭니다.',재성:'벌 기회와 나갈 돈이 같이 옵니다.',식상:'말과 일이 커지고 수습할 일도 같이 커집니다.',비겁:'경쟁자가 늘고 돈과 자리를 나누게 됩니다.',인성:'걱정과 준비가 늘고 결정은 미뤄집니다.'};
-const PAIR_TITLE={'관성재성':'돈 때문에 책임이 커지는','관성식상':'말 한마디로 평가가 깎이는','관성비겁':'경쟁 속에서 책임만 떠안는','관성인성':'책임과 걱정이 함께 쌓이는','식상재성':'일을 벌인 만큼 돈이 새는','비겁재성':'번 돈을 사람에게 뺏기는','인성재성':'돈 걱정에 결정을 미루는','비겁식상':'말과 자존심으로 사람을 잃는','식상인성':'생각과 말이 엇갈리는','비겁인성':'고집과 걱정이 같이 커지는'};
-const pairTitle=(x,y)=>{const order=['관성','비겁','식상','인성','재성'];const k=[x,y].sort((p,q)=>order.indexOf(p)-order.indexOf(q)).join('');return PAIR_TITLE[k]||PAIR_TITLE[[y,x].join('')];};
-const MONTH_CLASH=['집안·윗사람 일로 크게 흔들림','직장 자리가 크게 흔들림','가까운 관계가 크게 흔들림','아랫사람·계획이 흔들림'];
-const MONTH_PUNISH=['집안 일로 같은 문제가 터짐','직장에서 같은 문제가 터짐','가까운 사람과 같은 문제가 터짐','아랫사람 일로 같은 문제가 터짐'];
-const MONTH_MINOR=['집안 쪽 인연에 금이 감','직장 인간관계에 금이 감','가까운 관계에 금이 감','아랫사람과 금이 감'];
-const MONTH_FAM={관성:'책임과 평가가 몰림',재성:'돈 문제가 커짐',식상:'말실수로 손해 봄',비겁:'경쟁에서 몫을 뺏김',인성:'걱정만 많고 못 움직임'};
-const POS_CLASH=['집안과 윗사람 일이 정면으로 흔들리는','직장과 맡은 자리가 정면으로 흔들리는','가까운 관계와 생활 기반이 정면으로 흔들리는','자식·아랫사람 일과 앞날 계획이 흔들리는'];
-const POS_PUNISH=['집안 일로 같은 문제가 터지는','직장에서 같은 문제가 터지는','가까운 사람과 같은 문제가 터지는','아랫사람 일로 같은 문제가 터지는'];
-const POS_MINOR=['집안 쪽 인연에 금이 가는','직장 인간관계에 금이 가는','가까운 관계에 금이 가는','아랫사람과의 관계에 금이 가는'];
-function readPeriod(g,a,P,kind,label){   // kind: '대운' | '해' | '달', label: 주어로 쓸 이름(예: '2026년')
+// 나이대: 운 문장과 사건을 고를 때 쓴다
+const stageOf=age=>age<13?'child':age<20?'teen':age<30?'young':age<40?'thirty':age<50?'forty':age<60?'fifty':age<70?'sixty':'old';
+const groupOf=st=>st==='child'||st==='teen'?'minor':st==='sixty'||st==='old'?'senior':'adult';
+const AGE_PEN={child:0,teen:0,young:0,thirty:2,forty:4,fifty:7,sixty:10,old:13};   // 나이가 들수록 운 점수를 깎는다
+function periodCore(g,a,P){   // 대운·해·달 글자 하나의 판단
  const st=g[0],br=g[1],sg=tenGod(a.dayStem,st),bg=tenGod(a.dayStem,HIDDEN[br][0][0]),sf=TEN_FAMILY[sg],bf=TEN_FAMILY[bg],hits=luckHits(br,P);
  let score=38+(a.bad.includes(sf)?20:7)+(a.bad.includes(bf)?16:5);
  if(hits[0])score+=hits[0].pos===2?27:hits[0].pos===1?22:14;
  if(sf===bf)score+=6;
  const dayStem=P[2].stem,stemClash=pairIs(st,dayStem,STEM_CLASH),stemComb=pairIs(st,dayStem,STEM_COMBINE);
  if(stemClash)score+=8;
- const subj=(label?label+'의 ':{대운:'이 10년의 ',해:'그해의 ',달:'그달의 '}[kind])+animal(br);
- let title,text;
- const F={관성:['책임과 평가가 몰려오는','**압박 기운(규칙·평가·책임)이 커집니다**. 일과 책임은 늘고 자유는 줄어듭니다.'],
-  재성:['돈 때문에 끌려다니는','**돈 기운이 커집니다**. 벌 기회와 나갈 돈이 같이 옵니다. 숫자가 커질수록 선택권은 줄어듭니다.'],
-  식상:['말과 행동으로 손해 보는','**표현 기운이 커집니다**. 말이 많아지고 일이 커집니다. 수습할 일도 같이 커집니다.'],
-  비겁:['사람에게 몫을 뺏기는','**경쟁 기운이 커집니다**. 친구·동료와 돈과 자리를 나누게 되고, 지지 않으려다 사람을 잃습니다.'],
-  인성:['생각만 많고 움직이지 못하는','**보호 기운(생각·준비)이 두꺼워집니다**. 걱정과 준비가 늘고 결정은 계속 미뤄집니다.']};
- const unit={대운:'10년',해:'해',달:'달'}[kind];
- if(hits[0]&&(hits[0].type==='충'||hits[0].type==='형'||hits[0].type==='자형')){
-  title=(hits[0].type==='충'?POS_CLASH:POS_PUNISH)[hits[0].pos]+' '+unit;
-  text=hitLine(subj,hits[0])+' '+({0:'**집안 문제나 윗사람 일**로 발목이 잡힙니다.',1:'**직장과 맡은 역할이 바뀌는 일**이 억지로 찾아옵니다.',2:'**이사·이별·생활의 큰 변화**처럼 가까운 기반이 흔들립니다.',3:'**자식·아랫사람 문제나 미래 계획**이 틀어집니다.'}[hits[0].pos]);
- }else if(hits[0]){
-  title=POS_MINOR[hits[0].pos]+' '+unit;
-  text=hitLine(subj,hits[0])+' 크게 터지지는 않는데 **믿던 관계가 조금씩 새어 나갑니다**.';
- }else{
-  const prefix=label?label+'에는 ':kind==='대운'?'이 10년은 ':kind==='해'?'이해에는 ':'이달에는 ';
-  if(sf===bf){title=F[sf][0]+' '+unit;text=prefix+F[sf][1];}
-  else{
-   const main=a.bad.includes(sf)?sf:a.bad.includes(bf)?bf:sf,other=main===sf?bf:sf;
-   title=(pairTitle(sf,bf)||F[main][0])+' '+unit;
-   text=prefix+'**'+jo(FAMILY_KO[sf],'과','와')+' '+jo(FAMILY_KO[bf],'이','가')+' 같이 들어옵니다**. '+EFFECT[main]+' '+EFFECT[other];
-  }
- }
- if(stemClash)text+=' 위 칸 글자도 나를 뜻하는 글자와 정면으로 부딪칩니다. **마음먹은 일이 번번이 막힙니다**.';
- else if(stemComb&&kind!=='달')text+=' 위 칸 글자가 나를 뜻하는 글자와 묶입니다. **원하지 않는 일과 사람에게 엮입니다**.';
- if(kind==='달'){const m=hits[0];title=m?(m.type==='충'?MONTH_CLASH:m.type==='형'||m.type==='자형'?MONTH_PUNISH:MONTH_MINOR)[m.pos]:MONTH_FAM[a.bad.includes(sf)?sf:a.bad.includes(bf)?bf:sf];}
- return {title:title,text:text,score:Math.min(100,Math.round(score)),hits:hits,stemFamily:sf,branchFamily:bf};
+ const main=a.bad.includes(sf)?sf:a.bad.includes(bf)?bf:sf,other=main===sf?bf:sf,keys=[];
+ if(hits[0])keys.push('h'+hits[0].pos);keys.push(main);if(other!==main)keys.push(other);
+ return {st:st,br:br,sf:sf,bf:bf,hits:hits,score:Math.min(100,Math.round(score)),stemClash:stemClash,stemComb:stemComb,main:main,other:other,keys:keys};
 }
-function readYear(Y,a,P,cycle){
- const g=gz(yearIdx(Y)),r=readPeriod(g,a,P,'해',Y+'년');
- if(cycle){const ch=luckHits(g[1],[{known:true,branch:cycle.g[1],pos:4}]);if(ch[0]&&ch[0].type==='충'){r.score=Math.min(100,r.score+12);r.text+=' 지금 지나는 10년 운의 '+animal(cycle.g[1])+'과도 정면으로 부딪쳐 **한 해의 일이 10년 흐름 전체로 번집니다**.';}}
- const months=monthsOfYear(Y).map(m=>{const mg=gz(m.idx),mr=readPeriod(mg,a,P,'달');return {start:m.start,end:m.end,g:mg,score:mr.score,title:mr.title,hits:mr.hits};});
- return Object.assign(r,{year:Y,g:g,months:months});
+const PAIR_TITLE={'관성재성':'돈 때문에 책임이 커지는','관성식상':'말 한마디로 평가가 깎이는','관성비겁':'경쟁 속에서 책임만 떠안는','관성인성':'책임과 걱정이 함께 쌓이는','식상재성':'일을 벌인 만큼 돈이 새는','비겁재성':'번 돈을 사람에게 뺏기는','인성재성':'돈 걱정에 결정을 미루는','비겁식상':'말과 자존심으로 사람을 잃는','식상인성':'생각과 말이 엇갈리는','비겁인성':'고집과 걱정이 같이 커지는'};
+const pairTitle=(x,y)=>{const order=['관성','비겁','식상','인성','재성'];const k=[x,y].sort((p,q)=>order.indexOf(p)-order.indexOf(q)).join('');return PAIR_TITLE[k];};
+const TITLE_HIT={
+ minor:{충:['집안이 정면으로 흔들리는','부모님·형제와 정면으로 부딪히는','가까운 친구와 정면으로 틀어지는','세워 둔 계획이 흔들리는'],형:['집안 일로 같은 문제가 터지는','부모님과 같은 문제로 부딪히는','친구와 같은 문제가 터지는','같은 계획이 거듭 틀어지는'],작:['집안 쪽에 금이 가는','부모님과 사이에 금이 가는','친구 사이에 금이 가는','계획에 금이 가는']},
+ adult:{충:['집안과 윗사람 일이 정면으로 흔들리는','일하는 자리가 정면으로 흔들리는','가까운 관계와 생활 기반이 정면으로 흔들리는','자식·아랫사람 일과 앞날 계획이 흔들리는'],형:['집안 일로 같은 문제가 터지는','일터에서 같은 문제가 터지는','가까운 사람과 같은 문제가 터지는','아랫사람 일로 같은 문제가 터지는'],작:['집안 쪽 인연에 금이 가는','일터 인간관계에 금이 가는','가까운 관계에 금이 가는','아랫사람과의 관계에 금이 가는']},
+ senior:{충:['집안과 형제 일이 정면으로 흔들리는','하던 일과 자리가 정면으로 흔들리는','곁에 있는 사람과 생활이 정면으로 흔들리는','자식 일과 말년 계획이 흔들리는'],형:['집안 일로 같은 문제가 터지는','하던 일에서 같은 문제가 터지는','곁에 있는 사람과 같은 문제가 터지는','자식 일로 같은 문제가 터지는'],작:['집안 쪽 인연에 금이 가는','오래된 관계에 금이 가는','곁에 있는 사람과 금이 가는','자식과의 관계에 금이 가는']}
+};
+const FAM_TITLE={
+ minor:{관성:'어른들 기대에 눌리는',재성:'집안 형편에 눌리는',식상:'말과 행동으로 혼나는',비겁:'비교당하며 기죽는',인성:'겁이 많아 움츠러드는'},
+ adult:{관성:'책임과 평가가 몰려오는',재성:'돈 때문에 끌려다니는',식상:'말과 행동으로 손해 보는',비겁:'사람에게 몫을 뺏기는',인성:'생각만 많고 움직이지 못하는'}
+};
+const MONTH_T={
+ minor:{충:['집안 일로 크게 흔들림','부모님과 크게 부딪힘','친구 관계가 크게 흔들림','계획이 흔들림'],형:['집안 일로 같은 문제가 터짐','부모님과 같은 문제로 부딪힘','친구와 같은 문제가 터짐','같은 계획이 또 틀어짐'],작:['집안 쪽에 금이 감','부모님과 사이에 금이 감','친구 사이에 금이 감','계획에 금이 감'],fam:{관성:'기대에 눌림',재성:'집안 돈 문제가 커짐',식상:'말 때문에 혼남',비겁:'비교당해 기가 꺾임',인성:'걱정만 많고 못 움직임'}},
+ adult:{충:['집안·윗사람 일로 크게 흔들림','일하는 자리가 크게 흔들림','가까운 관계가 크게 흔들림','아랫사람·계획이 흔들림'],형:['집안 일로 같은 문제가 터짐','일터에서 같은 문제가 터짐','가까운 사람과 같은 문제가 터짐','아랫사람 일로 같은 문제가 터짐'],작:['집안 쪽 인연에 금이 감','일터 인간관계에 금이 감','가까운 관계에 금이 감','아랫사람과 금이 감'],fam:{관성:'책임과 평가가 몰림',재성:'돈 문제가 커짐',식상:'말실수로 손해 봄',비겁:'경쟁에서 몫을 뺏김',인성:'걱정만 많고 못 움직임'}},
+ senior:{충:['집안·형제 일로 크게 흔들림','하던 일이 크게 흔들림','곁에 있는 사람과 크게 흔들림','자식 일이 흔들림'],형:['집안 일로 같은 문제가 터짐','하던 일에서 같은 문제가 터짐','곁에 있는 사람과 같은 문제가 터짐','자식 일로 같은 문제가 터짐'],작:['집안 쪽 인연에 금이 감','오래된 관계에 금이 감','곁에 있는 사람과 금이 감','자식과 금이 감'],fam:{관성:'책임이 남아 쉬지 못함',재성:'돈이 빨리 줄어듦',식상:'말 때문에 사이가 벌어짐',비겁:'재산 문제로 다툼',인성:'걱정으로 잠을 못 이룸'}}
+};
+const hitKind=h=>h.type==='충'?'충':h.type==='형'||h.type==='자형'?'형':'작';
+function periodTitle(pc,grp,unit){
+ const h=pc.hits[0];
+ if(h)return TITLE_HIT[grp][hitKind(h)][h.pos]+' '+unit;
+ const FT=FAM_TITLE[grp==='minor'?'minor':'adult'];
+ if(pc.sf===pc.bf||grp==='minor')return FT[pc.main]+' '+unit;
+ return (pairTitle(pc.sf,pc.bf)||FT[pc.main])+' '+unit;
+}
+function monthTitle(pc,grp){const T=MONTH_T[grp],h=pc.hits[0];return h?T[hitKind(h)][h.pos]:T.fam[pc.main];}
+function periodLine(pc,subj,pre,mid){   // subj: '이 10년의'·'2026년의', pre: '이 10년에는 '·'2026년에는 ', mid: 첫 문장 뒤에 붙일 결과
+ let t;
+ if(pc.hits[0])t=hitLine(subj+' '+animal(pc.br),pc.hits[0]);
+ else if(pc.sf===pc.bf)t=pre+'**'+jo(FAMILY_KO[pc.sf],'이','가')+' 위아래로 겹쳐 들어옵니다**.';
+ else t=pre+'**'+jo(FAMILY_KO[pc.sf],'과','와')+' '+jo(FAMILY_KO[pc.bf],'이','가')+' 같이 들어옵니다**.';
+ if(mid)t+=' '+mid;
+ if(pc.stemClash)t+=' 위 칸 글자도 나를 뜻하는 글자와 정면으로 부딪칩니다. **마음먹은 일이 번번이 막힙니다**.';
+ else if(pc.stemComb)t+=' 위 칸 글자가 나를 뜻하는 글자와 묶입니다. **원하지 않는 일과 사람에게 엮입니다**.';
+ return t;
+}
+// 해 풀이의 둘째 문장: 그해에 무엇이 흔들리는지
+const YEAR_HIT={
+ minor:['**집안 사정이 흔들립니다**.','**부모님과 부딪히는 일이 잦아집니다**.','**친한 친구와 틀어집니다**.','**세워 둔 계획이 틀어집니다**.'],
+ adult:['**집안 문제나 윗사람 일로 발목이 잡힙니다**.','**일하는 자리가 억지로 바뀌거나 흔들립니다**.','**가까운 관계와 사는 곳이 흔들립니다**.','**세워 둔 계획과 아랫사람 일이 틀어집니다**.'],
+ senior:['**집안과 형제 일로 마음고생을 합니다**.','**하던 일과 자리가 흔들립니다**.','**곁에 있는 사람과 생활이 흔들립니다**.','**자식 일로 속을 끓입니다**.']
+};
+const YEAR_FAM={
+ minor:{관성:'**기대에 눌려 숨이 막힙니다**.',재성:'**집안 형편 때문에 참을 일이 늘어납니다**.',식상:'**말 때문에 혼나는 일이 늘어납니다**.',비겁:'**친구와 비교당하는 일이 늘어납니다**.',인성:'**걱정이 많아 움직이지 못합니다**.'},
+ adult:{관성:'**책임과 평가가 늘어 숨 쉴 틈이 줄어듭니다**.',재성:'**벌 기회보다 나갈 돈이 먼저 옵니다**.',식상:'**말과 일이 커지고 수습할 일도 같이 커집니다**.',비겁:'**경쟁자가 늘고 돈과 자리를 나누게 됩니다**.',인성:'**걱정과 준비만 늘고 결정은 미뤄집니다**.'}
+};
+function yearEffect(pc,grp){
+ const h=pc.hits[0];
+ if(h&&hitKind(h)!=='작')return YEAR_HIT[grp][h.pos];
+ if(h)return '크게 터지지는 않는데 **믿던 관계가 조금씩 새어 나갑니다**.';
+ return YEAR_FAM[grp==='minor'?'minor':'adult'][pc.main];
+}
+
+/* ---------- 지금 모습 (나이대별) ----------
+ * m: 만 19세 미만, 20·30·40·50·60: 그 나이대. 같은 나이대 안에서는 사주 글자로 고른다.
+ */
+const NOW={
+ self:{
+  m:['해야 할 걸 알면서 붙잡지 못하고 하루를 넘기는 날이 많습니다. **어른들이 기대하는 만큼 해내지 못한다는 걸 스스로 먼저 압니다**.','친구들 사이에서 내 자리가 어디쯤인지 늘 신경 씁니다. **잘하는 애들을 보면 따라잡을 수 없을 것 같다는 생각부터 듭니다**.'],
+  20:['주변 사람들은 하나둘 자리를 잡는데 **나만 출발선에 서 있는 것 같습니다**. 무엇을 해야 하는지는 알 것 같은데 손이 가지 않습니다.','남이 잘됐다는 소식을 들으면 **축하보다 내 처지가 먼저 떠오릅니다**. 그런 자신이 싫어서 하루가 더 가라앉습니다.','밤에는 뭐든 할 수 있을 것 같다가 아침이 되면 아무것도 하기 싫습니다. **그렇게 넘긴 날이 쌓여 벌써 몇 년이 지났습니다**.'],
+  30:['남들은 다 자리를 잡은 것 같은데 **나만 제자리인 것 같습니다**. 이 나이쯤이면 갖고 있어야 할 것들을 알고, 그중 몇 개를 못 가졌는지도 압니다.','예전에 하고 싶었던 일이 있었습니다. **지금은 그 얘기를 꺼내기가 부끄럽습니다**.','할 일을 알면서 손대지 못하고 넘긴 날이 많습니다. **이러다 마흔이 된다는 생각이 들면 잠이 잘 안 옵니다**.'],
+  40:['이룬 것을 꼽아 보면 생각보다 짧습니다. **남은 시간에 뒤집을 수 있다는 기대도 해마다 줄어듭니다**.','젊을 때 고르지 않은 길이 자꾸 생각납니다. **그 길로 갔으면 달랐을 거라는 생각을 지우지 못합니다**.','하루하루는 바쁜데 1년을 돌아보면 남은 게 없습니다. **나를 위해 쓴 시간이 언제였는지 기억나지 않습니다**.'],
+  50:['열심히 살았는데 **손에 쥔 게 생각보다 적습니다**. 이제 와서 바꿀 수 있는 게 많지 않다는 것도 압니다.','몸도 마음도 예전 같지 않다는 걸 매일 확인합니다. **남은 시간을 어떻게 써야 할지 계획이 서지 않습니다**.'],
+  60:['돌아보면 남을 위해 산 시간이 대부분입니다. **정작 내가 하고 싶었던 건 끝내 미뤄 두었습니다**.','할 수 있는 일보다 **할 수 없게 된 일이 더 많아졌습니다**. 그걸 받아들이는 데 시간이 오래 걸립니다.']
+ },
+ work:{
+  m:['공부한 만큼 성적이 나오지 않습니다. **열심히 한 날과 안 한 날의 결과가 별로 다르지 않아서** 의욕이 꺾입니다.','잘하는 게 무엇인지 아직 모릅니다. **커서 뭐가 되고 싶냐는 질문에 대답을 둘러댑니다**.'],
+  20:['원서를 넣고 답을 기다리는 시간이 길었거나, 들어간 곳이 생각했던 곳이 아닙니다. **이 길이 맞는지 확신이 없는데 다른 길로 갈 용기도 없습니다**.','일은 시키는 만큼 하는데 내 일 같지가 않습니다. **몇 년 뒤의 내 모습을 떠올려 보면 아무것도 그려지지 않습니다**.','벌써 그만두고 싶다는 생각을 여러 번 했습니다. **그만두면 갈 데가 없다는 것도 압니다**.'],
+  30:['**지금 하는 일을 10년 더 한다고 생각하면 숨이 막힙니다**. 그렇다고 새로 시작하기엔 늦었다는 생각이 먼저 듭니다.','일은 남들만큼, 어떤 날은 그보다 더 하는데 **인정은 덜 받습니다**. 내가 한 일이 다른 사람 이름으로 올라간 적도 있습니다.','**원래 하려던 일과 지금 하는 일이 다릅니다**. 언제부터 이렇게 됐는지 정확히 기억나지 않습니다.'],
+  40:['**나보다 늦게 들어온 사람이 나보다 위에 앉기 시작했습니다**. 아직 아니라면 곧 그렇게 됩니다.','이직을 생각해 보지만 **나를 받아 줄 곳이 줄었다는 걸 압니다**. 지금 자리를 지키는 것만으로 힘이 다 빠집니다.','회의에서 내 말이 예전만큼 무게를 갖지 못합니다. **젊은 사람들 사이에서 내 자리가 언제까지일지 계산하게 됩니다**.'],
+  50:['남은 근무 햇수를 세어 본 적이 있습니다. **그 뒤에 무엇으로 먹고살지는 아직 정하지 못했습니다**.','일터에서 나를 어떻게 보는지 압니다. **나가라는 말을 안 했을 뿐입니다**.'],
+  60:['일에서 물러났거나, 물러나야 하는데 형편이 안 됩니다. **일을 놓으면 쓸모없는 사람이 될 것 같습니다**.','일할 수 있다는 걸 증명해야 하는 자리에 계속 서게 됩니다. **나이를 묻는 질문이 불편합니다**.']
+ },
+ money:{
+  m:['용돈이나 알바비가 들어오면 금방 사라집니다. **사고 싶은 걸 참은 날이 산 날보다 많습니다**.','집안 형편을 눈치로 압니다. **갖고 싶은 걸 말하기 전에 가격부터 봅니다**.'],
+  20:['**통장에 돈이 쌓이는 경험을 아직 못 해 봤습니다**. 월급이 들어와도 카드값과 고정비가 빠지면 남는 게 없습니다.','친구들 중 누군가는 벌써 차를 사고 집 얘기를 합니다. **그 대화에 낄 말이 없습니다**.','**모아 둔 돈이 얼마냐는 질문이 제일 싫습니다**. 돈 얘기가 나오면 화제를 돌립니다.'],
+  30:['**이 나이면 모아 놨어야 할 돈이 얼마인지 알고, 거기에 한참 못 미친다는 것도 압니다**. 큰돈을 쓴 기억은 없는데 돈이 남지 않습니다.','통장 잔고를 확인하기 전에 잠깐 망설입니다. **월급날이 지나고 열흘쯤 되면 벌써 다음 월급날을 셉니다**.','집 얘기가 나오면 계산을 하다 그만둡니다. **지금 버는 돈으로는 답이 나오지 않는다는 걸 압니다**.'],
+  40:['노후 준비를 해야 한다는 말을 들을 때마다 계산을 하다 그만둡니다. **버는 돈은 그대로인데 나갈 곳은 해마다 늘어납니다**.','한 번 크게 아프거나 일이 끊기면 몇 달을 버틸 수 있는지 세어 본 적이 있습니다. **그 숫자가 생각보다 작았습니다**.'],
+  50:['퇴직 뒤에 쓸 돈을 계산해 보면 **모자라는 햇수가 나옵니다**. 그 햇수를 어떻게 메울지는 아직 답이 없습니다.','자식이나 부모에게 들어갈 돈과 내 노후에 쓸 돈이 같은 통장에서 나갑니다. **어느 쪽도 넉넉하지 않습니다**.'],
+  60:['남에게 손 벌리지 않으려고 아낍니다. **아껴도 줄어드는 속도가 더 빠릅니다**.','들어오는 돈은 정해져 있고 나갈 일은 정해져 있지 않습니다. **병원비 얘기가 나오면 마음부터 무거워집니다**.']
+ },
+ love:{
+  m:['좋아하는 사람이 생겨도 먼저 다가가지 못합니다. **다른 사람과 잘되는 걸 지켜보는 쪽이 됩니다**.'],
+  20:['혼자라면, 좋아하는 사람에게는 늦게 다가가고 다가오는 사람은 마음에 차지 않습니다. 누가 곁에 있다면, **이 관계가 오래갈지 확신이 없습니다**.','연애를 시작하면 **내가 더 좋아하는 쪽이 됩니다**. 끝날 때도 내가 더 오래 붙잡고 있습니다.'],
+  30:['혼자라면, 결혼 얘기가 나오는 자리를 피하게 됩니다. 누가 곁에 있다면, **그 사람 옆에서도 혼자라고 느끼는 날이 있습니다**.','주변에서 결혼하고 아이를 낳았다는 소식이 올 때마다 내 순서는 어디쯤인지 따져 봅니다. **혼자든 아니든 생각했던 모습과는 다릅니다**.'],
+  40:['혼자라면, 이제는 누군가를 만나는 걸 기대하지 않는다고 말합니다. 곁에 누가 있다면, **둘이 나누는 말이 생활 얘기로만 줄었습니다**.','가장 가까운 사람에게 하고 싶은 말을 못 하고 삼킨 날이 많습니다. **서운한 게 쌓였는데 꺼낼 때를 놓쳤습니다**.'],
+  50:['곁에 있는 사람과는 할 말이 줄었고, 없다면 그 빈자리에 익숙해졌다고 스스로에게 말합니다. **어느 쪽이든 속을 다 털어놓을 사람은 없습니다**.'],
+  60:['함께 늙어 갈 사람이 곁에 있어도 마음까지 가까운지는 모르겠습니다. 없다면 **혼자 맞는 저녁이 길어졌습니다**.']
+ },
+ people:{
+  m:['친구 무리에서 내가 빠져도 티가 안 날 것 같다는 생각을 합니다. **단톡방에서 내 말에는 답이 늦게 달립니다**.'],
+  20:['**먼저 연락하는 쪽은 늘 정해져 있습니다**. 내가 연락을 끊으면 끊긴 채로 갑니다.','모임에 다녀오면 즐거운 것보다 피곤한 게 더 큽니다. **집에 오는 길에 내가 한 말들을 다시 곱씹습니다**.'],
+  30:['연락처는 많은데 **새벽에 전화할 수 있는 사람은 떠오르지 않습니다**. 먼저 연락하지 않으면 연락이 오지 않습니다.','결혼식이나 돌잔치에 낸 돈은 많은데 **내 일로 모일 사람은 손에 꼽힙니다**. 그 사람들도 요즘은 1년에 한두 번 봅니다.'],
+  40:['**친구라고 부를 사람이 손에 꼽히고, 그마저 1년에 한두 번 봅니다**. 연락이 오면 반가운 것보다 무슨 일인지가 먼저 궁금합니다.'],
+  50:['연락이 오는 건 대부분 경조사 때문입니다. **속 얘기를 털어놓을 사람은 오래전에 끊겼습니다**.'],
+  60:['같이 늙어 가던 친구들과 하나둘 연락이 끊깁니다. **새로 사람을 사귀기에는 힘이 부칩니다**.']
+ },
+ body:{
+  m:['늦게 자고 늦게 일어나는 게 버릇이 됐습니다. **잠들기 전에 휴대폰을 오래 붙잡습니다**.'],
+  20:['잠들기 전에 휴대폰을 오래 봅니다. **내일 피곤할 걸 알면서도 그렇게 해야 하루를 산 것 같습니다**.','벌써 허리나 목이 뻐근합니다. **잘 먹고 잘 잔 날보다 대충 넘긴 날이 많습니다**.'],
+  30:['**자고 일어나도 개운하지 않습니다**. 하루 무리하면 회복하는 데 사흘이 걸립니다.','어딘가 아픈데 병원에 갈 시간과 돈을 아끼느라 미룹니다. **미뤄 둔 곳이 한두 군데가 아닙니다**.'],
+  40:['건강검진 결과지를 끝까지 읽지 않습니다. **다시 검사하라는 칸이 해마다 하나씩 늘어납니다**.','계단을 오르면 숨이 찹니다. **예전 체력을 기준으로 일정을 잡았다가 번번이 무너집니다**.'],
+  50:['**먹는 약이 하나씩 늘고 있습니다**. 아픈 곳을 말하면 나이 탓이라는 대답이 돌아옵니다.'],
+  60:['아침에 일어나면 아픈 곳부터 확인합니다. **병원에 가는 날이 약속 있는 날보다 많아졌습니다**.']
+ }
+};
+
+/* ---------- 앞으로 (영역별, 그때 나이대에 맞춰) ---------- */
+const FUT={
+ self:{child:'남과 비교당하는 일이 잦아지고, 그때 생긴 움츠러듦이 오래 남습니다.',teen:'남과 나를 비교하는 버릇이 굳어집니다. 그 버릇은 어른이 돼도 고쳐지지 않습니다.',young:'고른 길이 마음에 들지 않는데 돌아갈 수도 없게 됩니다. 이때 접은 꿈은 다시 꺼내지 못합니다.',thirty:'마음이 한 번 크게 꺾입니다. 그 뒤로는 큰 꿈을 말하지 않게 됩니다.',forty:'이룬 것 없이 나이만 먹었다는 생각이 하루도 빠짐없이 따라다닙니다.',fifty:'더는 바꿀 수 없다는 걸 받아들이게 됩니다. 받아들이는 데 걸린 시간만큼 남은 시간이 줄어 있습니다.',sixty:'지나간 선택을 되짚는 시간이 하루의 대부분을 차지합니다.',old:'후회할 일은 많은데 바로잡을 시간이 없습니다.'},
+ work:{child:'공부에 흥미를 잃는 일이 생기고, 한 번 떨어진 성적이 잘 오르지 않습니다.',teen:'진로를 정할 때 남보다 한발 늦습니다. 그 한발은 나중에 따라잡기 어렵습니다.',young:'첫 자리를 잡는 데 남보다 오래 걸리고, 잡은 자리도 원하던 곳이 아닙니다.',thirty:'일하는 자리가 크게 흔들립니다. 원하지 않는 이동이나 이직을 하게 되고, 그 뒤로 경력이 이어지지 않습니다.',forty:'더 올라가지 못하고 멈춥니다. 위로 가는 자리는 나보다 늦게 들어온 사람에게 갑니다.',fifty:'예상보다 일찍 일에서 밀려납니다. 다시 일을 구하려 하면 나이부터 봅니다.',sixty:'일을 놓아야 할 때 놓지 못합니다. 형편 때문에 원하지 않는 일을 계속합니다.',old:'일을 놓은 뒤 하루를 채울 게 없습니다.'},
+ money:{child:'집안 형편이 기울어 갖고 싶은 걸 참는 일이 늘어납니다.',teen:'집안 돈 문제가 진로를 정하는 데까지 끼어듭니다.',young:'모을 만하면 큰돈이 나갈 일이 생겨 통장이 다시 비는 일이 되풀이됩니다.',thirty:'큰 결정을 잘못 내려 몇 년 모은 돈을 한 번에 잃습니다. 그 손해를 메우는 데 다음 10년을 씁니다.',forty:'모아 둔 돈이 한 번에 빠져나가는 일이 생깁니다. 다시 모으기에는 일할 수 있는 햇수가 모자랍니다.',fifty:'노후에 쓰려던 돈을 가족 일이나 갑작스러운 지출에 먼저 쓰게 됩니다.',sixty:'모아 둔 돈보다 오래 삽니다. 돈이 떨어지는 때와 몸이 약해지는 때가 겹칩니다.',old:'생활비를 누군가에게 기대야 하는 처지가 됩니다. 기댈 사람도 마땅치 않습니다.'},
+ love:{child:'처음 마음을 준 사람에게 크게 상처받습니다. 그 뒤로 사람을 쉽게 믿지 못합니다.',teen:'처음 마음을 준 사람에게 크게 상처받습니다. 그 뒤로 사람을 쉽게 믿지 못합니다.',young:'오래 만난 사람과 갑자기 끝납니다. 끝난 이유를 끝내 듣지 못합니다.',thirty:'가장 가까운 관계가 크게 흔들립니다. 혼자라면 이때 오는 인연도 오래가지 않고, 함께라면 헤어짐을 진지하게 생각하게 됩니다.',forty:'함께 사는 사람과 말이 끊기고, 한집에서 따로 사는 시간이 길어집니다. 혼자라면 이때부터 혼자인 게 굳어집니다.',fifty:'곁에 있는 사람과 사이가 더 멀어집니다. 늦게 찾아온 인연이 있다면 돈 문제로 끝납니다.',sixty:'곁을 지키는 사람 없이 혼자 지내는 날이 많아집니다.',old:'아플 때 옆에서 챙겨 줄 사람이 없습니다.'},
+ people:{child:'친하던 친구와 멀어지고, 그 뒤로 무리에서 겉돕니다.',teen:'친한 친구와 크게 틀어지고, 그 뒤로 무리에서 겉돕니다.',young:'믿었던 친구에게 돈이나 말로 뒤통수를 맞습니다.',thirty:'오래 알던 사람들과 하나둘 멀어집니다. 남는 건 일로 만난 사람들뿐인데, 일을 그만두면 그마저 끊깁니다.',forty:'가까운 사람과 돈 문제로 크게 틀어집니다. 가족 안에서도 내 편이 줄어듭니다.',fifty:'부모님이 기대야 할 때와 내 형편이 가장 나쁠 때가 겹칩니다. 형제들 사이에서 그 짐이 나에게 넘어옵니다.',sixty:'연락하는 사람이 손에 꼽힐 만큼 줄어듭니다.',old:'명절에도 찾아오는 사람이 적습니다.'},
+ body:{child:'잔병치레가 잦아 중요한 때를 놓치는 일이 생깁니다.',teen:'몸이 약해져 중요한 때를 놓치는 일이 생깁니다.',young:'무리한 생활이 몸에 쌓이기 시작합니다. 이때 생긴 병은 오래 갑니다.',thirty:'몸이 처음으로 크게 버티지 못하는 일이 생깁니다. 회복은 되지만 예전으로 돌아가지는 않습니다.',forty:'약하던 곳이 결국 탈이 납니다. 한 번 먹기 시작한 약은 끊지 못합니다.',fifty:'몸 때문에 일과 생활을 줄여야 하는 때가 옵니다. 병원비가 생활비를 잡아먹습니다.',sixty:'한 번 아프면 혼자 일어나기 어려워집니다.',old:'몸을 남의 손에 맡기는 시간이 길어집니다.'}
+};
+
+/* ---------- 대운·해에 일어나기 쉬운 일 (그때 나이대에 맞춰) ----------
+ * 열쇠: 사주의 이 칸과 부딪힐 때 h0(태어난 해)·h1(달)·h2(날)·h3(시간), 부딪힘이 없으면 들어오는 기운 이름.
+ */
+const EV={
+ child:{관성:'어른들 눈치를 보며 하고 싶은 말을 삼키는 일',재성:'집안 형편 때문에 갖고 싶은 걸 참는 일',식상:'말이나 행동 때문에 혼나고 기가 죽는 일',비겁:'형제나 친구와 비교당하며 자라는 일',인성:'겁이 많아 해 보고 싶은 걸 미리 포기하는 일',h0:'집안이 흔들려 마음 붙일 곳을 잃는 일',h1:'이사나 전학으로 정 붙인 곳을 떠나는 일',h2:'자주 아프거나 혼자 있는 시간이 길어지는 일',h3:'기대했던 일이 어른들 사정으로 틀어지는 일'},
+ teen:{관성:'부모님과 선생님의 기대에 눌려 숨이 막히는 일',재성:'집안 돈 문제로 하고 싶은 걸 접는 일',식상:'한 말 때문에 무리에서 밀려나는 일',비겁:'친구와 비교당하며 자신감을 잃는 일',인성:'걱정이 많아 중요한 시험이나 기회 앞에서 무너지는 일',h0:'집안 사정이 기울어 진로를 바꾸는 일',h1:'부모님과 크게 부딪혀 집이 편하지 않은 일',h2:'가장 믿던 친구에게 크게 데는 일',h3:'세워 둔 진로 계획이 엎어지는 일'},
+ young:{관성:'원하지 않는 자리에서 남의 기준에 맞춰 버티는 일',재성:'모을 만하면 큰돈이 나가 통장이 다시 비는 일',식상:'말 한마디 때문에 기회를 놓치는 일',비겁:'친구나 동료에게 돈이나 자리를 빼앗기는 일',인성:'준비만 하다 남들보다 출발이 늦어지는 일',h0:'집안 문제로 하고 싶은 일을 미루는 일',h1:'첫 직장이나 진로가 뜻대로 안 풀려 길을 바꾸는 일',h2:'오래 만난 사람과 갑자기 끝나는 일',h3:'세워 둔 계획을 처음부터 다시 짜는 일'},
+ thirty:{관성:'책임만 늘고 대가는 따라오지 않는 일',재성:'큰 결정을 잘못 내려 몇 년 모은 돈을 잃는 일',식상:'맞는 말을 했다가 자리를 잃는 일',비겁:'가까운 사람과 돈 문제로 틀어지는 일',인성:'걱정 때문에 결정을 미루다 때를 놓치는 일',h0:'집안일에 목돈과 시간을 빼앗기는 일',h1:'일하던 자리가 흔들려 경력이 끊기는 일',h2:'가장 가까운 관계가 무너지거나 사는 곳을 옮기는 일',h3:'계획했던 앞날이 엎어지는 일'},
+ forty:{관성:'윗사람과 아랫사람 사이에 끼어 책임만 지는 일',재성:'모아 둔 돈이 한 번에 빠져나가는 일',식상:'벌인 일을 수습하느라 몇 년을 쓰는 일',비겁:'동업자나 형제에게 내 몫을 빼앗기는 일',인성:'변화를 겁내다 자리에서 밀려나는 일',h0:'부모님 일로 생활이 흔들리는 일',h1:'자리가 바뀌거나 일터에서 밀려나는 일',h2:'함께 사는 사람과 사이가 깨지는 일',h3:'자식이나 아랫사람 문제로 속을 끓이는 일'},
+ fifty:{관성:'책임질 일은 남았는데 자리가 먼저 없어지는 일',재성:'노후에 쓸 돈을 다른 데 쓰게 되는 일',식상:'말실수로 오래 쌓은 관계를 잃는 일',비겁:'형제나 친구와 재산 문제로 등을 지는 일',인성:'걱정으로 잠 못 드는 밤이 길어지는 일',h0:'부모님을 모시는 짐이 나에게 넘어오는 일',h1:'예상보다 일찍 일에서 밀려나는 일',h2:'곁에 있던 사람과 멀어지는 일',h3:'자식 일로 큰돈과 마음을 쓰는 일'},
+ sixty:{관성:'일을 놓아야 할 때 놓지 못하는 일',재성:'모아 둔 돈이 생각보다 빨리 바닥나는 일',식상:'자식이나 아랫사람에게 한 말 때문에 사이가 벌어지는 일',비겁:'재산을 두고 가족끼리 다투는 일',인성:'몸과 돈 걱정에 하루를 다 쓰는 일',h0:'형제와 집안 문제로 등을 지는 일',h1:'하던 일을 원하지 않게 그만두는 일',h2:'곁에 있던 사람을 잃고 혼자 남는 일',h3:'자식에게 기대려던 계획이 틀어지는 일'},
+ old:{관성:'생활을 남의 손에 맡기는 일',재성:'생활비를 누군가에게 기대야 하는 일',식상:'하고 싶은 말을 들어 줄 사람이 없는 일',비겁:'남은 재산을 두고 자식들이 다투는 일',인성:'병원과 약에 하루를 다 쓰는 일',h0:'찾아오는 가족이 줄어드는 일',h1:'가까이 지내던 사람들과 연락이 끊기는 일',h2:'혼자 지내는 시간이 길어지는 일',h3:'자식과 멀어져 얼굴 보기 어려운 일'}
+};
+const evList=(st,keys,n)=>keys.map(k=>EV[st][k]).filter((v,i,arr)=>v&&arr.indexOf(v)===i).slice(0,n);
+
+/* ---------- 말년 ---------- */
+const OLD_FAM={비겁:'형제나 가까운 사람과 남은 재산 문제로 등을 집니다.',식상:'자식이나 아랫사람에게 쏟은 만큼 돌려받지 못합니다.',재성:'늙어서도 돈 걱정을 놓지 못하고 일을 계속해야 합니다.',관성:'늙어서도 책임이 남아 쉬지 못합니다.',인성:'늙을수록 걱정이 많아지고 병원에 기대는 날이 깁니다.'};
+function oldAgeText(a,P,sinsal,cycles,birthY,nowYear){
+ const f=a.families,star=a.male?'재성':'관성',weak=lv=>lv==='absent'||lv==='weak';
+ const lonely=weak(f[star].level)||weak(f.비겁.level)||sinsal.some(x=>x.key==='gosin'||x.key==='gwasuk');
+ const poor=weak(f.재성.level)||f.비겁.level==='excess'||f.비겁.level==='strong'||((f.재성.level==='excess'||f.재성.level==='strong')&&a.strength.ratio<.43);
+ const head=poor?'모아 둔 돈보다 오래 삽니다.':lonely?'늙어서 곁을 지키는 사람이 없습니다.':'나이가 들수록 할 수 있는 일은 줄고 혼자인 시간은 늘어납니다.';
+ const body=[];
+ if(P[3].known){
+  let t='말년 자리는 태어난 시간의 '+animal(P[3].branch)+'입니다. '+OLD_FAM[TEN_FAMILY[tenGod(a.dayStem,P[3].stem)]];
+  const hit=a.interactions.find(x=>x.type!=='합'&&x.positions.includes(3));
+  if(hit)t+=' '+interactionLine(hit)+' **말년에 세운 계획이 한 번 크게 틀어집니다**.';
+  body.push(t);
+ }else body.push('태어난 시간을 몰라 말년 자리는 비어 있습니다. 나머지 일곱 글자만 봐도 말년은 이렇습니다.');
+ body.push(poor?'돈이 떨어지는 때와 몸이 약해지는 때가 겹쳐서 **아픈 몸으로 돈 걱정을 합니다**.':'돈은 겨우 버티지만 **쓸 곳을 내가 정하지 못합니다**. 병원과 가족 일이 먼저 가져갑니다.');
+ body.push(lonely?(poor?'**곁을 지키는 사람도 없습니다**. ':'')+'아파도 혼자 병원에 가고, **혼자 밥 먹는 날이 대부분입니다**.':'**일흔이 넘으면 연락하는 사람이 손에 꼽힙니다**. 찾아오는 사람은 있어도 오래 머물지 않습니다.');
+ body.push('**'+ORGAN[weakestElement(a)]+'** 쪽이 말년의 발목을 잡습니다. 한 번 나빠지면 예전으로 돌아가지 않습니다.');
+ const late=cycles.filter(c=>c.age+4.5>=60&&c.worstYear&&c.worstYear.year>=nowYear).sort((x,y)=>x.good-y.good||x.i-y.i)[0];   // 예순 넘어 가장 낮은 10년의 가장 나쁜 해
+ if(late)body.push('특히 **'+late.worstYear.year+'년, 만 '+(late.worstYear.year-birthY)+'세 무렵**이 가장 큰 고비입니다.');
+ return {head:head,body:body};
 }
 
 /* ---------- 풀이 묶기 ---------- */
-function lead(t){const i=t.indexOf('. ');return i<0?[t,'']:[t.slice(0,i+1),t.slice(i+2)];}
-const plain=t=>String(t).replace(/\*\*|==/g,'');
-function makeReading(chart,inp,now){
+const plain=t=>String(t).replace(/\*\*/g,'');
+function ageAt(b,now){const k=ymd(now+9*HOUR);return k.y-b.y-((k.m<b.m||(k.m===b.m&&k.d<b.d))?1:0);}
+const bandOf=age=>age<19?'m':age<30?20:age<40?30:age<50?40:age<60?50:60;
+const OPENER={m:'요즘 뜻대로 되는 일이 없어서 이 풀이를 열었을 겁니다. 그 이유가 여덟 글자에 들어 있습니다.',a:'지금 사는 모습이 마음에 들지 않아서 이 풀이를 열었을 겁니다. 그 이유가 여덟 글자에 다 들어 있습니다.'};
+const PEER_AVG=50;   // 또래 평균선(운 그래프의 점선)
+function makeReading(chart,inp,now,sd){
  now=now||Date.now();
  const P=chart.idx.map((idx,pos)=>idx==null?{pos:pos,known:false}:{pos:pos,known:true,idx:idx,gz:gz(idx),stem:gz(idx)[0],branch:gz(idx)[1]});
  const dayStem=P[2].stem,a=analyzeChart(P,dayStem,inp.male),C=buildCandidates(a,P),d=C.dominant,sinsal=findSinsal(P,inp.male);
@@ -1141,7 +1312,7 @@ function makeReading(chart,inp,now){
  const maxC=Math.max.apply(null,ORDER.map(k=>counts[k])),most=ORDER.filter(k=>counts[k]===maxC);
  const shown=P.filter(p=>p.known).length*2;
  let elRemark='눈에 보이는 '+(shown===8?'여덟':'여섯')+' 글자 중에는 **'+most.map(k=>ELEMENTS[k].name).join('·')+'** 기운이 가장 많습니다.';
- if(missing.length)elRemark+=' **'+missing.map(k=>ELEMENTS[k].name).join('·')+'** 기운은 하나도 없습니다.';
+ if(missing.length)elRemark+=' **'+missing.map(k=>ELEMENTS[k].name).join('·')+'** 기운은 하나도 없습니다. 없는 기운이 맡아야 할 몫은 다른 기운이 억지로 떠안습니다.';
  if(rankEl[0]!==most[0]||most.length>1)elRemark+=' 숨은 기운과 계절의 힘까지 따지면 **'+ELEMENTS[rankEl[0]].name+' '+pct(sh[rankEl[0]])+'%**로 가장 셉니다.';
  // 사실 칸
  const s=a.strength,topF=a.rank[0],lowF=a.rank[a.rank.length-1],clash=a.interactions.find(x=>x.type!=='합');
@@ -1153,37 +1324,128 @@ function makeReading(chart,inp,now){
   {label:'부딪히는 글자',value:clash?PLACE_KO[clash.positions[0]].replace('태어난 ','')+'의 '+animal(clash.branches[0])+' ↔ '+PLACE_KO[clash.positions[1]].replace('태어난 ','')+'의 '+animal(clash.branches[1]):'크게 부딪히는 글자 없음'},
   {label:'뿌리',value:s.rootCount?'아래 칸 '+s.rootCount+'곳':'없음'}
  ];
- // 성격
- const dt=DAY_TEXT[dayStem],natureBody=[d.key==='day'?dt.trait:dt.flaw,seasonText(a)].filter(Boolean);
- const fx=a.families[topF].level==='excess'&&d.key!=='excess'?famText(a,topF,'excess'):a.families[lowF].level==='absent'&&d.key!=='absent'?famText(a,lowF,'absent'):'';
- if(fx)natureBody.push(fx);
- const W=workText(a,d),M=moneyText(a,d),PE=peopleText(a),L=loveText(a,P,sinsal),B=bodyText(a,d);
- const sections=[
-  {id:'nature',title:'성격',head:dt.head,body:natureBody},
-  {id:'work',title:'일과 직업',head:W.head,body:W.body,note:{label:'버티기 힘든 자리',value:W.bad}},
-  {id:'money',title:'재물',head:M.head,body:M.body,note:{label:'돈이 새는 곳',value:M.leak}},
-  {id:'love',title:'연애와 결혼',head:L.head,body:L.body},
-  {id:'people',title:'사람 관계',head:PE.head,body:PE.body},
-  {id:'body',title:'건강과 생활 리듬',head:B.head,body:B.body}
- ];
+ // 나이
+ const birth=sd||ymd(chart.t+9*HOUR),age=Math.max(0,ageAt(birth,now)),band=bandOf(age),minor=band==='m';
+ const nowYear=ymd(now+9*HOUR).y,curYear=yearMonthAt(now).sajuYear;
+ const seed=chart.idx.reduce((n,v,i)=>n+(v==null?7:v)*(i*11+13),0)+(inp.male?5:0);
+ const pick=(arr,k)=>arr[(seed+k*7)%arr.length];
  // 대운
- const curYear=yearMonthAt(now).sajuYear;
  const cycles=chart.yun.cycles.map((c,i)=>{
-  const g=gz(c.idx),r=readPeriod(g,a,P,'대운'),sy=new Date(c.start+9*HOUR).getUTCFullYear(),ey=new Date(c.end+9*HOUR).getUTCFullYear();
-  const yrs=[];for(let y=sy;y<ey;y++){const yg=gz(yearIdx(y)),yr=readPeriod(yg,a,P,'해');let sc=yr.score;const ch=luckHits(yg[1],[{known:true,branch:g[1],pos:4}]);if(ch[0]&&ch[0].type==='충')sc+=12;if(yg===g)sc+=10;yrs.push({year:y,g:yg,score:Math.min(100,sc),title:yr.title});}
+  const g=gz(c.idx),pc=periodCore(g,a,P),sy=new Date(c.start+9*HOUR).getUTCFullYear(),ey=new Date(c.end+9*HOUR).getUTCFullYear();
+  const stage=stageOf(c.age+4.5),grp=groupOf(stage),current=now>=c.start&&now<c.end;
+  const yrs=[];for(let y=sy;y<ey;y++){if(current&&y<nowYear)continue;const yg=gz(yearIdx(y)),yp=periodCore(yg,a,P);let sc=yp.score;const ch=luckHits(yg[1],[{known:true,branch:g[1],pos:4}]);if(ch[0]&&ch[0].type==='충')sc+=12;if(yg===g)sc+=10;yrs.push({year:y,g:yg,score:Math.min(100,sc),title:periodTitle(yp,groupOf(stageOf(y-birth.y)),'해')});}
   yrs.sort((x,y)=>y.score-x.score||x.year-y.year);
-  return {i:i,g:g,start:c.start,end:c.end,startYear:sy,endYear:ey,age:c.age,title:r.title,text:r.text,score:r.score,current:now>=c.start&&now<c.end,worstYear:yrs[0]||null};
+  const raw=100-Math.min(99,pc.score+2+AGE_PEN[stage]);
+  return {i:i,g:g,pc:pc,start:c.start,end:c.end,startYear:sy,endYear:ey,age:c.age,stage:stage,grp:grp,current:current,past:c.end<=now,future:c.start>now,
+   fams:new Set([pc.sf,pc.bf]),hp:new Set(pc.hits.map(h=>h.pos)),title:periodTitle(pc,grp,'10년'),line:periodLine(pc,'이 10년의','이 10년에는 '),score:pc.score,
+   raw:raw,good:raw,years:yrs,worstYear:yrs[0]||null};
  });
- const worstCycle=cycles.slice().sort((x,y)=>y.score-x.score||x.i-y.i)[0];
- const cur=cycles.find(c=>c.current);
+ // 운 그래프 값(또래 평균 50). 사주에서 나온 높낮이 순서는 살리되, 만 19세 이상은
+ // 지나간 10년 중 가장 나았던 때 > 지금 > 앞으로 오는 모든 10년이 되고, 가장 힘든 10년은 앞으로 30년 안에 오도록 맞춘다.
+ const pastC=cycles.filter(c=>c.past),liveC=cycles.filter(c=>!c.past),futC=cycles.filter(c=>c.future),curC=cycles.find(c=>c.current)||null;
+ let bestC=null,worstC=null,curVal=null;
+ if(!minor){
+  const norm=(arr,c)=>{const v=arr.map(x=>x.raw),lo=Math.min.apply(null,v),hi=Math.max.apply(null,v);return hi>lo?(c.raw-lo)/(hi-lo):.5;};
+  if(pastC.length){   // 가장 나았던 10년은 어린 시절보다 철든 뒤, 그중에서도 최근에 지나간 쪽으로 기운다
+   const top=41+seed%6,lastI=pastC[pastC.length-1].i;pastC.forEach(c=>{c.raw2=c.raw+(c.age+4.5>=15?25:0)+(c.i===lastI?5:0);});
+   const v=pastC.map(c=>c.raw2),plo=Math.min.apply(null,v),phi=Math.max.apply(null,v);
+   pastC.forEach(c=>{c.good=Math.round(22+(phi>plo?(c.raw2-plo)/(phi-plo):.5)*(top-22));});bestC=pastC.reduce((m,c)=>c.good>m.good?c:m);
+  }
+  if(curC){curVal=Math.round(22+norm(cycles,curC)*10);if(bestC)curVal=Math.min(curVal,bestC.good-7);curC.good=curVal;}
+  if(futC.length){
+   const hi=(curVal!=null?curVal:bestC?bestC.good-7:30)-3,lo=7+seed%4,rest=[];
+   worstC=futC.slice(0,2).reduce((m,c)=>c.raw<m.raw?c:m);
+   futC.forEach(c=>{if(c!==worstC)rest.push(c);});
+   rest.forEach(c=>{c.good=Math.round(lo+3+norm(rest,c)*Math.max(0,hi-lo-3));});
+   worstC.good=lo;
+   futC.forEach(c=>{if(c.i>worstC.i)c.good=Math.min(c.good,lo+3+(c.i*7+seed)%6);});   // 가장 힘든 10년 뒤로도 크게 나아지지 않는다
+  }
+  if(!liveC.length)bestC=null;
+ }else cycles.forEach(c=>{c.good=Math.round(25+c.raw*.4);});   // 만 19세 미만은 점수를 덜 낮게
+ // 대운 카드 문장
+ cycles.forEach(c=>{
+  const ev=evList(c.stage,c.pc.keys,2);let t=c.line+' ';
+  if(c.past)t+='그래서 '+ev[0]+'이 있었습니다.'+(ev[1]?' '+ev[1]+'도 겹쳤습니다.':'');
+  else t+='그래서 '+ev[0]+'이 생깁니다.'+(ev[1]?' '+ev[1]+'도 겹칩니다.':'');
+  if(c===bestC)t+=' 평생 운 가운데 **가장 나았던 10년이 이때였습니다**. 그래도 '+c.good+'점으로 또래 평균에 못 미쳤고, 이미 지나갔습니다.';
+  if(c===worstC){const n=c.startYear-nowYear;t+=' **평생 운 가운데 가장 낮은 10년**입니다.'+(n>0?' 시작까지 '+n+'년 남았습니다.':' 올해 안에 시작합니다.');}
+  if(c.current)t+=' 이 흐름은 '+c.endYear+'년까지 이어집니다.'+(!minor&&futC.length?' **앞으로 오는 10년들은 모두 지금보다 낮습니다**.':'');
+  c.text=t;
+ });
+ // 영역별: 지금 → 이유 → 앞으로
+ const REL={
+  self:c=>(c.fams.has('인성')?2:0)+(c.fams.has('관성')?1:0),
+  work:c=>(c.fams.has('관성')?2:0)+(c.fams.has('식상')?1:0)+(c.hp.has(1)?3:0),
+  money:c=>(c.fams.has('재성')?2:0)+(c.fams.has('비겁')?2:0)+(c.hp.has(0)?1:0),
+  love:c=>(c.hp.has(2)?3:0)+((inp.male?(c.fams.has('재성')||c.fams.has('비겁')):(c.fams.has('관성')||c.fams.has('식상')))?1:0),
+  people:c=>(c.fams.has('비겁')?2:0)+(c.hp.has(0)?1:0)+(c.hp.has(1)?1:0),
+  body:c=>(c.age>=40?2:0)+(c.hp.has(2)?1:0)+(c.hp.has(3)?1:0)
+ };
+ const used={},youngStages=['child','teen','young'];
+ function nextFor(topic){
+  let pool=cycles.filter(c=>c.future&&c.age<=80&&(!minor||youngStages.includes(c.stage))).slice(0,3);
+  if(!pool.length)pool=cycles.filter(c=>c.current&&(!minor||youngStages.includes(c.stage)));
+  if(!pool.length)return null;
+  const first=pool[0].i;   // 가까운 10년일수록, 아직 덜 쓴 10년일수록 먼저 고른다
+  let best=null,bs=-1e9;pool.forEach(c=>{const v=(100-c.good)+7*REL[topic](c)-18*(used[c.i]||0)-9*(c.i-first);if(v>bs){bs=v;best=c;}});
+  const k=used[best.i]||0;used[best.i]=k+1;
+  const yr=best.years[k]||best.years[0];
+  if(k>0&&best.years[k])return '**'+yr.year+'년, 만 '+(yr.year-birth.y)+'세** 무렵에는 '+FUT[topic][best.stage];   // 같은 10년을 또 쓸 때는 그 안의 다른 해로
+  const when=best.current?'**지금 지나는 10년('+best.startYear+'~'+best.endYear+'년)** 안에 ':'**만 '+best.age+'~'+(best.age+9)+'세('+best.startYear+'~'+best.endYear+'년)**에는 ';
+  return when+FUT[topic][best.stage]+(yr?' 특히 **'+yr.year+'년**이 고비입니다.':'');
+ }
+ const dt=DAY_TEXT[dayStem],natureWhy=[d.key==='day'?dt.trait:dt.flaw,seasonText(a)].filter(Boolean);
+ const fx=a.families[topF].level==='excess'&&d.key!=='excess'?famText(a,topF,'excess'):a.families[lowF].level==='absent'&&d.key!=='absent'?famText(a,lowF,'absent'):'';
+ if(fx)natureWhy.push(fx);
+ const W=workText(a,d),M=moneyText(a,d),PE=peopleText(a),L=loveText(a,P,sinsal),B=bodyText(a,d);
+ const sec=(id,title,head,nowT,why,next,note)=>({id:id,title:title,head:head,parts:[{k:'now',t:nowT}].concat(why.map(t=>({k:'why',t:t}))).concat(next?[{k:'next',t:next}]:[]),note:note||null});
+ const sections=[
+  sec('nature','성격',dt.head,pick(NOW.self[band],1),natureWhy,nextFor('self')),
+  sec('work','일과 직업',W.head,pick(NOW.work[band],2),W.why,nextFor('work'),{label:'버티기 힘든 자리',value:W.bad}),
+  sec('money','재물',M.head,pick(NOW.money[band],3),M.why,nextFor('money'),{label:'돈이 새는 곳',value:M.leak}),
+  sec('love','연애와 결혼',L.head,pick(NOW.love[band],4),L.why,nextFor('love')),
+  sec('people','사람 관계',PE.head,pick(NOW.people[band],5),PE.why,nextFor('people')),
+  sec('body','건강과 생활 리듬',B.head,pick(NOW.body[band],6),B.why,nextFor('body'))
+ ];
  // 올해·내년
- const years=[curYear,curYear+1].map(Y=>{const cyc=cycles.find(c=>{const t=Date.UTC(Y,5,1);return t>=c.start&&t<c.end;});const r=readYear(Y,a,P,cyc);
-  const ms=r.months.filter(m=>m.end>now).sort((x,y)=>y.score-x.score||x.start-y.start).slice(0,2).sort((x,y)=>x.start-y.start);return Object.assign(r,{worstMonths:ms});});
- return {P:P,a:a,pillars:pillars,dayStem:dayStem,me:STEMS[dayStem],trait:dt.trait,counts:counts,shares:sh,elRemark:elRemark,
+ const yearEvUsed=new Set();
+ const years=[curYear,curYear+1].map((Y,yi)=>{
+  const cyc=cycles.find(c=>{const t=Date.UTC(Y,5,1);return t>=c.start&&t<c.end;});
+  const g=gz(yearIdx(Y)),pc=periodCore(g,a,P),st=stageOf(age+yi),grp=groupOf(st);
+  let score=pc.score,text=periodLine(pc,Y+'년의',Y+'년에는 ',yearEffect(pc,grp));
+  if(cyc){const ch=luckHits(g[1],[{known:true,branch:cyc.g[1],pos:4}]);if(ch[0]&&ch[0].type==='충'){score=Math.min(100,score+12);text+=' 지금 지나는 10년 운의 '+jo(animal(cyc.g[1]),'과','와')+'도 정면으로 부딪쳐 **한 해의 일이 10년 흐름 전체로 번집니다**.';}}
+  const months=monthsOfYear(Y).map(m=>{const mg=gz(m.idx),mp=periodCore(mg,a,P);return {start:m.start,end:m.end,g:mg,score:mp.score,title:monthTitle(mp,grp),hits:mp.hits};});
+  const worstMonths=months.filter(m=>m.end>now).sort((x,y)=>y.score-x.score||x.start-y.start).slice(0,2).sort((x,y)=>x.start-y.start);
+  const events=evList(st,pc.keys.concat(a.bad,['관성','재성','비겁','식상','인성']),9).filter(t=>!yearEvUsed.has(t)).slice(0,3);   // 내년은 올해와 다른 일로
+  events.forEach(t=>yearEvUsed.add(t));
+  return {year:Y,g:g,title:periodTitle(pc,grp,'해'),text:text,score:score,good:100-Math.min(99,score+2+AGE_PEN[st]),events:events,months:months,worstMonths:worstMonths};
+ });
+ // 해 점수도 그래프에 맞춘다: 올해는 지금 10년 언저리, 내년은 올해보다 낮게
+ if(minor)years.forEach(y=>{y.good=Math.round(25+y.good*.4);});
+ if(!minor&&curVal!=null){
+  const fit=v=>Math.round(curVal-4+(v-30)*.2);
+  years[0].good=Math.max(6,Math.min(curVal+2,fit(years[0].good)));
+  years[1].good=Math.max(5,Math.min(years[0].good-3,fit(years[1].good)));
+ }
+ // 평생 운 점수
+ const lifePool=liveC.length?liveC:cycles,lifeScore=Math.round(lifePool.reduce((n,c)=>n+c.good,0)/lifePool.length);
+ const rank=Math.max(71,Math.min(97,Math.round(97-(lifeScore-10)*.9)));
+ // 총평
+ const vsum=[];
+ if(!minor){
+  if(bestC)vsum.push('평생 운 가운데 가장 나았던 10년은 **만 '+bestC.age+'~'+(bestC.age+9)+'세('+bestC.startYear+'~'+bestC.endYear+'년)**였고, 이미 지나갔습니다.');
+  if(curC&&futC.length)vsum.push('지금 지나는 10년은 '+curC.good+'점입니다. **앞으로 이보다 나은 10년은 오지 않습니다**.');
+  if(worstC){const n=worstC.startYear-nowYear,mo=new Date(worstC.start+9*HOUR).getUTCMonth()+1;vsum.push('가장 힘든 10년은 아직 오지 않았습니다. **'+(n>0?n+'년 뒤인 '+worstC.startYear+'년 '+mo+'월':'올해 '+mo+'월')+', 만 '+worstC.age+'세**에 시작합니다.');}
+ }
+ return {P:P,a:a,pillars:pillars,dayStem:dayStem,me:STEMS[dayStem],trait:dt.trait,counts:counts,shares:sh,elRemark:elRemark,age:age,band:band,
+  judge:{score:lifeScore,rank:rank,text:OPENER[minor?'m':'a']},
   core:{title:d.title,text:d.core,strength:strengthText(a),tags:d.tags,facts:facts},
   sections:sections,sinsal:sinsal,years:years,
-  luck:{forward:chart.yun.forward,years:chart.yun.years,months:chart.yun.months,days:chart.yun.days,start:chart.yun.start,cycles:cycles,worst:worstCycle?worstCycle.i:-1,current:cur?cur.i:-1},
-  loop:(THEME[d.theme]||THEME.imbalance).loop,verdict:d.verdict,secondary:C.secondary.map(x=>x.title),dominant:d};
+  luck:{forward:chart.yun.forward,years:chart.yun.years,months:chart.yun.months,days:chart.yun.days,start:chart.yun.start,cycles:cycles,best:bestC?bestC.i:-1,worst:worstC?worstC.i:-1,current:curC?curC.i:-1},
+  old:minor?null:oldAgeText(a,P,sinsal,cycles,birth.y,nowYear),
+  loop:(THEME[d.theme]||THEME.imbalance).loop,verdict:d.verdict,verdictSum:vsum,
+  verdictLast:minor?'이 판은 태어나는 순간 정해졌습니다.':'이 판은 태어나는 순간 정해졌습니다. 노력으로 바뀌는 사주가 아닙니다.',
+  secondary:C.secondary.map(x=>x.title),dominant:d};
 }
 
 /* ===== 4. 화면 ===== */
@@ -1324,6 +1586,7 @@ function glyphHtml(info,tag,isMe){
  const e=ELEMENTS[info.el];
  return '<div class="glyph">'+icon(info.icon)+'<span class="nm">'+esc(info.name)+'</span><span class="tags"><span class="el" style="--c:'+e.color+'">'+esc(e.name)+'</span><span class="tg'+(isMe?' me':'')+'">'+esc(tag)+'</span></span></div>';
 }
+const PART_KO={now:'지금',why:'이유',next:'앞으로'};
 function renderResult(R){
  const inp=R.input,r=R.reading,c=R.chart;
  $('r-title').textContent=(inp.name?inp.name+'님의 사주':'나의 사주');
@@ -1333,6 +1596,10 @@ function renderResult(R){
  const time=inp.unknown?'태어난 시간 모름':hourWord(inp.time.h)+(inp.time.mi?' '+inp.time.mi+'분':'');
  const zodiac=r.pillars[0].known?BRANCHES[r.pillars[0].branch].name+'띠':'';
  $('r-birth').innerHTML='<b>'+main+'</b><br>'+esc(time)+', '+esc(inp.place.name)+'에서 태어난 '+(inp.male?'남자':'여자')+(zodiac?', '+esc(zodiac):'');
+ // 평생 운 점수
+ const J=r.judge;
+ $('judge').innerHTML='<div class="jt"><span>평생 운 점수</span><b>'+J.score+'<small>점</small></b></div><div class="jr">같은 해에 태어난 100명 중 <em>'+J.rank+'번째</em></div>'+
+  '<div class="jbar" aria-hidden="true"><i style="width:'+J.score+'%"></i><span class="avg" style="left:'+PEER_AVG+'%"><em>또래 평균 '+PEER_AVG+'점</em></span></div><p>'+md(J.text)+'</p>';
  // 여덟 글자
  const P=$('pillars');P.replaceChildren();
  r.pillars.forEach((p,i)=>{
@@ -1362,11 +1629,13 @@ function renderResult(R){
  const s=r.a.strength;
  $('power').innerHTML='<div class="row"><span>나의 힘</span><b>'+s.score+'<small>/ 100 · '+esc(STRENGTH_KO[s.label])+'</small></b></div><div class="meter"><i style="left:'+s.score+'%"></i></div><div class="meter-lb"><span>약함</span><span>균형</span><span>강함</span></div><p>'+md(r.core.strength)+'</p>';
  $('facts').innerHTML=r.core.facts.filter(f=>f.label!=='나의 힘'&&f.label!=='뿌리').map(f=>'<div><b>'+esc(f.label)+'</b><span>'+esc(f.value)+'</span></div>').join('');
- // 영역별
+ // 영역별: 지금 → 이유 → 앞으로
  const S=$('sections');S.replaceChildren();
- r.sections.forEach(sec=>{const box=el('section','block reading');box.id='sec-'+sec.id;
-  box.innerHTML='<h2 class="sec-label">'+esc(sec.title)+'</h2><h3 class="head">'+esc(sec.head)+'</h3>'+sec.body.map(b=>'<p>'+md(b)+'</p>').join('')+(sec.note?'<p class="note"><b>'+esc(sec.note.label)+'</b><span>'+esc(sec.note.value)+'</span></p>':'');
-  S.append(box);});
+ r.sections.forEach(sec=>{const box=el('section','block reading');box.id='sec-'+sec.id;let prev='';
+  let h='<h2 class="sec-label">'+esc(sec.title)+'</h2><h3 class="head">'+esc(sec.head)+'</h3>';
+  sec.parts.forEach(p=>{h+='<p>'+(p.k!==prev?'<span class="pt '+p.k+'">'+PART_KO[p.k]+'</span>':'')+md(p.t)+'</p>';prev=p.k;});
+  if(sec.note)h+='<p class="note"><b>'+esc(sec.note.label)+'</b><span>'+esc(sec.note.value)+'</span></p>';
+  box.innerHTML=h;S.append(box);});
  // 살
  const sal=$('sinsal');sal.replaceChildren();
  if(!r.sinsal.length)sal.innerHTML='<p class="sal-none">눈에 띄게 센 살은 없습니다. 대신 특별히 기댈 구석도 없어, 위에 적힌 약점이 그대로 드러납니다.</p>';
@@ -1375,7 +1644,8 @@ function renderResult(R){
  const Y=$('years');Y.replaceChildren();
  r.years.forEach((y,i)=>{
   const b=BRANCHES[y.g[1]],months=y.worstMonths.map(m=>{const a=new Date(m.start+9*HOUR),z=new Date(m.end+9*HOUR-DAY);return '<span>'+(a.getUTCMonth()+1)+'월 '+a.getUTCDate()+'일~'+(z.getUTCMonth()+1)+'월 '+z.getUTCDate()+'일</span><em>'+esc(m.title)+'</em>';}).join('');
-  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><span>'+esc(gzName(y.g))+'의 해</span></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+esc(y.title)+'</h3><p>'+md(y.text)+'</p>'+(months?'<div class="months"><b>'+(i===0?'남은 기간 중 특히 조심할 때':'특히 조심할 때')+'</b><div class="mgrid">'+months+'</div></div>':'')));
+  const evs=y.events.length?'<div class="evs"><b>이 해에 생기기 쉬운 일</b><ul>'+y.events.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul></div>':'';
+  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><span>'+esc(gzName(y.g))+'의 해 · 운 '+y.good+'점</span></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+esc(y.title)+'</h3><p>'+md(y.text)+'</p>'+evs+(months?'<div class="months"><b>'+(i===0?'남은 기간 중 특히 조심할 때':'특히 조심할 때')+'</b><div class="mgrid">'+months+'</div></div>':'')));
  });
  // 대운
  const L=r.luck,cyc=L.cycles,fd=new Date(L.start+9*HOUR);
@@ -1383,32 +1653,54 @@ function renderResult(R){
  $('luck-start').innerHTML=md((after?'태어나고 '+after+' 뒤인 ':'태어나자마자 ')+'**'+fd.getUTCFullYear()+'년 '+(fd.getUTCMonth()+1)+'월**부터 10년마다 큰 흐름이 바뀝니다.'+(L.current>=0?' 지금은 **'+cyc[L.current].startYear+'년에 시작한 대운**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':''));
  $('luck-graph').innerHTML=luckGraph(L);
  const LL=$('luck-list');LL.replaceChildren();
- cyc.forEach(cy=>{const now=cy.i===L.current,worst=cy.i===L.worst;
-  const li=el('li',(now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>만 '+cy.age+'~'+(cy.age+9)+'세'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">가장 힘든 10년</span>':'')+'<h3><small>'+esc(gzName(cy.g))+'의 10년</small>'+esc(cy.title)+'</h3><p>'+md(cy.text)+'</p>'+(cy.worstYear?'<div class="wy"><b>'+cy.worstYear.year+'년</b> '+esc(cy.worstYear.title)+'</div>':'')+'</div>');
+ cyc.forEach(cy=>{const now=cy.i===L.current,worst=cy.i===L.worst,best=cy.i===L.best;
+  const li=el('li',[now?'now':'',worst?'worst':'',best?'best':''].filter(Boolean).join(' '),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>만 '+cy.age+'~'+(cy.age+9)+'세<span class="lp">운 '+cy.good+'점</span>'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(now?'<span class="flag">지금</span>':'')+(best?'<span class="flag gold">가장 나았던 10년</span>':'')+(worst?'<span class="flag red">가장 힘든 10년</span>':'')+'<h3><small>'+esc(gzName(cy.g))+'의 10년</small>'+esc(cy.title)+'</h3><p>'+md(cy.text)+'</p>'+(cy.worstYear?'<div class="wy"><b>'+cy.worstYear.year+'년</b> '+esc(cy.worstYear.title)+'</div>':'')+'</div>');
   LL.append(li);});
+ // 말년
+ const O=r.old;$('old-age').hidden=!O;
+ if(O){$('old-head').textContent=O.head;$('old-body').innerHTML=O.body.map(t=>'<p>'+md(t)+'</p>').join('');}
  // 되풀이·총평
  $('loop').innerHTML=r.loop.map(t=>'<span>'+esc(t)+'</span>').join('<i>→</i>')+'<i>→</i><span class="again">다시 처음</span>';
  $('verdict').textContent=r.verdict;
+ $('verdict-sum').innerHTML=r.verdictSum.map(t=>'<p>'+md(t)+'</p>').join('');
  $('also').innerHTML=r.secondary.length?'<b>같이 겹친 문제</b>'+r.secondary.map(t=>'<li>'+esc(t)+'</li>').join(''):'';
+ $('verdict-last').textContent=r.verdictLast;
 }
 function luckGraph(L){
- const cyc=L.cycles,W=420,H=230,pl=22,pr=22,pt=44,pb=50,n=cyc.length;
- const vals=cyc.map(c=>100-c.score),lo=Math.min.apply(null,vals)-6,hi=Math.max.apply(null,vals)+6;
- const X=i=>pl+(W-pl-pr)*(n===1?.5:i/(n-1)),Yv=v=>pt+(H-pt-pb)*(1-(v-lo)/Math.max(1,hi-lo));
+ const cyc=L.cycles,W=420,H=262,pl=24,pr=24,pt=56,pb=50,n=cyc.length,TOP=60,ci=L.current,base=H-pb;
+ const X=i=>pl+(W-pl-pr)*(n===1?.5:i/(n-1)),Yv=v=>pt+(base-pt)*(1-Math.max(0,Math.min(TOP,v))/TOP);
+ const vals=cyc.map(c=>c.good);
  let path='';cyc.forEach((c,i)=>{const x=X(i),y=Yv(vals[i]);if(!i)path+='M'+x+' '+y;else{const px=X(i-1),py=Yv(vals[i-1]),mx=(px+x)/2;path+=' C'+mx+' '+py+' '+mx+' '+y+' '+x+' '+y;}});
- const area=path+' L'+X(n-1)+' '+(H-pb)+' L'+X(0)+' '+(H-pb)+' Z';
- let g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="대운별 운의 높낮이"><defs><linearGradient id="lgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc531" stop-opacity=".5"/><stop offset="1" stop-color="#ffc531" stop-opacity="0"/></linearGradient></defs>';
- g+='<text x="'+pl+'" y="20" font-size="15" font-weight="700" fill="#7a7290">운의 높낮이</text>';
- g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'" stroke="#d9c999" stroke-width="2"/>';
+ const area=path+' L'+X(n-1)+' '+base+' L'+X(0)+' '+base+' Z';
+ let g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="대운별 운의 높낮이와 또래 평균"><defs><linearGradient id="lgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc531" stop-opacity=".55"/><stop offset="1" stop-color="#ffc531" stop-opacity="0"/></linearGradient></defs>';
+ g+='<text x="'+pl+'" y="22" font-size="15" font-weight="700" fill="#7a7290">운의 높낮이</text>';
+ // 지나간 쪽은 옅게 깔아 둔다
+ const pastN=ci>=0?ci:cyc.filter(c=>c.past).length;
+ if(pastN>0){const x2=pastN>=n?W-pr+8:(X(pastN-1)+X(pastN))/2;g+='<rect x="'+(pl-10)+'" y="'+(pt-18)+'" width="'+(x2-pl+10)+'" height="'+(base-pt+18)+'" rx="10" fill="#efe6cc"/>';if(x2-pl>70)g+='<text x="'+(pl-2)+'" y="'+(base-9)+'" font-size="12.5" font-weight="700" fill="#9a8a5c">지나간 운</text>';}
+ g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+base+'" y2="'+base+'" stroke="#d9c999" stroke-width="2"/>';
+ // 또래 평균선
+ const ay=Yv(PEER_AVG);
+ g+='<line x1="'+(pl-6)+'" x2="'+(W-pr+6)+'" y1="'+ay+'" y2="'+ay+'" stroke="#261f3d" stroke-width="2" stroke-dasharray="7 5"/>';
+ g+='<text x="'+(W-pr+4)+'" y="'+(ay-8)+'" text-anchor="end" font-size="13" font-weight="700" fill="#261f3d">또래 평균</text>';
  g+='<path d="'+area+'" fill="url(#lgA)"/><path d="'+path+'" fill="none" stroke="#261f3d" stroke-width="3" stroke-linecap="round"/>';
- cyc.forEach((c,i)=>{const x=X(i),y=Yv(vals[i]),now=i===L.current,worst=i===L.worst;
-  g+='<text x="'+x+'" y="'+(H-pb+21)+'" text-anchor="middle" font-size="15" font-weight="700" fill="'+(now?'#3e2f8f':'#463e5e')+'">'+c.age+'세</text>';
-  g+='<text x="'+x+'" y="'+(H-pb+39)+'" text-anchor="middle" font-size="12.5" fill="#7a7290">'+c.startYear+'</text>';
-  if(now)g+='<line x1="'+x+'" x2="'+x+'" y1="'+(y+9)+'" y2="'+(H-pb)+'" stroke="#3e2f8f" stroke-width="2" stroke-dasharray="4 4"/>';
-  g+='<circle cx="'+x+'" cy="'+y+'" r="'+(now?8.5:worst?7.5:5)+'" fill="'+(now?'#3e2f8f':worst?'#e0402a':'#fff')+'" stroke="#261f3d" stroke-width="2.4"/>';
-  const ax=Math.max(pl+26,Math.min(W-pr-26,x));
-  if(now)g+='<g transform="translate('+ax+' '+(y-22)+')"><rect x="-23" y="-13" width="46" height="23" rx="11.5" fill="#3e2f8f"/><text y="4" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">지금</text></g>';
-  else if(worst)g+='<g transform="translate('+ax+' '+(y-22)+')"><rect x="-38" y="-13" width="76" height="23" rx="11.5" fill="#e0402a"/><text y="4" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">가장 힘듦</text></g>';
+ cyc.forEach((c,i)=>{const x=X(i),y=Yv(vals[i]),now=i===ci,worst=i===L.worst,best=i===L.best;
+  g+='<text x="'+x+'" y="'+(base+21)+'" text-anchor="middle" font-size="15" font-weight="700" fill="'+(now?'#3e2f8f':'#463e5e')+'">'+c.age+'세</text>';
+  g+='<text x="'+x+'" y="'+(base+39)+'" text-anchor="middle" font-size="12.5" fill="#7a7290">'+c.startYear+'</text>';
+  if(now)g+='<line x1="'+x+'" x2="'+x+'" y1="'+(y+9)+'" y2="'+base+'" stroke="#3e2f8f" stroke-width="2" stroke-dasharray="4 4"/>';
+  g+='<circle cx="'+x+'" cy="'+y+'" r="'+(now?8.5:worst||best?7.5:5)+'" fill="'+(now?'#3e2f8f':worst?'#e0402a':best?'#ffc531':'#fff')+'" stroke="#261f3d" stroke-width="2.4"/>';
+ });
+ // 이름표: 겹치면 아래나 더 위로 옮긴다
+ const rects=[{x1:W-pr-66,x2:W-pr+6,y1:ay-23,y2:ay-2},{x1:pl-6,x2:W-pr+6,y1:ay-2,y2:ay+2}],want=[];   // 또래 평균 글자와 선은 피한다
+ if(ci>=0)want.push({i:ci,t:'지금',fill:'#3e2f8f'});
+ if(L.worst>=0)want.push({i:L.worst,t:'가장 힘든 때',fill:'#e0402a'});
+ if(L.best>=0)want.push({i:L.best,t:'가장 나았던 때',fill:'#b47d00'});
+ want.forEach(w=>{
+  const x=X(w.i),y=Yv(vals[w.i]),bw=w.t.replace(/ /g,'').length*13.5+(w.t.split(' ').length-1)*4+22,cx=Math.max(pl-8+bw/2,Math.min(W-pr+8-bw/2,x));
+  let pos=null;
+  for(const ty of [y-24,y+27,y-50]){if(ty-12<pt-30||ty+11>base-3)continue;const q={x1:cx-bw/2,x2:cx+bw/2,y1:ty-12,y2:ty+11,cy:ty};if(!rects.some(o=>!(q.x2<o.x1||q.x1>o.x2||q.y2<o.y1||q.y1>o.y2))){pos=q;break;}}
+  if(!pos)pos={x1:cx-bw/2,x2:cx+bw/2,y1:y-36,y2:y-13,cy:y-24};
+  rects.push(pos);
+  g+='<g transform="translate('+cx+' '+pos.cy+')"><rect x="'+(-bw/2)+'" y="-12" width="'+bw+'" height="23" rx="11.5" fill="'+w.fill+'"/><text y="4.5" text-anchor="middle" font-size="13.5" font-weight="700" fill="#fff">'+w.t+'</text></g>';
  });
  return g+'</svg>';
 }
@@ -1436,7 +1728,7 @@ $('birth-form').addEventListener('submit',e=>{
 });
 function buildResult(inp,sd){
  const chart=computeChart({y:sd.y,m:sd.m,d:sd.d,h:inp.unknown?12:inp.time.h,mi:inp.unknown?0:inp.time.mi,unknown:inp.unknown,male:inp.male,place:inp.place,occurrence:inp.occurrence});
- return {input:inp,chart:chart,solarDate:sd,lunarDate:solarToLunar(sd.y,sd.m,sd.d),reading:makeReading(chart,inp)};
+ return {input:inp,chart:chart,solarDate:sd,lunarDate:solarToLunar(sd.y,sd.m,sd.d),reading:makeReading(chart,inp,undefined,sd)};
 }
 function resetAll(){
  popNav('result');current=null;$('birth-form').reset();picked.date=null;picked.time=null;picked.unknown=false;$('birth-place').classList.add('empty');
