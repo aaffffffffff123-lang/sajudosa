@@ -1723,7 +1723,7 @@ Object.assign(Emperor.prototype,{
   this.limp=[0,0];this.armHurt=[0,0];this.hunch=0;this.weak=0;this.mood=0;this.sinceHit=99;this.hitsRecent=[];
 this.cutZones=[];this.cutStrokeFallback=0;this.detached=new Set();
   this.abdomenCuts=[];this.abdomenTarget=null;this.abdomenStage=0;this.abdomenOpen=false;this.abdomenCavity=null;this.gutSpilled=false;this.gutChains=[];
-  this.abdomenCuts=[];this.abdomenStage=0;this.abdomenOpen=false;
+
   this.headGunHits=0;this.eyeGunHits=[0,0];this.headDamageStage=0;this.headDestroyed=false;this.headRuin=null;
   this.laughing=0;this.taunt=true;this.phase=0;this.breath=rnd(0,TAU);
   this.prevHeadQ=new THREE.Quaternion();this.headAngVel=V3();
@@ -2242,48 +2242,13 @@ Object.assign(Emperor.prototype,{
   }
  },
 
- /* 같은 복부 자리를 여러 번 그은 횟수를 기억한다. */
-progressAbdomenCut(pW,nW,angle,strokeId,len){
- const bone=this.bones.spine;if(!bone)return null;
- bone.updateWorldMatrix(true,false);
- const lp=bone.worldToLocal(pW.clone());
- const ln=nW.clone().transformDirection(_invB(bone)).normalize();
- let z=null,bestD=Infinity;
 
- for(const x of this.abdomenCuts){
-  const d=x.lp.distanceToSquared(lp);
-  if(d<.105*.105&&d<bestD&&x.ln.dot(ln)>.2){
-   z=x;bestD=d;
-  }
- }
 
- if(!z){
-  z={
-   lp:lp.clone(),
-   ln:ln.clone(),
-   angle,
-   len:clamp(len||.05,.03,.14),
-   hits:0,
-   stage:0,
-   lastStroke:null
-  };
-  this.abdomenCuts.push(z);
-  if(this.abdomenCuts.length>8)this.abdomenCuts.shift();
- }
 
- const sid=strokeId==null?'abd-'+(++this.cutStrokeFallback):strokeId;
- if(z.lastStroke===sid)return z;
 
- z.lastStroke=sid;
- z.hits++;
- z.lp.lerp(lp,.18);
- z.ln.lerp(ln,.18).normalize();
- z.angle=angle;
- z.len=Math.max(z.len,clamp(len||.05,.03,.14));
- z.stage=z.hits>=7?3:z.hits>=5?2:z.hits>=3?1:0;
- this.abdomenStage=Math.max(this.abdomenStage,z.stage);
- return z;
-},
+
+
+
 
  /* 같은 복부 자리를 반복해서 그으면 벌어지고, 열린 뒤 내장이 쏟아진다. */
 progressAbdomenCut(aW,bW,nW,angle,strokeId,len){
@@ -2970,8 +2935,7 @@ BLOOD.decal('cut',seg,mid,n,cw,{
    for(let i=0;i<Math.min(3,Math.ceil(len*40));i++){const q=V3().copy(a).lerp(b,rnd(.1,.9));const pr=BLOOD.project(q,n,.05);if(pr)BLOOD.startRiv(pr.seg||seg,pr.point,pr.normal,{w:rnd(.003,.0048),maxLen:rnd(.08,.3)});}
    BLOOD.spray(mid,n,clamp(Math.round(len*120),4,14),{max:2.2});
    if(isHead&&Math.random()<.6)this.screenSplat(mid,.45);
-if(h.part==='belly')this.progressAbdomenCut(mid,n,ang,h.strokeId,len);
-   else if(h.part==='belly'&&h.obj===this.belly&&seg==='spine')this.progressAbdomenCut(a,b,n,ang,h.strokeId,len);
+if(h.part==='belly'&&h.obj===this.belly&&seg==='spine')this.progressAbdomenCut(a,b,n,ang,h.strokeId,len);
    else this.progressCut(seg,mid,n,ang,h.strokeId,len,dir);
   }else{
    const ca=rnd(0,PI),sw=.013;
