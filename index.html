@@ -287,6 +287,18 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .caution p::before{content:"";position:absolute;left:3px;top:.64em;width:7px;height:7px;border-radius:2px;background:var(--red)}
 .caution p:last-child{margin-bottom:0}
 .fate-end{margin:30px 6px 0;text-align:center;font-family:var(--serif);font-weight:700;font-size:clamp(23px,6.4vw,27px);line-height:1.45;letter-spacing:-.03em;word-break:keep-all;color:var(--ink)}
+/* 결과 화면을 내려갈수록: 왼쪽 위 도사, 칸 제목 앞 표시, 숨은 상징 (움직이는 부분은 스크립트의 DOOM) */
+.topbar .home svg.mark.morph{width:44px;height:46px;margin:-5px 0}
+#sec-money .sec-label::before,#sec-money~.reading .sec-label::before,#sections~section .sec-label::before{width:14px;height:13px;border-radius:0;box-shadow:none;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M14 7L22 21.3H6Z' fill='none' stroke='%23ff8f7a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E")}
+#sections~section .sec-label::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M6.6 17.2Q14 10.6 21.4 17.2Q14 23.4 6.6 17.2Z' fill='%23fff' stroke='%23261f3d' stroke-width='1.1'/%3E%3Cellipse cx='14' cy='17.2' rx='1.25' ry='2.7' fill='%23261f3d'/%3E%3C/svg%3E")}
+.sym-pent>.sec-label::after,.sym-oro>.sec-label::after{content:"";flex:none;width:46px;height:46px;margin:-12px 0 -12px auto;background:center/contain no-repeat;opacity:.45}
+.sym-pent>.sec-label::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23261f3d' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='100' cy='100' r='95' stroke-width='5'/%3E%3Cpath d='M184.0 100.0L193.0 100.0M176.7 134.2L185.0 137.8M156.2 162.4L162.2 169.1M126.0 179.9L128.7 188.4M91.2 183.5L90.3 192.5M58.0 172.7L53.5 180.5M32.0 149.4L24.8 154.7M17.8 117.5L9.0 119.3M17.8 82.5L9.0 80.7M32.0 50.6L24.8 45.3M58.0 27.3L53.5 19.5M91.2 16.5L90.3 7.5M126.0 20.1L128.7 11.6M156.2 37.6L162.2 30.9M176.7 65.8L185.0 62.2' stroke-width='4'/%3E%3Ccircle cx='100' cy='100' r='64' stroke-width='4.4'/%3E%3Cpath d='M126.2 48.6L137.6 48.2L134.5 37.3M157.0 109.1L160.9 119.8L170.3 113.4M109.0 157.0L100.0 164.0L109.0 171.0M48.6 126.2L39.1 119.8L35.3 130.5M59.2 59.2L62.4 48.2L51.0 47.8' stroke-width='4.4'/%3E%3Cpath d='M100.0 36.0L137.6 151.8L39.1 80.2L160.9 80.2L62.4 151.8Z' stroke-width='5.6'/%3E%3C/g%3E%3Ccircle cx='100.0' cy='36.0' r='15' fill='%23f0612b' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='160.9' cy='80.2' r='15' fill='%23c4832f' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='137.6' cy='151.8' r='15' fill='%238a97a8' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='62.4' cy='151.8' r='15' fill='%232f76d6' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='39.1' cy='80.2' r='15' fill='%232f9e55' stroke='%23261f3d' stroke-width='4.4'/%3E%3C/svg%3E")}
+.sym-oro>.sec-label::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg opacity='1'%3E%3Cpath d='M80.4 36.2L112 43.6L84.2 47.6Z' fill='%236b1d2e' stroke='%23261f3d' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M126.3 46.1A60 60 0 0 1 93.7 159.7' stroke='%23261f3d' stroke-width='18.6'/%3E%3Cpath d='M95.8 159.9A60 60 0 0 1 81.5 157.1' stroke='%23261f3d' stroke-width='18.26'/%3E%3Cpath d='M83.5 157.7A60 60 0 0 1 70.0 152.0' stroke='%23261f3d' stroke-width='17.77'/%3E%3Cpath d='M71.8 153.0A60 60 0 0 1 59.9 144.6' stroke='%23261f3d' stroke-width='17.2'/%3E%3Cpath d='M61.4 146.0A60 60 0 0 1 51.5 135.3' stroke='%23261f3d' stroke-width='16.57'/%3E%3Cpath d='M52.7 136.9A60 60 0 0 1 45.2 124.4' stroke='%23261f3d' stroke-width='15.879999999999999'/%3E%3Cpath d='M46.1 126.3A60 60 0 0 1 41.3 112.5' stroke='%23261f3d' stroke-width='15.16'/%3E%3Cpath d='M41.8 114.5A60 60 0 0 1 40.0 100.0' stroke='%23261f3d' stroke-width='14.389999999999999'/%3E%3Cpath d='M40.0 102.1A60 60 0 0 1 41.3 87.5' stroke='%23261f3d' stroke-width='13.59'/%3E%3Cpath d='M40.9 89.6A60 60 0 0 1 45.2 75.6' stroke='%23261f3d' stroke-width='12.77'/%3E%3Cpath d='M44.4 77.5A60 60 0 0 1 51.5 64.7' stroke='%23261f3d' stroke-width='11.91'/%3E%3Cpath d='M50.3 66.4A60 60 0 0 1 59.9 55.4' stroke='%23261f3d' stroke-width='11.03'/%3E%3Cpath d='M58.3 56.8A60 60 0 0 1 70.0 48.0' stroke='%23261f3d' stroke-width='10.12'/%3E%3Cpath d='M68.2 49.1A60 60 0 0 1 81.5 42.9' stroke='%23261f3d' stroke-width='9.19'/%3E%3Cpath d='M79.5 43.6A60 60 0 0 1 91.6 40.6' stroke='%23261f3d' stroke-width='8.4'/%3E%3Cpath d='M126.3 46.1A60 60 0 0 1 93.7 159.7' stroke='%236f9a2e' stroke-width='15'/%3E%3Cpath d='M95.8 159.9A60 60 0 0 1 81.5 157.1' stroke='%236f9a2e' stroke-width='14.66'/%3E%3Cpath d='M83.5 157.7A60 60 0 0 1 70.0 152.0' stroke='%236f9a2e' stroke-width='14.17'/%3E%3Cpath d='M71.8 153.0A60 60 0 0 1 59.9 144.6' stroke='%236f9a2e' stroke-width='13.6'/%3E%3Cpath d='M61.4 146.0A60 60 0 0 1 51.5 135.3' stroke='%236f9a2e' stroke-width='12.97'/%3E%3Cpath d='M52.7 136.9A60 60 0 0 1 45.2 124.4' stroke='%236f9a2e' stroke-width='12.28'/%3E%3Cpath d='M46.1 126.3A60 60 0 0 1 41.3 112.5' stroke='%236f9a2e' stroke-width='11.56'/%3E%3Cpath d='M41.8 114.5A60 60 0 0 1 40.0 100.0' stroke='%236f9a2e' stroke-width='10.79'/%3E%3Cpath d='M40.0 102.1A60 60 0 0 1 41.3 87.5' stroke='%236f9a2e' stroke-width='9.99'/%3E%3Cpath d='M40.9 89.6A60 60 0 0 1 45.2 75.6' stroke='%236f9a2e' stroke-width='9.17'/%3E%3Cpath d='M44.4 77.5A60 60 0 0 1 51.5 64.7' stroke='%236f9a2e' stroke-width='8.31'/%3E%3Cpath d='M50.3 66.4A60 60 0 0 1 59.9 55.4' stroke='%236f9a2e' stroke-width='7.43'/%3E%3Cpath d='M58.3 56.8A60 60 0 0 1 70.0 48.0' stroke='%236f9a2e' stroke-width='6.52'/%3E%3Cpath d='M68.2 49.1A60 60 0 0 1 81.5 42.9' stroke='%236f9a2e' stroke-width='5.59'/%3E%3Cpath d='M79.5 43.6A60 60 0 0 1 91.6 40.6' stroke='%236f9a2e' stroke-width='4.8'/%3E%3Cpath d='M133.2 46.9A62.6 62.6 0 1 1 65.0 48.1' stroke='%233b5a16' stroke-width='6.4' stroke-dasharray='2.4 4.4' stroke-opacity='.7'/%3E%3Cpath d='M131.1 53.9A55.6 55.6 0 1 1 62.8 58.7' stroke='%23d3e27a' stroke-width='3' stroke-opacity='.9'/%3E%3C/g%3E%3Cpath d='M110.4 44.4C101.6 45.4 92.6 46.8 84.4 48.2C83.8 50 85.4 52.2 88.4 53C97 56.2 111 57 124 55L129.6 47.4Z' fill='%235f8a2a' stroke='%23261f3d' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M132.4 41.2C131.4 31.4 123.4 24.6 112.4 24.6C101.4 24.6 90.6 28.4 80.6 34.2C79.4 35 79.6 36.2 80.8 36.4C89.4 38 99.4 40.6 110.4 42.8L132 45.4Z' fill='%236f9a2e' stroke='%23261f3d' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M90 32.6C97.6 29.4 106 27.8 114.6 28' fill='none' stroke='%23c9df63' stroke-width='2' stroke-linecap='round' opacity='.85'/%3E%3Cpath d='M108 29.4C111.6 27.4 117.4 27.4 120.4 30.4' fill='none' stroke='%23261f3d' stroke-width='1.8' stroke-linecap='round'/%3E%3Cellipse cx='114.4' cy='34.4' rx='4.8' ry='4.1' fill='%23ffd21c' stroke='%23261f3d' stroke-width='1.7'/%3E%3Cpath d='M114.5 30.9C113.4 32.4 113.4 36.4 114.5 37.9C115.6 36.4 115.6 32.4 114.5 30.9Z' fill='%23120c1a'/%3E%3Cpath d='M85.4 34.6L88 34' stroke='%23261f3d' stroke-width='1.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E")}
+#sections~section>.sec-label{color:#9a2312}
+#sections~section>.sec-label small,.past-intro,#start-over{color:#554e69}
+#result-screen>.wrap{isolation:isolate}
+.fate-end{position:relative}
+.fate-end::before{content:"";position:absolute;left:50%;top:50%;width:250px;height:232px;margin:-120px 0 0 -125px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -16 268 248'%3E%3Cg stroke='%23261f3d' stroke-width='3.2' stroke-linecap='round' opacity='.6'%3E%3Cpath d='M120.0 14.0L120.0 -8.0'/%3E%3Cpath d='M137.1 40.9L139.4 28.1'/%3E%3Cpath d='M148.8 58.9L156.3 38.2'/%3E%3Cpath d='M157.7 72.6L164.2 61.4'/%3E%3Cpath d='M165.2 84.2L179.3 67.3'/%3E%3Cpath d='M171.7 94.6L181.7 86.3'/%3E%3Cpath d='M177.7 104.7L196.8 93.7'/%3E%3Cpath d='M183.6 114.9L195.8 110.4'/%3E%3Cpath d='M189.5 125.7L211.2 121.9'/%3E%3Cpath d='M196.0 138.0L209.0 138.0'/%3E%3Cpath d='M203.7 152.8L225.4 156.6'/%3E%3Cpath d='M214.0 172.2L226.2 176.6'/%3E%3Cpath d='M227.4 200.0L246.4 211.0'/%3E%3Cpath d='M195.3 201.1L205.2 209.5'/%3E%3Cpath d='M173.8 202.1L188.0 219.0'/%3E%3Cpath d='M157.5 202.9L164.0 214.2'/%3E%3Cpath d='M143.8 203.5L151.4 224.2'/%3E%3Cpath d='M131.6 203.9L133.9 216.7'/%3E%3Cpath d='M120.0 204.0L120.0 226.0'/%3E%3Cpath d='M108.4 203.9L106.1 216.7'/%3E%3Cpath d='M96.2 203.5L88.6 224.2'/%3E%3Cpath d='M82.5 202.9L76.0 214.2'/%3E%3Cpath d='M66.2 202.1L52.0 219.0'/%3E%3Cpath d='M44.7 201.1L34.8 209.5'/%3E%3Cpath d='M12.6 200.0L-6.4 211.0'/%3E%3Cpath d='M26.0 172.2L13.8 176.6'/%3E%3Cpath d='M36.3 152.8L14.6 156.6'/%3E%3Cpath d='M44.0 138.0L31.0 138.0'/%3E%3Cpath d='M50.5 125.7L28.8 121.9'/%3E%3Cpath d='M56.4 114.9L44.2 110.4'/%3E%3Cpath d='M62.3 104.7L43.2 93.7'/%3E%3Cpath d='M68.3 94.6L58.3 86.3'/%3E%3Cpath d='M74.8 84.2L60.7 67.3'/%3E%3Cpath d='M82.3 72.6L75.8 61.4'/%3E%3Cpath d='M91.2 58.9L83.7 38.2'/%3E%3Cpath d='M102.9 40.9L100.6 28.1'/%3E%3C/g%3E%3Cpath d='M120 22L222 196H18Z' fill='none' stroke='%23261f3d' stroke-width='5.4' stroke-linejoin='round'/%3E%3Cpath d='M120 46L201 184H39Z' fill='none' stroke='%23261f3d' stroke-width='1.8' stroke-linejoin='round' opacity='.6'/%3E%3Cpath d='M66 142Q120 96 174 142Q120 188 66 142Z' fill='%23fffbe8' stroke='%23261f3d' stroke-width='4.6' stroke-linejoin='round'/%3E%3Ccircle cx='120' cy='142' r='22' fill='%23f2bf1a' stroke='%237a3e00' stroke-width='2.4'/%3E%3Ccircle cx='120' cy='142' r='15' fill='none' stroke='%23c97a00' stroke-width='2' opacity='.7'/%3E%3Cpath d='M120 121C114 129 114 155 120 163C126 155 126 129 120 121Z' fill='%23120c1a'/%3E%3Ccircle cx='128' cy='133' r='4.2' fill='%23fff'/%3E%3Cpath d='M68 135Q120 90 172 135' fill='none' stroke='%23261f3d' stroke-width='2' opacity='.55'/%3E%3C/svg%3E") center/contain no-repeat;opacity:var(--doomEye,0);z-index:-1;pointer-events:none}
 
 /* 선택 */
 .choices{margin-top:36px;display:grid;gap:12px}
@@ -2639,6 +2651,124 @@ function stopLoading(){
  cancelAnimationFrame(LD.raf);clearTimeout(LD.timer);LD.raf=0;LD.timer=0;LD.done=null;
  if(LD.el)LD.el.svg.classList.remove('lz');
 }
+
+/* ---------- 결과 화면을 내려갈수록 ----------
+ * 왼쪽 위 도사가 조금씩 파충류로 바뀌고 바탕이 독초색으로 물든다. 전체 풀이 칸에 닿으면 다 바뀐다.
+ * 한 번 바뀐 만큼은 다시 올라가도 그대로 두고 새 사주를 보면 처음으로 돌아간다.
+ * 다 바뀐 뒤에는 가끔 갈라진 혀를 날름거리고 반투명한 막이 옆으로 지나가며 눈을 깜박인다.
+ * 도사 그림은 계산 중 화면의 도사(#ldDosa)를 처음 그대로 복사해 두었다가 쓴다.
+ */
+const DOOM={p:0,cur:null,parts:null,full:false,live:false,on:false,bg:'',req:0,tm:0,raf:0,T:null,src:null,
+ bg0:[255,246,214],bg1:[203,201,140],eye:'',meta:document.querySelector('meta[name="theme-color"]'),tc0:''};
+try{DOOM.src=$('ldDosa').cloneNode(true);DOOM.tc0=DOOM.meta?DOOM.meta.content:'';}catch(_){}
+const doomSS=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+const doomMix=(a,b,e)=>'#'+a.map((v,i)=>{const x=Math.round(v+(b[i]-v)*e);return (x<16?'0':'')+x.toString(16);}).join('');
+function doomBuild(){
+ if(DOOM.parts!==null)return DOOM.parts;
+ DOOM.parts=false;
+ const old=document.querySelector('#go-home svg.mark');
+ if(!DOOM.src||!old)return false;
+ try{
+  ldInit();
+  const NS='http://www.w3.org/2000/svg',svg=DOOM.src.cloneNode(true),q=s=>svg.querySelector(s),mk=(t,at)=>{const e=document.createElementNS(NS,t);Object.keys(at).forEach(k=>e.setAttribute(k,at[k]));return e;};
+  // 비늘은 계산 중 화면 도사에 만들어 둔 것을 가져온다
+  ['ldScFace','ldScEar'].forEach(id=>q('#'+id).replaceChildren(...$(id).cloneNode(true).childNodes));
+  // 얼굴만 남긴다
+  svg.querySelectorAll('circle[r="128"],g[transform^="rotate(-12"],#ldBack,#ldFront,#ldSparks,g[stroke="#3e2f8f"]').forEach(e=>e.remove());
+  // 오른눈 막: 왼눈 막을 좌우로 뒤집어 코 쪽에서 나오게 한다
+  const mg=q('#ldMemG').cloneNode(true),cp=mk('clipPath',{id:'ldEyeRClip'});
+  mg.id='ldMemR';mg.setAttribute('x1','1');mg.setAttribute('x2','0');
+  cp.append(mk('ellipse',{cx:187,cy:131,rx:9.5,ry:11}));q('defs').append(mg,cp);
+  const mr=mk('g',{transform:'translate(-26 0)'}),mc=mk('g',{'clip-path':'url(#ldEyeRClip)'});
+  mr.append(mk('path',{d:'M197.5 119C201.6 125 201.6 137 197.5 143H171V119Z',fill:'url(#ldMemR)'}),
+   mk('path',{d:'M194.8 120.6C198.2 126 198.2 136 194.8 141.4',fill:'none',stroke:'#fff','stroke-width':1.4,opacity:.6}),
+   mk('path',{d:'M197.5 119C201.6 125 201.6 137 197.5 143',fill:'none',stroke:'#5f7c8e','stroke-width':1.4}));
+  mc.append(mr);q('ellipse[cx="187"][fill="none"]').before(mc);
+  // 갈라진 혀: 평소에는 숨겨 둔다
+  const tg=mk('path',{d:'M157.6 181C157.6 189 159.4 195 160.2 199.6L154.6 207.2L161.6 202.4H162.4L169.4 207.2L163.8 199.6C164.6 195 166.4 189 166.4 181Z',fill:'#d81b47',stroke:'#261f3d','stroke-width':1.4,'stroke-linejoin':'round',display:'none'});
+  q('path[d^="M150 184"]').after(tg);
+  // 계산 중 화면 도사와 id가 겹치지 않게 바꾼다
+  const map={};
+  svg.querySelectorAll('[id]').forEach(e=>{map[e.id]='doom-'+e.id;e.id=map[e.id];});
+  svg.querySelectorAll('*').forEach(e=>['fill','stroke','clip-path','href'].forEach(n=>{const v=e.getAttribute(n),m=v&&/^url\(#(.+)\)$|^#(.+)$/.exec(v),k=m&&(m[1]||m[2]);if(k&&map[k])e.setAttribute(n,n==='href'?'#'+map[k]:'url(#'+map[k]+')');}));
+  // 바뀌는 부분: 비늘 피부는 먼저, 볼과 코는 중간에, 눈동자는 마지막에
+  const ramp=[],R=(e,a,b,out)=>ramp.push({e:e,a:a,b:b,out:out,v:-1});
+  svg.querySelectorAll('.rep').forEach(e=>e.querySelector('[fill*="ldIris"]')?R(e,.55,.92,false):R(e,0,.85,false));
+  svg.querySelectorAll('.hu').forEach(e=>{if(e.querySelector('circle[r="6"]'))R(e,.6,.95,true);else if(e.querySelector('[fill="#ff7a7a"]'))R(e,.2,.75,true);else if(e.getAttribute('fill')==='#f0a87e')R(e,.35,.85,true);});
+  ['id','role','aria-label'].forEach(n=>svg.removeAttribute(n));
+  svg.setAttribute('class','mark morph');svg.setAttribute('aria-hidden','true');svg.setAttribute('viewBox','84 50 152 158');
+  old.replaceWith(svg);
+  DOOM.parts={ramp:ramp,tongue:tg,mem:[[svg.querySelector('#doom-ldMem'),26],[mr,-26]]};
+ }catch(_){DOOM.parts=false;}
+ return DOOM.parts;
+}
+// 혀(t)와 막(m): 0이면 숨김, 1이면 혀를 다 내밀고 막이 눈을 다 덮음
+function doomPose(t,m){
+ const P=DOOM.parts;if(!P)return;
+ P.tongue.setAttribute('display',t>.01?'inline':'none');
+ if(t>.01)P.tongue.setAttribute('transform','translate(162 181) scale(1 '+t.toFixed(3)+') translate(-162 -181)');
+ P.mem.forEach(x=>{if(x[0])x[0].setAttribute('transform','translate('+((1-m)*x[1]).toFixed(2)+' 0)');});
+}
+const doomFlick=k=>k<.2?doomSS(0,.2,k):k<.36?1-.55*doomSS(.2,.36,k):k<.54?.45+.55*doomSS(.36,.54,k):1-doomSS(.54,.82,k);
+const doomBlink=k=>k<.4?doomSS(0,.4,k):k<.55?1:1-doomSS(.55,1,k);
+function doomTick(){
+ DOOM.tm=DOOM.raf=0;
+ if(!DOOM.live)return;
+ const T=DOOM.T,now=performance.now(),kt=(now-T.t)/760,kb=(now-T.b)/520;
+ doomPose(kt>=0&&kt<1?doomFlick(kt):0,kb>=0&&kb<1?doomBlink(kb):0);
+ if(kt>=1)T.t=now+4200+Math.random()*2600;
+ if(kb>=1)T.b=now+5600+Math.random()*3200;
+ if((kt>=0&&kt<1)||(kb>=0&&kb<1))DOOM.raf=requestAnimationFrame(doomTick);
+ else DOOM.tm=setTimeout(doomTick,Math.max(16,Math.min(T.t,T.b)-now));
+}
+// 다 바뀌었고 결과 화면이 보이고 움직임 줄이기 설정이 꺼져 있을 때만 혀와 막을 움직인다
+function doomRun(){
+ const live=!!(DOOM.full&&DOOM.parts&&!LD.still&&!document.hidden&&!$('result-screen').hidden);
+ if(live===DOOM.live)return;
+ DOOM.live=live;clearTimeout(DOOM.tm);cancelAnimationFrame(DOOM.raf);DOOM.tm=DOOM.raf=0;
+ if(live){const n=performance.now();DOOM.T={t:n+900,b:n+2600};doomTick();}else doomPose(0,0);
+}
+// 진행 정도: 맨 위 0, 전체 풀이 칸 윗부분이 화면 위쪽 40%에 오면 1 (페이지가 그보다 짧으면 맨 아래에서 1)
+function doomProg(){
+ const v=document.querySelector('#result-screen .verdict'),H=window.innerHeight;
+ if(!v||!H)return 0;
+ const end=Math.min(v.getBoundingClientRect().top+window.scrollY-H*.4,document.documentElement.scrollHeight-H-2);
+ return end>1?Math.max(0,Math.min(1,window.scrollY/end)):1;
+}
+function doomApply(){
+ if(DOOM.req){cancelAnimationFrame(DOOM.req);DOOM.req=0;}
+ const R=$('result-screen'),de=document.documentElement,bd=document.body;
+ if(R.hidden){
+  if(DOOM.on){DOOM.on=false;DOOM.bg='';de.style.background=bd.style.background='';if(DOOM.meta)DOOM.meta.content=DOOM.tc0;}
+  doomRun();return;
+ }
+ if(current!==DOOM.cur){DOOM.cur=current;DOOM.p=0;DOOM.full=false;}
+ const P=doomBuild();
+ DOOM.p=Math.max(DOOM.p,doomProg());
+ const p=DOOM.p,e=Math.pow(p,2.4),bg=doomMix(DOOM.bg0,DOOM.bg1,e);
+ DOOM.on=true;
+ if(bg!==DOOM.bg){
+  DOOM.bg=bg;de.style.background=bd.style.background=bg;
+  const bar=R.querySelector('.topbar');if(bar)bar.style.background=bg+'f0';
+  if(DOOM.meta)DOOM.meta.content=bg;
+ }
+ // 마지막 문장 뒤 삼각형 눈: 거의 끝에 와서야 떠오른다 (값은 그 문장에만 두어 다른 곳은 다시 계산하지 않게)
+ const eye=(doomSS(.86,1,p)*.2).toFixed(3),fe=R.querySelector('.fate-end');
+ if(fe&&eye!==DOOM.eye){DOOM.eye=eye;fe.style.setProperty('--doomEye',eye);}
+ if(P){
+  const q=Math.pow(Math.max(0,(p-.3)/.7),1.6);
+  P.ramp.forEach(r=>{let v=doomSS(r.a,r.b,q);if(r.out)v=1-v;v=Math.round(v*100)/100;if(v!==r.v){r.v=v;r.e.setAttribute('opacity',v);}});
+ }
+ DOOM.full=p>=.995;
+ doomRun();
+}
+window.addEventListener('scroll',()=>{if(!DOOM.req)DOOM.req=requestAnimationFrame(doomApply);},{passive:true});
+window.addEventListener('resize',()=>{if(!DOOM.req)DOOM.req=requestAnimationFrame(doomApply);});
+document.addEventListener('visibilitychange',doomRun);
+// 계산 중 화면이 뜰 때 도사 그림을 미리 만들어 두고, 결과 화면이 뜨거나 가려질 때마다 색을 맞춘다
+try{const mo=new MutationObserver(()=>{if(!$('loading-screen').hidden)doomBuild();doomApply();});
+ ['loading-screen','result-screen'].forEach(id=>mo.observe($(id),{attributes:true,attributeFilter:['hidden']}));
+ $('elements').parentElement.classList.add('sym-pent');$('loop').parentElement.classList.add('sym-oro');}catch(_){}
 
 /* ---------- 결과 그리기 ---------- */
 const PILLAR_LB=[['태어난 해','집안·어린 시절'],['태어난 달','가족·학교·직장'],['태어난 날','나·가까운 관계'],['태어난 시간','자녀·나이 든 뒤']];
