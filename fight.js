@@ -1342,8 +1342,10 @@ cutFlesh:S('#8d1722',{roughness:.94,side:THREE.DoubleSide}),cutDeep:S('#3d050b',
 
    socket:S('#120104',{roughness:1,metalness:0,envMapIntensity:0,side:THREE.BackSide}),
    optic:S('#6d0712',{roughness:.98,metalness:0}),brain:S('#a85164',{roughness:.94,metalness:0}),brainD:S('#57202c',{roughness:1,metalness:0}),
+   gut:S('#b34b5d',{roughness:.92,metalness:0,side:THREE.DoubleSide}),gutD:S('#64202d',{roughness:1,metalness:0,side:THREE.DoubleSide}),
 
   };
+  this.M.cavity=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.DoubleSide});D.push(this.M.cavity);
   this.M.tablet.map=makeTabletTex(this.result);D.push(this.M.tablet.map);
   // 맞을 때 번쩍이는 재질
   this.flashMats=[this.M.skin,this.M.skinD,this.M.blush,this.M.robe,this.M.lip,this.M.hem];
@@ -1720,6 +1722,8 @@ Object.assign(Emperor.prototype,{
   this.act=null;this.actQueue=[];this.guard=0;this.guardGoal=0;this.guardHP=3;this.guardCool=0;this.guardHold=0;
   this.limp=[0,0];this.armHurt=[0,0];this.hunch=0;this.weak=0;this.mood=0;this.sinceHit=99;this.hitsRecent=[];
 this.cutZones=[];this.cutStrokeFallback=0;this.detached=new Set();
+  this.abdomenCuts=[];this.abdomenTarget=null;this.abdomenStage=0;this.abdomenOpen=false;this.abdomenCavity=null;this.gutSpilled=false;this.gutChains=[];
+  this.abdomenCuts=[];this.abdomenStage=0;this.abdomenOpen=false;
   this.headGunHits=0;this.eyeGunHits=[0,0];this.headDamageStage=0;this.headDestroyed=false;this.headRuin=null;
   this.laughing=0;this.taunt=true;this.phase=0;this.breath=rnd(0,TAU);
   this.prevHeadQ=new THREE.Quaternion();this.headAngVel=V3();
@@ -1881,7 +1885,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   for(const a of this.arms){const ik=this.ik[a.nm];ik.w=damp(ik.w,ik.goal,ik.rate||8,dt);this.solveArm(a,ik);this.setCurl(a,lerp(this.pose[a.nm+'curl'],ik.curl,smooth(ik.w)));}
   this.root.updateMatrixWorld(true);
   this.updateFace(dt,time);this.updateTears(time);
-  this.updateSecondary(dt);
+  this.updateSecondary(dt);this.updateGuts(dt);
   if(this.tabletHeld)this.placeTablet();else this.updateTablet(dt);
   this.updateBits(dt);this.crownUpdate(dt);
   this.updateMaterials(dt);
@@ -2123,6 +2127,7 @@ doAct(name,o={}){
  },
 });
 const _bv1=V3(),_bv2=V3(),_bv3=V3(),_bv4=V3(),_bv5=V3(),_bv6=V3(),_bm=new THREE.Matrix4();
+const _abdN=new THREE.Matrix3();
 /* ===== 6-5. 옥황상제 — 맞았을 때 =====
  * 부위·무기·방향에 따라: 몸 반응(스프링·행동), 상처(멍·혹·베인 자국·총알 구멍·흐르는 피), 이빨·코·눈·면류관, 목소리.
  * 돌려주는 값: 버팀 게이지를 얼마나 깎을지(dmg), 크게 휘청였는지(heavy) */
@@ -2236,6 +2241,332 @@ Object.assign(Emperor.prototype,{
    if(/^(arm|hand)/.test(part)&&heavy&&Math.random()<.5){const side=part.endsWith('L')?'L':'R';this.doAct('shake',{side,dur:.9,prio:1});}
   }
  },
+
+ /* 같은 복부 자리를 여러 번 그은 횟수를 기억한다. */
+progressAbdomenCut(pW,nW,angle,strokeId,len){
+ const bone=this.bones.spine;if(!bone)return null;
+ bone.updateWorldMatrix(true,false);
+ const lp=bone.worldToLocal(pW.clone());
+ const ln=nW.clone().transformDirection(_invB(bone)).normalize();
+ let z=null,bestD=Infinity;
+
+ for(const x of this.abdomenCuts){
+  const d=x.lp.distanceToSquared(lp);
+  if(d<.105*.105&&d<bestD&&x.ln.dot(ln)>.2){
+   z=x;bestD=d;
+  }
+ }
+
+ if(!z){
+  z={
+   lp:lp.clone(),
+   ln:ln.clone(),
+   angle,
+   len:clamp(len||.05,.03,.14),
+   hits:0,
+   stage:0,
+   lastStroke:null
+  };
+  this.abdomenCuts.push(z);
+  if(this.abdomenCuts.length>8)this.abdomenCuts.shift();
+ }
+
+ const sid=strokeId==null?'abd-'+(++this.cutStrokeFallback):strokeId;
+ if(z.lastStroke===sid)return z;
+
+ z.lastStroke=sid;
+ z.hits++;
+ z.lp.lerp(lp,.18);
+ z.ln.lerp(ln,.18).normalize();
+ z.angle=angle;
+ z.len=Math.max(z.len,clamp(len||.05,.03,.14));
+ z.stage=z.hits>=7?3:z.hits>=5?2:z.hits>=3?1:0;
+ this.abdomenStage=Math.max(this.abdomenStage,z.stage);
+ return z;
+},
+
+ /* 같은 복부 자리를 반복해서 그으면 벌어지고, 열린 뒤 내장이 쏟아진다. */
+progressAbdomenCut(aW,bW,nW,angle,strokeId,len){
+ const bone=this.bones.spine;if(!bone)return null;
+ const mid=V3().addVectors(aW,bW).multiplyScalar(.5),pr=BLOOD.project(mid,nW,.18,[this.belly]);
+ const pW=pr?pr.point:bW.clone(),hitN=pr?pr.normal:nW;
+ const slashDirW=V3().subVectors(bW,aW);
+ bone.updateWorldMatrix(true,false);
+ const lp=bone.worldToLocal(pW.clone());
+ const ln=hitN.clone().transformDirection(_invB(bone)).normalize();
+ const lt=(slashDirW&&slashDirW.lengthSq()>1e-8?slashDirW.clone():V3(1,0,0)).transformDirection(_invB(bone));
+ lt.addScaledVector(ln,-lt.dot(ln));if(lt.lengthSq()<1e-8)lt.crossVectors(ln,Math.abs(ln.y)>.9?V3(1,0,0):V3(0,1,0));lt.normalize();
+ let z=null,bestD=Infinity;
+
+ for(const x of this.abdomenCuts){
+  const d=x.lp.distanceToSquared(lp);
+  if(d<.105*.105&&d<bestD&&x.ln.dot(ln)>.2){z=x;bestD=d;}
+ }
+
+ if(this.abdomenTarget&&z!==this.abdomenTarget)return this.abdomenTarget;
+
+ if(!z){
+  z={lp:lp.clone(),ln:ln.clone(),lt:lt.clone(),angle,len:clamp(len||.05,.03,.14),hits:0,stage:0,lastStroke:null};
+  this.abdomenCuts.push(z);
+  if(this.abdomenCuts.length>8)this.abdomenCuts.shift();
+ }
+
+ const sid=strokeId==null?'abd-'+(++this.cutStrokeFallback):strokeId;
+ if(z.lastStroke===sid)return z;
+
+ z.lastStroke=sid;z.hits++;
+ if(!this.abdomenOpen){
+  z.lp.lerp(lp,.18);z.ln.lerp(ln,.18).normalize();
+  if(z.lt.dot(lt)<0)lt.negate();z.lt.lerp(lt,.18).normalize();
+  z.angle=angle;z.len=Math.max(z.len,clamp(len||.05,.03,.14));
+ }
+
+ if(!this.abdomenTarget&&z.hits>=3)this.abdomenTarget=z;
+ if(z!==this.abdomenTarget)return z;
+
+ const next=z.hits>=11?5:z.hits>=9?4:z.hits>=7?3:z.hits>=5?2:z.hits>=3?1:0;
+ if(next>z.stage){z.stage=next;this.abdomenStage=Math.max(this.abdomenStage,next);this.advanceAbdomenCut(z);}
+ if(this.abdomenOpen){
+  let p;if(z.hostLP){this.belly.updateWorldMatrix(true,false);p=this.belly.localToWorld(z.hostLP.clone());}else p=z.lp.clone().applyMatrix4(bone.matrixWorld);
+  BLOOD.clearDecalsNear('spine',p,.13,'cut');
+ }
+ return z;
+},
+
+advanceAbdomenCut(z){
+ const bone=this.bones.spine;bone.updateWorldMatrix(true,false);let p,n;
+ if(z.hostLP){this.belly.updateWorldMatrix(true,false);p=this.belly.localToWorld(z.hostLP.clone());n=z.hostLN.clone().applyMatrix3(_abdN.getNormalMatrix(this.belly.matrixWorld)).normalize();}
+ else{p=z.lp.clone().applyMatrix4(bone.matrixWorld);n=z.ln.clone().transformDirection(bone.matrixWorld).normalize();}
+
+ if(z.stage===1){
+  const w=.026;
+  BLOOD.decal('soak','spine',p,n,.12,{grow:.8});
+  BLOOD.decal('cut','spine',p,n,w,{aspect:clamp(z.len/w,3,5.4),angle:z.angle,grid:9});
+  BLOOD.addWound('spine',p,n,{rate:.027,tau:48,kind:'cut'});
+  BLOOD.spray(p,n,13,{min:1,max:3.1,spread:.75});
+  AUDIO.spurt(.65);this.hitFlash=1;
+ }else if(z.stage===2){
+  this.makeAbdomenCavity(z);
+ }else if(z.stage===3){
+  this.spillGuts(z);
+ }else if(z.stage===4){
+  this.releaseGutChains(1);
+ }else if(z.stage===5){
+  this.releaseGutChains(Infinity);
+ }
+},
+
+makeAbdomenCavity(z){
+ if(this.abdomenCavity)return this.abdomenCavity;
+ const bone=this.bones.spine;bone.updateWorldMatrix(true,false);
+ const approx=z.lp.clone().applyMatrix4(bone.matrixWorld);
+ this.belly.updateWorldMatrix(true,false);
+ z.hostLP=this.belly.worldToLocal(approx).normalize();z.hostLN=z.hostLP.clone();
+ const p=this.belly.localToWorld(z.hostLP.clone());
+ const n=z.hostLN.clone().applyMatrix3(_abdN.getNormalMatrix(this.belly.matrixWorld)).normalize();
+ BLOOD.clearDecalsNear('spine',p,.14,null);
+ BLOOD.decal('soak','spine',p,n,.15,{grow:.7});
+
+ const g=grp(bone,null,'abdomenCavity');
+ const tW=z.lt.clone().transformDirection(bone.matrixWorld).normalize();
+ z.hostLT=tW.transformDirection(_invB(this.belly)).normalize();
+ this.abdomenCavity=g;this.placeAbdomenCavity(z);
+
+ const rx=clamp(z.len*.7,.09,.13),ry=.066;
+ g.updateWorldMatrix(true,false);
+ const onSkin=(q,lift=.002)=>{
+  g.updateWorldMatrix(true,false);const faceN=V3(0,0,1).transformDirection(g.matrixWorld).normalize();
+  const guess=g.localToWorld(q.clone()),hit=BLOOD.project(guess,faceN,.12,[this.belly]);
+  if(!hit)return {p:q.clone(),n:V3(0,0,1)};
+  const p=g.worldToLocal(hit.point.clone().addScaledVector(hit.normal,lift));
+  const n=hit.normal.clone().transformDirection(_invB(g)).normalize();return {p,n};
+ };
+
+ const rings=5,sides=36,pitPos=[],pitCol=[],pitIdx=[],edge=col('#54101b'),deep=col('#120104');
+ const addPit=(q,r)=>{const s=onSkin(q,.0015+r*.0015),c=deep.clone().lerp(edge,r*.86);pitPos.push(s.p.x,s.p.y,s.p.z);pitCol.push(c.r,c.g,c.b);};
+ addPit(V3(),0);
+ for(let ri=1;ri<=rings;ri++)for(let j=0;j<sides;j++){
+  const r=ri/rings,a=j/sides*TAU,w=1+.045*Math.sin(a*5+1.1)+.025*Math.sin(a*11);
+  addPit(V3(Math.cos(a)*rx*r*w,Math.sin(a)*ry*r*w,0),r);
+ }
+ const ringAt=(r,j)=>1+(r-1)*sides+(j+sides)%sides;
+ for(let j=0;j<sides;j++)pitIdx.push(0,ringAt(1,j+1),ringAt(1,j));
+ for(let r=1;r<rings;r++)for(let j=0;j<sides;j++){const a=ringAt(r,j),b=ringAt(r,j+1),c=ringAt(r+1,j),d=ringAt(r+1,j+1);pitIdx.push(a,b,c,b,d,c);}
+ const pitGeo=new THREE.BufferGeometry();pitGeo.setAttribute('position',new THREE.Float32BufferAttribute(pitPos,3));pitGeo.setAttribute('color',new THREE.Float32BufferAttribute(pitCol,3));pitGeo.setIndex(pitIdx);pitGeo.computeVertexNormals();pitGeo.computeBoundingSphere();
+ const pit=mk(pitGeo,this.M.cavity,g,{cast:false,receive:false});
+ pit.renderOrder=4;pit.userData.noHit=true;pit.userData.gore=true;pit.visible=PREF.blood;this.goreMeshes.push(pit);
+
+ const lips=[
+  [[-rx*.94,.003],[-rx*.68,ry*.56],[-rx*.36,ry*.85],[-rx*.08,ry*.9]],
+  [[rx*.06,ry*.92],[rx*.35,ry*.8],[rx*.68,ry*.5],[rx*.93,.006]],
+  [[-rx*.92,-.005],[-rx*.58,-ry*.55],[-rx*.22,-ry*.88],[rx*.12,-ry*.94]],
+  [[rx*.32,-ry*.82],[rx*.62,-ry*.53],[rx*.9,-.01]]
+ ];
+ for(let i=0;i<lips.length;i++){
+  const nodes=lips[i].map(q=>onSkin(V3(q[0],q[1],0),.004)),pos=[],idx=[];
+  for(let k=0;k<nodes.length;k++){
+   const prev=nodes[Math.max(0,k-1)].p,next=nodes[Math.min(nodes.length-1,k+1)].p,t=V3().subVectors(next,prev).normalize();
+   const side=V3().crossVectors(nodes[k].n,t).normalize(),w=(i%2?.0065:.008)*(1+.18*Math.sin(k*2.7+i));
+   const a=nodes[k].p.clone().addScaledVector(side,w),b=nodes[k].p.clone().addScaledVector(side,-w);
+   pos.push(a.x,a.y,a.z,b.x,b.y,b.z);if(k){const q=(k-1)*2;idx.push(q,q+1,q+2,q+1,q+3,q+2);}
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(idx);geo.computeVertexNormals();geo.computeBoundingSphere();
+  const m=mk(geo,i===1?this.M.gutD:this.M.cutFlesh,g,{cast:false,receive:false});
+  m.renderOrder=5;m.userData.noHit=true;m.userData.gore=true;m.visible=PREF.blood;this.goreMeshes.push(m);
+ }
+
+ z.abdomenSkinPoint=onSkin;
+
+ this.abdomenOpen=true;
+ BLOOD.addWound('spine',p,n,{rate:.047,tau:72,artery:true,kind:'cut',spread:.018});
+ BLOOD.spray(p,n,26,{min:1.2,max:4.4,spread:1.05});
+ this.screenSplat(p,.85);AUDIO.crack(.45);AUDIO.spurt(1);this.hitFlash=1;
+ return g;
+},
+
+placeAbdomenCavity(z){
+ const g=this.abdomenCavity;if(!g||!z||!z.hostLP)return;
+ const bone=this.bones.spine,host=this.belly;
+ host.updateWorldMatrix(true,false);bone.updateWorldMatrix(true,false);
+ const p=host.localToWorld(z.hostLP.clone());
+ const n=z.hostLN.clone().applyMatrix3(_abdN.getNormalMatrix(host.matrixWorld)).normalize();
+ const x=z.hostLT.clone().transformDirection(host.matrixWorld);x.addScaledVector(n,-x.dot(n));
+ if(x.lengthSq()<1e-8)x.crossVectors(n,Math.abs(n.y)>.9?V3(1,0,0):V3(0,1,0));x.normalize();
+ g.position.copy(bone.worldToLocal(p.clone().addScaledVector(n,.003)));
+ const y=V3().crossVectors(n,x).normalize();
+ const qW=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,n));
+ const qB=bone.getWorldQuaternion(new THREE.Quaternion()).invert();
+ g.quaternion.copy(qB.multiply(qW));
+},
+
+spawnGutChain(parent,anchor,seed){
+ const count=18,tube=new DynTube(count,7,seed%2?this.M.gutD:this.M.gut,{cast:false});
+ tube.mesh.userData.noHit=true;tube.mesh.userData.gore=true;tube.mesh.visible=PREF.blood;
+ tube.mesh.renderOrder=6;
+ scene.add(tube.mesh);parent.updateWorldMatrix(true,false);
+
+ const a=parent.localToWorld(anchor.clone());
+ const side=V3(1,0,0).transformDirection(parent.matrixWorld).normalize();
+ const out=V3(0,0,1).transformDirection(parent.matrixWorld).normalize();
+ const pts=[],prev=[];
+ for(let i=0;i<count;i++){
+  const p=a.clone().addScaledVector(side,Math.sin(i*1.7+seed)*.004*i/count).addScaledVector(out,.002*i/count);
+  p.y-=i*.0045;pts.push(p);prev.push(p.clone());
+ }
+ const radii=Array.from({length:count},(_,i)=>.0115*(i===0||i===count-1?.72:1));
+ tube.update(pts,radii);
+ const c={tube,parent,anchor:anchor.clone(),pts,prev,radii,rest:.009,targetRest:rnd(.039,.045),phase:rnd(0,TAU),pin:true,landed:false,sleep:0,asleep:false};
+ this.gutChains.push(c);this.goreMeshes.push(tube.mesh);
+ this.bits=this.bits||[];this.bits.push({obj:tube.mesh,rest:true,gut:true});
+ return c;
+},
+
+spillGuts(z){
+ if(this.gutSpilled)return false;
+ const g=this.makeAbdomenCavity(z);if(!g)return false;
+ this.gutSpilled=true;g.updateWorldMatrix(true,false);
+
+ const onSkin=z.abdomenSkinPoint,coils=[
+  [[-.075,.018],[-.045,.047],[-.008,.018],[.032,.048],[.073,.014]],
+  [[-.065,-.02],[-.032,.008],[.004,-.018],[.041,.012],[.067,-.018]],
+  [[-.052,.002],[-.024,-.035],[.012,-.006],[.047,-.038]]
+ ];
+ for(let i=0;i<coils.length;i++){
+  const pts=coils[i].map((q,k)=>{const p=onSkin?onSkin(V3(q[0],q[1],0),.006+(k%2)*.002).p:V3(q[0],q[1],.008);return [p.x,p.y,p.z];});
+  const m=mk(tubeGeo(pts,i===1?.011:.0095,20,8),i===1?this.M.gutD:this.M.gut,g,{cast:false});
+  m.renderOrder=6;m.userData.noHit=true;m.userData.gore=true;m.visible=PREF.blood;this.goreMeshes.push(m);
+ }
+
+ const anchor=(x,y)=>onSkin?onSkin(V3(x,y,0),.011).p:V3(x,y,.011);
+ this.spawnGutChain(g,anchor(-.04,-.025),0);
+ this.spawnGutChain(g,anchor(.005,-.035),1);
+ this.spawnGutChain(g,anchor(.045,-.02),2);
+
+ const mouth=onSkin?onSkin(V3(0,-.01,0),.012):{p:V3(0,-.01,.012),n:V3(0,0,1)};
+ const p=g.localToWorld(mouth.p.clone());
+ const n=mouth.n.clone().transformDirection(g.matrixWorld).normalize();
+ this.bits=this.bits||[];
+ for(let i=0;i<3;i++){
+  const pts=[[0,0,0],[rnd(-.018,.018),-.025,rnd(-.01,.018)],[rnd(-.025,.025),-.055,rnd(-.012,.02)],[rnd(-.015,.015),-.085,0]];
+  const m=mk(tubeGeo(pts,rnd(.009,.014),12,7),i===1?this.M.gutD:this.M.gut,scene,{cast:true});
+  m.position.copy(p).add(V3(rnd(-.045,.045),rnd(-.015,.025),rnd(-.008,.018)));
+  m.rotation.set(rnd(-.4,.4),rnd(-.5,.5),rnd(-.5,.5));m.userData.noHit=true;m.userData.gore=true;m.visible=PREF.blood;this.goreMeshes.push(m);
+  const v=n.clone().multiplyScalar(rnd(.18,.55)).add(V3(rnd(-.25,.25),rnd(-.05,.3),rnd(-.12,.12)));
+  this.bits.push({obj:m,v,w:V3(rnd(-4,4),rnd(-5,5),rnd(-4,4)),r:.025,corners:this.limbCorners(m),bounce:.08,sound:i===0?'gut':null,bleed:{lp:V3(),ln:V3(0,0,1),t:0,life:10}});
+ }
+
+ BLOOD.addWound('spine',p,n,{rate:.068,tau:95,artery:true,kind:'cut',spread:.026});
+ BLOOD.spray(p,n,42,{min:1.2,max:5.2,spread:1.25});
+ this.screenSplat(p,1.25);AUDIO.crack(.75);AUDIO.spurt(1.35);this.hitFlash=1;this.rootVel.z-=.25;
+ return true;
+},
+
+releaseGutChains(count=1){
+ const list=this.gutChains.filter(c=>c.pin);if(!list.length)return false;
+ const n=Math.min(list.length,count);
+ for(let i=0;i<n;i++){
+  const c=list[i];c.pin=false;c.sleep=0;c.asleep=false;
+  for(let j=0;j<c.prev.length;j++)c.prev[j].copy(c.pts[j]).add(V3(rnd(-.006,.006),rnd(.004,.014),rnd(-.004,.004)));
+ }
+ if(this.abdomenTarget){
+  const z=this.abdomenTarget,bone=this.bones.spine;bone.updateWorldMatrix(true,false);let p,nW;
+  if(z.hostLP){this.belly.updateWorldMatrix(true,false);p=this.belly.localToWorld(z.hostLP.clone());nW=z.hostLN.clone().applyMatrix3(_abdN.getNormalMatrix(this.belly.matrixWorld)).normalize();}
+  else{p=z.lp.clone().applyMatrix4(bone.matrixWorld);nW=z.ln.clone().transformDirection(bone.matrixWorld).normalize();}
+  BLOOD.spray(p,nW,18+n*8,{min:.8,max:3.8,spread:1.15});this.screenSplat(p,.65+n*.18);
+ }
+ AUDIO.spurt(.9);return true;
+},
+
+updateGuts(dt){
+ if(this.abdomenCavity&&this.abdomenTarget)this.placeAbdomenCavity(this.abdomenTarget);
+ if(dt<=0)return;
+ if(!this.gutChains||!this.gutChains.length)return;
+ const h=Math.min(dt,.033);this.belly.updateWorldMatrix(true,false);
+ const bellyM=this.belly.matrixWorld,bellyInv=_bm.copy(bellyM).invert();
+ for(const c of this.gutChains){
+  if(c.asleep)continue;
+  c.parent.updateWorldMatrix(true,false);
+  const anchor=c.parent.localToWorld(c.anchor.clone());
+  c.phase+=h*2.2;c.rest=damp(c.rest,c.targetRest,2.2,h);
+
+  let motion=0;
+  for(let i=c.pin?1:0;i<c.pts.length;i++){
+   const p=c.pts[i],old=c.prev[i];
+   _av8.subVectors(p,old).multiplyScalar(.985);
+   motion=Math.max(motion,_av8.lengthSq());
+   old.copy(p);p.add(_av8);p.y-=9.8*h*h;
+   if(c.pin)p.x+=Math.sin(c.phase+i*.7)*h*.0007;
+  }
+
+  let touchedFloor=false,floorX=0,floorZ=0;
+  for(let pass=0;pass<5;pass++){
+   if(c.pin)c.pts[0].copy(anchor);
+   for(let i=1;i<c.pts.length;i++){
+    const a=c.pts[i-1],b=c.pts[i],d=_av9.subVectors(b,a),L=d.length();
+    if(L>1e-6){
+     const k=(L-c.rest)/L;
+     if(c.pin&&i===1)b.addScaledVector(d,-k);
+     else{a.addScaledVector(d,k*.45);b.addScaledVector(d,-k*.55);}
+    }
+   }
+   for(let i=0;i<c.pts.length;i++){
+    const p=c.pts[i];
+    if(!c.pin||i>0){
+     const l=_av10.copy(p).applyMatrix4(bellyInv),q=l.x*l.x+l.y*l.y;
+     if(l.z>0&&q<.98){const front=Math.sqrt(Math.max(0,1-q))+.035;if(l.z<front){l.z=front;p.copy(l.applyMatrix4(bellyM));c.prev[i].lerp(p,.3);}}
+    }
+    if(p.y>=.012)continue;
+    p.y=.012;touchedFloor=true;floorX=p.x;floorZ=p.z;c.prev[i].x=lerp(c.prev[i].x,p.x,.18);c.prev[i].y=p.y;c.prev[i].z=lerp(c.prev[i].z,p.z,.18);
+   }
+  }
+  if(c.pin)c.pts[0].copy(anchor);
+  if(!c.pin&&touchedFloor&&!c.landed){c.landed=true;BLOOD.paintFloor(floorX,floorZ,.006,1.4);AUDIO.drip(.55);}
+  c.tube.update(c.pts,c.radii);
+  if(!c.pin&&touchedFloor&&motion<1e-6)c.sleep+=h;else c.sleep=0;
+  if(c.sleep>.9)c.asleep=true;
+ }
+},
+
  /* 같은 팔 부위를 여러 번 그으면 얕은 상처 → 깊은 상처 → 관절 절단 */
 cutJointFor(seg,pW){
  const names=CUT_JOINTS[seg];if(!names)return null;
@@ -2639,7 +2970,9 @@ BLOOD.decal('cut',seg,mid,n,cw,{
    for(let i=0;i<Math.min(3,Math.ceil(len*40));i++){const q=V3().copy(a).lerp(b,rnd(.1,.9));const pr=BLOOD.project(q,n,.05);if(pr)BLOOD.startRiv(pr.seg||seg,pr.point,pr.normal,{w:rnd(.003,.0048),maxLen:rnd(.08,.3)});}
    BLOOD.spray(mid,n,clamp(Math.round(len*120),4,14),{max:2.2});
    if(isHead&&Math.random()<.6)this.screenSplat(mid,.45);
-this.progressCut(seg,mid,n,ang,h.strokeId,len,dir);
+if(h.part==='belly')this.progressAbdomenCut(mid,n,ang,h.strokeId,len);
+   else if(h.part==='belly'&&h.obj===this.belly&&seg==='spine')this.progressAbdomenCut(a,b,n,ang,h.strokeId,len);
+   else this.progressCut(seg,mid,n,ang,h.strokeId,len,dir);
   }else{
    const ca=rnd(0,PI),sw=.013;
 BLOOD.decal('cut',seg,pt,n,sw,{
@@ -2756,6 +3089,10 @@ updateBits(dt){
     }else if(b.sound==='eye'&&!b.landed){
      b.landed=true;
      AUDIO.drip(.45);
+    }else if(b.sound==='gut'&&!b.landed){
+     b.landed=true;
+     BLOOD.paintFloor(b.obj.position.x,b.obj.position.z,.004,1.2);
+     AUDIO.drip(.7);
     }
    }
 
