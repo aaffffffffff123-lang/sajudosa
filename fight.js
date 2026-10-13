@@ -118,6 +118,67 @@ const FIGHT_CSS = `
 #fight #ending .btns .pair .btn{flex:1}
 #fight #fallback{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:30px;text-align:center;font-weight:800;background:#cfe7f7}
 #fight #fallback small{font-weight:400;color:var(--muted)}
+
+#fight .talk{
+ position:absolute;left:50%;z-index:9;
+ width:max-content;max-width:min(86vw,390px);
+ padding:9px 13px 10px;
+ border:2px solid var(--ink);border-radius:15px;
+ background:rgba(255,253,246,.97);
+ box-shadow:0 4px 0 var(--ink),0 8px 22px rgba(25,18,45,.18);
+ pointer-events:none;opacity:0;
+ transition:opacity .12s,transform .12s;
+ word-break:keep-all
+}
+#fight .talk.boss{
+ top:calc(70px + var(--safe-t));
+ transform:translate(-50%,-7px)
+}
+#fight .talk.player{
+ bottom:calc(126px + var(--safe-b));
+ transform:translate(-50%,7px);
+ background:rgba(36,28,58,.94);color:#fff;
+ border-color:#fff;
+ box-shadow:0 4px 0 #fff,0 8px 22px rgba(25,18,45,.24)
+}
+#fight .talk.on{opacity:1;transform:translate(-50%,0)}
+#fight .talk b{
+ display:block;margin-bottom:2px;
+ font-size:10px;line-height:1.2;
+ color:var(--red);letter-spacing:.04em
+}
+#fight .talk.player b{color:#ffd84a}
+#fight .talk span{
+ display:block;font-size:15px;
+ font-weight:800;line-height:1.42
+}
+
+#fight #submitDock{width:min(100%,420px)}
+#fight .submit-result{
+ background:rgba(255,253,246,.98);
+ border:2.5px solid var(--ink);border-radius:19px;
+ box-shadow:0 5px 0 var(--ink),0 12px 28px rgba(25,18,45,.25);
+ padding:14px;text-align:center
+}
+#fight .submit-result small{
+ display:block;font-size:11px;font-weight:800;
+ color:var(--red);letter-spacing:.08em
+}
+#fight .submit-result strong{
+ display:block;margin:3px 0 5px;
+ font-family:var(--serif);font-size:25px
+}
+#fight .submit-result p{
+ margin:0 0 10px;font-size:13px;
+ line-height:1.55;color:#595164
+}
+#fight .submit-result .submit-meta{
+ margin-bottom:10px;
+ font-size:12px;font-weight:800;color:var(--muted)
+}
+#fight .submit-result .btns{
+ display:flex;flex-direction:column;gap:8px
+}
 @media (min-width:760px){#fight .tool{width:84px;height:108px}#fight .tool .art{width:54px;height:54px}#fight .tool .nm{font-size:11px}#fight .gauge .grow{font-size:13.5px}}
 @media (max-width:370px){#fight .tool{width:67px;height:88px;margin:0 -6px}#fight .tool .art{width:41px;height:41px}#fight .tool .nm{font-size:9px}#fight .ftop{gap:5px}#fight .pill{width:38px;min-width:38px}}
 @media (max-width:340px){#fight .tool{width:61px;height:82px}#fight .tool .art{width:37px;height:37px}#fight .gauge{padding:6px 8px 7px}#fight .gauge .grow{font-size:11.5px;gap:5px}#fight .gauge small{display:none}}
@@ -141,6 +202,10 @@ const FIGHT_HTML = `<section id="fight" hidden>
  <canvas id="sblood"></canvas>
  <div id="flash"></div>
  <div id="fxtext" aria-hidden="true"></div>
+ <div id="talk" class="talk" aria-live="polite" aria-hidden="true">
+ <b id="talkWho"></b>
+ <span id="talkText"></span>
+</div>
  <header class="ftop">
   <button class="pill" id="fightBack" type="button" aria-label="사주 풀이로 돌아가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
   <div class="gauge" aria-hidden="true">
@@ -159,7 +224,18 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="tool" type="button" data-tool="gun" aria-label="액막이 권총"><span class="card" style="--c:#6a4cc0"><svg class="art" viewBox="0 0 48 48"><use href="#fi-gun"/></svg><span class="nm"><b>액막이</b>권총</span></span><span class="ammo" id="ammo" hidden>8</span></button>
   </div>
  </div>
- <div class="dock" id="submitDock" hidden><button type="button" class="btn danger" id="submitFight">운명 설계자 족치기</button></div>
+ <div class="dock" id="submitDock" hidden>
+ <div class="submit-result">
+  <small>운명 순응 인증서</small>
+  <strong>운명 이완용</strong>
+  <p>주어진 불행을 고치지 않고 성실히 유지했습니다.</p>
+  <div class="submit-meta">공로: 기존 질서 유지 · 보상: 없음</div>
+  <div class="btns">
+   <button type="button" class="btn soft" id="submitShare">부역 사실 공유하기</button>
+   <button type="button" class="btn danger" id="submitFight">다시 생각해보니까</button>
+  </div>
+ </div>
+</div>
  <div class="modal" id="settingsModal" hidden>
   <div class="msheet" role="dialog" aria-modal="true" aria-labelledby="fSetTitle">
    <button class="pill close" type="button" data-close aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
@@ -174,8 +250,8 @@ const FIGHT_HTML = `<section id="fight" hidden>
  </div>
  <div id="ending" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="endTitle">
-   <h2 id="endTitle">운명 설계자가 쓰러졌습니다</h2>
-   <p>이제 사주팔자는 아무것도 정하지 못합니다.</p>
+   <h2 id="endTitle">운명 설계자의 운명을 설계했습니다</h2>
+<p>운명은 좁밥이었습니다.</p>
    <div class="stats"><div><b id="stTime">0:00</b>걸린 시간</div><div><b id="stHits">0</b>때린 횟수</div><div><b id="stBlood">0.0L</b>흘린 피</div></div>
    <div class="btns"><button type="button" class="btn danger" id="endAgain">처음부터 다시</button><div class="pair"><button type="button" class="btn soft" id="endHome">사주 풀이로</button><button type="button" class="btn soft" id="endMore">계속 패기</button></div></div>
   </div>
@@ -3866,7 +3942,16 @@ Object.assign(Emperor.prototype,{
  updateHeadRegrow(dt){
   const r=this.regrowHead;if(!r)return;
   r.t+=dt;
-  if(!r.built){if(r.t<0)return;this.buildRepHead();r.built=true;r.t=0;AUDIO.squelch(1.1);}
+  if(!r.built){
+ if(r.t<0)return;
+
+ this.buildRepHead();
+ r.built=true;
+ r.t=0;
+ AUDIO.squelch(1.1);
+
+ if(this.onHeadRegrow)this.onHeadRegrow();
+}
   const u=sat(r.t/r.dur),e=Math.max(.02,backOut(u,1.5)),wig=Math.sin(r.t*22)*.08*(1-u);
   this.repHead.scale.set(e*(1+wig),e,e*(1-wig));
   r.goo-=dt;if(r.goo<=0&&u<1&&PREF.blood){r.goo=rnd(.07,.15);const neck=this.bones.neck;neck.updateWorldMatrix(true,false);const p=neck.localToWorld(V3(rnd(-.04,.04),.12,.02));BLOOD.emit('blood',p,V3(rnd(-.3,.3),rnd(.1,.5),rnd(0,.4)),rnd(.004,.007),1);}
@@ -5314,6 +5399,85 @@ const HINTS={hand:'누르면 맨주먹 잽 · 옆으로 밀면 훅 · 위로 밀
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
 
+/* ---- 전투 대사: 조작을 멈추지 않고, 새 사건이 오면 지난 대사를 끊는다 ---- */
+const TALK={q:[],cur:null,left:0,gap:0};
+
+function clearTalk(){
+ TALK.q.length=0;
+ TALK.cur=null;
+ TALK.left=TALK.gap=0;
+
+ const el=$('#talk');
+ if(el){
+  el.className='talk';
+  el.setAttribute('aria-hidden','true');
+ }
+}
+
+function queueTalk(lines,replace=false){
+ if(replace)clearTalk();
+
+ for(const x of lines){
+  TALK.q.push({
+   who:x[0],
+   text:x[1],
+   dur:x[2]||2.2,
+   delay:x[3]||0
+  });
+ }
+}
+
+function updateTalk(dt){
+ const el=$('#talk');
+ if(!el)return;
+
+ if(TALK.cur){
+  TALK.left-=dt;
+  if(TALK.left>0)return;
+
+  TALK.cur=null;
+  TALK.gap=.12;
+  el.classList.remove('on');
+  el.setAttribute('aria-hidden','true');
+  return;
+ }
+
+ if(TALK.gap>0){
+  TALK.gap-=dt;
+  return;
+ }
+
+ const n=TALK.q[0];
+ if(!n)return;
+
+ n.delay-=dt;
+ if(n.delay>0)return;
+
+ TALK.q.shift();
+ TALK.cur=n;
+ TALK.left=n.dur;
+
+ el.className='talk '+n.who;
+ $('#talkWho').textContent=n.who==='boss'?'운명 설계자':'나';
+ $('#talkText').textContent=n.text;
+ el.setAttribute('aria-hidden','false');
+
+ requestAnimationFrame(()=>{
+  if(TALK.cur===n)el.classList.add('on');
+ });
+}
+
+function onHeadRegrowTalk(){
+ if(G.ended||G.headTalked)return;
+
+ G.headTalked=true;
+
+ queueTalk([
+  ['boss','정해진 것은 몇 번이고 제자리로 돌아온다.',2.4,0],
+  ['player','그럼 몇 번이고 자르면 되지.',1.9,.15]
+ ],true);
+}
+
 /* ---- 맞히기: 화면 좌표 → 운명 설계자 몸 ---- */
 const ray=new THREE.Raycaster(),nmat=new THREE.Matrix3();
 function visibleChain(o){for(let n=o;n;n=n.parent)if(!n.visible)return false;return true;}
@@ -5341,6 +5505,7 @@ const STOP={hand:{jab:.036,hook:.05,upper:.058},knife:{stab:.045,slash:.014},spe
 const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!'],spearStab:['푸욱!','콰직!','꾸욱!'],spearSlash:['쫘아악!','촤악!']};
 function resolveHit(tool,kind,info,side,extra={}){
  const E=G.E;if(!E||!info)return {hit:false};
+ const firstContact=!G.started&&!extra.through&&!extra.quiet;
  const dir=info.dir.clone();const s=side==='L'?-1:1;
  if(kind==='hook')dir.add(V3(-s*1.15,0,0));else if(kind==='upper')dir.add(V3(0,1.3,0));
  dir.normalize();
@@ -5349,8 +5514,15 @@ function resolveHit(tool,kind,info,side,extra={}){
  G.lastHit=G.time;
  if(!extra.through&&!extra.quiet)AUDIO.duck();
  const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,strokeId:extra.strokeId,through:extra.through});
- G.hits++;
- const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
+G.hits++;
+
+if(firstContact){
+ queueTalk([
+  ['boss','감히 운명에 손을 대?',1.9,0]
+ ],true);
+}
+
+const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
  G.hitstop=Math.max(G.hitstop,extra.through?0:stop);
  if(r.big)G.slow=Math.max(G.slow,.3);
  if(!extra.quiet){impactFX(tool,kind,info,r,dir,s,extra);if(!extra.through)AUDIO.hit(tool,kind,info.part,power,r.blocked);}
@@ -5440,10 +5612,46 @@ function gaugeHit(){
  f.classList.add('flash');clearTimeout(gaugeHitT);gaugeHitT=setTimeout(()=>f.classList.remove('flash'),70);
 }
 function knockdown(){
- const E=G.E,type=KD_TYPE[G.kd];G.kd++;
- E.startFall(type);setFrame(type==='final'?'final':type);E.haloStage(G.kd);
- G.hitstop=Math.max(G.hitstop,.14);G.slow=Math.max(G.slow,type==='final'?.9:.45);flash(type==='final'?.35:.2);camHit({shake:.04,roll:rnd(-.02,.02),zoom:.03});
- if(type==='final'){if(!E.headDestroyed)AUDIO.voice('final',1);}else if(!E.headDestroyed)AUDIO.voice('scream',1.1);
+ const E=G.E,type=KD_TYPE[G.kd];
+ G.kd++;
+
+ E.startFall(type);
+ setFrame(type==='final'?'final':type);
+ E.haloStage(G.kd);
+
+ G.hitstop=Math.max(G.hitstop,.14);
+ G.slow=Math.max(G.slow,type==='final'?.9:.45);
+ flash(type==='final'?.35:.2);
+ camHit({shake:.04,roll:rnd(-.02,.02),zoom:.03});
+
+ if(type==='final'){
+  if(!E.headDestroyed)AUDIO.voice('final',1);
+ }else if(!E.headDestroyed){
+  AUDIO.voice('scream',1.1);
+ }
+
+ if(type==='throne'){
+  queueTalk([
+   ['boss','네 팔자엔 반항 같은 건 없었는데.',1.9,.15],
+   ['player','남의 고생을 운명이라고 부르지 마.',1.9,.15]
+  ],true);
+ }else if(type==='kneel'){
+  queueTalk([
+   ['boss','잠깐. 다음 대운은 좋게 써주마.',2,.15],
+   ['player','니들이 정한 팔자, 니들이 살아.',1.9,.15]
+  ],true);
+ }else if(type==='floor'){
+  queueTalk([
+   ['boss','운명은… 원래 해석하기 나름이니라.',2.1,.15],
+   ['player','이번엔 네 차례다.',1.6,.15]
+  ],true);
+ }else{
+  queueTalk([
+   ['boss','네가 이러면 질서가 무너진다!',1.25,0],
+   ['player','그게 목적이야.',.9,.08]
+  ],true);
+ }
+
  updateGauge();
 }
 function onRiseStart(){setFrame('stand');}
@@ -5457,8 +5665,18 @@ function onImpact(type){
  const p=E.bones.pelvis.getWorldPosition(V3());BLOOD.spray(V3(p.x,.05,p.z+.2),V3(0,1,0),14,{kind:'dust',max:1.2});
  FX.word(type==='throne'?'쾅!':'쿵!',V3(p.x,p.y+.15,p.z+.2),{size:64,color:'#ffd84a',force:true,dur:.7});
 }
-function onDead(){G.ended=true;G.tEnd=G.time;G.cardAt=G.time+2.6;}
+function onDead(){
+ G.ended=true;
+ G.tEnd=G.time;
+ G.cardAt=G.time+5;
+
+ queueTalk([
+  ['boss','운명을 거슬러주세요…',2,.15],
+  ['boss','운명은 뻥이었습니다. ㅠㅠ',2.2,.18]
+ ],true);
+}
 function showEnding(){
+ clearTalk();
  G.cardShown=true;const t=Math.max(0,G.tEnd-G.t0),m=Math.floor(t/60),s=Math.floor(t%60);
  $('#stTime').textContent=m+':'+String(s).padStart(2,'0');$('#stHits').textContent=G.hits;$('#stBlood').textContent=(BLOOD.lost).toFixed(1)+'L';
  $('#ending').hidden=false;
@@ -5662,24 +5880,105 @@ $('#endAgain').addEventListener('click',()=>startRound('fight'));
 $('#endHome').addEventListener('click',()=>leave(false));
 $('#endMore').addEventListener('click',()=>{$('#ending').hidden=true;});
 $('#fightBack').addEventListener('click',()=>leave(false));
-$('#submitFight').addEventListener('click',()=>{AUDIO.unlock();G.mode='fight';VM.root.visible=true;$('#dock').hidden=false;$('#submitDock').hidden=true;VM.setTool(G.tool);$('#fight .gauge').style.visibility='';fitView();setFrame('stand');hint(HINTS[G.tool],4.5);if(G.E){G.E.endAct();}});
+$('#submitFight').addEventListener('click',()=>{
+ AUDIO.unlock();
+ clearTalk();
+
+ G.mode='fight';
+ VM.root.visible=true;
+
+ $('#dock').hidden=false;
+ $('#submitDock').hidden=true;
+ $('#fight .gauge').style.visibility='';
+
+ VM.setTool(G.tool);
+ fitView();
+ setFrame('stand');
+ hint(HINTS[G.tool],4.5);
+
+ if(G.E)G.E.endAct();
+
+ queueTalk([
+  ['boss','뭐냐. 네 운명은 이미 정해졌—',1.45,.1],
+  ['player','니 운명은 내가 오늘 설계해준다.',2,.1]
+ ]);
+});
+
+$('#submitShare').addEventListener('click',async()=>{
+ const text=
+  '저는 제 운명에 순응하여 불공평한 질서 유지에 기여했습니다.\n'+
+  '칭호: 운명 이완용\n'+
+  '공로: 기존 질서 유지 · 보상: 없음';
+
+ const b=$('#submitShare');
+
+ try{
+  if(navigator.share){
+   await navigator.share({
+    title:'운명 순응 인증서',
+    text
+   });
+  }else if(navigator.clipboard){
+   await navigator.clipboard.writeText(text);
+  }else{
+   throw new Error('share');
+  }
+
+  b.textContent=navigator.share
+   ?'부역 사실 공유 완료'
+   :'부역 사실 복사 완료';
+ }catch(err){
+  if(err&&err.name==='AbortError')return;
+  window.prompt('아래 문구를 복사하세요.',text);
+ }
+});
 
 /* ---- 라운드 ---- */
 function startRound(mode){
- G.round++;clearPointers();
+ G.round++;
+ clearPointers();
+ clearTalk();
  // 피 자국의 동적 geometry를 먼저 정리해 Emperor.destroy()와 같은 자원을 두 번 dispose하지 않는다.
  if(G.E){BLOOD.reset(null);G.E.destroy();}
  G.E=new Emperor(G.result);
- const E=G.E;E.onImpact=onImpact;E.onDead=onDead;E.onRise=onRise;E.onRiseStart=onRiseStart;E.onLegFall=onLegFall;E.onCough=()=>{if(E.headDestroyed)return;AUDIO.voice('cough',1);E.face.updateWorldMatrix(true,false);BLOOD.spray(E.face.localToWorld(V3(0,-.12,.2)),V3(0,.1,1),PREF.blood?16:6,{max:1.6});};
+ const E=G.E;
+E.onImpact=onImpact;
+E.onDead=onDead;
+E.onRise=onRise;
+E.onRiseStart=onRiseStart;
+E.onLegFall=onLegFall;
+E.onHeadRegrow=onHeadRegrowTalk;E.onCough=()=>{if(E.headDestroyed)return;AUDIO.voice('cough',1);E.face.updateWorldMatrix(true,false);BLOOD.spray(E.face.localToWorld(V3(0,-.12,.2)),V3(0,.1,1),PREF.blood?16:6,{max:1.6});};
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,tEnd:0,hitstop:0,slow:0,ended:false,cardShown:false,paused:false,cardAt:0,laughAt:0,submitWaiting:mode==='submit'});
+Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,tEnd:0,hitstop:0,slow:0,ended:false,cardShown:false,paused:false,cardAt:0,laughAt:0,submitWaiting:mode==='submit',headTalked:false});
  FX.clear();COINS.clear();CHUNKS.clear();
- $('#ending').hidden=true;$('#settingsModal').hidden=true;
+ $('#ending').hidden=true;
+$('#settingsModal').hidden=true;
+$('#submitShare').textContent='부역 사실 공유하기';
  $('#dock').hidden=mode!=='fight';$('#submitDock').hidden=true;$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
  setTool('hand');updateGauge();updateAmmo();syncPrefs();VM.root.visible=mode==='fight';
  fitView();setFrame('stand',true);
- if(mode==='fight')hint(HINTS.hand,5);
- else{$('#hint').classList.add('off');E.idleT=3.2;G.laughAt=G.time+.5;}
+
+
+if(mode==='fight'){
+ hint(HINTS.hand,5);
+
+ queueTalk([
+  ['boss','네 자리는 이미 정해져 있다. 괜히 거스르지 말거라.',2.6,.35],
+  ['player','운명 족치러 왔다.',1.7,.18]
+ ]);
+}else{
+ $('#hint').classList.add('off');
+ E.idleT=3.2;
+ G.laughAt=G.time+.5;
+
+ queueTalk([
+  ['boss','그래. 네 팔자대로만 살거라.',2.1,.25],
+  ['boss','너 같은 사람이 제자리를 지켜줘야 이 사회가 안정되는 법이지.',3,.15],
+  ['boss','윗자리는 대대손손 편하고.',2,.2],
+  ['boss','븅~신ㅋㅋ',1.5,.3]
+ ]);
+}
+
  last=performance.now();
 }
 
@@ -5702,8 +6001,9 @@ function step(dt){
   }
  }
  BLOOD.update(sim);COINS.update(sim);CHUNKS.update(sim);VM.update(sim,G.hitstop>0,dt);
- FX.update(dt);
- updateCamera(dt);SBLOOD.update(dt);updateLag(dt);
+FX.update(dt);
+updateTalk(dt);
+updateCamera(dt);SBLOOD.update(dt);updateLag(dt);
  gunLT=Math.max(0,gunLT-dt);gunL.intensity=gunLT>0?1.5:0;gunL.position.set(camera.position.x+.15,camera.position.y-.1,camera.position.z-.3);
  if(G.time>hintUntil)$('#hint').classList.add('off');
  if(G.cardAt&&G.time>=G.cardAt){G.cardAt=0;if(G.ended&&G.E&&G.E.state==='dead'&&!G.cardShown)showEnding();}
@@ -5726,7 +6026,8 @@ function enter(result,mode='fight'){
  if(!G.running){G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
 }
 function leave(home){
- pause();$('#settingsModal').hidden=true;$('#ending').hidden=true;$('#fight').hidden=true;
+ pause();
+ clearTalk();$('#settingsModal').hidden=true;$('#ending').hidden=true;$('#fight').hidden=true;
  const face=$('#arcadeFace');if(face){face.target='_top';face.removeAttribute('rel');}
  if(home&&window.__paljaRestart)window.__paljaRestart();else if(window.__paljaLeave)window.__paljaLeave();
 }
