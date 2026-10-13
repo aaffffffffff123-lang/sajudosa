@@ -667,6 +667,41 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
 
  /* ---- 메시 ---- */
  const _v1=V3(),_v2=V3(),_v3=V3();
+ /* 옮겨진 꼭짓점 찾기 나무(k-d 나무): 한 번 맞을 때 옮겨진 꼭짓점(주먹이면 수천~수만 개)마다 거기 붙은 피·상처 점(수천~1만 개)이
+  * 가장 가까운 것을 찾는다. 하나하나 다 훑으면 (점 수 × 꼭짓점 수)라 칼질 뒤 주먹 한 대에 수백 ms씩 멈췄다.
+  * 꼭짓점을 축마다 반씩 갈라 나무로 세우고 가지마다 실제 점들을 감싸는 상자를 둔다. 가까운 가지부터 내려가며,
+  * 상자가 지금까지 찾은 것보다 먼 가지는 건너뛴다. 같은 거리면 앞 번호를 고르므로 다 훑을 때와 결과가 똑같다. */
+ const KD_LEAF=8,KD_SR=new Int32Array(2*256),KD_SD=new Float64Array(256);
+ function kdSwap(a,i,j){const t=a[i];a[i]=a[j];a[j]=t;}
+ // ids[left..right]에서 k번째(axis 좌표 기준)를 제자리에 놓고, 왼쪽은 작거나 같게·오른쪽은 크거나 같게 나눈다(Floyd–Rivest)
+ function kdSelect(ids,P,k,left,right,axis){
+  while(right>left){
+   if(right-left>600){const n=right-left+1,m=k-left+1,z=Math.log(n),s=.5*Math.exp(2*z/3),sd=.5*Math.sqrt(z*s*(n-s)/n)*(m-n/2<0?-1:1);
+    kdSelect(ids,P,k,Math.max(left,Math.floor(k-m*s/n+sd)),Math.min(right,Math.floor(k+(n-m)*s/n+sd)),axis);}
+   const t=P[ids[k]*3+axis];let i=left,j=right;
+   kdSwap(ids,left,k);if(P[ids[right]*3+axis]>t)kdSwap(ids,left,right);
+   while(i<j){kdSwap(ids,i,j);i++;j--;while(P[ids[i]*3+axis]<t)i++;while(P[ids[j]*3+axis]>t)j--;}
+   if(P[ids[left]*3+axis]===t)kdSwap(ids,left,j);else{j++;kdSwap(ids,j,right);}
+   if(j<=k)left=j+1;if(k<=j)right=j-1;
+  }
+ }
+ function kdBuild(P,n){
+  // 좌표가 망가진 점은 어차피 가장 가까운 것으로 뽑히지 않으니 빼고 세운다
+  const ids=new Int32Array(n);let c=0;
+  for(let j=0;j<n;j++){const x=P[j*3],y=P[j*3+1],z=P[j*3+2];if(Math.abs(x)<1e9&&Math.abs(y)<1e9&&Math.abs(z)<1e9)ids[c++]=j;}
+  const B=new Float64Array(c*6);if(!c)return {ids,n:0,B};
+  // 위에서 아래로 가르며 마디를 적어 두고(부모가 먼저), 거꾸로 돌며 상자를 모은다(자식이 먼저). 상자는 마디 가운데 번호 자리에 둔다
+  const order=new Int32Array(c*2+2);let no=0;const st=[0,c-1,0];
+  while(st.length){const axis=st.pop(),right=st.pop(),left=st.pop();if(right<left)continue;order[no++]=left;order[no++]=right;
+   if(right-left<=KD_LEAF)continue;const m=(left+right)>>1;kdSelect(ids,P,m,left,right,axis);const na=axis===2?0:axis+1;st.push(left,m-1,na,m+1,right,na);}
+  for(let q=no-2;q>=0;q-=2){const left=order[q],right=order[q+1],m=(left+right)>>1,o=m*6;let x0,y0,z0,x1,y1,z1;
+   if(right-left<=KD_LEAF){x0=y0=z0=Infinity;x1=y1=z1=-Infinity;for(let i=left;i<=right;i++){const j=ids[i]*3,x=P[j],y=P[j+1],z=P[j+2];if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;if(z<z0)z0=z;if(z>z1)z1=z;}}
+   else{const j=ids[m]*3,a=((left+m-1)>>1)*6,b=((m+1+right)>>1)*6;
+    x0=Math.min(P[j],B[a],B[b]);y0=Math.min(P[j+1],B[a+1],B[b+1]);z0=Math.min(P[j+2],B[a+2],B[b+2]);
+    x1=Math.max(P[j],B[a+3],B[b+3]);y1=Math.max(P[j+1],B[a+4],B[b+4]);z1=Math.max(P[j+2],B[a+5],B[b+5]);}
+   B[o]=x0;B[o+1]=y0;B[o+2]=z0;B[o+3]=x1;B[o+4]=y1;B[o+5]=z1;}
+  return {ids,n:c,B};
+ }
  class Flesh{
   constructor(mesh,o={}){
    this.mesh=mesh;this.o=o;mesh.userData.flesh=this;
@@ -703,9 +738,16 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
    else if(this.axisA){const a=this.axisA,b=this.axisB,abx=b.x-a.x,aby=b.y-a.y,abz=b.z-a.z,l2=abx*abx+aby*aby+abz*abz;let t=l2>0?((x-a.x)*abx+(y-a.y)*aby+(z-a.z)*abz)/l2:0;t=clamp(t,0,1);r=Math.hypot(x-a.x-abx*t,y-a.y-aby*t,z-a.z-abz*t);}
    return Math.min(this.maxAbs,r*this.maxFrac);
   }
-  _weld(){
-   const n=this.n,R=this.rest,map=new Map(),canon=new Int32Array(n);let nc=0;
-   for(let i=0;i<n;i++){const k=Math.round(R[i*3]*2e4)+','+Math.round(R[i*3+1]*2e4)+','+Math.round(R[i*3+2]*2e4);let c=map.get(k);if(c==null){c=nc++;map.set(k,c);}canon[i]=c;}
+  // from: 앞의 from개 꼭짓점은 지난번과 쉬는 자리가 같다(잘게 쪼갠 뒤). 그만큼은 지난 결과를 이어 쓰고 새 꼭짓점만 따진다
+  _weld(from){
+   const n=this.n,R=this.rest,canon=new Int32Array(n);let map,nc,i0;
+   if(from>0&&this._wmap&&this.canon&&this._wn===from&&from<=n){map=this._wmap;nc=this.nc;canon.set(this.canon.subarray(0,from));i0=from;}
+   else{map=new Map();nc=0;i0=0;}
+   // 세 정수를 숫자 하나로 묶어 찾는다(글자로 이어 붙이면 칼질할 때마다 수만 번 문자열을 만들어 느렸다). 범위를 넘으면 예전처럼 글자로
+   for(let i=i0;i<n;i++){const a=Math.round(R[i*3]*2e4),b=Math.round(R[i*3+1]*2e4),q=Math.round(R[i*3+2]*2e4);
+    const k=a>-65536&&a<65536&&b>-65536&&b<65536&&q>-65536&&q<65536?((a+65536)*131072+(b+65536))*131072+(q+65536):a+','+b+','+q;
+    let c=map.get(k);if(c==null){c=nc++;map.set(k,c);}canon[i]=c;}
+   this._wmap=map;this._wn=n;
    this.canon=canon;this.nc=nc;
    // 대표점 → 꼭짓점들
    const cnt=new Int32Array(nc+1);for(let i=0;i<n;i++)cnt[canon[i]+1]++;for(let c=0;c<nc;c++)cnt[c+1]+=cnt[c];
@@ -873,10 +915,32 @@ else if(this._refitRay(verts)){
    this.last={vs,d,p};return n;
   }
   // 이번 변형이 이 점(메시 좌표)을 얼마나 옮겼나: 가장 가까운 옮겨진 꼭짓점의 이동량(멀면 0)
+  // 옮겨진 꼭짓점이 많으면 위의 나무로 찾는다(같은 거리면 앞 번호를 골라 다 훑을 때와 결과가 같다)
   deltaAt(x,y,z,out,maxD=.025){
    out.set(0,0,0);const L=this.last;if(!L||!L.vs.length)return out;
-   let best=maxD*maxD,bj=-1;const P=L.p;
-   for(let j=0;j<L.vs.length;j++){const dx=P[j*3]-x,dy=P[j*3+1]-y,dz=P[j*3+2]-z,d2=dx*dx+dy*dy+dz*dz;if(d2<best){best=d2;bj=j;}}
+   let best=maxD*maxD,bj=-1;const P=L.p,n=L.vs.length;
+   const T=n>=64?(L.kd||(L.kd=kdBuild(P,n))):null;
+   if(T){
+    const ids=T.ids,B=T.B,SR=KD_SR,SD=KD_SD;
+    // 앞 질의의 답부터 대 본다(차례로 오는 피 자국 점은 서로 붙어 있다). 끝까지 가장 가까운 것을 찾으므로 결과는 같다
+    const pj=L.kdLast;if(pj>=0){const dx=P[pj*3]-x,dy=P[pj*3+1]-y,dz=P[pj*3+2]-z,d2=dx*dx+dy*dy+dz*dz;if(d2<best){best=d2;bj=pj;}}
+    let sp=0;
+    if(T.n){const o=((T.n-1)>>1)*6,ax=x<B[o]?B[o]-x:x>B[o+3]?x-B[o+3]:0,ay=y<B[o+1]?B[o+1]-y:y>B[o+4]?y-B[o+4]:0,az=z<B[o+2]?B[o+2]-z:z>B[o+5]?z-B[o+5]:0,r0=ax*ax+ay*ay+az*az;
+     if(r0<=best){SR[0]=0;SR[1]=T.n-1;SD[0]=r0;sp=1;}}
+    while(sp){sp--;if(SD[sp]>best)continue;let left=SR[sp*2],right=SR[sp*2+1];
+     while(right-left>KD_LEAF){
+      const m=(left+right)>>1,j=ids[m],dx=P[j*3]-x,dy=P[j*3+1]-y,dz=P[j*3+2]-z,d2=dx*dx+dy*dy+dz*dz;if(d2<best||(d2===best&&j<bj)){best=d2;bj=j;}
+      // 두 가지 상자까지 거리: 가까운 쪽으로 내려가고 먼 쪽은 쌓아 둔다(지금 찾은 것보다 멀면 버린다)
+      const lr=m-1,rl=m+1;
+      let o=((left+lr)>>1)*6,ax=x<B[o]?B[o]-x:x>B[o+3]?x-B[o+3]:0,ay=y<B[o+1]?B[o+1]-y:y>B[o+4]?y-B[o+4]:0,az=z<B[o+2]?B[o+2]-z:z>B[o+5]?z-B[o+5]:0;const dl=ax*ax+ay*ay+az*az;
+      o=((rl+right)>>1)*6;ax=x<B[o]?B[o]-x:x>B[o+3]?x-B[o+3]:0;ay=y<B[o+1]?B[o+1]-y:y>B[o+4]?y-B[o+4]:0;az=z<B[o+2]?B[o+2]-z:z>B[o+5]?z-B[o+5]:0;const dr=ax*ax+ay*ay+az*az;
+      if(dl<=dr){if(dr<=best){SR[sp*2]=rl;SR[sp*2+1]=right;SD[sp]=dr;sp++;}if(dl>best){right=left-1;break;}right=lr;}
+      else{if(dl<=best){SR[sp*2]=left;SR[sp*2+1]=lr;SD[sp]=dl;sp++;}if(dr>best){right=left-1;break;}left=rl;}}
+     for(let i=left;i<=right;i++){const j=ids[i],dx=P[j*3]-x,dy=P[j*3+1]-y,dz=P[j*3+2]-z,d2=dx*dx+dy*dy+dz*dz;if(d2<best||(d2===best&&j<bj)){best=d2;bj=j;}}}
+    if(bj>=0)L.kdLast=bj;
+   }else{
+    for(let j=0;j<n;j++){const dx=P[j*3]-x,dy=P[j*3+1]-y,dz=P[j*3+2]-z,d2=dx*dx+dy*dy+dz*dz;if(d2<best){best=d2;bj=j;}}
+   }
    if(bj>=0)out.set(L.d[bj*3],L.d[bj*3+1],L.d[bj*3+2]);return out;
   }
   // 손상 값만 칠하기(모양은 그대로): 비늘·피 배어 듦 등
@@ -907,18 +971,25 @@ else if(this._refitRay(verts)){
   }
 
   /* ---- 잘게 쪼개기(빨간-초록 세분): 이 둘레에서 minEdge보다 긴 변을 반으로 나눈다. 이웃 삼각형도 금이 안 가게 같이 나눈다 ---- */
-  refine(c,R,minEdge){return this._refine((x,y,z)=>{const dx=x-c.x,dy=y-c.y,dz=z-c.z;return dx*dx+dy*dy+dz*dz<R*R;},minEdge);}
-  refineSeg(a,b,R,minEdge){const ab=_v3.subVectors(b,a),L2=ab.lengthSq();const ax=a.x,ay=a.y,az=a.z,bx=ab.x,by=ab.y,bz=ab.z;
-   return this._refine((x,y,z)=>{let t=L2>0?((x-ax)*bx+(y-ay)*by+(z-az)*bz)/L2:0;t=clamp(t,0,1);const dx=x-ax-bx*t,dy=y-ay-by*t,dz=z-az-bz*t;return dx*dx+dy*dy+dz*dz<R*R;},minEdge);}
-  _refine(inside,minEdge){
+  // box: 이 상자 밖은 inside가 참일 수 없다(넉넉하게 잡는다). 상자 안쪽만 inside로 따져 칼질마다 전체를 훑는 시간을 줄인다
+  refine(c,R,minEdge){const r=R*1.001+1e-9;return this._refine((x,y,z)=>{const dx=x-c.x,dy=y-c.y,dz=z-c.z;return dx*dx+dy*dy+dz*dz<R*R;},minEdge,[c.x-r,c.y-r,c.z-r,c.x+r,c.y+r,c.z+r]);}
+  refineSeg(a,b,R,minEdge){const ab=_v3.subVectors(b,a),L2=ab.lengthSq();const ax=a.x,ay=a.y,az=a.z,bx=ab.x,by=ab.y,bz=ab.z,r=R*1.001+1e-9;
+   return this._refine((x,y,z)=>{let t=L2>0?((x-ax)*bx+(y-ay)*by+(z-az)*bz)/L2:0;t=clamp(t,0,1);const dx=x-ax-bx*t,dy=y-ay-by*t,dz=z-az-bz*t;return dx*dx+dy*dy+dz*dz<R*R;},minEdge,
+    [Math.min(ax,b.x)-r,Math.min(ay,b.y)-r,Math.min(az,b.z)-r,Math.max(ax,b.x)+r,Math.max(ay,b.y)+r,Math.max(az,b.z)+r]);}
+  _refine(inside,minEdge,box){
    if(this.n>=this.maxVerts)return false;
    const g=this.g,idx=g.index.array,T=idx.length/3,P=this.pos,me2=minEdge*minEdge;
    const len2=(a,b)=>{const x=P[a*3]-P[b*3],y=P[a*3+1]-P[b*3+1],z=P[a*3+2]-P[b*3+2];return x*x+y*y+z*z;};
    const mids=new Map();let added=0;const n0=this.n;const newV=[];
    const key=(a,b)=>a<b?a*4194304+b:b*4194304+a;
+   const B=box||[-Infinity,-Infinity,-Infinity,Infinity,Infinity,Infinity],bx0=B[0],by0=B[1],bz0=B[2],bx1=B[3],by1=B[4],bz1=B[5];
+   const ins=(x,y,z)=>x>bx0&&x<bx1&&y>by0&&y<by1&&z>bz0&&z<bz1&&inside(x,y,z);
+   // 꼭짓점마다 한 번만 따진다(삼각형마다 세 번씩 따지던 것과 결과는 같다)
+   const vin=new Uint8Array(n0);for(let i=0;i<n0;i++)if(ins(P[i*3],P[i*3+1],P[i*3+2]))vin[i]=1;
+   const addMid=(u,v)=>{if(len2(u,v)<=me2)return;const k=key(u,v);if(!mids.has(k)){mids.set(k,n0+added);newV.push(u,v);added++;}};
    for(let t=0;t<T;t++){const a=idx[t*3],b=idx[t*3+1],c=idx[t*3+2];
-    if(!(inside(P[a*3],P[a*3+1],P[a*3+2])||inside(P[b*3],P[b*3+1],P[b*3+2])||inside(P[c*3],P[c*3+1],P[c*3+2])||inside((P[a*3]+P[b*3]+P[c*3])/3,(P[a*3+1]+P[b*3+1]+P[c*3+1])/3,(P[a*3+2]+P[b*3+2]+P[c*3+2])/3)))continue;
-    for(const [u,v] of [[a,b],[b,c],[c,a]]){if(len2(u,v)<=me2)continue;const k=key(u,v);if(!mids.has(k)){mids.set(k,n0+added);newV.push(u,v);added++;}}}
+    if(!(vin[a]||vin[b]||vin[c]||ins((P[a*3]+P[b*3]+P[c*3])/3,(P[a*3+1]+P[b*3+1]+P[c*3+1])/3,(P[a*3+2]+P[b*3+2]+P[c*3+2])/3)))continue;
+    addMid(a,b);addMid(b,c);addMid(c,a);}
    if(!added)return false;
    const n=n0+added;
    const grow=(arr,sz)=>{const o=new Float32Array(n*sz);o.set(arr.subarray(0,n0*sz));return o;};
@@ -932,35 +1003,41 @@ else if(this._refitRay(verts)){
     for(let q=0;q<4;q++)nDm[i*4+q]=(nDm[u*4+q]+nDm[v*4+q])/2;
     if(nUV){nUV[i*2]=(nUV[u*2]+nUV[v*2])/2;nUV[i*2+1]=(nUV[u*2+1]+nUV[v*2+1])/2;}
     nC[i]=(nC[u]+nC[v])/2;}
-   const out=[];
-   for(let t=0;t<T;t++){const a=idx[t*3],b=idx[t*3+1],c=idx[t*3+2];
+   // 쪼갠 변의 두 끝은 표시해 둔다: 두 끝이 다 표시된 변만 쪼개졌을 수 있으니 나머지 삼각형은 찾아보지 않고 그대로 둔다
+   const tv=new Uint8Array(n0);for(let j=0;j<newV.length;j++)tv[newV[j]]=1;
+   const TRI=[1,2,2,3,2,3,3,4],tm=new Uint8Array(T);let cnt=0;
+   for(let t=0;t<T;t++){const a=idx[t*3],b=idx[t*3+1],c=idx[t*3+2];let m=0;
+    if(tv[a]+tv[b]+tv[c]>=2){if(tv[a]&&tv[b]&&mids.get(key(a,b))!=null)m|=1;if(tv[b]&&tv[c]&&mids.get(key(b,c))!=null)m|=2;if(tv[c]&&tv[a]&&mids.get(key(c,a))!=null)m|=4;}
+    tm[t]=m;cnt+=TRI[m]*3;}
+   const out=n>65535?new Uint32Array(cnt):new Uint16Array(cnt);let o=0;
+   const w3=(x,y,z)=>{out[o++]=x;out[o++]=y;out[o++]=z;};
+   for(let t=0;t<T;t++){const a=idx[t*3],b=idx[t*3+1],c=idx[t*3+2],m=tm[t];
+    if(!m){out[o++]=a;out[o++]=b;out[o++]=c;continue;}
     const ab=mids.get(key(a,b)),bc=mids.get(key(b,c)),ca=mids.get(key(c,a));
-    const m=(ab!=null?1:0)+(bc!=null?2:0)+(ca!=null?4:0);
     switch(m){
-     case 0:out.push(a,b,c);break;
-     case 1:out.push(a,ab,c, ab,b,c);break;
-     case 2:out.push(a,b,bc, a,bc,c);break;
-     case 4:out.push(a,b,ca, ca,b,c);break;
-     case 3:out.push(a,ab,c, ab,b,bc, ab,bc,c);break;
-     case 6:out.push(a,b,bc, a,bc,ca, ca,bc,c);break;
-     case 5:out.push(a,ab,ca, ab,b,c, ab,c,ca);break;
-     default:out.push(a,ab,ca, ab,b,bc, ca,bc,c, ab,bc,ca);
+     case 1:w3(a,ab,c);w3(ab,b,c);break;
+     case 2:w3(a,b,bc);w3(a,bc,c);break;
+     case 4:w3(a,b,ca);w3(ca,b,c);break;
+     case 3:w3(a,ab,c);w3(ab,b,bc);w3(ab,bc,c);break;
+     case 6:w3(a,b,bc);w3(a,bc,ca);w3(ca,bc,c);break;
+     case 5:w3(a,ab,ca);w3(ab,b,c);w3(ab,c,ca);break;
+     default:w3(a,ab,ca);w3(ab,b,bc);w3(ca,bc,c);w3(ab,bc,ca);
     }}
    const ng=new THREE.BufferGeometry();
    ng.setAttribute('position',new THREE.BufferAttribute(nP,3));ng.setAttribute('normal',new THREE.BufferAttribute(nN,3));
    if(nUV)ng.setAttribute('uv',new THREE.BufferAttribute(nUV,2));if(nCol)ng.setAttribute('color',new THREE.BufferAttribute(nCol,3));
    ng.setAttribute('aDmg',new THREE.BufferAttribute(nDm,4));
-   ng.setIndex(new THREE.BufferAttribute(n>65535?new Uint32Array(out):new Uint16Array(out),1));
+   ng.setIndex(new THREE.BufferAttribute(out,1));
    const old=this.g;this.mesh.geometry=ng;if(this.o.releaseGeometry)this.o.releaseGeometry(old);else old.dispose();
    // 지오메트리를 갈아 끼우되 쉬는 모양·눌린 양은 그대로 이어 간다
    this.g=ng;this.n=n;this.pos=nP;this.nor=nN;this.rest=nR;this.restN=nRN;this.disp=nD;this.dmg=nDm;this.cap=nC;
    ng.attributes.position.setUsage(THREE.DynamicDrawUsage);ng.attributes.normal.setUsage(THREE.DynamicDrawUsage);ng.attributes.aDmg.setUsage(THREE.DynamicDrawUsage);
    if(this.toff){const t2=new Float32Array(n*3);t2.set(this.toff);this.toff=t2;}
-   this._weld();this._adj();ng.computeBoundingSphere();ng.computeBoundingBox();
+   this._weld(n0);this._adj();ng.computeBoundingSphere();ng.computeBoundingBox();
    return true;
   }
   // 지금 모양을 그대로 굳힌다(썰기 전에)
-  bake(){const P=this.pos,R=this.rest;for(let i=0;i<P.length;i++)R[i]=P[i];this.disp.fill(0);this.restN.set(this.nor);}
+  bake(){const P=this.pos,R=this.rest;for(let i=0;i<P.length;i++)R[i]=P[i];this.disp.fill(0);this.restN.set(this.nor);this._wmap=null;}
 
   /* ---- 맞히기 검사: 격자로 빠르게 ---- */
   raycast(rc,out){
