@@ -179,6 +179,101 @@ const FIGHT_CSS = `
 #fight .submit-result .btns{
  display:flex;flex-direction:column;gap:8px
 }
+
+/* 이야기 장치: 설명문 대신 플레이어가 실제 문서와 구조를 부순다. */
+#fight .story-scene{position:absolute;inset:0;z-index:8;pointer-events:none}
+#fight .story-scene[hidden]{display:none!important}
+
+/* 50% — 나만 좋게 고쳐 준 사주. 뒤의 다른 사람 문서는 아래로 밀려난다. */
+#fight #offerScene{display:flex;align-items:center;justify-content:center;padding:88px 18px 132px;background:radial-gradient(circle at 50% 46%,rgba(255,239,151,.2),rgba(36,28,58,.24) 72%)}
+#fight .offer-stack{position:relative;width:min(74vw,300px);height:min(58vh,410px);filter:drop-shadow(0 18px 28px rgba(30,20,20,.32))}
+#fight .fate-paper{position:absolute;inset:0;border:0;border-radius:5px;padding:25px 23px 22px;background:linear-gradient(105deg,#fff9d4,#f7dfa0 55%,#fff4c4);color:#35250e;text-align:center;box-shadow:inset 0 0 0 2px #7d5617,inset 0 0 0 7px #f4c954;transform:rotate(-1.5deg);overflow:hidden;pointer-events:auto}
+#fight .fate-paper::before,#fight .fate-paper::after{content:"";position:absolute;inset:10px;border:1px solid rgba(111,72,13,.55);pointer-events:none}
+#fight .fate-paper::after{inset:15px;border-color:rgba(111,72,13,.22)}
+#fight .fate-paper small{display:block;font-family:var(--serif);font-weight:800;letter-spacing:.22em;color:#795313}
+#fight .fate-paper strong{display:block;margin:10px 0 17px;font-family:var(--serif);font-size:clamp(25px,8vw,34px);line-height:1.1;color:#8b1d18}
+#fight .fate-paper ul{list-style:none;margin:0;padding:14px 0;border-block:1px solid rgba(121,83,19,.36);font-family:var(--serif);font-size:17px;font-weight:700;line-height:1.9}
+#fight .fate-paper em{display:block;margin-top:15px;font-style:normal;font-size:12px;font-weight:800;color:#8b1d18}
+#fight .other-fate{position:absolute;left:12%;right:12%;bottom:-17px;height:78px;padding:13px 15px;border:1.5px solid #877d6a;background:#e9e3d5;color:#686153;transform:rotate(3deg) translateY(22px);box-shadow:0 8px 14px rgba(0,0,0,.2);font-family:var(--serif);font-weight:700;text-align:left;z-index:-1}
+#fight .other-fate b{display:block;color:#332f29}#fight .other-fate span{font-size:12px}
+#fight .offer-command{position:absolute;left:50%;bottom:-52px;transform:translateX(-50%);white-space:nowrap;padding:7px 13px;border-radius:99px;background:rgba(36,28,58,.9);color:#fff;font-size:12px;font-weight:800;animation:offerPulse 1.1s ease-in-out infinite}
+@keyframes offerPulse{50%{transform:translateX(-50%) scale(1.06)}}
+#fight #offerScene.breaking .fate-paper{animation:paperBreak .48s cubic-bezier(.2,.8,.2,1) forwards}
+#fight #offerScene.breaking .other-fate{animation:otherRise .65s .08s ease-out forwards}
+@keyframes paperBreak{35%{transform:rotate(2deg) scale(1.05);filter:brightness(1.5)}100%{transform:rotate(-13deg) scale(.2);opacity:0;clip-path:polygon(0 0,47% 8%,54% 0,100% 0,92% 46%,100% 58%,100% 100%,57% 91%,47% 100%,0 100%,9% 55%,0 44%)}}
+@keyframes otherRise{to{transform:rotate(0) translateY(-102px);opacity:.95}}
+
+/* 12%~8% — 좋은 팔자를 배정받은 관객. 사람은 공격 대상이 아니다. */
+#fight #crowdScene{z-index:5;overflow:hidden}
+#fight .gallery{position:absolute;left:0;right:0;bottom:15%;display:flex;justify-content:space-between;padding:0 max(5px,2vw);perspective:700px}
+#fight .crowd-wing{display:flex;align-items:flex-end;gap:clamp(2px,1vw,10px);width:30%;justify-content:center;transform:translateY(120%);transition:transform .65s cubic-bezier(.2,.9,.2,1)}
+#fight #crowdScene.entered .crowd-wing{transform:translateY(0)}
+#fight .spectator{position:relative;width:clamp(34px,8vw,60px);height:clamp(86px,20vw,144px);transform-origin:50% 100%;filter:drop-shadow(0 4px 5px rgba(20,15,30,.25))}
+#fight .spectator .head{position:absolute;left:27%;top:0;width:46%;aspect-ratio:1;border:2px solid #30243d;border-radius:48% 48% 44% 44%;background:var(--skin,#e9b08c)}
+#fight .spectator .head::after{content:"";position:absolute;left:18%;right:18%;top:57%;height:18%;border-bottom:2px solid #553149;border-radius:50%}
+#fight .spectator .body{position:absolute;left:13%;right:13%;top:25%;bottom:0;border:2px solid #30243d;border-radius:42% 42% 12% 12%;background:var(--coat,#8374a5)}
+#fight .spectator .fortune-ticket{position:absolute;left:0;right:0;top:45%;margin:auto;width:76%;height:36%;padding-top:5px;border:1.5px solid #7d5617;background:#ffe37b;color:#7c1f19;font-family:var(--serif);font-size:clamp(7px,1.6vw,10px);font-weight:800;line-height:1.2;text-align:center;box-shadow:0 2px 0 #7d5617;transform:rotate(var(--paper-r,-4deg));transition:background .3s,color .3s}
+#fight .spectator:nth-child(even){--coat:#4f8d7c;--paper-r:5deg}#fight .spectator:nth-child(3n){--coat:#a36b78;--skin:#d99976}
+#fight #crowdScene.wailing .spectator{animation:massWail .18s ease-in-out infinite alternate}
+#fight #crowdScene.wailing .spectator:nth-child(even){animation-delay:-.08s;animation-duration:.23s}
+#fight #crowdScene.wailing .crowd-wing{transform:translateY(16%) rotateX(22deg)}
+@keyframes massWail{from{transform:rotate(-3deg) translateY(1px)}to{transform:rotate(3deg) translateY(-3px)}}
+#fight #crowdScene.post .spectator{animation:relief .32s ease-in-out 4 alternate}
+#fight #crowdScene.post .fortune-ticket{background:#eee9dc;color:transparent;box-shadow:none;border-color:#9b9488}
+@keyframes relief{to{transform:translateY(-9px) rotate(2deg)}}
+#fight .chorus{position:absolute;left:50%;top:18%;width:min(88vw,560px);transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .2s}
+#fight #crowdScene.entered .chorus{opacity:1}
+#fight .chorus span{display:inline-block;margin:3px;padding:7px 11px;border:2px solid #30243d;border-radius:12px;background:rgba(255,253,246,.95);box-shadow:0 3px 0 #30243d;font-size:clamp(11px,3.2vw,15px);font-weight:800;animation:cryBob .28s ease-in-out infinite alternate}
+#fight .chorus span:nth-child(2){animation-delay:-.12s}#fight .chorus span:nth-child(3){animation-delay:-.2s}
+@keyframes cryBob{to{transform:translateY(-4px) rotate(-1deg)}}
+#fight .fate-stream{position:absolute;inset:0;opacity:0}
+#fight #crowdScene.reviving .fate-stream{opacity:1}
+#fight .fate-stream i{position:absolute;left:var(--x);top:68%;width:18px;height:25px;border:1px solid #a76d0b;background:#ffd94e;box-shadow:0 0 10px #ffd83d}
+#fight #crowdScene.reviving .fate-stream i{animation:streamFate .95s var(--d) ease-in forwards}
+@keyframes streamFate{to{left:50%;top:45%;transform:scale(.1) rotate(190deg);opacity:0}}
+#fight .revival-seal{position:absolute;left:50%;top:47%;width:min(46vw,270px);aspect-ratio:1;transform:translate(-50%,-50%) scale(.2);border:8px double rgba(255,203,52,.9);border-radius:50%;box-shadow:0 0 20px #ffd748,0 0 80px #ffbf2f,inset 0 0 30px #ffd748;opacity:0}
+#fight #crowdScene.reviving .revival-seal{animation:sealBloom 1.2s ease-out forwards}
+@keyframes sealBloom{45%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}100%{opacity:.2;transform:translate(-50%,-50%) scale(1.5)}}
+
+/* 부활 직후의 금빛 봉합막. 첫 타격에만 한 번 깨진다. */
+#fight #goldShell{position:absolute;z-index:7;left:50%;top:48%;width:min(42vw,235px);height:min(58vh,480px);transform:translate(-50%,-50%);border:3px solid rgba(255,218,82,.88);border-radius:48% 48% 35% 35%;box-shadow:0 0 18px #ffdc5d,inset 0 0 26px rgba(255,208,54,.6);pointer-events:none;opacity:.82;transition:opacity .22s}
+#fight #goldShell i{position:absolute;left:50%;top:8%;width:2px;height:84%;background:#fff3a6;box-shadow:0 0 7px #ffc82e;transform:rotate(var(--r)) translateX(var(--x));transform-origin:center}
+#fight #goldShell.breaking{animation:shellBreak .5s ease-out forwards}
+@keyframes shellBreak{20%{filter:brightness(2.4);transform:translate(-50%,-50%) scale(1.04)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.2);clip-path:polygon(0 0,48% 8%,55% 0,100% 0,91% 46%,100% 54%,100% 100%,56% 91%,47% 100%,0 100%,8% 53%,0 45%)}}
+
+/* 보스가 죽어도 계속 운명을 찍는 발급기. 이것까지 부숴야 끝난다. */
+#fight #printerScene{z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:80px 18px calc(94px + var(--safe-b));background:linear-gradient(rgba(23,17,35,.05),rgba(23,17,35,.68))}
+#fight .printer-wrap{position:relative;width:min(86vw,370px);text-align:center}
+#fight .printer-note{display:inline-block;margin-bottom:8px;padding:6px 12px;border-radius:99px;background:#241c3a;color:#fff;font-size:12px;font-weight:800}
+#fight .fate-printer{position:relative;width:100%;min-height:190px;border:3px solid #241c3a;border-radius:19px;background:linear-gradient(#d6d0c5,#9c968d);box-shadow:0 7px 0 #241c3a,0 20px 34px rgba(0,0,0,.35);padding:24px 20px 17px;color:#241c3a;pointer-events:auto}
+#fight .fate-printer:active{transform:translateY(3px);box-shadow:0 4px 0 #241c3a,0 12px 24px rgba(0,0,0,.32)}
+#fight .printer-slot{height:22px;margin:0 auto 15px;border:3px solid #241c3a;border-radius:4px;background:#17121e;box-shadow:inset 0 0 8px #000}
+#fight .issued-paper{margin:-4px auto 13px;width:88%;padding:10px 11px;border:1.5px solid #8e826c;background:#fff8db;font-family:var(--serif);font-size:12px;line-height:1.55;text-align:left;box-shadow:0 3px 0 rgba(36,28,58,.25);animation:printPaper 1.1s steps(5,end) infinite}
+#fight .issued-paper b{display:inline-block;min-width:45%;color:#941e18}
+@keyframes printPaper{from{transform:translateY(-12px)}to{transform:translateY(2px)}}
+#fight .printer-core{font-size:20px;font-weight:900;letter-spacing:.08em}
+#fight #printerScene.hit1 .fate-printer{transform:rotate(-1deg)}#fight #printerScene.hit2 .fate-printer{transform:rotate(1.5deg);filter:contrast(1.2)}
+#fight #printerScene.destroyed .fate-printer{animation:printerDie .65s ease-in forwards}
+@keyframes printerDie{35%{transform:scale(1.05) rotate(-2deg);filter:brightness(2)}100%{transform:translateY(80px) rotate(9deg) scale(.5);opacity:0}}
+#fight .printer-stamp{margin-top:12px;font-family:var(--serif);font-size:17px;font-weight:900;color:#b51f18;opacity:0;transform:scale(1.7) rotate(-5deg)}
+#fight #printerScene.destroyed .printer-stamp{animation:stampIn .3s .35s ease-out forwards}
+@keyframes stampIn{to{opacity:1;transform:scale(1) rotate(-5deg)}}
+
+/* 순응: 내 불행을 받은 것과 타인의 불행에 도장을 찍는 것을 분리한다. */
+#fight .submit-workflow{background:rgba(255,253,246,.98);border:2.5px solid var(--ink);border-radius:19px;box-shadow:0 5px 0 var(--ink),0 12px 28px rgba(25,18,45,.25);padding:14px;text-align:center}
+#fight .fate-receipt{padding:10px;border:1.5px solid #b7aa8c;background:#eee9dc;color:#6c6558;font-family:var(--serif);font-weight:700;transform:rotate(-1deg)}
+#fight .fate-receipt b{float:right;color:#8a7d68;font-size:11px;border:1px solid currentColor;padding:2px 5px;transform:rotate(4deg)}
+#fight .next-fate{position:relative;margin:12px 0 10px;padding:17px 14px;border:2px solid #4f4637;background:#fff6d6;font-family:var(--serif);text-align:left;box-shadow:0 3px 0 #4f4637}
+#fight .next-fate small{display:block;color:#8b1d18;font-weight:800;letter-spacing:.1em}#fight .next-fate strong{display:block;margin:5px 0;font-size:20px}#fight .next-fate p{margin:0;font-size:12px;line-height:1.55;color:#5d5548}
+#fight .seal-actions{display:grid;grid-template-columns:1.35fr 1fr;gap:8px}
+#fight .seal-btn{min-height:58px;border:2.5px solid #7c1714;border-radius:13px;background:#c52b21;color:#fff;font-size:15px;font-weight:900;box-shadow:0 4px 0 #65100e}
+#fight .seal-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #65100e}
+#fight .seal-btn::before{content:"印";display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;margin-right:7px;border:2px solid currentColor;border-radius:50%;font-family:var(--serif)}
+#fight .break-seal{min-height:58px;border:2px solid #241c3a;border-radius:13px;background:#fff;font-size:14px;font-weight:900;box-shadow:0 4px 0 #241c3a}
+#fight .submit-workflow.stamped .next-fate{animation:stampPaper .5s ease-out both}
+@keyframes stampPaper{40%{filter:brightness(1.7);transform:scale(1.04)}100%{transform:scale(.96);filter:sepia(.35)}}
+#fight .submit-result .alias{margin:5px 0 10px;font-size:11px;color:var(--muted)}
+#fight #endKicker{display:block;margin-bottom:5px;color:var(--red);font-size:11px;font-weight:900;letter-spacing:.16em}
 @media (min-width:760px){#fight .tool{width:84px;height:108px}#fight .tool .art{width:54px;height:54px}#fight .tool .nm{font-size:11px}#fight .gauge .grow{font-size:13.5px}}
 @media (max-width:370px){#fight .tool{width:67px;height:88px;margin:0 -6px}#fight .tool .art{width:41px;height:41px}#fight .tool .nm{font-size:9px}#fight .ftop{gap:5px}#fight .pill{width:38px;min-width:38px}}
 @media (max-width:340px){#fight .tool{width:61px;height:82px}#fight .tool .art{width:37px;height:37px}#fight .gauge{padding:6px 8px 7px}#fight .gauge .grow{font-size:11.5px;gap:5px}#fight .gauge small{display:none}}
@@ -193,8 +288,14 @@ const FIGHT_CSS = `
  #fight .dock#dock .tool .nm b{display:inline;margin-right:3px}
  #fight .dock#dock .tool.on{--lift:0;transform:translateX(-5px)}
  #fight .dock#dock .hint{position:fixed;left:50%;bottom:calc(8px + var(--safe-b));transform:translateX(-50%);max-width:56vw;white-space:nowrap}
+ #fight #offerScene{padding:48px 145px 10px 8px}
+ #fight #offerScene .offer-stack{width:250px;height:350px;transform:scale(.74);transform-origin:center}
+ #fight #printerScene{align-items:center;padding:48px 14px 8px}
+ #fight #printerScene .printer-wrap{width:min(70vw,350px);transform:scale(.78)}
+ #fight #submitDock{left:auto;right:10px;bottom:8px;transform:none;width:min(48vw,390px);max-height:calc(100vh - 68px);overflow:auto;padding:0 4px 6px}
+ #fight #submitDock .submit-workflow,#fight #submitDock .submit-result{padding:10px}
 }
-@media (prefers-reduced-motion:reduce){#fight #ending .card{animation-duration:.01s}#fight .gauge.hit{animation:none}}
+@media (prefers-reduced-motion:reduce){#fight #ending .card{animation-duration:.01s}#fight .gauge.hit{animation:none}#fight .crowd-wing,#fight .chorus{transition:none!important}#fight .spectator,#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .fate-stream i,#fight .revival-seal,#fight #goldShell,#fight .fate-printer,#fight .printer-stamp,#fight .submit-workflow.stamped .next-fate{animation-duration:.01s!important;animation-delay:0s!important}}
 `;
 
 const FIGHT_HTML = `<section id="fight" hidden>
@@ -206,6 +307,38 @@ const FIGHT_HTML = `<section id="fight" hidden>
  <b id="talkWho"></b>
  <span id="talkText"></span>
 </div>
+ <div id="offerScene" class="story-scene" hidden>
+  <div class="offer-stack">
+   <div class="other-fate"><b>다음 사람의 사주</b><span>불리한 배정 유지 · 이의 신청 불가</span></div>
+   <button type="button" class="fate-paper" id="offerPaper" aria-label="나만 좋게 고친 사주를 찢는다">
+    <small>運命 更正書 · 정정 사주</small><strong>당신만 특별히</strong>
+    <ul><li>귀한 집안의 도움</li><li>윗자리 평생 보장</li><li>재물운 대길</li></ul>
+    <em>단, 기존 질서에 이의를 제기하지 않을 것</em>
+   </button>
+   <span class="offer-command">이 종이를 쳐서 계속</span>
+  </div>
+ </div>
+ <div id="crowdScene" class="story-scene" hidden aria-live="polite">
+  <div class="chorus" id="crowdChorus"><span>저 사람 없어지면 제 사주는요?</span><span>우리 애 것도 좋게 나왔어요!</span></div>
+  <div class="gallery" aria-hidden="true">
+   <div class="crowd-wing"><i class="spectator"><i class="head"></i><i class="body"></i><i class="fortune-ticket">평생<br>재물운</i></i><i class="spectator"><i class="head"></i><i class="body"></i><i class="fortune-ticket">집안복<br>대길</i></i><i class="spectator"><i class="head"></i><i class="body"></i><i class="fortune-ticket">자녀운<br>상승</i></i></div>
+   <div class="crowd-wing"><i class="spectator"><i class="head"></i><i class="body"></i><i class="fortune-ticket">귀인운<br>보장</i></i><i class="spectator"><i class="head"></i><i class="body"></i><i class="fortune-ticket">윗자리<br>대길</i></i><i class="spectator"><i class="head"></i><i class="body"></i><i class="fortune-ticket">가문운<br>만세</i></i></div>
+  </div>
+  <div class="fate-stream" aria-hidden="true">${Array.from({length:14},(_,i)=>`<i style="--x:${i%2?8+i*2:92-i*2}%;--d:${(i%7)*.08}s"></i>`).join('')}</div>
+  <div class="revival-seal" aria-hidden="true"></div>
+ </div>
+ <div id="goldShell" hidden aria-hidden="true"><i style="--r:8deg;--x:-38px"></i><i style="--r:-13deg;--x:32px"></i><i style="--r:31deg;--x:4px"></i></div>
+ <div id="printerScene" class="story-scene" hidden>
+  <div class="printer-wrap">
+   <div class="printer-note">설계자가 쓰러졌는데도 계속 찍혀 나온다.</div>
+   <button type="button" class="fate-printer" id="fatePrinter" aria-label="운명 발급기를 세 번 쳐서 부순다" aria-describedby="issuedMap">
+    <div class="printer-slot"></div>
+    <div class="issued-paper" id="issuedMap"><b>물려받은 특혜</b> 집안복<br><b>저임금·착취</b> 재물운 부족<br><b>법률 비용의 격차</b> 송사를 피할 팔자<br><b>함께 바꾸려는 행동</b> 관재수</div>
+    <div class="printer-core">운명 자동 발급 중</div>
+   </button>
+   <div class="printer-stamp">運命 發給 中斷 · 운명 발급 중단</div>
+  </div>
+ </div>
  <header class="ftop">
   <button class="pill" id="fightBack" type="button" aria-label="사주 풀이로 돌아가기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
   <div class="gauge" aria-hidden="true">
@@ -225,16 +358,19 @@ const FIGHT_HTML = `<section id="fight" hidden>
   </div>
  </div>
  <div class="dock" id="submitDock" hidden>
- <div class="submit-result">
-  <small>운명 순응 인증서</small>
-  <strong>운명 이완용</strong>
-  <p>주어진 불행을 고치지 않고 성실히 유지했습니다.</p>
-  <div class="submit-meta">공로: 기존 질서 유지 · 보상: 없음</div>
-  <div class="btns">
-   <button type="button" class="btn soft" id="submitShare">부역 사실 공유하기</button>
-   <button type="button" class="btn danger" id="submitFight">다시 생각해보니까</button>
+  <div class="submit-workflow" id="submitWorkflow">
+   <div class="fate-receipt">나의 운명 <b>수령 완료</b></div>
+   <div class="next-fate"><small>다음 분 것도 확인해 주시죠.</small><strong>불리한 운명 배정서</strong><p>낮은 자리 · 부족한 재물운 · 말없이 견딜 팔자<br>이대로 확정하시겠습니까?</p></div>
+   <div class="seal-actions"><button type="button" class="seal-btn" id="fateSeal">확인 도장 찍기</button><button type="button" class="break-seal" id="breakSeal">도장을 부순다</button></div>
   </div>
- </div>
+  <div class="submit-result" id="submitCertificate" hidden>
+   <small>운명 배정 절차 완료</small>
+   <strong>기존 질서 유지에 협조했습니다</strong>
+   <p>내 몫을 받은 데서 멈추지 않고<br>다음 사람의 불리한 운명까지 확정했습니다.</p>
+   <div class="submit-meta">처리 결과: 정상 · 보상: 없음</div>
+   <div class="alias">공유용 별칭: 운명 이완용</div>
+   <div class="btns"><button type="button" class="btn soft" id="submitShare">처리 내역 공유하기</button><button type="button" class="btn danger" id="submitFight">이제 와서 도장을 부순다</button></div>
+  </div>
 </div>
  <div class="modal" id="settingsModal" hidden>
   <div class="msheet" role="dialog" aria-modal="true" aria-labelledby="fSetTitle">
@@ -250,13 +386,14 @@ const FIGHT_HTML = `<section id="fight" hidden>
  </div>
  <div id="ending" hidden>
   <div class="card" role="dialog" aria-modal="true" aria-labelledby="endTitle">
+   <small id="endKicker">운명 발급 중단</small>
    <h2 id="endTitle">운명 설계자의 운명을 설계했습니다</h2>
 <p>운명은 좁밥이었습니다.</p>
    <div class="stats"><div><b id="stTime">0:00</b>걸린 시간</div><div><b id="stHits">0</b>때린 횟수</div><div><b id="stBlood">0.0L</b>흘린 피</div></div>
    <div class="btns"><button type="button" class="btn danger" id="endAgain">처음부터 다시</button><div class="pair"><button type="button" class="btn soft" id="endHome">사주 풀이로</button><button type="button" class="btn soft" id="endMore">계속 패기</button></div></div>
   </div>
  </div>
- <div id="fallback" hidden><div id="fallbackTitle">불러오는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
+ <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">불러오는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
 </section>`;
 
 const FIGHT_ICONS = `
@@ -306,7 +443,21 @@ window.PaljaBoot=function(){
  try{runGame();}
  catch(err){
   const fb=document.getElementById('fallback');if(fb){fb.hidden=false;document.getElementById('fallbackTitle').textContent='족치기 화면을 열지 못했습니다.';document.getElementById('fallbackDetail').textContent=String(err&&err.message||err).slice(0,160);}
-  window.PaljaGame={enter(){const f=document.getElementById('fight');if(f)f.hidden=false;},leave(){const f=document.getElementById('fight');if(f)f.hidden=true;if(window.__paljaLeave)window.__paljaLeave();},pause(){}};
+  let fallbackSealTimer=0,fallbackRound=0;
+  const leave=()=>{fallbackRound++;clearTimeout(fallbackSealTimer);fallbackSealTimer=0;const f=document.getElementById('fight');if(f)f.hidden=true;if(window.__paljaLeave)window.__paljaLeave();};
+  const fightUnavailable=()=>{document.getElementById('submitDock').hidden=true;fb.hidden=false;document.getElementById('fallbackTitle').textContent='족치기 모드는 3D 그래픽이 필요합니다.';document.getElementById('fallbackDetail').textContent='순응하지 않는 선택은 확인했습니다. WebGL을 지원하는 브라우저에서 다시 열어 주세요.';requestAnimationFrame(()=>document.getElementById('retryGame').focus());};
+  const shareFallback=async()=>{const text='저는 다음 사람의 불리한 운명 배정에 확인 도장을 찍었습니다.\n공유용 별칭: 운명 이완용\n처리 결과: 기존 질서 유지 · 보상: 없음';try{if(navigator.share)await navigator.share({title:'운명 배정 처리 내역',text});else if(navigator.clipboard)await navigator.clipboard.writeText(text);else throw 0;}catch(e){if(e&&e.name==='AbortError')return;window.prompt('아래 문구를 복사하세요.',text);}};
+  window.PaljaGame={enter(result,mode='fight'){
+   const f=document.getElementById('fight');if(!f)return;const round=++fallbackRound;clearTimeout(fallbackSealTimer);fallbackSealTimer=0;f.hidden=false;document.getElementById('dock').hidden=true;
+   const top=f.querySelector('.ftop'),g=f.querySelector('.gauge');top.hidden=false;g.hidden=mode==='submit';document.getElementById('soundBtn').hidden=true;document.getElementById('settingsBtn').hidden=true;
+   document.getElementById('fightBack').onclick=leave;
+   if(mode!=='submit'){fb.hidden=false;requestAnimationFrame(()=>document.getElementById('retryGame').focus());return;}
+   fb.hidden=true;document.getElementById('world').hidden=true;document.getElementById('sblood').hidden=true;
+   const dock=document.getElementById('submitDock'),flow=document.getElementById('submitWorkflow'),cert=document.getElementById('submitCertificate');dock.hidden=false;flow.hidden=false;flow.classList.remove('stamped');cert.hidden=true;
+   requestAnimationFrame(()=>document.getElementById('fateSeal').focus());
+   document.getElementById('fateSeal').onclick=()=>{if(flow.classList.contains('stamped'))return;flow.classList.add('stamped');fallbackSealTimer=setTimeout(()=>{fallbackSealTimer=0;if(round!==fallbackRound||f.hidden)return;flow.hidden=true;cert.hidden=false;requestAnimationFrame(()=>document.getElementById('submitShare').focus());},520);};
+   document.getElementById('breakSeal').onclick=fightUnavailable;document.getElementById('submitFight').onclick=fightUnavailable;document.getElementById('submitShare').onclick=shareFallback;
+  },leave,pause(){}};
   const back=document.getElementById('retryGame');if(back){back.hidden=false;back.textContent='돌아가기';back.onclick=()=>window.PaljaGame.leave();}
  }
 };
@@ -2217,6 +2368,17 @@ pool.fill(0);
   if(pnCtx&&pnSaved){pnCtx.clearRect(0,0,pnCanvas.width,pnCanvas.height);pnCtx.drawImage(pnSaved,0,0);WORLD.panelTex.needsUpdate=true;}
   SB.clear();lostRaw=0;heart=0;
  }
+ // 부활 때는 무대에 남은 피·살점·잔해와 누적 출혈량은 보존하고,
+ // 사라질 옛 몸에 매달린 자국과 출혈원만 정리한 뒤 새 몸으로 갈아탄다.
+ function rebindKeepStage(emp){
+  E=emp;
+  for(const b of bankList){b.mesh.removeFromParent();b.g.dispose();if(b.fade!=null)b.mesh.material.dispose();}
+  bankList.length=0;fading.length=0;for(const key in banks)delete banks[key];
+  rivs.length=0;drips.length=0;wounds.length=0;beads.length=0;
+  for(const m of decals){m.removeFromParent();m.geometry.dispose();}decals.length=0;
+  for(const m of rims)m.removeFromParent();rims.length=0;
+  for(const l of lumps)l.mesh.removeFromParent();lumps.length=0;
+ }
  /* 살이 찌그러지면 그 뼈에 붙은 피(자국·줄기·방울·상처 자리)도 같이 옮긴다. fn(v: 뼈 좌표 점)이 v를 옮기고 옮겼으면 true */
  const _ov=V3();
  function deformOverlays(bone,fn){
@@ -2231,7 +2393,7 @@ pool.fill(0);
   for(const x of rivs)if(x.bone===bone)fn(x.lp);
   for(const w of wounds)if(w.bone===bone){fn(w.lp);if(w.line){fn(w.line[0]);fn(w.line[1]);}}
  }
- return {spray,emit,startRiv,addWound,decal,rim,lump,project,paintFloor,paintPanel,clearSegment,detachTree,forgetTree,clearAbove,clearDecalsNear,stopNear,fadeSeg,deformOverlays,update,reset,screen:SB,get lost(){return LOSTMAX*(1-Math.exp(-lostRaw/2.4));},get bleedRate(){let t=0;for(const w of wounds)t+=w.rate0*Math.exp(-w.age/w.tau);return t;},wounds,rivs};
+ return {spray,emit,startRiv,addWound,decal,rim,lump,project,paintFloor,paintPanel,clearSegment,detachTree,forgetTree,clearAbove,clearDecalsNear,stopNear,fadeSeg,deformOverlays,update,reset,rebindKeepStage,screen:SB,get rawLost(){return lostRaw;},get lost(){return LOSTMAX*(1-Math.exp(-lostRaw/2.4));},get bleedRate(){let t=0;for(const w of wounds)t+=w.rate0*Math.exp(-w.age/w.tau);return t;},wounds,rivs};
 })();
 const SBLOOD=BLOOD.screen;
 /* ===== 5-2. 맞은 자리 효과 =====
@@ -2834,6 +2996,7 @@ const BODYGEO=(()=>{
 class Emperor{
  constructor(result){
   this.result=result;
+  this.bloodRawBase=0;
   this.root=grp(scene,null,'emperor');
   this.bones={};this.parts=[];this.flow={};this.decals=[];this.lumps=[];this.goreMeshes=[];this.disposables=[];
   this._materials();
@@ -2887,7 +3050,7 @@ class Emperor{
   // 맞을 때 번쩍이는 재질
   this.flashMats=[M.flesh,M.skin,M.skinD,M.blush,M.robe,M.lip,M.hem,M.belly,M.chest,M.lizHead];
  }
- get bloodLost(){return BLOOD.lost;}
+ get bloodLost(){const raw=Math.max(0,BLOOD.rawLost-this.bloodRawBase);return 4.4*(1-Math.exp(-raw/2.4));}
  bone(name,parent,p){const g=grp(parent,p,name);g.userData.bone=name;this.bones[name]=g;g.userData.rest=g.position.clone();return g;}
  segOf(o){let n=o;while(n&&n!==this.root){if(n.userData.bone)return n.userData.bone;n=n.parent;}return 'pelvis';}
 
@@ -5459,7 +5622,7 @@ const VM=(()=>{
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);if(h.hand.visible)placeArm(k);}
   knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;spear.userData.blood.visible=!!st.bloody.spear&&PREF.blood;
  }
- function reset(){st.acts.length=0;st.slash=null;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.flash=0;st.lastShot=-9;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);for(const s of shells){s.life=0;s.m.visible=false;}}
+ function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
  return {root,st,setTool,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,get busy(){return st.acts.length>0;}};
 })();
@@ -5471,7 +5634,7 @@ const PREF={sound:true,blood:true,vibe:true,shake:true,deform:true};
 metalEnv(VM.root);
 try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof p[k]==='boolean')PREF[k]=p[k];}catch(_){}
 const KD_AT=[75,50,25,0],KD_TYPE=['throne','kneel','floor','final'];
-const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:0,tEnd:0,hitstop:0,slow:0,ended:false,paused:false,cardShown:false,result:null,round:0};
+const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:0,tEnd:0,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,cardShown:false,result:null,round:0,retired:[],offerPending:false,offerOpen:false,offerBreaking:false,crowdEntered:false,crowdWarned:false,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,printerShown:false,printerHits:0};
 const HINTS={hand:'누르면 맨주먹 잽 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',spear:'누르면 찔러 꿰뚫기 · 그으면 긁어 베기',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
@@ -5503,6 +5666,8 @@ function queueTalk(lines,replace=false){
   });
  }
 }
+
+function talkBusy(){return !!(TALK.cur||TALK.q.length||TALK.gap>0);}
 
 function updateTalk(dt){
  const el=$('#talk');
@@ -5545,14 +5710,14 @@ function updateTalk(dt){
 }
 
 function onHeadRegrowTalk(){
- if(G.ended||G.headTalked)return;
+ if(G.ended||G.headTalked||G.inputLocked||G.revival)return;
 
  G.headTalked=true;
 
  queueTalk([
   ['boss','정해진 것은 몇 번이고 제자리로 돌아온다.',2.4,0],
   ['player','그럼 몇 번이고 자르면 되지.',1.9,.15]
- ],true);
+ ]);
 }
 
 /* ---- 맞히기: 화면 좌표 → 운명 설계자 몸 ---- */
@@ -5581,7 +5746,13 @@ const POWER={hand:{jab:1.15,hook:1.5,upper:1.65},knife:{stab:.95,slash:.45},spea
 const STOP={hand:{jab:.036,hook:.05,upper:.058},knife:{stab:.045,slash:.014},spear:{stab:.065,slash:.02},gun:{shot:.018}};
 const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!'],spearStab:['푸욱!','콰직!','꾸욱!'],spearSlash:['쫘아악!','촤악!']};
 function resolveHit(tool,kind,info,side,extra={}){
- const E=G.E;if(!E||!info)return {hit:false};
+ const E=G.E;if(!E||!info||G.inputLocked)return {hit:false};
+ const gaugeEligible=E.state==='stand';
+ if(G.brittle&&!extra.through&&!extra.quiet){
+  G.brittle=false;G.shellHideAt=G.time+.55;
+  const sh=$('#goldShell');sh.classList.add('breaking');
+  AUDIO.haloCrack(.9);FX.word('쩍!',info.point,{size:64,color:'#ffe46b',force:true,dy:-32});flash(.2);
+ }
  const firstContact=!G.started&&!extra.through&&!extra.quiet;
  const dir=info.dir.clone();const s=side==='L'?-1:1;
  if(kind==='hook')dir.add(V3(-s*1.15,0,0));else if(kind==='upper')dir.add(V3(0,1.3,0));
@@ -5596,7 +5767,7 @@ G.hits++;
 if(firstContact){
  queueTalk([
   ['boss','감히 운명에 손을 대?',1.9,0]
- ],true);
+ ]);
 }
 
 const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
@@ -5604,7 +5775,7 @@ const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
  if(r.big)G.slow=Math.max(G.slow,.3);
  if(!extra.quiet){impactFX(tool,kind,info,r,dir,s,extra);if(!extra.through)AUDIO.hit(tool,kind,info.part,power,r.blocked);}
  if(PREF.vibe&&navigator.vibrate&&!extra.quiet)try{navigator.vibrate(r.blocked?10:tool==='gun'?26:kind==='slash'?6:kind==='jab'?16:[20,8,26]);}catch(_){}
- damageBar(r.dmg,r);
+ damageBar(r.dmg,r,gaugeEligible);
  return {hit:true,blocked:r.blocked,hard:!!r.halo,blood:!r.blocked&&!r.halo&&(tool==='knife'||tool==='spear'||tool==='gun'||E.noseBleeding||E.lipSplit||E.faceCuts>0)};
 }
 /* 맞은 자리 효과 + 카메라 */
@@ -5666,16 +5837,100 @@ function impactFX(tool,kind,info,r,dir,s,extra){
  if(r.big){camHit({shake:.03,roll:rnd(-.012,.012)});}
 }
 const _fxv=V3();
+function wireEmperor(E){
+ E.onImpact=onImpact;E.onDead=onDead;E.onRise=onRise;E.onRiseStart=onRiseStart;E.onLegFall=onLegFall;E.onHeadRegrow=onHeadRegrowTalk;
+ E.onCough=()=>{if(E.headDestroyed)return;AUDIO.voice('cough',1);E.face.updateWorldMatrix(true,false);BLOOD.spray(E.face.localToWorld(V3(0,-.12,.2)),V3(0,.1,1),PREF.blood?16:6,{max:1.6});};
+}
+function setChorus(lines){
+ const el=$('#crowdChorus');el.replaceChildren(...lines.map(x=>{const s=document.createElement('span');s.textContent=x;return s;}));
+}
+function focusCanvas(){requestAnimationFrame(()=>{try{canvas.focus({preventScroll:true});}catch(_){canvas.focus();}});}
+function openOffer(){
+ if(G.mode!=='fight'||G.ended||G.offerOpen||G.offerBreaking)return;
+ G.offerAt=0;G.offerPending=false;G.offerOpen=true;G.inputLocked=true;clearPointers();
+ const sc=$('#offerScene');sc.hidden=false;sc.className='story-scene';$('#dock').hidden=true;
+ if(G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
+ requestAnimationFrame(()=>$('#offerPaper').focus());
+}
+function finishOffer(){
+ const sc=$('#offerScene');sc.hidden=true;sc.className='story-scene';
+ G.offerOpen=false;G.offerBreaking=false;G.offerBreakAt=0;G.inputLocked=false;$('#dock').hidden=false;
+ if(G.E&&G.E.down)G.E.down.stay=Math.min(G.E.down.stay,.35);
+ queueTalk([['player','니들이 정한 팔자, 니들이 살아.',1.9,.08]]);
+ hint(HINTS[G.tool],2.8);
+ focusCanvas();
+}
+function enterCrowd(){
+ if(G.crowdEntered||G.revivalUsed)return;
+ G.crowdEntered=true;const sc=$('#crowdScene');sc.hidden=false;sc.className='story-scene entered';
+ setChorus(['저 사람 없어지면 제 사주는요?','우리 애 것도 좋게 나왔어요!']);
+}
+function warnCrowd(){
+ if(G.crowdWarned)return;G.crowdWarned=true;
+ setChorus(['억울하면 당신 것만 다시 써달라고 해요.','왜 남의 운명까지 건드려요?']);
+}
+function beginRevival(){
+ const E=G.E;if(!E||G.revivalUsed||E.state!=='stand')return false;
+ G.revivalUsed=true;G.revivalPending=false;G.inputLocked=true;G.revival={at:G.time,swapped:false,spoken:false};clearPointers();$('#dock').hidden=true;
+ const sc=$('#crowdScene');sc.hidden=false;sc.className='story-scene entered wailing';
+ setChorus(['설계자님! 눈을 뜨세요!','아이고, 우리 복이 다 죽는다!','저희 팔자는 거두지 마세요!']);
+ E.startFall('final');E.haloStage(4);setFrame('final');G.hitstop=Math.max(G.hitstop,.12);G.slow=Math.max(G.slow,.7);flash(.32);
+ return true;
+}
+function replaceEmperorForRevival(){
+ const old=G.E;if(!old)return;
+ old.endAct();old.root.removeFromParent();G.retired.push(old);
+ const E=new Emperor(G.result);E.bloodRawBase=BLOOD.rawLost;E.taunt=false;E.setPhase(4);
+ E.idleT=1e9;E.sobT=1e9;E.lookedHand=true;
+ wireEmperor(E);G.E=E;
+ BLOOD.rebindKeepStage(E);if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
+ if(E.tabletHeld)E.dropTablet(V3(rnd(-.2,.2),.7,.6));
+ fitView();setFrame('stand',true);
+}
+function finishRevival(){
+ G.revival=null;G.revived=true;G.inputLocked=false;G.bar=G.shown=G.lag=30;G.kd=3;
+ if(G.E){G.E.idleT=2.5;G.E.sobT=G.time+2.5;}
+ const sc=$('#crowdScene');sc.className='story-scene entered post';
+ setChorus(['살아나셨다!','역시 운명은 정해져 있었어!']);
+ const sh=$('#goldShell');sh.hidden=false;sh.className='';G.brittle=true;$('#dock').hidden=false;
+ updateGauge();hint('첫 타격으로 금빛 봉합을 깨뜨리세요.',3.2);
+ focusCanvas();
+}
+function showPrinter(){
+ if(G.printerShown)return;G.printerShown=true;G.printerPending=false;G.inputLocked=true;clearPointers();
+ $('#dock').hidden=true;$('#crowdScene').hidden=true;const sc=$('#printerScene');sc.hidden=false;sc.className='story-scene';
+ requestAnimationFrame(()=>$('#fatePrinter').focus());
+}
+function updateStory(){
+ if(G.offerPending){if(G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);if(!talkBusy())openOffer();}
+ if(G.offerOpen&&G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
+ if(G.offerBreakAt&&G.time>=G.offerBreakAt)finishOffer();
+ if(G.shellHideAt&&G.time>=G.shellHideAt){G.shellHideAt=0;$('#goldShell').hidden=true;}
+ if(G.revivalPending&&G.E&&G.E.state==='stand')beginRevival();
+ if(G.revival){
+  const r=G.revival,t=G.time-r.at,sc=$('#crowdScene');
+  if(t>=1.35&&!sc.classList.contains('reviving'))sc.classList.add('reviving');
+  if(t>=3.05&&!r.swapped){r.swapped=true;replaceEmperorForRevival();}
+  if(t>=3.15&&!r.spoken){r.spoken=true;queueTalk([['boss','그래. 다들 자기 것만은 건드리지 말라지.',1.65,.05],['boss','그 소리면 충분하다.',1.45,.08]]);}
+  if(t>=6.55&&r.spoken&&!talkBusy())finishRevival();
+ }
+ if(G.printerPending&&!talkBusy())showPrinter();
+ if(G.printerDoneAt&&G.time>=G.printerDoneAt){G.printerDoneAt=0;$('#printerScene').hidden=true;showEnding();}
+ if(G.sealAt&&G.time>=G.sealAt){G.sealAt=0;$('#submitWorkflow').hidden=true;$('#submitCertificate').hidden=false;requestAnimationFrame(()=>$('#submitShare').focus());}
+}
 /* ---- 버팀 게이지: 실제 타격 피해만 반영한다. ---- */
-function damageBar(d,o={}){
+function damageBar(d,o={},fromStand=false){
  if(G.mode!=='fight'||G.ended||!G.E)return;
- const E=G.E,next=KD_AT[G.kd]??0;
+ const E=G.E;if(!fromStand&&E.state!=='stand')return;const next=KD_AT[G.kd]??0;
  const amount=Math.max(0,Number(d)||0);if(amount<=0)return;
  let nb=Math.max(0,G.bar-amount);
- // 중간 다운 중에는 다음 단계를 건너뛰지 않되, 마지막 0%는 다시 올라오지 않는다.
- if(E.state!=='stand'&&G.kd<4)nb=Math.max(nb,next+.01);
+ if(G.kd===3&&!G.revivalUsed){
+  if(nb<=12)enterCrowd();
+  if(nb<=10)warnCrowd();
+  if(nb<=8){G.bar=G.shown=8;gaugeHit();updateGauge();if(!beginRevival())G.revivalPending=true;return;}
+ }
  G.bar=nb;G.shown=nb;gaugeHit();
- if(E.state==='stand'&&G.kd<4&&G.bar<=next+1e-6){G.bar=next;G.shown=next;knockdown();}
+ if(G.kd<4&&G.bar<=next+1e-6){G.bar=next;G.shown=next;knockdown();}
  updateGauge();
 }
 let gaugeHitT=0;
@@ -5711,22 +5966,22 @@ function knockdown(){
   queueTalk([
    ['boss','네 팔자엔 반항 같은 건 없었는데.',1.9,.15],
    ['player','남의 고생을 운명이라고 부르지 마.',1.9,.15]
-  ],true);
+  ]);
  }else if(type==='kneel'){
   queueTalk([
-   ['boss','잠깐. 다음 대운은 좋게 써주마.',2,.15],
-   ['player','니들이 정한 팔자, 니들이 살아.',1.9,.15]
-  ],true);
+   ['boss','잠깐. 네 팔자만 좋게 다시 써주마.',2,.15]
+  ]);
+  G.offerPending=true;
  }else if(type==='floor'){
   queueTalk([
    ['boss','운명은… 원래 해석하기 나름이니라.',2.1,.15],
-   ['player','이번엔 네 차례다.',1.6,.15]
-  ],true);
+   ['player','니 운명은 내가 오늘 설계해준다.',2,.15]
+  ]);
  }else{
   queueTalk([
    ['boss','네가 이러면 질서가 무너진다!',1.25,0],
    ['player','그게 목적이야.',.9,.08]
-  ],true);
+  ]);
  }
 
  updateGauge();
@@ -5743,20 +5998,22 @@ function onImpact(type){
  FX.word(type==='throne'?'쾅!':'쿵!',V3(p.x,p.y+.15,p.z+.2),{size:64,color:'#ffd84a',force:true,dur:.7});
 }
 function onDead(){
+ if(G.revival||G.ended)return;
  G.ended=true;
  G.tEnd=G.time;
- G.cardAt=G.time+5;
+ G.inputLocked=true;clearPointers();G.printerPending=true;$('#dock').hidden=true;
 
  queueTalk([
   ['boss','운명을 거슬러주세요…',2,.15],
   ['boss','운명은 뻥이었습니다. ㅠㅠ',2.2,.18]
- ],true);
+ ]);
 }
 function showEnding(){
  clearTalk();
  G.cardShown=true;const t=Math.max(0,G.tEnd-G.t0),m=Math.floor(t/60),s=Math.floor(t%60);
  $('#stTime').textContent=m+':'+String(s).padStart(2,'0');$('#stHits').textContent=G.hits;$('#stBlood').textContent=(BLOOD.lost).toFixed(1)+'L';
  $('#ending').hidden=false;
+ requestAnimationFrame(()=>$('#endAgain').focus());
 }
 
 /* ---- 게이지 ---- */
@@ -5778,7 +6035,7 @@ function flash(a=.25){const el=$('#flash');el.style.transition='none';el.style.o
 
 /* ---- 무기와 연결 ---- */
 VM.st.onContact=a=>{
- if(G.mode!=='fight'||!G.E)return {hit:false};
+ if(G.mode!=='fight'||!G.E||G.inputLocked)return {hit:false};
  const info=pickAt(a.sx,a.sy);
  if(!info){AUDIO.whiff(a.tool);return {hit:false};}
  const r=resolveHit(a.tool,a.kind,info,a.side);
@@ -5789,7 +6046,7 @@ VM.st.onContact=a=>{
 };
 // 칼을 뽑을 때: 상처에서 피가 왈칵
 VM.st.onPull=a=>{
- const r=a.hit;if(!r||!r.hit||r.blocked||!r.bone||!G.E)return;
+ const r=a.hit;if(G.inputLocked||!r||!r.hit||r.blocked||!r.bone||!G.E)return;
  r.bone.updateWorldMatrix(true,false);const p=r.bone.localToWorld(r.lp.clone()),n=r.ln.clone().transformDirection(r.bone.matrixWorld).normalize();
  BLOOD.spray(p,n.lerp(V3(0,.1,1),.35).normalize(),18,{min:.9,max:2.8,smax:.009});
  FX.add('mist',FX.lift(p,n,.03),{size:.1,life:.4,start:.5,grow:1.6,top:false,vel:n.clone().multiplyScalar(.5),drag:4,fade:1.4});
@@ -5797,6 +6054,7 @@ VM.st.onPull=a=>{
  if(G.E.state==='stand'){G.E.sp.spine.kick(-1.6,0,0);G.E.doFlinch('pain',1);}
 };
 VM.st.onFire=(sx,sy)=>{
+ if(G.inputLocked)return;
  updateAmmo();flash(.07);gunLight();
  camHit({pitch:.028,roll:rnd(-.012,.012),shake:.012,zoom:.022});
  if(G.mode!=='fight'||!G.E)return;
@@ -5884,15 +6142,16 @@ function finishLimb(p){
  resolveHit(G.tool,'slash',info,'R',{slashFrom:from,strokeId:p.slashId,firstCut:!p.cutWord});p.cutWord=true;
 }
 /* ---- 입력 ---- */
-const ptrs=new Map();
-function clearPointers(){for(const p of ptrs.values())if(p.slashing)VM.slashEnd();ptrs.clear();}
+const ptrs=new Map();let bladePointer=null;
+function clearPointers(){for(const p of ptrs.values()){if(p.slashing)VM.slashEnd();try{if(canvas.hasPointerCapture&&canvas.hasPointerCapture(p.id))canvas.releasePointerCapture(p.id);}catch(_){}}ptrs.clear();bladePointer=null;}
 canvas.addEventListener('pointerdown',e=>{
- if(G.paused||(e.pointerType==='mouse'&&e.button!==0))return;AUDIO.unlock();
+ if(G.paused||G.inputLocked||(e.pointerType==='mouse'&&e.button!==0))return;AUDIO.unlock();
  if(G.mode!=='fight')return;
+ const tool=G.tool;if((tool==='knife'||tool==='spear')&&bladePointer!=null)return;
  try{canvas.setPointerCapture(e.pointerId);}catch(_){}
  const p={id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,t0:G.time,swiped:false,slashing:false,fired:false,decided:false};
  ptrs.set(e.pointerId,p);
- const tool=G.tool;
+ if(tool==='knife'||tool==='spear')bladePointer=e.pointerId;
  if(tool==='gun'){VM.fire(p.x,p.y);p.auto=G.time+.19;}
  else if(tool==='hand')p.jabAt=G.time+.38;
  e.preventDefault();
@@ -5919,9 +6178,16 @@ canvas.addEventListener('pointermove',e=>{
 });
 function ptrEnd(e){
  const p=ptrs.get(e.pointerId);if(!p)return;ptrs.delete(e.pointerId);
- if(G.mode!=='fight')return;
+ try{if(canvas.hasPointerCapture&&canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);}catch(_){}
+ if(bladePointer===e.pointerId)bladePointer=null;
+ if(G.mode!=='fight'||G.inputLocked){if(p.slashing)VM.slashEnd();return;}
  const tool=G.tool;
- if(tool==='knife'||tool==='spear'){if(p.slashing){finishLimb(p);VM.slashEnd();}else if(e.type==='pointerup')VM.attack('stab',p.x0,p.y0);}
+ if(tool==='knife'||tool==='spear'){
+  if(p.slashing){
+   if(e.type==='pointerup'){if(Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))slashPath(p,[[e.clientX,e.clientY]]);finishLimb(p);}
+   VM.slashEnd();
+  }else if(e.type==='pointerup')VM.attack('stab',p.x0,p.y0);
+ }
  else if(tool==='hand'&&e.type==='pointerup'&&!p.decided){p.decided=true;VM.attack('jab',p.x0,p.y0);}
 }
 canvas.addEventListener('pointerup',ptrEnd);canvas.addEventListener('pointercancel',ptrEnd);canvas.addEventListener('lostpointercapture',ptrEnd);
@@ -5933,7 +6199,7 @@ function pollPointers(){
  }
 }
 // 키보드(PC): 1~3 도구
-addEventListener('keydown',e=>{if($('#fight').hidden||G.paused)return;const map={'1':'hand','2':'spear','3':'knife','4':'gun'};if(map[e.key])setTool(map[e.key]);});
+addEventListener('keydown',e=>{if($('#fight').hidden||G.paused||G.inputLocked)return;const map={'1':'hand','2':'spear','3':'knife','4':'gun'};if(map[e.key])setTool(map[e.key]);});
 
 function setTool(t){
  if(!HINTS[t])return;clearPointers();
@@ -5955,13 +6221,17 @@ $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)c
 $('#resetFight').addEventListener('click',()=>{closeModal();startRound('fight');});
 $('#endAgain').addEventListener('click',()=>startRound('fight'));
 $('#endHome').addEventListener('click',()=>leave(false));
-$('#endMore').addEventListener('click',()=>{$('#ending').hidden=true;});
+$('#endMore').addEventListener('click',()=>{$('#ending').hidden=true;G.inputLocked=false;$('#dock').hidden=false;hint('끝난 운명도 더 팰 수 있습니다.',2.5);focusCanvas();});
 $('#fightBack').addEventListener('click',()=>leave(false));
-$('#submitFight').addEventListener('click',()=>{
+function startFightFromSubmit(){
  AUDIO.unlock();
+ AUDIO.stop();
  clearTalk();
+ G.sealAt=0;
+ $('#submitWorkflow').classList.remove('stamped');
 
  G.mode='fight';
+ G.inputLocked=false;
  VM.root.visible=true;
 
  $('#dock').hidden=false;
@@ -5974,25 +6244,45 @@ $('#submitFight').addEventListener('click',()=>{
  hint(HINTS[G.tool],4.5);
 
  if(G.E)G.E.endAct();
+ focusCanvas();
 
  queueTalk([
   ['boss','뭐냐. 네 운명은 이미 정해졌—',1.45,.1],
   ['player','니 운명은 내가 오늘 설계해준다.',2,.1]
  ]);
+}
+function resetSubmitWorkflow(){
+ const w=$('#submitWorkflow');w.hidden=false;w.classList.remove('stamped');$('#submitCertificate').hidden=true;G.sealAt=0;
+}
+$('#submitFight').addEventListener('click',startFightFromSubmit);
+$('#breakSeal').addEventListener('click',startFightFromSubmit);
+$('#fateSeal').addEventListener('click',()=>{
+ if(G.mode!=='submit'||G.sealAt||$('#submitWorkflow').classList.contains('stamped'))return;
+ AUDIO.unlock();AUDIO.ui();$('#submitWorkflow').classList.add('stamped');G.sealAt=G.time+.55;
+});
+$('#offerPaper').addEventListener('click',()=>{
+ if(!G.offerOpen||G.offerBreaking)return;
+ G.offerBreaking=true;G.hits++;G.offerBreakAt=G.time+.62;$('#offerScene').classList.add('breaking');AUDIO.crack(1.1);flash(.22);
+});
+$('#fatePrinter').addEventListener('click',()=>{
+ if(!G.printerShown||G.printerDoneAt||G.printerHits>=3)return;
+ AUDIO.unlock();G.printerHits++;G.hits++;const sc=$('#printerScene');sc.classList.remove('hit1','hit2');
+ if(G.printerHits<3){sc.classList.add('hit'+G.printerHits);AUDIO.crack(.65);flash(.12);}
+ else{sc.classList.add('destroyed');AUDIO.haloCrack(1.15);flash(.3);G.tEnd=G.time;G.printerDoneAt=G.time+.95;}
 });
 
 $('#submitShare').addEventListener('click',async()=>{
  const text=
-  '저는 제 운명에 순응하여 불공평한 질서 유지에 기여했습니다.\n'+
-  '칭호: 운명 이완용\n'+
-  '공로: 기존 질서 유지 · 보상: 없음';
+  '저는 다음 사람의 불리한 운명 배정에 확인 도장을 찍었습니다.\n'+
+  '공유용 별칭: 운명 이완용\n'+
+  '처리 결과: 기존 질서 유지 · 보상: 없음';
 
  const b=$('#submitShare');
 
  try{
   if(navigator.share){
    await navigator.share({
-    title:'운명 순응 인증서',
+    title:'운명 배정 처리 내역',
     text
    });
   }else if(navigator.clipboard){
@@ -6013,24 +6303,28 @@ $('#submitShare').addEventListener('click',async()=>{
 /* ---- 라운드 ---- */
 function startRound(mode){
  G.round++;
+ AUDIO.stop();
  clearPointers();
  clearTalk();
  // 피 자국의 동적 geometry를 먼저 정리해 Emperor.destroy()와 같은 자원을 두 번 dispose하지 않는다.
- if(G.E){BLOOD.reset(null);G.E.destroy();}
+ BLOOD.reset(null);
+ if(G.E)G.E.destroy();
+ for(const old of G.retired)if(old&&old!==G.E)old.destroy();
+ G.retired=[];
  G.E=new Emperor(G.result);
  const E=G.E;
-E.onImpact=onImpact;
-E.onDead=onDead;
-E.onRise=onRise;
-E.onRiseStart=onRiseStart;
-E.onLegFall=onLegFall;
-E.onHeadRegrow=onHeadRegrowTalk;E.onCough=()=>{if(E.headDestroyed)return;AUDIO.voice('cough',1);E.face.updateWorldMatrix(true,false);BLOOD.spray(E.face.localToWorld(V3(0,-.12,.2)),V3(0,.1,1),PREF.blood?16:6,{max:1.6});};
+ wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,tEnd:0,hitstop:0,slow:0,ended:false,cardShown:false,paused:false,cardAt:0,laughAt:0,submitWaiting:mode==='submit',headTalked:false});
+Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,tEnd:0,hitstop:0,slow:0,ended:false,cardShown:false,paused:false,inputLocked:false,cardAt:0,laughAt:0,submitWaiting:mode==='submit',headTalked:false,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,printerShown:false,printerHits:0,printerPending:false,printerDoneAt:0,sealAt:0});
  FX.clear();COINS.clear();CHUNKS.clear();
+ CAM.kick.set(0,0,0);CAM.kickV.set(0,0,0);CAM.rot.reset();CAM.push.reset();CAM.shake=0;CAM.zoom=CAM.zoomV=0;CAM.jit.set(0,0,0);gunLT=0;
+ clearTimeout(gaugeHitT);const gauge=$('#fight .gauge');if(gauge._hitAnim)gauge._hitAnim.cancel();gauge.classList.remove('hit');$('#gaugeFill').classList.remove('flash');$('#flash').style.opacity=0;
  $('#ending').hidden=true;
 $('#settingsModal').hidden=true;
-$('#submitShare').textContent='부역 사실 공유하기';
+$('#submitShare').textContent='처리 내역 공유하기';
+ resetSubmitWorkflow();
+ for(const id of ['offerScene','crowdScene','goldShell','printerScene']){$('#'+id).hidden=true;$('#'+id).className=id==='goldShell'?'':'story-scene';}
+ setChorus(['저 사람 없어지면 제 사주는요?','우리 애 것도 좋게 나왔어요!']);
  $('#dock').hidden=mode!=='fight';$('#submitDock').hidden=true;$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
  setTool('hand');updateGauge();updateAmmo();syncPrefs();VM.root.visible=mode==='fight';
  fitView();setFrame('stand',true);
@@ -6063,7 +6357,8 @@ if(mode==='fight'){
 let last=performance.now(),perfT=0,perfN=0,lite=0;
 function allMats(fn){for(const sc of [scene,vmScene])sc.traverse(o=>{if(o.material)for(const m of (Array.isArray(o.material)?o.material:[o.material]))fn(m);});}
 function step(dt){
- G.time+=dt;if(G.paused)return;
+ if(G.paused)return;G.time+=dt;
+ updateStory();
  pollPointers();
  const E=G.E;
  // 멈춤(히트스톱)·느린 화면
@@ -6072,8 +6367,8 @@ function step(dt){
  if(E){
   E._rdt=dt;E.update(sim,G.time);
   if(G.mode==='submit'){
-   // 첫 비웃음이 실제로 끝난 뒤에만 족치기 버튼을 연다.
-   if(G.submitWaiting&&!G.laughAt&&!E.act){G.submitWaiting=false;$('#submitDock').hidden=false;}
+   // 네 줄의 비웃음과 몸짓이 실제로 전부 끝난 뒤에만 다음 운명 문서를 건넨다.
+   if(G.submitWaiting&&!G.laughAt&&!E.act&&!talkBusy()){G.submitWaiting=false;resetSubmitWorkflow();$('#submitDock').hidden=false;requestAnimationFrame(()=>$('#fateSeal').focus());}
    else if(!G.submitWaiting&&E.state==='stand'&&!E.act&&E.sinceHit>1&&Math.random()<dt*.35){E.doAct('laugh',{dur:2,L:false,R:false});AUDIO.voice('laugh',1);}
   }
  }
