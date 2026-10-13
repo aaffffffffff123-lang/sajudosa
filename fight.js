@@ -771,7 +771,7 @@ else if(this._refitRay(verts)){
   /* 칼자국: a→b 선을 따라 V자로 파이고 양옆이 벌어진다 */
   groove(a,b,w,depth,o={}){
    const ab=_v1.subVectors(b,a),L=ab.length();if(L<1e-5)return 0;ab.divideScalar(L);
-   const topologyChanged=const topologyChanged=this.refineSeg(a,b,w*1.8,o.minEdge||Math.max(.0035,this.minEdge*.7));
+   const topologyChanged=this.refineSeg(a,b,w*1.8,o.minEdge||Math.max(.0035,this.minEdge*.7));
    const P=this.pos,D=this.disp,Dm=this.dmg,vs=[],rec=[],W2=(w*1.8)**2,ph=rnd(0,TAU);
    for(let i=0;i<this.n;i++){const k=i*3;const px=P[k]-a.x,py=P[k+1]-a.y,pz=P[k+2]-a.z;let t=px*ab.x+py*ab.y+pz*ab.z;
     const tc=clamp(t,0,L),qx=px-ab.x*tc,qy=py-ab.y*tc,qz=pz-ab.z*tc,d2=qx*qx+qy*qy+qz*qz;if(d2>W2)continue;
@@ -2902,13 +2902,7 @@ class Emperor{
   const M=this.M,G=HEADGEO.build(),zF=HEADGEO.zFront;
   
 const head=this.bone('head',this.bones.neck,[0,.06,.03]);
-
-// 재생 크기 변화의 중심을 실제 목 절단면에 고정한다.
-const grow=this.repHead=grp(head,[0,.065,-.02],'repHead');
-grow.scale.setScalar(.04);
-
-// 다 자랐을 때는 기존 머리 위치와 정확히 같아진다.
-const rg=grp(grow,[0,.15,.02]);
+const F=this.face=grp(head,[0,.215,0],'face');
 
 
   this.faceRest=F.position.clone();
@@ -3885,8 +3879,16 @@ Object.assign(Emperor.prototype,{
  // 파충류 머리를 목 위에 새로 올린다
  buildRepHead(){
   const M=this.M,G=HEADGEO.build();
-  const head=this.bone('head',this.bones.neck,[0,.06,.03]);
-  const rg=this.repHead=grp(head,[0,.215,0],'repHead');rg.scale.setScalar(.04);
+const head=this.bone('head',this.bones.neck,[0,.06,.03]);
+
+// 목 절단면을 재생 중심으로 사용한다.
+const grow=this.repHead=grp(head,[0,.065,-.02],'repHead');
+grow.scale.setScalar(.04);
+
+// 다 자라면 기존 머리 위치와 정확히 같아진다.
+const rg=grp(grow,[0,.15,.02]);
+ 
+ 
   // 두개골·아래턱(비늘 살)
   this.repSkull=this.addFlesh(G.rep.clone(),M.lizHead,rg,{part:'head',kind:'liz',center:V3(0,0,.02),maxFrac:.42,maxAbs:.09,minEdge:.0052});
   const jaw=this.repJawBone=grp(rg,[0,-.07,-.03]);
