@@ -704,13 +704,24 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
    if(permanent){
     this.g.attributes.aDmg.needsUpdate=true;this.g.computeBoundingSphere();
     if(rebuildRay){this._cancelRayRebuild();this._dentRefits=0;this.g.computeBoundingBox();delete this.g.userData.fastGrid;}
-    else if(this._refitRay(verts)){
-     this._dentRefits=(this._dentRefits||0)+1;
-     // 부분 refit은 즉시 타격 버벅임을 막고, 여섯 번마다 연타가 끝난 뒤 셀 경계까지 정확히 다시 만든다.
-     if(this._dentRefits>=6&&!this._rayIdle){
-      this._dentRefits=0;this._scheduleRayRebuild();
-     }
-    }
+  
+  
+  
+else if(this._refitRay(verts)){
+ this._dentRefits=(this._dentRefits||0)+1;
+ if(this._dentRefits>=6&&!this._rayIdle){
+  this._dentRefits=0;this._scheduleRayRebuild();
+ }
+}else if(this.g.userData.fastGrid){
+ this._cancelRayRebuild();
+ this._dentRefits=0;
+ this.g.computeBoundingBox();
+ delete this.g.userData.fastGrid;
+}
+
+
+
+
    }
   }
   // 이 점 둘레(반지름 r) 꼭짓점
@@ -738,7 +749,7 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
   }
   /* 파임: 총알·창. 가장자리가 들쭉날쭉한 깊은 구멍, 속살이 드러난다 */
   crater(c,d,R,depth,o={}){
-   this.refine(c,R*1.5,o.minEdge||this.minEdge);
+   const topologyChanged=this.refine(c,R*1.5,o.minEdge||this.minEdge);
    const R2=(R*1.6)**2,P=this.pos,D=this.disp,Dm=this.dmg,vs=[],rec=[];
    // 구멍 둘레의 접평면 좌표(들쭉날쭉한 반지름을 각도로 정한다)
    const tu=_v1.set(1,0,0);if(Math.abs(d.x)>.8)tu.set(0,1,0);tu.addScaledVector(d,-tu.dot(d)).normalize();const tv=_v2.crossVectors(d,tu);
@@ -755,12 +766,12 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
      Dm[i*4+1]=Math.max(Dm[i*4+1],clamp((1.6-r)*.42,0,.3));
      if(this.kind==='skin')Dm[i*4]=Math.min(1.5,Dm[i*4]+.18);if(o.soak)Dm[i*4+3]=Math.min(1,Dm[i*4+3]+o.soak*.6*(1.6-r));}
     this._clampIn(k,i);}
-   return this._finish(vs,rec);
+   return this._finish(vs,rec,topologyChanged);
   }
   /* 칼자국: a→b 선을 따라 V자로 파이고 양옆이 벌어진다 */
   groove(a,b,w,depth,o={}){
    const ab=_v1.subVectors(b,a),L=ab.length();if(L<1e-5)return 0;ab.divideScalar(L);
-   this.refineSeg(a,b,w*1.8,o.minEdge||Math.max(.0035,this.minEdge*.7));
+   const topologyChanged=const topologyChanged=this.refineSeg(a,b,w*1.8,o.minEdge||Math.max(.0035,this.minEdge*.7));
    const P=this.pos,D=this.disp,Dm=this.dmg,vs=[],rec=[],W2=(w*1.8)**2,ph=rnd(0,TAU);
    for(let i=0;i<this.n;i++){const k=i*3;const px=P[k]-a.x,py=P[k+1]-a.y,pz=P[k+2]-a.z;let t=px*ab.x+py*ab.y+pz*ab.z;
     const tc=clamp(t,0,L),qx=px-ab.x*tc,qy=py-ab.y*tc,qz=pz-ab.z*tc,d2=qx*qx+qy*qy+qz*qz;if(d2>W2)continue;
@@ -774,7 +785,7 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
      Dm[i*4+1]=Math.max(Dm[i*4+1],clamp((1.12-r)*endF,0,1.1));if(o.soak)Dm[i*4+3]=Math.min(1,Dm[i*4+3]+o.soak*(1-r));}
     else{Dm[i*4+1]=Math.max(Dm[i*4+1],clamp((1.8-r)*.2*endF,0,.16));if(o.soak)Dm[i*4+3]=Math.min(1,Dm[i*4+3]+o.soak*.4*(1.8-r));}
     this._clampIn(k,i);}
-   return this._finish(vs,rec);
+   return this._finish(vs,rec,topologyChanged);
   }
   // 이번에 옮긴 양을 기억해 두었다가(피·상처·눈코입이 같이 따라오게) 화면에 반영
   _finish(vs,rec,rebuildRay=true){
@@ -1546,7 +1557,7 @@ const BLOOD=(()=>{
  const flTex=canvasTex(FL.res,FL.res,()=>{});const flCtx=flTex.userData.ctx;
  const flMat=STD('#ffffff',{map:flTex,transparent:true,roughness:.1,metalness:0,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
  const flMesh=mk(new THREE.PlaneGeometry(FL.w,FL.h),flMat,scene,{p:[FL.x0+FL.w/2,.004,FL.z0+FL.h/2],r:[-PI/2,0,0],cast:false});flMesh.renderOrder=1;
- const pool=new Float32Array(64*64);let flDirty=false;
+ const pool=new Float32Array(64*64);let flDirty=false,flUploadAcc=0;
  function floorUV(x,z){return [(x-FL.x0)/FL.w*FL.res,(z-FL.z0)/FL.h*FL.res];}
  function blob(g,x,y,r,col_,a){g.globalAlpha=a;g.fillStyle=col_;g.beginPath();g.ellipse(x,y,r,r*rnd(.75,1),rnd(0,PI),0,TAU);g.fill();g.globalAlpha=1;}
  function paintFloor(x,z,vol,impact){
@@ -1968,7 +1979,12 @@ const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);po
   // 자국이 자라기
   for(const m of decals){const g=m.userData.grow;if(g){g.t+=dt;const s=lerp(.01,1,easeOut(g.t/g.dur));m.scale.setScalar(s);m.position.copy(g.center).multiplyScalar(1-s);if(g.t>=g.dur)m.userData.grow=null;}}
   for(const l of lumps){l.t+=dt;const s=damp(l.mesh.scale.x,l.target,6,dt);l.mesh.scale.set(s,s*.85,s*.42);}
-  if(flDirty){flTex.needsUpdate=true;flDirty=false;}
+  flUploadAcc=Math.min(1/15,flUploadAcc+dt);
+if(flDirty&&flUploadAcc>=1/15){
+ flTex.needsUpdate=true;
+ flDirty=false;
+ flUploadAcc=0;
+}
   for(let i=fading.length-1;i>=0;i--){const b=fading[i];b.fade-=dt/2;b.mesh.material.opacity=Math.max(0,b.fade)*(b.op0==null?1:b.op0);
    if(b.fade<=0){b.mesh.removeFromParent();b.g.dispose();b.mesh.material.dispose();const k=bankList.indexOf(b);if(k>=0)bankList.splice(k,1);fading.splice(i,1);}}
   const gv=PREF.blood;for(const b of bankList){b.mesh.visible=b.kind==='tear'||gv;}
@@ -2040,7 +2056,11 @@ flMesh.visible=gv;
 for(const m of rims)m.removeFromParent();
 rims.length=0;
   for(const l of lumps)l.mesh.removeFromParent();lumps.length=0;
-  flCtx.clearRect(0,0,FL.res,FL.res);flTex.needsUpdate=true;pool.fill(0);
+  flCtx.clearRect(0,0,FL.res,FL.res);
+flTex.needsUpdate=true;
+flDirty=false;
+flUploadAcc=0;
+pool.fill(0);
   if(pnCtx&&pnSaved){pnCtx.clearRect(0,0,pnCanvas.width,pnCanvas.height);pnCtx.drawImage(pnSaved,0,0);WORLD.panelTex.needsUpdate=true;}
   SB.clear();lostRaw=0;heart=0;
  }
@@ -2880,8 +2900,17 @@ class Emperor{
 
  _head(){
   const M=this.M,G=HEADGEO.build(),zF=HEADGEO.zFront;
-  const head=this.bone('head',this.bones.neck,[0,.06,.03]);
-  const F=this.face=grp(head,[0,.215,0],'face');
+  
+const head=this.bone('head',this.bones.neck,[0,.06,.03]);
+
+// 재생 크기 변화의 중심을 실제 목 절단면에 고정한다.
+const grow=this.repHead=grp(head,[0,.065,-.02],'repHead');
+grow.scale.setScalar(.04);
+
+// 다 자랐을 때는 기존 머리 위치와 정확히 같아진다.
+const rg=grp(grow,[0,.15,.02]);
+
+
   this.faceRest=F.position.clone();
   this.headFlesh=[];this.feat=[];
   const flesh=(geo,mat,parent,o)=>{const m=this.addFlesh(geo,mat,parent,Object.assign({minEdge:.0048},o));this.headFlesh.push(m.userData.flesh);return m;};
@@ -4038,7 +4067,7 @@ Object.assign(Emperor.prototype,{
    this.deform('dent',pt,into,R,depth,{bruise:heavy?.55:.34,rim:.3});
   }else if(tool==='gun'){
    const R=headF?.022:limb?.022:.028,depth=headF?.03:.038;
-   this.deform('crater',pt,into,R,depth,{soak:.55,jag:.32,jiggle:.03});
+   this.deform('crater',pt,into,R,depth,{soak:.55,jag:.32});
    if(PREF.blood)CHUNKS.burst(pt.clone().addScaledVector(n,.008),2+(Math.random()*3|0),n,headF?.02:.028,this.chunkKind(h),{speed:1.2,back:into});
    this._gunLine(seg,pt,n,into,h);
   }else if(tool==='spear'){
@@ -4046,7 +4075,7 @@ Object.assign(Emperor.prototype,{
     this.deform('groove',pt,into,.013,.03,{bW:h.slashFrom,soak:.45,jag:.3});
     if(PREF.blood)CHUNKS.burst(pt,2+(Math.random()*2|0),n,.024,this.chunkKind(h),{speed:1});
    }else{
-    this.deform('crater',pt,into,.02,headF?.045:.06,{soak:.6,jag:.26,jiggle:.035});
+    this.deform('crater',pt,into,.02,headF?.045:.06,{soak:.6,jag:.26});
     if(PREF.blood)CHUNKS.burst(pt.clone().addScaledVector(n,.01),3+(Math.random()*3|0),n,.03,this.chunkKind(h),{speed:1.45,back:into});
    }
   }else if(tool==='knife'){
@@ -5306,7 +5335,7 @@ function pickAll(x,y,list){
 function pickAt(x,y,list){return pickAll(x,y,list)[0]||null;}
 const POWER={hand:{jab:1.15,hook:1.5,upper:1.65},knife:{stab:.95,slash:.45},spear:{stab:1.5,slash:.7},gun:{shot:1.8}};
 // 멈춤(히트스톱) 길이: 이 동안 맞은 모습 그대로 멈춰 있다
-const STOP={hand:{jab:.082,hook:.1,upper:.11},knife:{stab:.085,slash:.032},spear:{stab:.12,slash:.05},gun:{shot:.058}};
+const STOP={hand:{jab:.036,hook:.05,upper:.058},knife:{stab:.045,slash:.014},spear:{stab:.065,slash:.02},gun:{shot:.018}};
 const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!'],spearStab:['푸욱!','콰직!','꾸욱!'],spearSlash:['쫘아악!','촤악!']};
 function resolveHit(tool,kind,info,side,extra={}){
  const E=G.E;if(!E||!info)return {hit:false};
