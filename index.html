@@ -2442,21 +2442,31 @@ function makeDrum(box,items,index){
  const padTop=el('div','pad');box.append(padTop);
  const nodes=items.map(it=>{const d=el('div','it'+(it.cls?' '+it.cls:''));const s=document.createElement('span');s.textContent=it.label;d.append(s);box.append(d);return d;});
  box.append(el('div','pad'));
- const st={box,items,nodes,index:Math.max(0,Math.min(items.length-1,index)),raf:0};
+ const st={box,items,nodes,index:Math.max(0,Math.min(items.length-1,index)),target:null,raf:0};
  const paint=()=>{st.raf=0;const top=box.scrollTop;st.index=Math.max(0,Math.min(items.length-1,Math.round(top/ITEM_H)));
   for(let i=0;i<nodes.length;i++){const d=(i*ITEM_H-top)/ITEM_H,a=Math.max(-3,Math.min(3,d)),sp=nodes[i].firstChild;
    if(Math.abs(d)>3.5){sp.style.visibility='hidden';continue;}sp.style.visibility='';
    sp.style.transform='rotateX('+(-a*24)+'deg) translateZ('+(-Math.abs(a)*8)+'px) scale('+(1-Math.abs(a)*.07)+')';sp.style.opacity=String(1-Math.abs(a)*.22);nodes[i].classList.toggle('on',Math.abs(d)<.5);}};
- box.onscroll=()=>{if(!st.raf)st.raf=requestAnimationFrame(paint);if(st.onchange)st.onchange();};
+ box.onscroll=()=>{
+  st.index=Math.max(0,Math.min(items.length-1,Math.round(box.scrollTop/ITEM_H)));
+  if(!st.raf)st.raf=requestAnimationFrame(paint);
+  if(st.onchange)st.onchange();
+ };
  let drag=null;
- box.onpointerdown=e=>{if(e.pointerType!=='mouse')return;drag={y:e.clientY,top:box.scrollTop,moved:false};box.classList.add('dragging');box.setPointerCapture(e.pointerId);};
+ box.onpointerdown=e=>{st.target=null;if(e.pointerType!=='mouse')return;drag={y:e.clientY,top:box.scrollTop,moved:false};box.classList.add('dragging');box.setPointerCapture(e.pointerId);};
+ box.onwheel=()=>{st.target=null;};
  box.onpointermove=e=>{if(!drag)return;const dy=e.clientY-drag.y;if(Math.abs(dy)>3)drag.moved=true;box.scrollTop=drag.top-dy;};
  const end=e=>{if(!drag)return;const moved=drag.moved;drag=null;box.classList.remove('dragging');let idx=Math.round(box.scrollTop/ITEM_H);
   if(!moved&&e&&e.type==='pointerup'){const r=box.getBoundingClientRect();idx+=Math.round((e.clientY-r.top-110)/ITEM_H);}
-  idx=Math.max(0,Math.min(items.length-1,idx));box.scrollTo({top:idx*ITEM_H,behavior:'smooth'});};
+  idx=Math.max(0,Math.min(items.length-1,idx));st.index=idx;st.target=idx;box.scrollTo({top:idx*ITEM_H,behavior:'smooth'});};
  box.onpointerup=end;box.onpointercancel=end;box.onlostpointercapture=()=>{if(drag)end(null);};
- st.set=(i,smooth)=>{i=Math.max(0,Math.min(items.length-1,i));st.index=i;if(smooth)box.scrollTo({top:i*ITEM_H,behavior:'smooth'});else box.scrollTop=i*ITEM_H;paint();};
- st.value=()=>items[st.index].v;st.set(st.index,false);
+ st.set=(i,smooth)=>{i=Math.max(0,Math.min(items.length-1,i));st.index=i;st.target=smooth?i:null;if(smooth)box.scrollTo({top:i*ITEM_H,behavior:'smooth'});else box.scrollTop=i*ITEM_H;paint();};
+ st.value=()=>{
+  const i=st.target==null?Math.max(0,Math.min(items.length-1,Math.round(box.scrollTop/ITEM_H))):st.target;
+  st.index=i;st.target=null;box.scrollTo({top:i*ITEM_H,behavior:'auto'});paint();
+  return items[i].v;
+ };
+ st.set(st.index,false);
  return st;
 }
 const nowKst=new Date(Date.now()+9*HOUR),THIS_YEAR=nowKst.getUTCFullYear();
@@ -2490,7 +2500,13 @@ function dateLabel(){
 }
 function syncDateField(){const t=dateLabel();$('dateVal').textContent=t||'태어난 날짜를 골라 주세요';$('dateVal').classList.toggle('empty',!t);}
 function closeDate(ok){
- if(ok){const mv=String(dM.value());picked.date={y:dY.value(),m:parseInt(mv,10),leap:mv.endsWith('L'),d:Math.min(dD.value(),dayCount(picked.cal,dY.value(),mv))};syncDateField();}
+ if(ok){
+  clearTimeout(dTimer);
+  const y=dY.value(),months=monthItems(picked.cal,y),raw=String(dM.value());
+  const chosen=months.find(x=>String(x.v)===raw)||months.find(x=>String(x.v)===String(parseInt(raw,10)))||months[Math.max(0,Math.min(months.length-1,dM.index))];
+  const mv=String(chosen.v);
+  picked.date={y,m:parseInt(mv,10),leap:mv.endsWith('L'),d:Math.min(dD.value(),dayCount(picked.cal,y,mv))};syncDateField();
+ }
  $('dateSheet').hidden=true;
 }
 document.querySelectorAll('[data-cal]').forEach(b=>b.addEventListener('click',()=>{
