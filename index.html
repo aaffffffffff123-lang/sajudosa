@@ -602,9 +602,9 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div></section>
   <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol></section>
   <section class="block"><h2 class="sec-label">반복되는 경향</h2><div class="loop" id="loop"></div></section>
-  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">사</text><text x="42" y="30">주</text><text x="22" y="51">도</text><text x="42" y="51">사</text></g></svg><ul class="also" id="also"></ul><div class="caution" id="caution"></div></section>
+  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">자</text><text x="42" y="30">리</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><ul class="also" id="also"></ul><div class="caution" id="caution"></div></section>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
-  <div class="choices"><button id="submit-fate" type="button" class="btn ghost">이 운명대로 살기</button><button id="fight-fate" type="button" class="btn red">운명 설계자 족치기</button></div>
+  <div class="choices"><button id="submit-fate" type="button" class="btn ghost">풀이대로 조심하며 살기</button><button id="fight-fate" type="button" class="btn red">운명 설계자 족치기</button></div>
   <button id="start-over" type="button" class="textbtn">다른 사주 보기</button>
  </div>
 </main>
@@ -2164,12 +2164,13 @@ const FATE_SUM_V3={
   '연락 횟수부터':'지쳐서 먼저 물러나는'
  },
  caution:{
-  A:'같이 시작한 사람이 먼저 올라가도 비교하지 마세요. 당신은 좋은 학교도 든든한 인맥도 물려받지 못해 밑에서 받쳐 주는 팔자입니다.',
-  B:'물려받은 것만 믿고 쉬어 가지 마세요. 받은 돈은 이미 집값과 교육비로 다 나가서 한 번 멈추면 아래로만 내려가는 팔자입니다.',
-  small:'성과급을 두고 다투는 사람들 얘기는 흘려들으세요. 당신은 쉬는 시간 몇 분을 지키는 데도 힘을 다 써야 하는 팔자입니다.',
-  poor:'다툼이 생겨도 법으로 가져가지 마세요. 좋은 변호사를 붙일 형편이 못 돼서 오래 끌수록 지는 팔자입니다.',
-  weak:'쉬는 시간을 더 달라는 말은 꺼내지 마세요. 정해진 만큼만 쉬고 버텨야 무탈한 팔자입니다.',
-  all:'당신은 윗사람에게 따지거나 여럿이 모여 목소리를 내면 화를 입는 팔자입니다. 억울한 일이 있어도 참고 넘기세요. 지금은 때를 기다리세요.'
+  A:'앞선 사람의 때를 억지로 따라가면 제 기운만 상합니다. 집안보다 스스로 길을 내는 사주이니 당분간은 맡은 자리를 지키는 편이 무탈합니다.',
+  B:'집안에서 받은 복은 지키는 데 힘을 써야 오래갑니다. 쉬어 가는 사이 빠져나가기 쉬우니 손을 놓는 때를 길게 잡지 마세요.',
+  good:'사람의 기운은 가까운 사이부터 서로 물듭니다. 일이 자꾸 풀리지 않는 사람을 오래 곁에 두면 그 막힌 흐름이 내 운에도 붙으니, 안타까워도 거리를 두어야 지금의 복이 오래갑니다.',
+  small:'큰 몫을 두고 다투는 자리는 오래 끌수록 기운만 샙니다. 눈앞의 일과 정해진 쉬는 때를 지키는 편이 무탈합니다.',
+  poor:'송사로 옳고 그름을 가리려 들면 재물운이 먼저 샙니다. 억울해도 오래 끌지 않고 제자리에서 정리하는 편이 손실이 적습니다.',
+  weak:'기운이 약할 때 쉬는 몫까지 넓히려 하면 맡은 자리도 함께 흔들립니다. 정해진 간격 안에서 버티는 편이 무탈합니다.',
+  all:'윗사람과 맞서거나 여러 사람의 목소리에 섞이면 조용히 지나갈 일도 커집니다. 억울한 일은 당장 가르기보다 때를 기다리는 편이 낫습니다.'
  }
 };
 function sumFateV3(sections,a,pillars){
@@ -2182,14 +2183,20 @@ function sumFateV3(sections,a,pillars){
  // 연애: 연애와 결혼 칸에 붙은 팔자 줄을 찾아서 그 짧은 말을 씀 (집 문제는 태어난 해에 따라 둘 중 하나)
  const le=FATE_V3.love.find(x=>has('love',x[1])||has('love',x[2]));
  let lv=le&&S.love[le[0]];if(Array.isArray(lv))lv=has('love',le[1])?lv[0]:lv[1];
- const out={cautions:[S.caution[o.charAt(0)]]};
+ const out={};
  if(wk&&lv)out.verdict='당신은 '+S.origin[o]+' '+S.work[wk]+' 인연은 '+lv+' 팔자입니다.';
- // 조심할 것: 윗사람 줄만 모두에게, 나머지는 사주 조건에 맞을 때만
+ // 가장 그럴듯한 경고 하나와 순응을 권하는 경고 하나만 남긴다.
  const wl=a.families.재성.level;
- if(small)out.cautions.push(S.caution.small);
- if(wl==='weak'||wl==='absent')out.cautions.push(S.caution.poor);
- if(a.strength.label==='신약'||a.strength.label==='극약')out.cautions.push(S.caution.weak);
- out.cautions.push(S.caution.all);
+ // 실제로 순탄해 보이는 경우에만 '지금 가진 복을 지키라'는 배제 문구를 건넨다.
+ // 구조 하나만 성립했어도 신약·재물 부족·작은 회사 조건이 겹치면 좋은 팔자로 부르지 않는다.
+ const good=a.structure.success.length>0&&!a.structure.failure.length&&!small&&
+  wl!=='weak'&&wl!=='absent'&&(a.strength.label==='중화'||a.strength.label==='신강');
+ const specific=good?S.caution.good:
+  small?S.caution.small:
+  (wl==='weak'||wl==='absent')?S.caution.poor:
+  (a.strength.label==='신약'||a.strength.label==='극약')?S.caution.weak:
+  S.caution[o.charAt(0)];
+ out.cautions=unique([specific,S.caution.all]).slice(0,2);
  return out;
 }
 function addFateV3(sections,a,P,findings,inp,sinsal){
@@ -2560,7 +2567,7 @@ function formError(msg){$('form-error').textContent=msg;$('form-error').hidden=f
  */
 const LD_TL={
  total:3260,
- steps:[[0,'태어난 때의 여덟 글자를 찾고 있습니다'],[620,'다섯 기운의 비율을 계산하고 있습니다'],[1160,'10년 흐름을 살펴보고 있습니다'],[1680,'풀이를 정리하고 있습니다']],
+ steps:[[0,'태어난 때의 여덟 글자를 찾고 있습니다'],[620,'다섯 기운의 비율을 계산하고 있습니다'],[1160,'10년 흐름을 살펴보고 있습니다'],[1680,'당신의 자리를 확인하고 있습니다']],
  wink:[360,470],        // 눈꺼풀로 왼눈을 감는다
  flash1:1300,           // 첫 번째 변신(2~3프레임)
  reopen:[2030,2160],    // 감았던 왼눈을 다시 뜬다
@@ -2861,7 +2868,7 @@ function renderResult(R){
  $('loop').innerHTML=r.loop.map(t=>'<span>'+plainEsc(t)+'</span>').join('<i>→</i>')+'<i>→</i><span class="again">반복</span>';
  $('verdict').textContent=plainSajuText(r.verdict);
  $('also').innerHTML=r.secondary.length?'<b>함께 나타나는 특징</b>'+r.secondary.map(t=>'<li>'+plainEsc(t)+'</li>').join(''):'';
- const cz=$('caution'),cs=r.cautions||[];cz.hidden=!cs.length;cz.innerHTML=cs.length?'<b>조심할 것</b>'+cs.map(t=>'<p>'+plainEsc(t)+'</p>').join(''):'';
+ const cz=$('caution'),cs=r.cautions||[];cz.hidden=!cs.length;cz.innerHTML=cs.length?'<b>탈 없이 지나가려면</b>'+cs.map(t=>'<p>'+plainEsc(t)+'</p>').join(''):'';
 }
 function luckGraph(L,cycles,worstIndex){
  const cyc=cycles||L.cycles,W=420,H=230,pl=22,pr=22,pt=44,pb=50,n=cyc.length;
