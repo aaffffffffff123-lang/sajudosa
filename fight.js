@@ -13,7 +13,7 @@
  *  5-2. 맞은 자리 효과(번쩍임·충격 글자)
  *  5-3. 동전(돼지저금통 배에서 쏟아지는 금화·엽전)
  *  6. 운명 설계자(모양·얼굴 표정·자세·맞는 반응·팔다리 자르기·도마뱀 팔다리·다운·후광·정체)
- *  7. 내 손과 무기(개운 너클·살풀이 식칼·액막이 권총)
+ *  7. 내 손과 무기(맨주먹·식칼·권총)
  *  8. 진행(버팀 게이지·다운 세 번·마지막)과 입력
  */
 (function(){
@@ -70,16 +70,15 @@ const FIGHT_CSS = `
 #fight .hint{align-self:center;pointer-events:none!important;background:rgba(36,28,58,.86);color:#fff;font-size:12px;font-weight:600;line-height:1.35;border-radius:99px;padding:6px 13px;text-align:center;max-width:100%;transition:opacity .35s}
 #fight .hint.off{opacity:0}
 #fight .panel{background:rgba(255,253,246,.96);border:1px solid rgba(120,86,30,.14);border-radius:18px;box-shadow:0 3px 14px rgba(40,30,60,.24);padding:6px}
-/* 무기 고르기: 부적/화투 카드를 부채처럼 펼친다(나 기르기식 격자 버튼과 완전히 다른 짜임) */
+/* 무기 고르기: 손에 쥔 도구 세 장을 부채처럼 펼친다 */
 #fight .panel.tools{background:none;border:0;box-shadow:none;padding:0}
 #fight .tools{display:flex;justify-content:center;align-items:flex-end;padding:0 0 4px}
 #fight .tool{position:relative;width:75px;height:97px;margin:0 -7px;border:0;padding:0;background:none;color:var(--ink);
  transform:rotate(var(--fan,0deg)) translateY(var(--lift,8px));transform-origin:50% 132%;
  transition:transform .17s cubic-bezier(.3,1.5,.5,1);filter:drop-shadow(0 4px 6px rgba(30,20,50,.3))}
-#fight .tool:nth-child(1){--fan:-13deg;z-index:1}
-#fight .tool:nth-child(2){--fan:-4.4deg;z-index:2}
-#fight .tool:nth-child(3){--fan:4.4deg;z-index:3}
-#fight .tool:nth-child(4){--fan:13deg;z-index:4}
+#fight .tool:nth-child(1){--fan:-10deg;z-index:1}
+#fight .tool:nth-child(2){--fan:0deg;z-index:2}
+#fight .tool:nth-child(3){--fan:10deg;z-index:3}
 #fight .tool .card{position:relative;display:flex;flex-direction:column;align-items:center;width:100%;height:100%;box-sizing:border-box;
  border-radius:11px;background:linear-gradient(168deg,#fffdf5,#f1e7d1);border:2px solid var(--c,#b9892f);
  box-shadow:inset 0 0 0 2px rgba(255,255,255,.75);overflow:hidden;padding:6px 3px 4px}
@@ -311,10 +310,9 @@ const FIGHT_HTML = `<section id="fight" hidden>
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
   <div class="panel tools" id="tools" role="group" aria-label="무기">
-   <button class="tool on" type="button" data-tool="hand" aria-label="인간의 맨주먹"><span class="card" style="--c:#cf2f2a"><svg class="art" viewBox="0 0 48 48"><use href="#fi-fist"/></svg><span class="nm"><b>인간의</b>맨주먹</span></span></button>
-   <button class="tool" type="button" data-tool="spear" aria-label="민중의 죽창"><span class="card" style="--c:#2f9a46"><svg class="art" viewBox="0 0 48 48"><use href="#fi-spear"/></svg><span class="nm"><b>민중의</b>죽창</span></span></button>
-   <button class="tool" type="button" data-tool="knife" aria-label="살풀이 식칼"><span class="card" style="--c:#3a6ea8"><svg class="art" viewBox="0 0 48 48"><use href="#fi-knife"/></svg><span class="nm"><b>살풀이</b>식칼</span></span></button>
-   <button class="tool" type="button" data-tool="gun" aria-label="액막이 권총"><span class="card" style="--c:#6a4cc0"><svg class="art" viewBox="0 0 48 48"><use href="#fi-gun"/></svg><span class="nm"><b>액막이</b>권총</span></span><span class="ammo" id="ammo" hidden>8</span></button>
+   <button class="tool on" type="button" data-tool="hand" aria-label="맨주먹"><span class="card" style="--c:#cf2f2a"><svg class="art" viewBox="0 0 48 48"><use href="#fi-fist"/></svg><span class="nm">맨주먹</span></span></button>
+   <button class="tool" type="button" data-tool="knife" aria-label="식칼"><span class="card" style="--c:#3a6ea8"><svg class="art" viewBox="0 0 48 48"><use href="#fi-knife"/></svg><span class="nm">식칼</span></span></button>
+   <button class="tool" type="button" data-tool="gun" aria-label="권총"><span class="card" style="--c:#6a4cc0"><svg class="art" viewBox="0 0 48 48"><use href="#fi-gun"/></svg><span class="nm">권총</span></span><span class="ammo" id="ammo" hidden>8</span></button>
   </div>
  </div>
  <div class="dock" id="submitDock" hidden>
@@ -364,21 +362,12 @@ const FIGHT_ICONS = `
  <path d="M15.6 18.2l.6 5.2M20.6 16.6l.4 6M25.6 17l.3 5.6" fill="none" stroke="#c57c54" stroke-width="1.9" stroke-linecap="round"/>
  <g fill="#fbf4e3" stroke="#241c2b" stroke-width="1.5"><rect x="11.4" y="23.2" width="21" height="4.4" rx="1.4" transform="rotate(5 22 25.4)"/><rect x="12.4" y="29.4" width="17.8" height="3.7" rx="1.2" transform="rotate(5 21 31.2)"/></g>
 </symbol>
-<symbol id="fi-spear" viewBox="0 0 48 48">
- <path d="M8 42L35 13" stroke="#241c2b" stroke-width="7.4" stroke-linecap="round"/>
- <path d="M8 42L35 13" stroke="#c7ad63" stroke-width="4.8" stroke-linecap="round"/>
- <g stroke="#89702f" stroke-width="2" stroke-linecap="round"><path d="M14.5 37l2.6-2.6M20.8 30.4l2.6-2.6M27 24l2.6-2.6"/></g>
- <path d="M33 15l9-9-2.2 11.4L32 16z" fill="#efe3be" stroke="#241c2b" stroke-width="2.3" stroke-linejoin="round"/>
- <g stroke="#5e4a2c" stroke-width="2.1" stroke-linecap="round"><path d="M30.5 19.5l3.4-3.4M32.4 21.4l3.4-3.4"/></g>
- <path d="M13 39c-3.2-1-5.2 1-7.4 0 1.1-2.1 1.1-4.2 0-6.3 3.2 1 5.2-1 7.4 0-1.1 2.1-1.1 4.2 0 6.3z" fill="#d8352a" stroke="#241c2b" stroke-width="1.7" stroke-linejoin="round"/>
-</symbol>
 <symbol id="fi-knife" viewBox="0 0 48 48">
- <path d="M8 40l9-9" stroke="#241c2b" stroke-width="8" stroke-linecap="round"/><path d="M8 40l9-9" stroke="#3a2f2a" stroke-width="5" stroke-linecap="round"/>
- <circle cx="11.5" cy="36.5" r="1.3" fill="#d9c08a"/><circle cx="14.5" cy="33.5" r="1.3" fill="#d9c08a"/>
- <path d="M16 31L33 14c5-1 9 2.2 9 7.2V25c0 3-2 5-5 5H21z" fill="#e7eef3" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
- <path d="M20 29L35.5 16" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
- <path d="M16 31l5 4" stroke="#241c2b" stroke-width="2.5" stroke-linecap="round"/>
- <path d="M17 33c-4 .2-7 3.2-6 7.2 2-2 4-1.1 6 0-1.2-3 .8-5.2 0-7.2z" fill="#fbf6ec" stroke="#241c2b" stroke-width="1.6" stroke-linejoin="round"/>
+ <path d="M7 41l11-11" stroke="#241c2b" stroke-width="9" stroke-linecap="round"/><path d="M7 41l11-11" stroke="#3a2f2a" stroke-width="5.5" stroke-linecap="round"/>
+ <circle cx="10.5" cy="37.5" r="1.3" fill="#d9c08a"/><circle cx="14.5" cy="33.5" r="1.3" fill="#d9c08a"/>
+ <path d="M16 31L30.5 13.5 42 11.5l-.8 11.2L26 34H20z" fill="#dce5eb" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M22 31.5L39.5 17" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+ <path d="M17 29.8l4.2 4.2" stroke="#717985" stroke-width="2.2" stroke-linecap="round"/>
 </symbol>
 <symbol id="fi-gun" viewBox="0 0 48 48">
  <path d="M6 16h35v9H24l-2 4-1 11h-9l1.6-13-2.6-2z" fill="#3b3d45" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
@@ -386,8 +375,6 @@ const FIGHT_ICONS = `
  <path d="M26 16v9M30 16v9M34 16v9" stroke="#2a2b32" stroke-width="1.3"/>
  <path d="M20 25c0 3 2 5 5 5" fill="none" stroke="#241c2b" stroke-width="2.3" stroke-linecap="round"/>
  <path d="M41 18h3" stroke="#241c2b" stroke-width="2.6" stroke-linecap="round"/>
- <g transform="rotate(13 14 41)"><rect x="9" y="35" width="10" height="12.5" rx="1.2" fill="#f4c73e" stroke="#241c2b" stroke-width="1.8"/><path d="M14 37v8.5M11.6 40h4.8M11.6 43h4.8" stroke="#c0291d" stroke-width="1.5" stroke-linecap="round"/></g>
- <path d="M12 34l1.6 2.2" stroke="#241c2b" stroke-width="1.6" stroke-linecap="round"/>
 </symbol>
 `;
 
@@ -823,7 +810,7 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
   constructor(mesh,o={}){
    this.mesh=mesh;this.o=o;mesh.userData.flesh=this;
    this.kind=o.kind||'skin';this.center=o.center?o.center.clone():null;this.axisA=o.axisA?o.axisA.clone():null;this.axisB=o.axisB?o.axisB.clone():null;
-   this.maxFrac=o.maxFrac==null?.42:o.maxFrac;this.maxAbs=o.maxAbs==null?.12:o.maxAbs;this.minEdge=o.minEdge==null?.0055:o.minEdge;this.maxVerts=o.maxVerts||70000;
+   this.maxFrac=o.maxFrac==null?.42:o.maxFrac;this.maxAbs=o.maxAbs==null?.12:o.maxAbs;this.minEdge=o.minEdge==null?.0055:o.minEdge;this.maxVerts=o.maxVerts||32000;
    this.trans=[];this.toff=null;this.tlist=null;this.dirtyBounds=false;
    this._rayIdle=0;this._rayIdleKind='';this._rayDead=false;
    mesh.frustumCulled=true;
@@ -1103,7 +1090,7 @@ else if(this._refitRay(verts)){
    const ins=(x,y,z)=>x>bx0&&x<bx1&&y>by0&&y<by1&&z>bz0&&z<bz1&&inside(x,y,z);
    // 꼭짓점마다 한 번만 따진다(삼각형마다 세 번씩 따지던 것과 결과는 같다)
    const vin=new Uint8Array(n0);for(let i=0;i<n0;i++)if(ins(P[i*3],P[i*3+1],P[i*3+2]))vin[i]=1;
-   const addMid=(u,v)=>{if(len2(u,v)<=me2)return;const k=key(u,v);if(!mids.has(k)){mids.set(k,n0+added);newV.push(u,v);added++;}};
+   const addMid=(u,v)=>{if(n0+added>=this.maxVerts||len2(u,v)<=me2)return;const k=key(u,v);if(!mids.has(k)){mids.set(k,n0+added);newV.push(u,v);added++;}};
    for(let t=0;t<T;t++){const a=idx[t*3],b=idx[t*3+1],c=idx[t*3+2];
     if(!(vin[a]||vin[b]||vin[c]||ins((P[a*3]+P[b*3]+P[c*3])/3,(P[a*3+1]+P[b*3+1]+P[c*3+1])/3,(P[a*3+2]+P[b*3+2]+P[c*3+2])/3)))continue;
     addMid(a,b);addMid(b,c);addMid(c,a);}
@@ -1480,7 +1467,6 @@ const AUDIO=(()=>{
   if(part==='halo'){haloT(out(pan,.3),ctx.currentTime,p,tool==='gun');return;}
   if(tool==='hand'){const big=kind!=='jab';fx(head?(big?'faceH':'face'):(big?'bodyH':'body'),big?1:.9,pan,big?.92:.98,p);}
   else if(tool==='knife')fx(kind==='slash'?'slash':'stab',kind==='slash'?.75:1,pan,1,p);
-  else if(tool==='spear'){if(kind==='slash')spearDrag(clamp(p,.5,1.6));else{spearStab(clamp(p,.6,1.8));if(!head)slap(.4,.05);}}
   else if(tool==='gun')fx(head?'skull':'flesh',.95,pan,1,p);
  }
  function crownT(o,t,p){ring(o,t,[880,2070,3510,5200],.22,.16*p);osc(o,t,{type:'triangle',f0:300,f1:150,dur:.05,peak:.4});clicks(o,t+.01,10,.25,5200,.22);}
@@ -1539,15 +1525,6 @@ const AUDIO=(()=>{
  // 살점이 바닥에 철퍽: 젖은 저음 + 짧은 찰싹
  let slapT=0;function slap(p=.6,size=.04){if(!ready())return;const t=ctx.currentTime;if(t<slapT)return;slapT=t+.03;const o=out(R(-.5,.5),.14),d=drive(o,1.6),j=clamp(.03/Math.max(size,.012),.6,1.6);
   osc(d,t,{f0:150*j,f1:60*j,dur:.07,peak:.6*p,type:'triangle'});nz(d,t,{dur:.05,peak:.5*p,f:900*j,f1:360,q:.9});nz(d,t+.004,{dur:.03,peak:.25*p,f:2200,type:'lowpass',q:.7});}
- // 창으로 찌르기: 날카로운 쉭 + 꿰뚫는 질척 + 묵직한 쿵
- function spearStab(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.15,.15),.16),d=drive(o,2.4);
-  nz(d,t,{dur:.025,peak:.7,f:5200,f1:2600,q:1.3});
-  const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();s.buffer=noise;f.type='bandpass';f.Q.value=7;f.frequency.setValueAtTime(420,t+.01);f.frequency.exponentialRampToValueAtTime(1500,t+.17);env(g.gain,t+.01,.9*p,.006,.18);s.connect(f);f.connect(g);g.connect(d);s.start(t+.01,Math.random());s.stop(t+.24);track(s);
-  osc(d,t,{f0:128,f1:52,dur:.14,peak:.85*p});osc(d,t+.002,{f0:60,f1:36,dur:.2,peak:.5*p,a:.004});
-  clicks(d,t+.012,3,.05,2200,.3);}
- // 창을 끌며 긋기: 길게 찢기는 소리 + 질척
- function spearDrag(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.2,.2),.14),d=drive(o,2);tearNoise(d,t,.28,1700,.85*p,R(40,56));
-  nz(d,t+.02,{dur:.14,peak:.4*p,f:800,f1:340,type:'lowpass',q:.8});osc(d,t,{f0:120,f1:70,dur:.1,peak:.3*p});}
  // 머리가 베여 떨어짐: 묵직한 썩둑 + 뼈 끊김 + 왈칵
  function behead(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.1,.1),.2),d=drive(o,2.6);
   nz(d,t,{dur:.008,peak:.85*p,f:3200,type:'highpass',q:.5});osc(d,t,{f0:110,f1:42,dur:.16,peak:.9*p});
@@ -1602,7 +1579,6 @@ const AUDIO=(()=>{
    case 'final':voice(t,{dur:1.7,f0:128*P,fm:110*P,f1:66*P,v1:'eo',v2:'eu',breath:.42,peak:.34*k,trem:4.5,vib:.03,rough:.1,bright:2000,wet:.35});breath(t+1.6,.7,.2,800,500);break;
   }
  }
-
  /* ---- 수혜자들과 되살림 ---- */
  // 웅성거림: 짧은 애원 목소리 서넛이 겹친다
  function murmur(k=1){if(!ready())return;const t=Math.max(ctx.currentTime+.01,duckUntil);for(let i=0;i<4;i++){const tt=t+i*R(.06,.14),P=R(.9,1.12);voice(tt,{dur:R(.22,.38),f0:(170+i*22)*P,fm:(215+i*20)*P,fmAt:.6,f1:(185+i*16)*P,v1:pick(['eo','a','e']),v2:'m',breath:.4,peak:.14*k,vib:.03,vibHz:6.5,rough:.07,bright:2600,pan:R(-.5,.5)});}}
@@ -1627,7 +1603,7 @@ const AUDIO=(()=>{
  function stamp(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(R(-.3,.3),.18),d=drive(o,1.8);
   osc(d,t,{f0:160,f1:55,dur:.13,peak:.9*k});nz(o,t,{dur:.035,peak:.45*k,f:2600,type:'highpass',q:.5});nz(d,t+.004,{dur:.1,peak:.3*k,f:900,f1:300,q:.8});}
  return {unlock,murmur,cheer,charge,twinkle,boom,stamp,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,tablet,gunshot,dry,reload(){},spurt,pull,drip,fall,
-  whiff(){},voice:say,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,spearStab,spearDrag,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
+  whiff(){},voice:say,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
   render(name,args,dur){if(!ctx)return Promise.resolve(null);const api=this;return bakeOne(()=>api[name](...(args||[])),dur||1,true);}};
@@ -2353,17 +2329,26 @@ const BLOOD=(()=>{
   // 이 자국에 아직 그려지고 있던 줄기는 여기서 멈춘다(줄기를 돌리는 중에 불릴 수 있어 빼는 건 줄기 돌기에서 한다)
   for(const r of rivs)if(r.b===b)r.dead=true;
  }
- // 얼굴에 흐르는 피는 양을 정해 둔다(얼굴이 피로 다 덮이면 표정이 안 보인다).
- // 다 차면 예전 핏줄기는 2초 동안 옅어지며 사라지고 새로 흐르기 시작한다
+ function discardBank(b){
+  if(!b)return;b.mesh.removeFromParent();b.g.dispose();if(b.fade!=null)b.mesh.material.dispose();
+  let i=bankList.indexOf(b);if(i>=0)bankList.splice(i,1);i=fading.indexOf(b);if(i>=0)fading.splice(i,1);
+ }
+ // 흐르는 피는 부위별 양을 정해 둔다(얼굴이 피로 다 덮이거나 난타 중 자국이 무한히 쌓이지 않게 한다).
+ // 다 차면 예전 핏줄기는 짧게 옅어지며 사라지고 새로 흐르기 시작한다.
  const FACE_SEG=/^(head|jaw)$/,fading=[];
  function bank(seg,kind){
   const key=seg+':'+kind,face=FACE_SEG.test(seg)&&kind!=='tear',bone=E.bones[seg];let b0=banks[key];
   // 잘려 나간 뼈에 붙은 묶음이면(같은 이름으로 다시 자란 경우) 새로 만든다
   if(b0&&b0.bone!==bone){delete banks[key];b0=null;}
   if(b0&&b0.count<b0.MAXP-(face?20:80))return b0;
-  if(b0&&face)fadeBank(b0,key);
+  // 몸통도 가득 찬 핏줄기 묶음을 계속 쌓아 두지 않는다. 새 묶음으로 갈아타며 옛것은 짧게 사라진다.
+  if(b0){
+   // 한 부위·한 종류에는 현재 묶음과 사라지는 묶음 하나만 둔다. 난타 중에도 옛 피줄기가 무한 누적되지 않는다.
+   for(let i=bankList.length-1;i>=0;i--){const old=bankList[i];if(old!==b0&&old.bone===bone&&old.kind===kind&&old.fade!=null)discardBank(old);}
+   fadeBank(b0,key);
+  }
   if(!bone)return null;
-  const MAXP=face?260:1400,P=new Float32Array(MAXP*2*3),N=new Float32Array(MAXP*2*3),I=new Uint32Array(MAXP*6);
+  const MAXP=face?260:800,P=new Float32Array(MAXP*2*3),N=new Float32Array(MAXP*2*3),I=new Uint32Array(MAXP*6);
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P,3).setUsage(THREE.DynamicDrawUsage));g.setAttribute('normal',new THREE.BufferAttribute(N,3).setUsage(THREE.DynamicDrawUsage));g.setIndex(new THREE.BufferAttribute(I,1).setUsage(THREE.DynamicDrawUsage));g.setDrawRange(0,0);
   const m=new THREE.Mesh(g,kind==='tear'?tearMat:red);m.frustumCulled=false;m.castShadow=false;m.receiveShadow=true;m.renderOrder=2;m.userData.gore=kind!=='tear';m.userData.bloodOverlay=true;bone.add(m);
   const b={seg,kind,bone,mesh:m,g,P,N,I,count:0,icount:0,MAXP};bankList.push(b);return banks[key]=b;
@@ -2730,7 +2715,7 @@ if(flDirty&&flUploadAcc>=1/15){
  flDirty=false;
  flUploadAcc=0;
 }
-  for(let i=fading.length-1;i>=0;i--){const b=fading[i];b.fade-=dt/2;b.mesh.material.opacity=Math.max(0,b.fade)*(b.op0==null?1:b.op0);
+  for(let i=fading.length-1;i>=0;i--){const b=fading[i];b.fade-=dt/1.35;b.mesh.material.opacity=Math.max(0,b.fade)*(b.op0==null?1:b.op0);
    if(b.fade<=0){b.mesh.removeFromParent();b.g.dispose();b.mesh.material.dispose();const k=bankList.indexOf(b);if(k>=0)bankList.splice(k,1);fading.splice(i,1);}}
   const gv=PREF.blood;for(const b of bankList){b.mesh.visible=b.kind==='tear'||gv;}
   for(const m of decals)if(m.userData.gore)m.visible=gv;
@@ -2821,11 +2806,15 @@ pool.fill(0);
   for(const l of lumps)l.mesh.removeFromParent();lumps.length=0;
  }
  /* 살이 찌그러지면 그 뼈에 붙은 피(자국·줄기·방울·상처 자리)도 같이 옮긴다. fn(v: 뼈 좌표 점)이 v를 옮기고 옮겼으면 true */
- const _ov=V3();
+ const _ov=V3(),_ov0=V3(),_ovD=V3();
  function deformOverlays(bone,fn){
-  for(const m of decals){if(m.parent!==bone)continue;const P=m.geometry.attributes.position;let ch=false;for(let i=0;i<P.count;i++){_ov.set(P.getX(i),P.getY(i),P.getZ(i));if(fn(_ov)){P.setXYZ(i,_ov.x,_ov.y,_ov.z);ch=true;}}if(ch){P.needsUpdate=true;m.geometry.computeBoundingSphere();}if(m.userData.center)fn(m.userData.center);}
+  // 작은 상처 스티커는 중심의 이동량만 한 번 구해 통째로 옮긴다. 꼭짓점마다 같은 근처 변형을 다시 찾지 않는다.
+  for(const m of decals){if(m.parent!==bone||!m.userData.center)continue;_ov.copy(m.userData.center);_ov0.copy(_ov);if(!fn(_ov))continue;
+   _ovD.subVectors(_ov,_ov0);m.userData.center.add(_ovD);if(m.userData.grow)m.userData.grow.center.add(_ovD);
+   const P=m.geometry.attributes.position;for(let i=0;i<P.count;i++)P.setXYZ(i,P.getX(i)+_ovD.x,P.getY(i)+_ovD.y,P.getZ(i)+_ovD.z);
+   P.needsUpdate=true;if(m.geometry.boundingSphere)m.geometry.boundingSphere.center.add(_ovD);else m.geometry.computeBoundingSphere();}
   for(const b of bankList){if(b.bone!==bone||!b.pts)continue;let ch=false;
-   for(let i=0;i<b.count;i++){const q=b.pts[i];if(fn(q.p)){ch=true;const k=i*6;for(const o of [0,3]){_ov.set(b.P[k+o],b.P[k+o+1],b.P[k+o+2]);fn(_ov);b.P[k+o]=_ov.x;b.P[k+o+1]=_ov.y;b.P[k+o+2]=_ov.z;}}}
+   for(let i=0;i<b.count;i++){const q=b.pts[i];_ov0.copy(q.p);if(fn(q.p)){ch=true;_ovD.subVectors(q.p,_ov0);const k=i*6;for(const o of [0,3]){b.P[k+o]+=_ovD.x;b.P[k+o+1]+=_ovD.y;b.P[k+o+2]+=_ovD.z;}}}
    if(ch){b.g.attributes.position.needsUpdate=true;b.g.computeBoundingSphere();}}
   for(const m of rims)if(m.parent===bone)fn(m.position);
   for(const l of lumps)if(l.bone===bone)fn(l.mesh.position);
@@ -3749,8 +3738,8 @@ const F=this.face=grp(head,[0,.215,0],'face');
   const M=this.M;
   const cr=this.crown=grp(this.face,[0,.205,-.015],'crown');cr.rotation.x=-.05;
   this.crownRest={p:cr.position.clone(),r:cr.rotation.clone()};
-  // 속관(검은 칠) 위에 서양 금관을 씌우고, 그 위에 면류관 판을 얹는다
-  mk(cylGeo(.15,.166,.12,32),M.lacquer,cr,{p:[0,.03,0],part:'crown'});
+  // 속관도 붉은 칠로 마감해 떨어졌을 때 검은 원통 덩어리로 보이지 않게 한다
+  mk(cylGeo(.15,.166,.12,32),M.lacRed,cr,{p:[0,.03,0],part:'crown'});
   mk(cylGeo(.179,.183,.054,48,true),M.gold,cr,{p:[0,-.006,0],part:'crown'});
   for(const y of [.021,-.033])mk(new THREE.TorusGeometry(.181,.0055,6,56),M.goldD,cr,{p:[0,y,0],r:[PI/2,0,0],part:'crown',cast:false});
   // 금관 뾰족 장식(면판 아래까지만 솟는다) + 끝에 진주, 테에는 자수정·옥
@@ -3763,11 +3752,13 @@ const F=this.face=grp(head,[0,.215,0],'face');
   }
   // 정면: 빛살 속 삼각형 눈
   mk(new THREE.PlaneGeometry(.082,.082),M.crownEye,cr,{p:[0,.026,.187],r:[-.04,0,0],part:'crown',cast:false});
-  // 면판: 위 검정, 아래 붉음
+  // 면판: 떨어져 회전해도 검은 상자처럼 보이지 않도록 붉은 칠과 금 테로 마감한다
   const board=grp(cr,[0,.115,0]);board.rotation.x=.12;this.board=board;
-  mk(new THREE.BoxGeometry(.45,.016,.27),M.lacquer,board,{p:[0,.01,0],part:'crown'});
+  mk(new THREE.BoxGeometry(.45,.016,.27),M.lacRed,board,{p:[0,.01,0],part:'crown'});
   mk(new THREE.BoxGeometry(.44,.006,.26),M.lacRed,board,{p:[0,-.002,0],part:'crown',cast:false});
   mk(new THREE.BoxGeometry(.46,.004,.28),M.gold,board,{p:[0,.0005,0],part:'crown',cast:false});
+  for(const z of [-.121,.121])mk(new THREE.BoxGeometry(.452,.004,.018),M.goldD,board,{p:[0,.021,z],part:'crown',cast:false});
+  for(const x of [-.211,.211])mk(new THREE.BoxGeometry(.018,.004,.26),M.goldD,board,{p:[x,.021,0],part:'crown',cast:false});
   // 앞뒤 구슬줄(류): 줄 하나를 메시 하나로 합친다
   this.strings=[];
   const beadMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.22,metalness:.05,envMapIntensity:.5});this.disposables.push(beadMat);
@@ -4535,8 +4526,8 @@ Object.assign(Emperor.prototype,{
   if(m===this.belly&&this.tie&&!this.tie.userData.detached){const T=this.tie.geometry.attributes.position;let ch=false;for(let i=0;i<T.count;i++){_dfv2.set(T.getX(i),T.getY(i),T.getZ(i));if(moveIn(_dfv2,.03)){T.setXYZ(i,_dfv2.x,_dfv2.y,_dfv2.z);ch=true;}}if(ch){T.needsUpdate=true;this.tie.geometry.computeVertexNormals();this.tie.geometry.computeBoundingSphere();delete this.tie.geometry.userData.fastGrid;}}
  },
 });
-/* ===== 6-4-3. 머리: 조각조각 뜯기 → 썰려 떨어짐 → 파충류 머리로 다시 자람 =====
- * 총·창에 머리가 파이고 살점이 뜯겨 나가다가, 목을 베이거나 머리가 너무 상하면 대가리째 떨어져 나간다.
+/* ===== 6-4-3. 머리: 상처와 살점 → 통째로 떨어짐 → 파충류 머리로 다시 자람 =====
+ * 총·칼에 머리가 파이고 살점이 튀다가, 목을 베이거나 머리가 너무 상하면 대가리째 떨어져 나간다.
  * 그 자리에서 초록 비늘 파충류 머리가 쑥 자라 올라온다(세로 동공 눈·뾰족한 이빨·날름거리는 혀). */
 const REP_TOOTH=()=>GEO.repTooth||(GEO.repTooth=(()=>{const g=new THREE.ConeGeometry(1,1,6);g.translate(0,-.5,0);return g;})());
 Object.assign(Emperor.prototype,{
@@ -4545,10 +4536,9 @@ Object.assign(Emperor.prototype,{
   if(this.headGone)return;
   const activeSkull=this.headKind==='rep'?this.repSkull:this.skull;
   this.headTear=(this.headTear||0)+amt;
-  // 중간중간 살점이 큼직하게 뜯겨 나간다("조각조각")
+  // 별도 눈·입·수염을 허공에 남기는 부분 머리 절단은 하지 않고 살점 파편만 튄다.
   if(PREF.blood&&this.headTear>2&&(this.headTear-amt|0)!==(this.headTear|0)){
    CHUNKS.burst(pt.clone().addScaledVector(n,.01),2+(Math.random()*2|0),n,.03,this.chunkKind({obj:activeSkull,part:'head'}),{speed:1.3});
-   if(Math.random()<.5)this.tearHeadPiece(pt,n,dir);
   }
   if(this.headTear>=7)this.severHead(dir,{torn:true});
  },
@@ -4780,7 +4770,7 @@ Object.assign(Emperor.prototype,{
   if(isHead){this.haloJolt(dir,kickP);this.repAfterHit(blunt?kind!=='jab':true);}
   // 얼굴 표정·목소리
   if(isHead){this.doFlinch('pain',1);}else if(part==='belly'){this.doFlinch(blunt?'oof':'pain',1);}else this.doFlinch(gun?'shock':'grunt',.9);
-  this.voiceHit(tool,part,P,gun||sharp||tool==='spear');
+  this.voiceHit(tool,part,P,gun||sharp);
   // 부위별
   if(blunt)this.bluntHit(part,seg,pt,n,dir,tool,kind,P,h);
   else this.makeWound(seg,pt,n,dir,tool,kind,h,false);
@@ -4793,22 +4783,21 @@ Object.assign(Emperor.prototype,{
   if(gun&&!down)this.gunReact(part,seg,pt,n,dir);
   if(gun&&HEAD_FLESH.test(part)&&this.headKind!=='rep')this.progressHeadGun(part,seg,pt,n,dir);
   if(this.headKind!=='rep'&&(part==='eyeL'||part==='eyeR')&&!gun){
-   const i=part==='eyeL'?0:1,add=(tool==='knife'||tool==='spear')?(kind==='stab'?2:.8):blunt?(kind==='jab'?.45:.75):0;
+   const i=part==='eyeL'?0:1,add=tool==='knife'?(kind==='stab'?2:.8):blunt?(kind==='jab'?.45:.75):0;
    if(add&&!this.eyes[i].ejected){this.eyeGunHits[i]=(this.eyeGunHits[i]||0)+add;if(this.eyeGunHits[i]>=2)this.ejectEye(i,n,dir);}
   }
   if(this.headKind==='rep'&&(part==='repEyeL'||part==='repEyeR')){
    const i=part==='repEyeL'?0:1;
-   const add=gun?1:(tool==='knife'||tool==='spear')?(kind==='stab'?2:.8):blunt?(kind==='jab'?.45:.75):0;
+   const add=gun?1:tool==='knife'?(kind==='stab'?2:.8):blunt?(kind==='jab'?.45:.75):0;
    if(add){this.repEyeHits[i]=(this.repEyeHits[i]||0)+add;if(this.repEyeHits[i]>=2)this.ejectRepEye(i,n,dir);}
   }
   // 머리가 조각조각 뜯기고, 심해지면 떨어져 나간다 / 목을 베면 바로 썰린다
   if(!this.headGone){
    if(HEAD_FLESH.test(part)){
     if(gun)this.headWear(1,pt,n,dir);
-    else if(tool==='spear')this.headWear(kind==='slash'?1.3:2.3,pt,n,dir);
     else if(sharp&&kind==='slash')this.headWear(1.15,pt,n,dir);
    }
-   if(part==='neck'&&(sharp||tool==='spear'))this.severHead(dir);
+   if(part==='neck'&&sharp)this.severHead(dir);
   }
   if(sharp&&!down&&(kind==='stab')&&!/^(arm|hand)/.test(part)&&Math.random()<.85){const side=this.handFor(pt);this.doAct('clutch',{side,seg,lp:this.bones[seg].worldToLocal(pt.clone()),ln:n.clone().transformDirection(_invB(this.bones[seg])),dur:1.4,prio:1});}
   // 막기 시작(두 번째 다운 이후, 얼굴을 연달아 맞으면)
@@ -4819,7 +4808,7 @@ Object.assign(Emperor.prototype,{
   // 게이지가 한 대에 눈에 띄게 줄어드는 양(실제로 깎이는 양은 진행 시간표가 정한다)
   out.vis=({jab:2.2,hook:3.4,upper:3.8,stab:3.6,slash:1,shot:isHead?4:3})[kind]||2;if(down)out.vis*=.5;if(out.big)out.vis+=2;
   // 게이지 피해
-  const base={hand:kind==='hook'||kind==='upper'?.3:.23,knife:kind==='slash'?.13:.34,spear:kind==='slash'?.2:.5,gun:.44}[tool]||.2;
+  const base={hand:kind==='hook'||kind==='upper'?.3:.23,knife:kind==='slash'?.13:.34,gun:.44}[tool]||.2;
   out.dmg=base*(isHead?1.15:1)*(down?.35:1);
   return out;
  },
@@ -4843,7 +4832,7 @@ Object.assign(Emperor.prototype,{
   if(h.part==='belly')return 'belly';
   return 'cloth';
  },
- /* 눈에 보이는 살 변형: 주먹은 움푹(dent), 총·창은 파임(crater), 칼·창긋기는 베임(groove).
+ /* 눈에 보이는 살 변형: 주먹은 움푹(dent), 총은 파임(crater), 칼긋기는 베임(groove).
   * 맞을 때마다 꼭짓점이 실제로 옮겨져 되돌아오지 않는다 → 누적될수록 확실히 함몰·파임. */
  applyDeform(part,seg,pt,n,dir,tool,kind,h){
   if(!this.fleshList||!PREF.deform)return;
@@ -4861,14 +4850,6 @@ Object.assign(Emperor.prototype,{
    this.deform('crater',pt,into,R,depth,{soak:.55,jag:.32});
    if(PREF.blood)CHUNKS.burst(pt.clone().addScaledVector(n,.008),2+(Math.random()*3|0),n,headF?.02:.028,this.chunkKind(h),{speed:1.2,back:into});
    this._gunLine(seg,pt,n,into,h);
-  }else if(tool==='spear'){
-   if(kind==='slash'&&h.slashFrom){
-    this.deform('groove',pt,into,.013,.03,{bW:h.slashFrom,soak:.45,jag:.3});
-    if(PREF.blood)CHUNKS.burst(pt,2+(Math.random()*2|0),n,.024,this.chunkKind(h),{speed:1});
-   }else{
-    this.deform('crater',pt,into,.02,headF?.045:.06,{soak:.6,jag:.26});
-    if(PREF.blood)CHUNKS.burst(pt.clone().addScaledVector(n,.01),3+(Math.random()*3|0),n,.03,this.chunkKind(h),{speed:1.45,back:into});
-   }
   }else if(tool==='knife'){
    if(kind==='slash'&&h.slashFrom)this.deform('groove',pt,into,headF?.0085:.0075,.013,{bW:h.slashFrom,soak:.4});
    else this.deform('crater',pt,into,.012,.045,{soak:.45,jag:.2});
@@ -5467,7 +5448,7 @@ unmaskHead(pt,n,dir){
   }
   if((h.part==='eyeL'||h.part==='eyeR')&&!this.eyes[h.part==='eyeL'?0:1].ejected){
    const i=h.part==='eyeL'?0:1;this.eyes[i].ruined=true;this.swellU[i]=Math.max(this.swellU[i],.7);
-   if((tool==='knife'||tool==='spear')&&kind==='stab')this.ejectEye(i,n,dir);
+   if(tool==='knife'&&kind==='stab')this.ejectEye(i,n,dir);
   }
  },
  angleOnSurface(a,b,n){const d=V3().subVectors(b,a).normalize();const u=V3().crossVectors(n,Math.abs(n.y)>.9?V3(1,0,0):V3(0,1,0)).normalize(),v=V3().crossVectors(n,u);return Math.atan2(d.dot(v),d.dot(u));},
@@ -5497,11 +5478,8 @@ unmaskHead(pt,n,dir){
  knockCrown(dir){
   if(this.crownOn===false)return;this.crownOn=false;
   const c=this.crown;scene.updateMatrixWorld(true);scene.attach(c);
-  this.bits=this.bits||[];this.bits.push({obj:c,v:V3(dir.x*1.8+rnd(-.5,.5),rnd(1.6,2.6),dir.z*.8-rnd(.2,.8)),w:V3(rnd(-6,6),rnd(-8,8),rnd(-6,6)),r:.06,bounce:.25,sound:'crown',crown:true});
+  this.bits=this.bits||[];this.bits.push({obj:c,v:V3(dir.x*2.2+rnd(-.8,.8),rnd(1.8,2.8),dir.z*.8-rnd(.2,.8)),w:V3(rnd(-6,6),rnd(-8,8),rnd(-6,6)),r:.06,bounce:.25,sound:'crown',crown:true,ttl:2.5});
   AUDIO.crown(1.2);
-  // 머리 위 상투가 드러난다
-  this.topknot=mk(sphereGeo(20),this.M.hair,this.face,{p:[0,.235,-.03],s:[.075,.06,.075],part:'head'});this.topknot.userData.seg='head';this.parts.push(this.topknot);
-  mk(cylGeo(.004,.004,.2,6),this.M.gold,this.topknot,{r:[0,0,PI/2],s:[1/.075,1/.06,1/.075],cast:false});
  },
 
 // 교체되거나 장면에서 버린 전용 geometry를 GPU와 보관 목록에서 함께 정리한다.
@@ -5838,12 +5816,11 @@ const VM=(()=>{
  const M={skin:S('#e8ab86',{roughness:.5}),skinD:S('#cf8f6c',{roughness:.55}),nail:S('#f2c9b4',{roughness:.3}),cuff:S('#46557a',{roughness:.7}),
   steelD:S('#5f6670',{roughness:.4,metalness:.8}),blade:S('#d7dee4',{roughness:.16,metalness:.92}),edge:S('#f4f8fb',{roughness:.08,metalness:.95}),
   handle:S('#2b2522',{roughness:.45}),rivet:S('#d8c08a',{roughness:.3,metalness:.8}),gunD:S('#1b1c21',{roughness:.5,metalness:.4}),brass:S('#d9a84a',{roughness:.28,metalness:.88}),
-  tape:S('#e7ddc8',{roughness:.86}),bamboo:S('#c7ad63',{roughness:.5}),bambooD:S('#9c8038',{roughness:.55}),bambooTip:S('#efe4c0',{roughness:.4}),rope:S('#6b5330',{roughness:.82}),
-  blood:S('#1d4bc4',{roughness:.12}),bloodD:S('#163aa0',{roughness:.14})};
+  tape:S('#e7ddc8',{roughness:.86}),blood:S('#1d4bc4',{roughness:.12})};
  // 칼이 몸에 들어간 만큼은 안 보이게: 피부 자리에 자르는 면을 두고 칼날·칼에 묻은 피에만 적용한다
  const clip=new THREE.Plane(new THREE.Vector3(0,0,1),1e3);
  renderer.localClippingEnabled=true;
- for(const m of [M.blade,M.edge,M.blood,M.bambooTip,M.bloodD])m.clippingPlanes=[clip];
+ for(const m of [M.blade,M.edge,M.blood])m.clippingPlanes=[clip];
  let clipOn=false;
  function setClip(T,dir){clip.normal.copy(dir).negate();clip.constant=dir.dot(T);clipOn=true;}
 
@@ -5874,28 +5851,18 @@ const VM=(()=>{
   mk(cylGeo(.028,.034,.14,16),M.skin,g,{p:[0,.055,0]});const cf=mk(cylGeo(.042,.042,.03,18),M.cuff,g,{p:[0,.115,0]});return {g,sl,cf};}
  const R={hand:grp(root),arm:arm()},L={hand:grp(root),arm:arm()};
  R.fist=fist(R.hand,1);L.fist=fist(L.hand,-1);R.fist.scale.setScalar(1.02);L.fist.scale.setScalar(1.02);
- // 칼: 식칼(날이 앞으로, 날 끝은 아래)
+ // 칼: 폭이 넓고 날선이 곧은 부엌 식도
  const knife=grp(R.hand);knife.scale.setScalar(1.25);
  const KREACH=.29*1.25;// 손에서 칼끝까지
  {const k=knife;const hd=grp(k,[0,.004,-.01]);mk(new THREE.BoxGeometry(.022,.026,.11),M.handle,hd,{p:[0,0,0]});for(const z of [-.035,0,.033])mk(cylGeo(.0042,.0042,.024,8),M.rivet,hd,{p:[0,0,z],r:[0,0,PI/2]});
-  mk(new THREE.BoxGeometry(.026,.03,.01),M.steelD,k,{p:[0,.004,.05]});
-  const sh=new THREE.Shape();sh.moveTo(0,-.016);sh.lineTo(.17,-.016);sh.quadraticCurveTo(.215,-.014,.235,.004);sh.lineTo(.2,.016);sh.lineTo(0,.017);sh.closePath();
+  mk(new THREE.BoxGeometry(.034,.045,.012),M.steelD,k,{p:[0,.002,.05]});
+  const sh=new THREE.Shape();sh.moveTo(0,-.04);sh.lineTo(.18,-.04);sh.quadraticCurveTo(.218,-.038,.235,-.009);sh.lineTo(.235,.004);sh.quadraticCurveTo(.19,.038,.025,.04);sh.lineTo(0,.032);sh.closePath();
   const bg=new THREE.ExtrudeGeometry(sh,{depth:.0026,bevelEnabled:true,bevelThickness:.0008,bevelSize:.0012,bevelSegments:1,curveSegments:10});bg.translate(0,0,-.0013);
   mk(bg,M.blade,k,{p:[0,.004,.054],r:[0,-PI/2,0]});
-  mk(new THREE.BoxGeometry(.0009,.0035,.175),M.edge,k,{p:[0,-.011,.145],cast:false});
+  mk(new THREE.BoxGeometry(.0009,.0035,.18),M.edge,k,{p:[0,-.036,.144],cast:false});
   // 칼에 묻은 피: 날 양면 앞쪽
-  const bl=grp(k);for(const x of [-.0024,.0024]){mk(new THREE.BoxGeometry(.0006,.022,.12),M.blood,bl,{p:[x,-.003,.215],cast:false});mk(sphereGeo(8),M.blood,bl,{p:[x,-.012,.17],s:[.0008,.006,.02],cast:false});}
+  const bl=grp(k);for(const x of [-.0024,.0024]){mk(new THREE.BoxGeometry(.0006,.048,.12),M.blood,bl,{p:[x,-.001,.215],cast:false});mk(sphereGeo(8),M.blood,bl,{p:[x,-.027,.17],s:[.0008,.009,.02],cast:false});}
   bl.visible=false;k.userData.blood=bl;}
- // 민중의 죽창(쪼갠 대나무를 날카롭게 깎은 창): +z가 창끝, 손은 원점 근처를 쥔다
- const spear=grp(R.hand);
- {const sp=spear;
-  mk(cylGeo(.0155,.017,.6,14),M.bamboo,sp,{p:[0,0,.2],r:[PI/2,0,0]});                                  // 대나무 자루
-  for(const z of [-.06,.06,.18,.3,.42])mk(new THREE.TorusGeometry(.0172,.0035,6,16),M.bambooD,sp,{p:[0,0,z],cast:false}); // 대나무 마디
-  mk(cylGeo(.0001,.0158,.15,12),M.bambooTip,sp,{p:[0,.006,.52],r:[PI/2,0,0]});                           // 쪼개져 뾰족한 끝
-  mk(new THREE.CircleGeometry(.0158,14),M.bambooTip,sp,{p:[0,.012,.5],r:[-PI/2.5,0,0],s:[1,2.2,1],cast:false}); // 비스듬히 깎인 단면
-  for(const z of [.41,.43,.448])mk(new THREE.TorusGeometry(.0182,.0026,6,16),M.rope,sp,{p:[0,0,z],cast:false}); // 끝을 묶은 노끈
-  const bl=grp(sp);mk(cylGeo(.0001,.0168,.1,10),M.bloodD,bl,{p:[0,.006,.55],r:[PI/2,0,0],cast:false});mk(sphereGeo(8),M.bloodD,bl,{p:[0,-.004,.45],s:[.007,.004,.03],cast:false});bl.visible=false;sp.userData.blood=bl;
- }
  // 권총: 옆모습을 깎아 만든 슬라이드·몸통
  const gun=grp(R.hand);
  {const g=gun;
@@ -5920,7 +5887,7 @@ const VM=(()=>{
   g.userData.light=new THREE.PointLight(0xffb060,0,1.4,2);g.userData.light.position.set(0,.05,.16);g.add(g.userData.light);
   g.position.set(0,.022,.055);g.scale.setScalar(1.08);
  }
- const tools={hand:null,knife,spear,gun};
+ const tools={hand:null,knife,gun};
  // 탄피
  const shells=[];for(let i=0;i<6;i++){const m=mk(cylGeo(.0045,.0045,.016,8),M.brass,root,{cast:false});m.visible=false;shells.push({m,v:V3(),w:V3(),life:0});}
  let shellI=0;
@@ -5942,19 +5909,16 @@ const VM=(()=>{
  const st={tool:'hand',acts:[],nextHand:'R',time:0,ammo:8,reload:0,recoil:0,slide:0,flash:0,aim:V3(0,0,-1),aimGoal:V3(0,0,-1),lastShot:-9,slash:null,bloody:{},swapT:1};
  const rest={R:{p:V3(),q:new THREE.Quaternion()},L:{p:V3(),q:new THREE.Quaternion()}};
  const KN_DIR=V3(-.5,.55,-1).normalize(),KN_UP=V3(.35,1,0);
- const SP_DIR=V3(-.28,.26,-1).normalize(),SP_UP=V3(.22,1,0);
- const BLADE=t=>t==='knife'||t==='spear';
- const REACH={knife:.29*1.25,spear:.6};
+ const BLADE=t=>t==='knife';
+ const REACH={knife:KREACH};
  // 날붙이를 들고 있는 자리(화면 오른쪽 아래, 날이 화면 안쪽으로 눕게): 몸을 덜 가린다
  const KREST={x:.9,y:.1,d:.48,dir:V3(-.08,.6,-1).normalize()};
- const SREST={x:.86,y:.16,d:.46,dir:V3(-.06,.34,-1).normalize()};
  function computeRest(){
   computeHeld();
   const pr=portrait(),dy=pr?dockY():-1;
   for(const k of ['R','L']){const s=k==='R'?1:-1;const r=rest[k];
    if(st.tool==='hand'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.3,.8,-1),V3(s*.85,.4,.2));}
    else if(st.tool==='knife'){at(pr?KREST.x:.5,pr?dy+KREST.y:-.74,KREST.d,r.p);orient(r.q,KREST.dir,KN_UP);}
-   else if(st.tool==='spear'){at(pr?SREST.x:.5,pr?dy+SREST.y:-.72,SREST.d,r.p);orient(r.q,SREST.dir,SP_UP);}
    else{at(pr?.6:.36,pr?dy+.16:-.62,.42,r.p);orient(r.q,V3(-.08,.05,-1),UP);}
   }
  }
@@ -5987,9 +5951,9 @@ const VM=(()=>{
    else if(kind==='upper'){at(s*.25,-1.2,.7,W);C.set(target.x,lerp(W.y,target.y,.2),lerp(W.z,target.z,.7));orient(Q0,V3(-s*.1,1,-.3),V3(0,.2,1));orient(Q1,V3(0,.8,-.6),V3(0,.3,1));a.dur=[.07,.075,.05,.13];}
    else{W.copy(rest[side].p).add(V3(s*.02,-.04,.08));C.copy(W).lerp(target,.5);C.y+=.03;orient(Q0,V3(-s*.2,.4,-1),V3(s*.9,.4,.2));orient(Q1,fwd,V3(-s*.25,1,0));a.dur=[.04,.055,.045,.12];}
   }else if(BLADE(tool)){
-   const sp=tool==='spear',reach=REACH[tool];
-   const H0=at(pr?.42:.4,-.74,sp?.52:.42);const dir=V3().subVectors(target,H0).normalize();a.dir1=dir;a.hand1=V3().copy(target).addScaledVector(dir,-reach);
-   a.hand0=V3().copy(rest.R.p).add(V3(.02,-.03,.09));a.dir0=(sp?SP_DIR.clone():V3(-.15,.3,-1).normalize());a.pen=sp?.22:.12;a.dur=sp?[.06,.085,.15,.18]:[.05,.06,.17,.15];
+   const reach=REACH[tool];
+   const H0=at(pr?.42:.4,-.74,.42);const dir=V3().subVectors(target,H0).normalize();a.dir1=dir;a.hand1=V3().copy(target).addScaledVector(dir,-reach);
+   a.hand0=V3().copy(rest.R.p).add(V3(.02,-.03,.09));a.dir0=V3(-.15,.3,-1).normalize();a.pen=.12;a.dur=[.05,.06,.17,.15];
   }
   a.W=W;a.C=C;a.Q0=Q0;a.Q1=Q1;a.contact=a.dur[0]+a.dur[1];a.total=a.dur.reduce((x,y)=>x+y,0);
   st.acts.push(a);AUDIO.whoosh(tool==='hand'?(kind==='jab'?.6:.85):.5,kind);
@@ -6050,7 +6014,7 @@ const VM=(()=>{
      tv3.copy(h.p);h.p.copy(tmpP).lerp(tv3,e);h.p.y-=Math.sin(e*PI)*.08;h.p.x+=a.s*Math.sin(e*PI)*.05;
      tmpQ.copy(a.Q1).slerp(h.q,e);h.q.copy(tmpQ);}
    }else if(BLADE(a.tool)){
-    const reach=REACH[a.tool],RDIR=a.tool==='spear'?SP_DIR:KN_DIR,RUP=a.tool==='spear'?SP_UP:KN_UP;
+    const reach=REACH[a.tool],RDIR=KN_DIR,RUP=KN_UP;
     let hand,dir;
     if(t<d0){const u=easeOut(t/d0);hand=tv.copy(h.p).lerp(a.hand0,u);dir=tv2.copy(RDIR).lerp(a.dir0,u).normalize();}
     else if(t<c){const u=easeIn((t-d0)/d1);hand=tv.copy(a.hand0).lerp(a.hand1,u);tmpQ.setFromUnitVectors(_fz,a.dir0);tmpQ2.setFromUnitVectors(_fz,a.dir1);tmpQ.slerp(tmpQ2,u);dir=tv2.copy(_fz).applyQuaternion(tmpQ);}
@@ -6072,8 +6036,8 @@ const VM=(()=>{
    if(a.t>=a.total)st.acts.splice(i,1);
   }
   // 날붙이로 긋기: 날이 화면 안쪽으로 꽂혀 보이지 않게 오른쪽 아래에서 비스듬히 눕혀 긋는다
-  if(BLADE(st.tool)&&st.slash){const sp=st.tool==='spear',reach=REACH[st.tool],RUP=sp?SP_UP:KN_UP;
-   const s=st.slash,[nx,ny]=ndc(s.sx,s.sy),T=at(nx,ny,.74),H0=at(sp?.95:1.05,-1.05,sp?.68:.62);const dir=tv.subVectors(T,H0).normalize();
+  if(BLADE(st.tool)&&st.slash){const reach=REACH[st.tool],RUP=KN_UP;
+   const s=st.slash,[nx,ny]=ndc(s.sx,s.sy),T=at(nx,ny,.74),H0=at(1.05,-1.05,.62);const dir=tv.subVectors(T,H0).normalize();
    const touching=s.touching||G.time<s.touchUntil;
    s.bite=damp(s.bite,touching?1:0,touching?30:16,rdt);
    H.R.p.copy(T).addScaledVector(dir,-reach+s.bite*.1);if(s.bite>.02)setClip(T,dir);
@@ -6098,7 +6062,7 @@ const VM=(()=>{
   for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
   // 손 배치
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);if(h.hand.visible)placeArm(k);}
-  knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;spear.userData.blood.visible=!!st.bloody.spear&&PREF.blood;
+  knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;
  }
  function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
@@ -6113,7 +6077,7 @@ metalEnv(VM.root);
 try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof p[k]==='boolean')PREF[k]=p[k];}catch(_){}
 const KD_AT=[75,50,25,0],KD_TYPE=['throne','kneel','floor','final'];
 const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:0,tEnd:0,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,cardShown:false,result:null,round:0,retired:[],offerPending:false,offerOpen:false,offerBreaking:false,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,printerShown:false,printerHits:0};
-const HINTS={hand:'누르면 맨주먹 잽 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',spear:'누르면 찔러 꿰뚫기 · 그으면 긁어 베기',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
+const HINTS={hand:'누르면 맨주먹 잽 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
 
@@ -6219,10 +6183,10 @@ function pickAll(x,y,list){
  return out;
 }
 function pickAt(x,y,list){return pickAll(x,y,list)[0]||null;}
-const POWER={hand:{jab:1.15,hook:1.5,upper:1.65},knife:{stab:.95,slash:.45},spear:{stab:1.5,slash:.7},gun:{shot:1.8}};
+const POWER={hand:{jab:1.15,hook:1.5,upper:1.65},knife:{stab:.95,slash:.45},gun:{shot:1.8}};
 // 멈춤(히트스톱) 길이: 이 동안 맞은 모습 그대로 멈춰 있다
-const STOP={hand:{jab:.036,hook:.05,upper:.058},knife:{stab:.045,slash:.014},spear:{stab:.065,slash:.02},gun:{shot:.018}};
-const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!'],spearStab:['푸욱!','콰직!','꾸욱!'],spearSlash:['쫘아악!','촤악!']};
+const STOP={hand:{jab:.036,hook:.05,upper:.058},knife:{stab:.045,slash:.014},gun:{shot:.018}};
+const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!']};
 function resolveHit(tool,kind,info,side,extra={}){
  const E=G.E;if(!E||!info||G.inputLocked)return {hit:false};
  const gaugeEligible=E.state==='stand';
@@ -6240,7 +6204,7 @@ G.hits++;
 if(firstContact){
  queueTalk([
   ['boss','감히 운명에 손을 대?',1.9,0]
- ]);
+ ],true);
 }
 
 const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
@@ -6249,7 +6213,7 @@ const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
  if(!extra.quiet){impactFX(tool,kind,info,r,dir,s,extra);if(!extra.through)AUDIO.hit(tool,kind,info.part,power,r.blocked);}
  if(PREF.vibe&&navigator.vibrate&&!extra.quiet)try{navigator.vibrate(r.blocked?10:tool==='gun'?26:kind==='slash'?6:kind==='jab'?16:[20,8,26]);}catch(_){}
  damageBar(r.dmg,r,gaugeEligible);
- return {hit:true,blocked:r.blocked,hard:!!r.halo,blood:!r.blocked&&!r.halo&&(tool==='knife'||tool==='spear'||tool==='gun'||E.noseBleeding||E.lipSplit||E.faceCuts>0)};
+ return {hit:true,blocked:r.blocked,hard:!!r.halo,blood:!r.blocked&&!r.halo&&(tool==='knife'||tool==='gun'||E.noseBleeding||E.lipSplit||E.faceCuts>0)};
 }
 /* 맞은 자리 효과 + 카메라 */
 function impactFX(tool,kind,info,r,dir,s,extra){
@@ -6286,18 +6250,6 @@ function impactFX(tool,kind,info,r,dir,s,extra){
    FX.add('mist',FX.lift(pt,n,.02),{size:rnd(.05,.08),life:rnd(.3,.45),start:.5,grow:1.5,top:false,vel:n.clone().multiplyScalar(rnd(.2,.5)).add(V3(rnd(-.15,.15),rnd(0,.2),0)),drag:4,fade:1.4});
    if(extra.firstCut)FX.word(pick(WORDS.slash),pt,{size:50,color:'#ff6a55',rot:rnd(-20,20),dx:rnd(-90,90)});
    camHit({shake:.007,yaw:rnd(-.004,.004)});
-  }
- }else if(tool==='spear'){
-  if(kind==='stab'){
-   FX.add('bl',FX.lift(pt,n,.04),{size:.16,life:.12});FX.add('star',FX.lift(pt,n,.05),{size:.09,life:.06,color:'#fff4dc'});
-   for(let i=0;i<4;i++)FX.add('mist',FX.lift(pt,n,.03),{size:rnd(.09,.14),life:rnd(.4,.6),start:.5,grow:1.8,top:false,vel:n.clone().multiplyScalar(rnd(.35,.8)).add(V3(rnd(-.25,.25),rnd(-.05,.3),0)),drag:4,fade:1.4});
-   FX.add('ring',FX.lift(pt,n,.04),{size:.17,life:.15,start:.4,grow:1.6,fade:1,color:'#ffd9cf'});
-   FX.word(pick(WORDS.spearStab),pt,{size:58,color:'#ff5640',dx:-rnd(80,120),dy:-20});
-   camHit({dir,kick:.02,shake:.024,push:.11,zoom:.02});
-  }else{
-   for(let i=0;i<2;i++)FX.add('mist',FX.lift(pt,n,.02),{size:rnd(.07,.11),life:rnd(.35,.5),start:.5,grow:1.6,top:false,vel:n.clone().multiplyScalar(rnd(.25,.6)).add(V3(rnd(-.2,.2),rnd(0,.25),0)),drag:4,fade:1.4});
-   if(extra.firstCut)FX.word(pick(WORDS.spearSlash),pt,{size:56,color:'#ff5640',rot:rnd(-18,18),dx:rnd(-90,90)});
-   camHit({shake:.012,yaw:rnd(-.006,.006),push:.03});
   }
  }else if(tool==='gun'){
   FX.add('bl',FX.lift(pt,n,.04),{size:.1,life:.08});
@@ -6375,7 +6327,8 @@ function replaceEmperorForRevival(){
  E.idleT=1e9;E.sobT=1e9;E.lookedHand=true;E.reviveGlow=1.7;
  wireEmperor(E);G.E=E;
  BLOOD.rebindKeepStage(E);if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
- if(E.tabletHeld)E.dropTablet(V3(rnd(-.2,.2),.7,.6));
+ // 옛 운명판은 무대에 이미 떨어져 있다. 새 몸이 같은 판을 하나 더 만들지 않게 숨겨 둔다.
+ if(E.tabletHeld){E.tabletHeld=false;E.tabletMesh.visible=false;E.tablet.removeFromParent();}
 }
 function finishRevival(){
  G.revival=null;G.revived=true;G.inputLocked=false;G.bar=G.shown=G.lag=30;G.kd=3;
@@ -6409,7 +6362,7 @@ function updateStory(){
   if(t>=7.1&&!r.released){r.released=true;flashRelease(1.2);CAM.rate=1.6;cutCam(3);}
   if(t>=7.9&&!r.stamped){r.stamped=true;CROWD.restamp();CAM.rate=1.4;cutCam(2);}
   if(t>=8.5&&!r.cheered){r.cheered=true;CROWD.cheer();}
-  if(t>=8.9&&!r.spoken){r.spoken=true;queueTalk([['boss','그래. 다들 자기 것만은 건드리지 말라지.',1.65,.05],['boss','그 소리면 충분하다.',1.45,.08]]);CAM.rate=2.4;setFrame('stand');}
+  if(t>=8.9&&!r.spoken){r.spoken=true;queueTalk([['boss','그래. 다들 자기 것만은 건드리지 말라지.',1.65,.05],['boss','그렇게 지킨 너희 복이, 내 살이 되어 돌아왔다.',2,.08]]);CAM.rate=2.4;setFrame('stand');}
   if(t>=10.6&&r.spoken&&!talkBusy())finishRevival();
  }
  if(G.printerPending&&!talkBusy())showPrinter();
@@ -6612,23 +6565,31 @@ function limbKey(part){const m=/^(arm|hand|thigh|shin|foot)(L|R)$/.exec(part||''
 function slashSample(p,x,y,list){
  const info=pickAt(x,y,list),now=G.time;
  const lk=info&&limbKey(info.part);
+ const seg=info&&info.obj&&info.obj.userData.seg;
+ // 짧게 몸 경계만 통과한 선도 사라지지 않게, 다른 물체로 넘어가는 순간 미완성 선분을 확정한다.
+ if(p.body&&(!info||lk||p.body.seg!==seg))finishBody(p);
  // 팔다리에서 벗어나면 그 팔다리를 벤 것으로 친다
  if(p.limb&&p.limb.key!==lk)finishLimb(p);
  if(lk){
   if(!p.limb)p.limb={key:lk,a:info.point.clone(),b:info};else p.limb.b=info;
   p.lastCut=null;return true;
  }
- // 팔다리를 벤 칼은 그 뒤로 몸통을 베지 않는다(팔 너머 배가 같이 갈라지지 않게)
- if(!info||(p.limbDone&&p.limbDone.size)){p.lastCut=null;return !!info;}
- const seg=info.obj&&info.obj.userData.seg;
+ // 한 화면 좌표에서는 가장 앞 물체만 고르므로, 팔을 벗어난 뒤 실제로 드러난 몸은 계속 벨 수 있다.
+ if(!info){p.lastCut=null;return false;}
  // 다른 부위로 넘어가면 거기서 새로 긋기 시작
- if(!p.lastCut||p.lastCut.seg!==seg){p.lastCut={point:info.point.clone(),t:now,part:info.part,seg};return true;}
+ if(!p.lastCut||p.lastCut.seg!==seg){p.lastCut={point:info.point.clone(),t:now,part:info.part,seg};p.body={seg,a:info.point.clone(),b:info,resolved:false};return true;}
+ if(p.body)p.body.b=info;
  const d=info.point.distanceTo(p.lastCut.point);
  if(d>.045||now-p.lastCut.t>.12){
-  if(d>.015){resolveHit(G.tool,'slash',info,'R',{slashFrom:p.lastCut.point.clone(),strokeId:p.slashId,firstCut:!p.cutWord});p.cutWord=true;}
+  if(d>.015){resolveHit(G.tool,'slash',info,'R',{slashFrom:p.lastCut.point.clone(),strokeId:p.slashId,firstCut:!p.cutWord});p.cutWord=true;if(p.body)p.body.resolved=true;}
   p.lastCut={point:info.point.clone(),t:now,part:info.part,seg};
  }
  return true;
+}
+function finishBody(p){
+ const B=p.body;p.body=null;if(!B||B.resolved)return;p.lastCut=null;
+ const info=B.b;if(!info||B.a.distanceTo(info.point)<=.015)return;
+ resolveHit(G.tool,'slash',info,'R',{slashFrom:B.a,strokeId:p.slashId,firstCut:!p.cutWord});p.cutWord=true;
 }
 function finishLimb(p){
  const L=p.limb;p.limb=null;if(!L)return;
@@ -6644,18 +6605,18 @@ function clearPointers(){for(const p of ptrs.values()){if(p.slashing)VM.slashEnd
 canvas.addEventListener('pointerdown',e=>{
  if(G.paused||G.inputLocked||(e.pointerType==='mouse'&&e.button!==0))return;AUDIO.unlock();
  if(G.mode!=='fight')return;
- const tool=G.tool;if((tool==='knife'||tool==='spear')&&bladePointer!=null)return;
+ const tool=G.tool;if(tool==='knife'&&bladePointer!=null)return;
  try{canvas.setPointerCapture(e.pointerId);}catch(_){}
  const p={id:e.pointerId,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,t0:G.time,swiped:false,slashing:false,fired:false,decided:false};
  ptrs.set(e.pointerId,p);
- if(tool==='knife'||tool==='spear')bladePointer=e.pointerId;
+ if(tool==='knife')bladePointer=e.pointerId;
  if(tool==='gun'){VM.fire(p.x,p.y);p.auto=G.time+.19;}
  else if(tool==='hand')p.jabAt=G.time+.38;
  e.preventDefault();
 });
 canvas.addEventListener('pointermove',e=>{
  const p=ptrs.get(e.pointerId);if(!p)return;const tool=G.tool;
- if(tool==='knife'||tool==='spear'){
+ if(tool==='knife'){
   const got=typeof e.getCoalescedEvents==='function'?e.getCoalescedEvents():null,moves=got&&got.length?got:[e];
   const path=[];
   for(const m of moves){
@@ -6679,9 +6640,10 @@ function ptrEnd(e){
  if(bladePointer===e.pointerId)bladePointer=null;
  if(G.mode!=='fight'||G.inputLocked){if(p.slashing)VM.slashEnd();return;}
  const tool=G.tool;
- if(tool==='knife'||tool==='spear'){
+ if(tool==='knife'){
   if(p.slashing){
-   if(e.type==='pointerup'){if(Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))slashPath(p,[[e.clientX,e.clientY]]);finishLimb(p);}
+   if(e.type==='pointerup'&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))slashPath(p,[[e.clientX,e.clientY]]);
+   finishLimb(p);finishBody(p);
    VM.slashEnd();
   }else if(e.type==='pointerup')VM.attack('stab',p.x0,p.y0);
  }
@@ -6696,7 +6658,7 @@ function pollPointers(){
  }
 }
 // 키보드(PC): 1~3 도구
-addEventListener('keydown',e=>{if($('#fight').hidden||G.paused||G.inputLocked)return;const map={'1':'hand','2':'spear','3':'knife','4':'gun'};if(map[e.key])setTool(map[e.key]);});
+addEventListener('keydown',e=>{if($('#fight').hidden||G.paused||G.inputLocked)return;const map={'1':'hand','2':'knife','3':'gun'};if(map[e.key])setTool(map[e.key]);});
 
 function setTool(t){
  if(!HINTS[t])return;clearPointers();
@@ -6715,7 +6677,7 @@ $('#settingsBtn').addEventListener('click',()=>{G.paused=true;clearPointers();$(
 function closeModal(){$('#settingsModal').hidden=true;G.paused=false;last=performance.now();}
 $$('#settingsModal [data-close]').forEach(b=>b.addEventListener('click',closeModal));
 $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
-$('#resetFight').addEventListener('click',()=>{closeModal();startRound('fight');});
+$('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
 $('#endAgain').addEventListener('click',()=>startRound('fight'));
 $('#endHome').addEventListener('click',()=>leave(false));
 $('#endMore').addEventListener('click',()=>{$('#ending').hidden=true;G.inputLocked=false;$('#dock').hidden=false;hint('끝난 운명도 더 팰 수 있습니다.',2.5);focusCanvas();});
@@ -6910,8 +6872,8 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPoint
 window.PaljaGame={enter,leave,pause,
  tick(dt=1/60,draw=true){step(dt);if(draw)render();},
  pick:pickAt,setTool,
- hitAt(x,y,kind){if(G.tool==='gun')return VM.fire(x,y);return VM.attack(kind||(G.tool==='hand'?'jab':G.tool==='knife'?'stab':'smash'),x,y);},
- slash(points){VM.slashStart(points[0][0],points[0][1]);const p={lastCut:null};for(const [x,y] of points){VM.slashMove(x,y);slashContact(p,x,y);}finishLimb(p);VM.slashEnd();},
+ hitAt(x,y,kind){if(G.tool==='gun')return VM.fire(x,y);return VM.attack(kind||(G.tool==='hand'?'jab':'stab'),x,y);},
+ slash(points){VM.slashStart(points[0][0],points[0][1]);const p={lastCut:null};for(const [x,y] of points){VM.slashMove(x,y);slashContact(p,x,y);}finishLimb(p);finishBody(p);VM.slashEnd();},
  screenPart(name){const E=G.E;if(!E)return null;const m=E.parts.find(o=>o.userData.part===name&&o.visible);if(!m)return null;const p=m.getWorldPosition(V3()).project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  project(v){const p=v.clone().project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD};},
