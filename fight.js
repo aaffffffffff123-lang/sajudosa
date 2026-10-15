@@ -119,14 +119,14 @@ const FIGHT_CSS = `
 #fight #fallback small{font-weight:400;color:var(--muted)}
 
 #fight .talk{
- position:absolute;left:50%;z-index:9;
+ position:absolute;left:50%;z-index:9;transform:translate(-50%,-7px);
  width:max-content;max-width:min(86vw,390px);
  padding:9px 13px 10px;
  border:2px solid var(--ink);border-radius:15px;
  background:rgba(255,253,246,.97);
  box-shadow:0 4px 0 var(--ink),0 8px 22px rgba(25,18,45,.18);
  pointer-events:none;opacity:0;
- transition:opacity .12s,transform .12s;
+ transition:opacity .12s,transform .12s,bottom .16s;
  word-break:keep-all
 }
 #fight .talk.boss{
@@ -198,9 +198,17 @@ const FIGHT_CSS = `
 #fight .offer-command{position:absolute;left:50%;bottom:-52px;transform:translateX(-50%);white-space:nowrap;padding:7px 13px;border-radius:99px;background:rgba(36,28,58,.9);color:#fff;font-size:12px;font-weight:800;animation:offerPulse 1.1s ease-in-out infinite}
 @keyframes offerPulse{50%{transform:translateX(-50%) scale(1.06)}}
 #fight #offerScene.breaking .fate-paper{animation:paperBreak .48s cubic-bezier(.2,.8,.2,1) forwards}
-#fight #offerScene.breaking .other-fate{animation:otherRise .65s .08s ease-out forwards}
+#fight #offerScene .fate-paper.half{pointer-events:none}
+#fight #offerScene.breaking .fate-paper.half.l{animation:halfL .78s cubic-bezier(.3,.1,.6,1) forwards}
+#fight #offerScene.breaking .fate-paper.half.r{animation:halfR .78s cubic-bezier(.3,.1,.6,1) forwards}
+@keyframes halfL{0%{transform:rotate(-1.5deg);opacity:1}16%{transform:translate(-22px,-8px) rotate(-8deg)}72%{opacity:1}100%{transform:translate(-170px,330px) rotate(-46deg);opacity:0}}
+@keyframes halfR{0%{transform:rotate(-1.5deg);opacity:1}16%{transform:translate(22px,-5px) rotate(7deg)}72%{opacity:1}100%{transform:translate(180px,350px) rotate(42deg);opacity:0}}
+#fight .offer-stack .scrap{position:absolute;width:11px;height:8px;margin:-4px 0 0 -5px;background:#f7e2a8;box-shadow:inset 0 0 0 1px rgba(125,86,23,.45);pointer-events:none;animation:offerScrap .85s cubic-bezier(.2,.6,.5,1) forwards}
+@keyframes offerScrap{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rr));opacity:0}}
+#fight #offerScene.breaking .offer-command{visibility:hidden}
+#fight #offerScene.breaking .other-fate{animation:otherRise 1.45s .1s cubic-bezier(.25,.9,.35,1) forwards}
 @keyframes paperBreak{35%{transform:rotate(2deg) scale(1.05);filter:brightness(1.5)}100%{transform:rotate(-13deg) scale(.2);opacity:0;clip-path:polygon(0 0,47% 8%,54% 0,100% 0,92% 46%,100% 58%,100% 100%,57% 91%,47% 100%,0 100%,9% 55%,0 44%)}}
-@keyframes otherRise{to{transform:rotate(0) translateY(-102px);opacity:.95}}
+@keyframes otherRise{0%{transform:rotate(3deg) translateY(22px)}26%{transform:rotate(-1deg) translateY(-150px) scale(1.12)}78%{transform:rotate(-1deg) translateY(-150px) scale(1.12);opacity:1}100%{transform:rotate(-7deg) translateY(-130px) scale(1.04);opacity:0}}
 
 /* 머리 위 말풍선: 무대 안 사람에게 붙어 다닌다 */
 #fight #bubbles{position:absolute;inset:0;z-index:9;pointer-events:none;overflow:hidden}
@@ -208,24 +216,45 @@ const FIGHT_CSS = `
 #fight .bub::after{content:"";position:absolute;left:50%;bottom:-8px;width:11px;height:11px;background:rgba(255,253,246,.97);border:2px solid var(--ink);border-top:0;border-left:0;transform:translateX(-50%) rotate(45deg)}
 #fight .bub span{display:block;transform:scale(.72);transition:transform .16s cubic-bezier(.2,1.5,.45,1)}
 #fight .bub.on{opacity:1}#fight .bub.on span{transform:scale(1)}
+#fight .bub.moved::after{display:none}
 
 /* 보스가 죽어도 계속 운명을 찍는 발급기. 이것까지 부숴야 끝난다. */
 #fight #printerScene{z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:80px 18px calc(94px + var(--safe-b));background:linear-gradient(rgba(23,17,35,.05),rgba(23,17,35,.68))}
 #fight .printer-wrap{position:relative;width:min(86vw,370px);text-align:center}
 #fight .printer-note{display:inline-block;margin-bottom:8px;padding:6px 12px;border-radius:99px;background:#241c3a;color:#fff;font-size:12px;font-weight:800}
-#fight .fate-printer{position:relative;width:100%;min-height:190px;border:3px solid #241c3a;border-radius:19px;background:linear-gradient(#d6d0c5,#9c968d);box-shadow:0 7px 0 #241c3a,0 20px 34px rgba(0,0,0,.35);padding:24px 20px 17px;color:#241c3a;pointer-events:auto}
+#fight .fate-printer{position:relative;width:100%;min-height:200px;border:3px solid #241c3a;border-radius:19px;background:linear-gradient(#f3eee2,#ddd5c4 58%,#c7bda9);box-shadow:0 7px 0 #241c3a,0 20px 34px rgba(0,0,0,.35),inset 0 3px 0 rgba(255,255,255,.7),inset 0 -6px 0 rgba(90,80,60,.18);padding:36px 20px 26px;color:#241c3a;pointer-events:auto}
+#fight .fate-printer::before{content:"";position:absolute;inset:8px;pointer-events:none;
+ background:radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) left top/12px 12px no-repeat,radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) right top/12px 12px no-repeat,radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) left bottom/12px 12px no-repeat,radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) right bottom/12px 12px no-repeat}
 #fight .fate-printer:active{transform:translateY(3px);box-shadow:0 4px 0 #241c3a,0 12px 24px rgba(0,0,0,.32)}
+#fight .pr-plate{position:absolute;left:50%;top:9px;transform:translateX(-50%);padding:2px 11px;border-radius:5px;background:linear-gradient(#f6dc84,#c79528);border:1.5px solid #6b4a10;font-family:var(--serif);font-size:11px;font-weight:900;letter-spacing:.22em;color:#4a300a;white-space:nowrap}
+#fight .pr-lamp{position:absolute;right:16px;top:11px;width:13px;height:13px;border-radius:50%;border:1.5px solid #6a150c;background:radial-gradient(circle at 35% 35%,#ffd8cf,#ff3b22 48%,#a3150a);box-shadow:0 0 10px 3px rgba(255,60,30,.55);animation:prLamp .8s steps(2,end) infinite}
+@keyframes prLamp{50%{background:radial-gradient(circle at 35% 35%,#e9b6ad,#9c2a1c 55%,#5e0d05);box-shadow:none}}
+#fight .pr-vent{position:absolute;left:18px;bottom:12px;width:48px;height:12px;border-radius:3px;background:repeating-linear-gradient(90deg,#8a8170 0 4px,transparent 4px 8px);opacity:.75}
+#fight .pr-crack{position:absolute;inset:0;border-radius:16px;pointer-events:none;opacity:0;background-repeat:no-repeat;background-size:100% 100%}
+#fight #printerScene.hit1 .pr-crack{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M71 0L64 14L72 23L58 41L66 52L55 70L61 83' fill='none' stroke='%23241c3a' stroke-width='2.6' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M66 52L80 60L86 74M58 41L46 36' fill='none' stroke='%23241c3a' stroke-width='1.8' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")}
+#fight #printerScene.hit2 .pr-crack,#fight #printerScene.destroyed .pr-crack{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M71 0L64 14L72 23L58 41L66 52L55 70L61 83L54 100' fill='none' stroke='%23241c3a' stroke-width='2.6' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M66 52L80 60L86 74M58 41L46 36M0 63L14 58L22 66L35 55L44 62L58 41' fill='none' stroke='%23241c3a' stroke-width='2' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M22 66L19 82L28 96M35 55L33 40L41 30' fill='none' stroke='%23241c3a' stroke-width='1.5' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")}
+#fight #printerScene.jolt .fate-printer{animation:prJolt .32s cubic-bezier(.3,.9,.4,1)}
+@keyframes prJolt{0%{transform:translate(0,0)}18%{transform:translate(-7px,5px) rotate(-2.2deg) scale(.97)}42%{transform:translate(6px,-3px) rotate(1.6deg)}70%{transform:translate(-3px,1px) rotate(-.6deg)}100%{transform:translate(0,0)}}
+#fight .printer-command{display:inline-block;margin-top:14px;padding:7px 14px;border-radius:99px;background:rgba(36,28,58,.92);color:#fff;font-size:12.5px;font-weight:800;animation:prPulse 1.1s ease-in-out infinite;pointer-events:none}
+@keyframes prPulse{50%{transform:scale(1.07)}}
+#fight #printerScene.destroyed .printer-command{visibility:hidden}
+#fight .pr-spark{position:absolute;left:0;top:0;width:16px;height:3px;border-radius:2px;background:#ffd84a;box-shadow:0 0 6px 2px rgba(255,190,60,.8);pointer-events:none;animation:prSpark .45s ease-out forwards}
+@keyframes prSpark{0%{transform:translate(var(--x0),var(--y0)) rotate(var(--a)) scaleX(.4);opacity:1}100%{transform:translate(var(--x1),var(--y1)) rotate(var(--a)) scaleX(1.3);opacity:0}}
 #fight .printer-slot{height:22px;margin:0 auto 15px;border:3px solid #241c3a;border-radius:4px;background:#17121e;box-shadow:inset 0 0 8px #000}
 #fight .issued-paper{margin:-4px auto 13px;width:88%;padding:10px 11px;border:1.5px solid #8e826c;background:#fff8db;font-family:var(--serif);font-size:12px;line-height:1.55;text-align:left;box-shadow:0 3px 0 rgba(36,28,58,.25);animation:printPaper 1.1s steps(5,end) infinite}
 #fight .issued-paper b{display:inline-block;min-width:45%;color:#941e18}
 @keyframes printPaper{from{transform:translateY(-12px)}to{transform:translateY(2px)}}
 #fight .printer-core{font-size:20px;font-weight:900;letter-spacing:.08em}
 #fight #printerScene.hit1 .fate-printer{transform:rotate(-1deg)}#fight #printerScene.hit2 .fate-printer{transform:rotate(1.5deg);filter:contrast(1.2)}
-#fight #printerScene.destroyed .fate-printer{animation:printerDie .65s ease-in forwards}
-@keyframes printerDie{35%{transform:scale(1.05) rotate(-2deg);filter:brightness(2)}100%{transform:translateY(80px) rotate(9deg) scale(.5);opacity:0}}
-#fight .printer-stamp{margin-top:12px;font-family:var(--serif);font-size:17px;font-weight:900;color:#b51f18;opacity:0;transform:scale(1.7) rotate(-5deg)}
-#fight #printerScene.destroyed .printer-stamp{animation:stampIn .3s .35s ease-out forwards}
-@keyframes stampIn{to{opacity:1;transform:scale(1) rotate(-5deg)}}
+#fight #printerScene.destroyed .fate-printer{animation:printerDie .85s cubic-bezier(.35,.1,.7,1) forwards}
+@keyframes printerDie{0%{transform:none}12%{transform:scale(1.06) rotate(-3deg);filter:brightness(1.9)}30%{transform:translate(7px,6px) rotate(4deg) scale(.98);filter:none}100%{transform:translate(26px,170px) rotate(16deg) scale(.55);opacity:0}}
+#fight #printerScene.destroyed .issued-paper{animation:prPaperFly .7s ease-out forwards}
+@keyframes prPaperFly{to{transform:translate(-90px,-150px) rotate(-38deg);opacity:0}}
+/* 부서진 발급기 자리에 '발급 중단' 붉은 인장이 쾅 찍힌다(장면 위에 글씨만 떠 있지 않게 인장 바탕을 깐다) */
+#fight .printer-stamp{position:absolute;left:50%;top:52%;z-index:3;padding:7px 15px 8px;border:3px double #b51f18;border-radius:9px;background:rgba(255,249,234,.95);box-shadow:0 0 0 3px rgba(255,249,234,.95),0 8px 22px rgba(25,18,45,.3);font-family:var(--serif);font-size:22px;font-weight:900;line-height:1.15;letter-spacing:.14em;white-space:nowrap;color:#b51f18;opacity:0;transform:translate(-50%,-50%) scale(1.9) rotate(-7deg);pointer-events:none}
+#fight .printer-stamp small{display:block;margin-top:3px;font-family:var(--sans);font-size:11.5px;font-weight:900;letter-spacing:.32em}
+#fight #printerScene.destroyed .printer-stamp{animation:stampIn .32s .35s cubic-bezier(.3,.1,.5,1) forwards}
+@keyframes stampIn{72%{opacity:1;transform:translate(-50%,-50%) scale(.93) rotate(-7deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-7deg)}}
 
 /* 순응: 내 불행을 받은 것과 타인의 불행에 도장을 찍는 것을 분리한다. */
 #fight .submit-workflow{background:rgba(255,253,246,.98);border:2.5px solid var(--ink);border-radius:19px;box-shadow:0 5px 0 var(--ink),0 12px 28px rgba(25,18,45,.25);padding:14px;text-align:center}
@@ -263,7 +292,7 @@ const FIGHT_CSS = `
  #fight #submitDock{left:auto;right:10px;bottom:8px;transform:none;width:min(48vw,390px);max-height:calc(100vh - 68px);overflow:auto;padding:0 4px 6px}
  #fight #submitDock .submit-workflow,#fight #submitDock .submit-result{padding:10px}
 }
-@media (prefers-reduced-motion:reduce){#fight #ending .card{animation-duration:.01s}#fight .gauge.hit{animation:none}#fight .chorus{transition:none!important}#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .revival-seal,#fight #goldShell,#fight .fate-printer,#fight .printer-stamp,#fight .submit-workflow.stamped .next-fate{animation-duration:.01s!important;animation-delay:0s!important}}
+@media (prefers-reduced-motion:reduce){#fight #ending .card{animation-duration:.01s}#fight .gauge.hit{animation:none}#fight .chorus{transition:none!important}#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .revival-seal,#fight #goldShell,#fight .fate-printer,#fight .printer-stamp,#fight .submit-workflow.stamped .next-fate{animation-duration:.01s!important;animation-delay:0s!important}#fight #offerScene.breaking .other-fate{animation:none!important;transform:rotate(-1deg) translateY(-150px) scale(1.12);opacity:1}#fight .offer-stack .scrap,#fight .pr-spark{display:none}}
 `;
 
 const FIGHT_HTML = `<section id="fight" hidden>
@@ -291,11 +320,14 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <div class="printer-wrap">
    <div class="printer-note">설계자가 쓰러졌는데도 계속 찍혀 나온다.</div>
    <button type="button" class="fate-printer" id="fatePrinter" aria-label="운명 발급기를 세 번 쳐서 부순다" aria-describedby="issuedMap">
+    <span class="pr-plate">運命 自動 發給機</span><span class="pr-lamp"></span>
     <div class="printer-slot"></div>
     <div class="issued-paper" id="issuedMap"><b>물려받은 특혜</b> 집안복<br><b>저임금·착취</b> 재물운 부족<br><b>법률 비용의 격차</b> 송사를 피할 팔자<br><b>함께 바꾸려는 행동</b> 관재수</div>
     <div class="printer-core">운명 자동 발급 중</div>
+    <span class="pr-vent"></span><span class="pr-crack"></span>
    </button>
-   <div class="printer-stamp">運命 發給 中斷 · 운명 발급 중단</div>
+   <span class="printer-command">발급기를 쳐서 부순다</span>
+   <div class="printer-stamp">運命發給 中斷<small>운명 발급 중단</small></div>
   </div>
  </div>
  <header class="ftop">
@@ -1601,7 +1633,15 @@ const AUDIO=(()=>{
  // 도장: 쾅 + 종이 찰싹
  function stamp(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(R(-.3,.3),.18),d=drive(o,1.8);
   osc(d,t,{f0:160,f1:55,dur:.13,peak:.9*k});nz(o,t,{dur:.035,peak:.45*k,f:2600,type:'highpass',q:.5});nz(d,t+.004,{dur:.1,peak:.3*k,f:900,f1:300,q:.8});}
- return {unlock,murmur,cheer,charge,twinkle,boom,stamp,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ // 종이가 찢어지는 소리: 높고 거친 찢김 두 겹 + 섬유가 뜯기는 바스락
+ function paper(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(R(-.2,.2),.12),d=drive(o,1.4);
+  tearNoise(d,t,.34,3200,.85*k,R(30,42));tearNoise(d,t+.03,.26,1500,.42*k,R(55,70));clicks(o,t+.02,7,.3,5200,.18*k);}
+ // 발급기를 칠 때: 철판 쾅 + 속에서 부품이 덜그럭. 마지막엔 무너지며 와장창
+ function machine(k=1,fin){if(!ready())return;const t=ctx.currentTime+.003,o=out(R(-.2,.2),.22),d=drive(o,2);
+  osc(d,t,{f0:150,f1:52,dur:.17,peak:.85*k});nz(d,t,{dur:.05,peak:.6*k,f:1800,q:.7});
+  ring(o,t+.004,[410,1130,2370,3650],.38,.12*k);clicks(o,t+.012,fin?20:7,fin?.6:.14,4200,.3*k);
+  if(fin){nz(d,t+.02,{dur:.55,peak:.38*k,f:900,f1:220,type:'lowpass',q:.6});ring(o,t+.06,[260,760,1500,2800],.9,.1*k);clicks(o,t+.25,14,.5,6200,.22);}}
+ return {unlock,murmur,cheer,charge,twinkle,boom,stamp,paper,machine,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -1706,10 +1746,11 @@ const WORLD={};
  const latTex=canvasTex(512,512,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#fffdf6');gr.addColorStop(1,'#eaf6ff');g.fillStyle=gr;g.fillRect(0,0,w,h);g.strokeStyle='#b8341f';g.lineWidth=9;for(let i=0;i<=8;i++){g.beginPath();g.moveTo(i*w/8,0);g.lineTo(i*w/8,h);g.stroke();g.beginPath();g.moveTo(0,i*h/8);g.lineTo(w,i*h/8);g.stroke();}g.strokeStyle='rgba(184,52,31,.75)';g.lineWidth=4;for(let i=0;i<8;i++)for(let j=0;j<8;j++){g.beginPath();g.moveTo(i*w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8);g.lineTo(i*w/8+w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8+h/8);g.closePath();g.stroke();}},{repeat:[3,1.3]});
  const wall=grp(root,[0,0,-2.85]);
  mk(new THREE.PlaneGeometry(9,4.6),STD('#ffffff',{map:latTex,roughness:.8,emissive:col('#fff6e6'),emissiveIntensity:.22}),wall,{p:[0,2.3,0],cast:false,receive:false});
- for(const x of [-3,-1.1,1.1,3])mk(new THREE.BoxGeometry(.16,4.6,.12),pillarMat,wall,{p:[x,2.3,.06],cast:false});
- mk(new THREE.BoxGeometry(9,.22,.16),pillarMat,wall,{p:[0,3.1,.08],cast:false});
- mk(new THREE.BoxGeometry(9,.06,.18),gold,wall,{p:[0,3.24,.09],cast:false});
- mk(new THREE.BoxGeometry(9,.5,.12),STD('#e6dccb'),wall,{p:[0,.25,.06],cast:false});
+ // 뒷벽 장식은 그림자를 받지 않는다(옥좌 그림자가 걸레받이에 회색 네모 덩어리로 찍히지 않게)
+ for(const x of [-3,-1.1,1.1,3])mk(new THREE.BoxGeometry(.16,4.6,.12),pillarMat,wall,{p:[x,2.3,.06],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(9,.22,.16),pillarMat,wall,{p:[0,3.1,.08],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(9,.06,.18),gold,wall,{p:[0,3.24,.09],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(9,.5,.12),STD('#e6dccb'),wall,{p:[0,.25,.06],cast:false,receive:false});
  // 바닥 구름(멀리)
  const cloudMat=STD('#ffffff',{roughness:1,emissive:col('#ffffff'),emissiveIntensity:.15});
  for(let i=0;i<14;i++){const a=PI*.15+i/13*PI*.7;mk(sphereGeo(14),cloudMat,root,{p:[Math.cos(a)*5.8,-.25,-Math.sin(a)*4.2+.6],s:[rnd(.7,1.2),rnd(.35,.5),rnd(.7,1)],cast:false});}
@@ -1732,7 +1773,7 @@ const FRAMES={
  throne:{look:[0,1.0,-.6],dir:[0,.3,1],W:1.05,H:1.45},
  kneel:{look:[0,.8,.05],dir:[0,.45,1],W:1.0,H:1.35},
  floor:{look:[0,.62,-.16],dir:[0,.5,1],W:.95,H:1.02},
- final:{look:[0,.5,-.32],dir:[0,.5,1],W:1,H:1.2},
+ final:{look:[0,.55,-.32],dir:[0,.5,1],W:1,H:1.32},
  revival:{look:[0,.92,-.08],dir:[0,.2,1],W:1.02,H:1.88},
 };
 function frameCamera(name,outPos,outLook){
@@ -1814,36 +1855,64 @@ const BUB=(()=>{
   return b;
  }
  function clear(){for(const b of live)b.el.remove();live.length=0;}
+ /* 자리 잡기: 말한 사람 머리 위에 띄우되, 먼저 뜬 말풍선과 겹치면 위로(자리가 없으면 아래로) 비켜 쌓는다.
+  * 비켜 선 말풍선은 꼬리를 감춘다(엉뚱한 사람을 가리키지 않게). 자리는 부드럽게 옮긴다. */
+ const placed=[];
  function update(){
   if(!live.length)return;
   const W=innerWidth,H=innerHeight;const topEl=$('#fight .ftop');const topPx=(topEl&&!topEl.hidden?topEl.getBoundingClientRect().bottom:50)+4;
   for(let i=live.length-1;i>=0;i--){const b=live[i];
    if(G.time>b.until){b.el.remove();live.splice(i,1);continue;}
    if(G.time>b.until-.14)b.el.classList.remove('on');
+  }
+  placed.length=0;
+  for(const b of live){
    const a=b.anchor;if(!a.obj||!a.obj.parent){b.el.style.opacity='0';continue;}
    a.obj.updateWorldMatrix(true,false);v.copy(a.off||ZERO3).applyMatrix4(a.obj.matrixWorld);
    v.project(a.cam==='vm'?vmCam:camera);
    if(v.z>1||v.z<-1){b.el.style.opacity='0';continue;}
+   b.el.style.opacity='';
    let x=(v.x*.5+.5)*W,y=(-v.y*.5+.5)*H;
    const bw=b.el.offsetWidth||120,bh=b.el.offsetHeight||40;
-   x=clamp(x,bw/2+6,W-bw/2-6);y=clamp(y,bh+topPx,H-8);
-   b.el.style.transform=`translate(${x.toFixed(1)}px,${y.toFixed(1)}px) translate(-50%,-100%)`;
+   x=clamp(x,bw/2+6,W-bw/2-6);y=clamp(y,bh+topPx,H-8);const y0=y;
+   for(let k=0;k<8;k++){
+    let hit=null;for(const p of placed){if(Math.abs(p.x-x)<(p.w+bw)/2+6&&y>p.y-p.h-6&&y-bh<p.y+6){hit=p;break;}}
+    if(!hit)break;
+    const up=hit.y-hit.h-10;y=up-bh>=topPx?up:Math.min(H-8,hit.y+bh+10);
+   }
+   placed.push({x,y,w:bw,h:bh});
+   const k=b.x==null?1:1-Math.exp(-Math.max(0,G.time-b.tm)*18);b.tm=G.time;
+   if(b.x==null){b.x=x;b.y=y;}else{b.x+=(x-b.x)*k;b.y+=(y-b.y)*k;}
+   b.el.classList.toggle('moved',Math.abs(y-y0)>4);
+   b.el.style.transform=`translate(${b.x.toFixed(1)}px,${b.y.toFixed(1)}px) translate(-50%,-100%)`;
   }
  }
  return {say,clear,update,get count(){return live.length;}};
 })();
 
+/* 팔 붙잡기 장면 배치(1인칭 손 화면 좌표 -1~1, 깊이 m): 붙잡는 사람 머리(hx·hy·hd)·크기(sc)·몸 돌림(turn)·숙임(lean)·고개 듦(look),
+ * 붙잡힌 내 주먹 자리(fx·fy·fd), 그 사람 두 손이 내 팔을 쥐는 자리(주먹→어깨 사이 g0·g1, 비켜 놓는 정도 gx·gy·gz).
+ * 세로 화면: 둘이 내 앞에 바짝 붙어 내 두 주먹을 화면 아래로 끌어내린다(얼굴이 가운데 아래에서 따로따로 또렷하게).
+ * 가로 화면: 내 두 팔이 설계자 쪽으로 뻗어 있고, 양옆에서 둘이 소매를 붙잡고 늘어진다 */
+const GRAB_P={hx:.55,hy:-.3,hd:.74,sc:.85,turn:.4,lean:-.04,look:-.28,fx:.38,fy:-1.05,fd:.56,g0:-.05,g1:.04,gx:.03,gy:.06,gz:.05};
+const GRAB_L={hx:.44,hy:-.45,hd:.76,sc:.88,turn:.5,lean:-.04,look:-.28,fx:.24,fy:-.28,fd:.6,g0:.1,g1:.22,gx:.02,gy:.012,gz:.045};
+function grabLayout(){return innerWidth<innerHeight?GRAB_P:GRAB_L;}
 const CROWD=(()=>{
  const root=grp(scene,null,'fate-beneficiaries');root.visible=false;
  const vmRoot=grp(vmScene,null,'grabbers');vmRoot.visible=false;
- const coats=['#2b4a6e','#5a6b4c','#7a3f4b','#4c3f72','#6b5140','#2f5c66'];
+ // 0·1번은 내 팔을 붙잡는 사람: 내 남색 소매와 헷갈리지 않는 색(자주·올리브)
+ const coats=['#8a3a4c','#5f7044','#2b4a6e','#4c3f72','#6b5140','#2f5c66'];
  const skins=['#e6a884','#cf8f6c','#f0b490','#bf7f61','#d99b78','#f2c09e'];
  const hairs=['#231c1a','#4a382d','#7a716a','#2b2524','#5c4439','#171516'];
  const shirts=['#f3efe4','#eef3f6','#f6eee2','#f2f2ee','#efeadc','#f4efe6'];
  const ties=['#9c2231','#2c4f8c','#b0702a','#36663f','#7a2d6a','#8a2b2b'];
  // 보증서: big=大吉(금빛), small=小吉(연노랑), flat=平(누런 종이)
  const CERTS=[{g:'big',label:'평생 재물운'},{g:'big',label:'집안복 대길'},{g:'big',label:'자녀운 상승'},{g:'small',label:'큰 탈은 없음'},{g:'big',label:'윗자리 대길'},{g:'flat',label:'지금 이대로'}];
- const sphere=sphereGeo(16),earGeo=sphereGeo(10),noseGeo=new THREE.ConeGeometry(.017,.05,8);
+ const sphere=sphereGeo(16),earGeo=sphereGeo(10),noseGeo=sphereGeo(14);
+ // 얼굴: 머리 타원면을 따라 휘어진 판(평면 스티커처럼 떠 보이지 않게). 그림은 앞에서 비춘 좌표로 붙인다
+ const faceGeo=(()=>{const g=new THREE.SphereGeometry(1,40,28,PI/2-1.3,2.6,.42,2.3),P=g.attributes.position,uv=g.attributes.uv;
+  for(let i=0;i<P.count;i++){const x=P.getX(i)*.068*1.016,y=P.getY(i)*.084*1.016,z=P.getZ(i)*.062*1.016;P.setXYZ(i,x,y,z);uv.setXY(i,.5+x/.136,.5+(y+.002)/.146);}
+  P.needsUpdate=true;uv.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();return g;})();
  const sole=STD('#292528',{roughness:.75});
  const UA=.125,FA=.125; // 위팔·아래팔 길이(사람 기준 단위)
 
@@ -1931,13 +2000,17 @@ const CROWD=(()=>{
   mk(sphere,hair,head,{p:[0,.05,-.012],s:[.072,.048,.066],cast:false,receive:false});
   mk(sphere,hair,head,{p:[0,.064,.03],s:[.05,.028,.03],cast:false,receive:false});
   for(const sx of [-1,1])mk(earGeo,skin,head,{p:[sx*.066,-.002,0],s:[.014,.024,.012],cast:false,receive:false});
-  mk(noseGeo,skin,head,{p:[0,-.004,.068],r:[PI/2,0,0],cast:false,receive:false});
-  const face=mk(new THREE.PlaneGeometry(.136,.146),faceMats.normal,head,{p:[0,-.002,.064],cast:false,receive:false});
+  // 코: 콧대 + 둥근 코끝(뾰족한 원뿔 대신)
+  mk(noseGeo,skin,head,{p:[0,.002,.06],s:[.0085,.017,.011],cast:false,receive:false});
+  mk(noseGeo,skin,head,{p:[0,-.013,.063],s:[.0155,.0135,.014],cast:false,receive:false});
+  const face=mk(faceGeo,faceMats.normal,head,{cast:false,receive:false});face.renderOrder=1;
   function makeArm(side){
    const sh=grp(body,[side*.114,.425,.004],side<0?'armL':'armR');
    const ua=mk(capsuleGeo(.027,UA-.054,10),coat,sh,{p:[0,-UA/2,0],s:[1.12,1,1],cast:false,receive:false});
    const el=grp(sh,[0,-UA,0]);
-   const fa=mk(capsuleGeo(.023,FA-.05,10),skin,el,{p:[0,-FA/2,.004],cast:false,receive:false});
+   // 아래팔도 양복 소매(손목에 흰 셔츠 소맷부리): 내 팔을 붙잡을 때 누구 팔인지 색으로 보인다
+   const fa=mk(capsuleGeo(.025,FA-.05,10),coat,el,{p:[0,-FA/2,.004],cast:false,receive:false});
+   mk(cylGeo(.024,.024,.016,12),shirt,el,{p:[0,-FA+.02,.006],cast:false,receive:false});
    const hand=grp(el,[0,-FA,.008]);
    mk(sphere,skin,hand,{s:[.031,.038,.026],cast:false,receive:false});
    const finger=mk(capsuleGeo(.009,.05,8),skin,hand,{p:[0,-.045,.006],cast:false,receive:false});finger.visible=false;
@@ -1951,7 +2024,6 @@ const CROWD=(()=>{
   mk(new THREE.PlaneGeometry(.142,.188),new THREE.MeshBasicMaterial({map:certTex(cert),side:THREE.DoubleSide,toneMapped:false}),paper,{p:[0,0,.0055],cast:false,receive:false});
   const stamp=mk(new THREE.PlaneGeometry(.066,.066),stampMat,paper,{p:[0,-.06,.0085],cast:false,receive:false});
   const ink=mk(ringGeo,inkMat.clone(),paper,{p:[0,-.06,.009],s:.03,cast:false,receive:false});ink.visible=false;
-  for(const sx of [-1,1])mk(sphere,skin,paper,{p:[sx*.068,-.07,.014],s:[.019,.026,.014],cast:false,receive:false});
   return {i,s,cert,root:person,body,head,face,arms,paper,stamp,ink,mood:'normal',
    x:0,y:.015,z:0,ry:0,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,bob:0,run:0,
    goal:{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'down',speed:9},
@@ -1959,23 +2031,29 @@ const CROWD=(()=>{
  }
  const people=[];for(let i=0;i<6;i++)people.push(makePerson(root,i));
  // 1인칭 손 장면 안의 두 사람(0·1번과 같은 사람)
- const grabbers=[makePerson(vmRoot,0,{s:1.3}),makePerson(vmRoot,1,{s:1.3})];
+ const grabbers=[makePerson(vmRoot,0,{s:1.12}),makePerson(vmRoot,1,{s:1.12})];
 
  /* ---- 자세 ---- */
  const adamp=(a,b,l,dt)=>a+wrapPi(b-a)*(1-Math.exp(-l*dt));
  function mood(p,m){p.goal.mood=m;if(p.mood!==m){p.mood=m;p.face.material=faceMats[m]||faceMats.normal;}}
- // 팔: z=어깨 벌림(옆), x=어깨 앞뒤, ez=팔꿈치 안쪽 굽힘
+ /* 팔 자세: [벌림, 앞으로 듦, 팔꿈치 굽힘(앞으로)] — 왼팔·오른팔 같은 값(좌우는 아래에서 뒤집는다).
+  * 벌림: 몸 바깥쪽으로(라디안), 앞으로 듦: 앞(+z)으로, 팔꿈치: 아래팔이 앞으로 접힌다.
+  * hold는 보증서를 가슴 앞에서 두 손으로, up·cheer·pray는 머리 위로 든 보증서를 두 손으로 쥔다(손은 IK로 종이 가장자리에 붙인다). */
  const ARMS={
-  down:{L:[.74,.22,.02],R:[-.74,-.22,.02]},
-  run:{L:[.5,.2,.5],R:[-.5,-.2,.5]},
-  hold:{L:[.38,.46,.55],R:[-.38,-.46,.55]},          // 가슴 앞에 두 손으로 쥐기
-  up:{L:[-PI+.18,.05,.1],R:[PI-.18,-.05,.1]},        // 두 팔 번쩍
-  pray:{L:[-PI+.26,.62,.15],R:[PI-.26,-.62,.15]},    // 머리 위에서 두 손 모음
-  spread:{L:[1.42,.05,.12],R:[-1.42,-.05,.12]},      // 양팔 벌려 막기
-  point:{L:[.6,.2,.1],R:[-.22,0,-1.5]},              // 오른팔을 앞으로 뻗어 손가락질
-  cheer:{L:[-PI+.3,.18,.2],R:[PI-.3,-.18,.2]},
+  down:[.14,.06,.2],
+  run:[.22,.45,1.25],
+  hold:[.2,.35,1.25],
+  up:[2.9,.15,.2],
+  pray:[2.75,.35,.55],
+  cheer:[2.7,.3,.35],
+  spread:[1.42,.2,.12],
+  point:[.5,1.62,.04],   // 손가락질: 팔을 얼굴 옆으로 비켜 들어 나를 가리킨다(정면으로 뻗으면 손이 제 입을 가린 것처럼 보였다)
  };
- function armPose(p,key,v,dt,l=11){const a=p.arms[key];a.z=adamp(a.z,v[0],l,dt);a.ez=adamp(a.ez,v[1],l,dt);a.x=adamp(a.x,v[2],l,dt);a.sh.rotation.set(a.x,0,a.z);a.el.rotation.set(0,0,a.ez);}
+ // 보증서를 쥐는 손: both(두 손, 가장자리) / R(오른손만, 왼쪽 아래 모서리) / L(왼손만)
+ const GRIP={hold:'both',up:'both',pray:'both',cheer:'both',spread:'R',point:'L'};
+ function armPose(p,key,v,dt,l=11){const a=p.arms[key],s=key==='L'?-1:1;
+  a.z=adamp(a.z,v[0],l,dt);a.x=adamp(a.x,v[1],l,dt);a.ez=adamp(a.ez,v[2],l,dt);
+  a.sh.rotation.set(-a.x,0,s*a.z);a.el.rotation.set(-a.ez,0,0);}
 
  const state={mode:'hidden',at:0,ev:[],nextSob:0,nextMurmur:0};
  function setMode(m,at){state.mode=m;state.at=at||G.time;}
@@ -2030,27 +2108,31 @@ const CROWD=(()=>{
   VM.setGrab('L',w);VM.setGrab('R',w);
   const trem=Math.sin(G.time*23)*.012*w,trem2=Math.cos(G.time*19)*.01*w;
   for(let i=0;i<2;i++){const gp=grabbers[i],s=i?1:-1,k=i?'R':'L';
-   // 머리 자리(화면 좌표): 들어올 때는 화면 밖에서 미끄러져 들어오고, 뿌리쳐지면 바깥 아래로 튕겨 나간다
-   const slide=backOut(sat((t-i*.08)/.55),1.2);
-   const nx=s*(lerp(1.4,.76,slide)+grab.off*1.1),ny=lerp(-1.15,-.36,slide)-grab.off*.9;
-   vat(nx+trem2*s,ny+trem,.6,gv1);
-   gp.root.position.set(gv1.x,gv1.y-.585*gp.s,gv1.z);
-   gp.root.rotation.set(-.08+grab.off*.9,-s*.42,s*(.1-grab.off*.5));
+   // 머리 자리(화면 좌표): 들어올 때는 화면 아래 바깥에서 미끄러져 들어오고, 뿌리쳐지면 바깥 아래로 튕겨 나간다.
+   // 둘은 화면 아래 양쪽에서 내 주먹 바깥쪽에 매달려 올려다본다(얼굴이 맞붙지도, 화면 밖으로 잘리지도 않게)
+   const slide=backOut(sat((t-i*.08)/.55),1.2),GL=grabLayout();
+   const nx=s*(lerp(1.5,GL.hx,slide)+grab.off*1.1),ny=lerp(-1.25,GL.hy,slide)-grab.off*.9;
+   vat(nx+trem2*s,ny+trem,GL.hd,gv1);
+   // 발을 축으로 몸을 돌리면 머리가 가운데로 쏠리므로, 돌린 뒤 머리가 제자리에 오게 몸 자리를 정한다
+   gp.root.scale.setScalar(GL.sc);
+   gp.root.rotation.set(GL.lean+grab.off*.9,-s*GL.turn,s*(.08-grab.off*.5));
+   gv5.set(0,.585*GL.sc,0).applyEuler(gp.root.rotation);
+   gp.root.position.copy(gv1).sub(gv5);
    // 두 손으로 내 아래팔을 움켜쥔다(아래팔 위의 두 점)
    VM.handPos(k,gv2);VM.anchorPos(k,gv3);
    gp.root.updateWorldMatrix(true,false);
-   for(const ak of ['L','R']){const a=gp.arms[ak];const f=ak==='L'?(i?.1:.24):(i?.24:.1);
-    gv4.copy(gv2).lerp(gv3,f);gv4.x+=s*.025;gv4.y+=.015;gv4.z+=.05; // 손목 바로 아래, 팔 앞면을 감아쥔 손(카메라 쪽)
+   for(const ak of ['L','R']){const a=gp.arms[ak];const f=ak==='L'?(i?GL.g0:GL.g1):(i?GL.g1:GL.g0);
+    gv4.copy(gv2).lerp(gv3,f);gv4.x+=s*GL.gx;gv4.y+=GL.gy;gv4.z+=GL.gz; // 손목·아래팔 앞면을 감아쥔 손(카메라 쪽)
     placeArmIK(gp,a,gv4,s);}
-   gp.head.rotation.set(-.22,-s*.3,0);gp.paper.visible=false;gp.arms.L.finger.visible=gp.arms.R.finger.visible=false;
+   gp.head.rotation.set(GL.look,-s*.22,s*.06);gp.paper.visible=false;gp.arms.L.finger.visible=gp.arms.R.finger.visible=false;
   }
  }
  const iv1=V3(),iv2=V3(),iv3=V3(),iv4=V3(),iq=new THREE.Quaternion(),iq2=new THREE.Quaternion(),DOWN=V3(0,-1,0);
  // 사람 팔을 월드(vm) 좌표의 손 자리로 늘이기: 두 마디 IK
- function placeArmIK(p,a,targetW,s){
+ function placeArmIK(p,a,targetW,s,poleL){
   const S=a.sh.getWorldPosition(iv1);const body=p.body;
-  const pole=iv3.copy(S).add(iv4.set(s*.25,-.1,.2).applyQuaternion(body.getWorldQuaternion(iq)));
-  const L1=UA*p.s,L2=FA*p.s;
+  const pole=iv3.copy(S).add((poleL?iv4.set(s*poleL[0],poleL[1],poleL[2]):iv4.set(s*.25,-.1,.2)).applyQuaternion(body.getWorldQuaternion(iq)));
+  const sc=p.root.scale.x,L1=UA*sc,L2=FA*sc;
   const E=iv2;solveTwoBone(S,targetW,pole,L1,L2,E);
   // 어깨 → 팔꿈치
   const parentQ=body.getWorldQuaternion(iq).invert();
@@ -2061,15 +2143,34 @@ const CROWD=(()=>{
   const v2=iv4.subVectors(targetW,E).normalize().applyQuaternion(shQ);
   a.el.quaternion.setFromUnitVectors(DOWN,v2);
  }
+ /* 보증서 쥐기: 자세(FK) 위에 손을 종이 가장자리로 끌어다 붙인다(IK). 쥐었다 놓을 때는 부드럽게 넘어간다 */
+ const gpv=V3(),gq1=new THREE.Quaternion(),gq2=new THREE.Quaternion(),gq3=new THREE.Quaternion();
+ const POLE_CHEST=[.32,-.24,-.06],POLE_HIGH=[.34,.02,.16];
+ function gripPaper(p,key,dt){
+  const mode=GRIP[key]||null,high=key==='up'||key==='pray'||key==='cheer';
+  for(const k of ['L','R']){
+   const a=p.arms[k],want=mode==='both'||mode===k?1:0;
+   a.ikw=damp(a.ikw==null?want:a.ikw,want,10,dt);
+   if(a.ikw<.01)continue;
+   const s=k==='L'?-1:1;
+   p.paper.updateWorldMatrix(true,false);
+   if(mode==='both')gpv.set(s*.072,high?-.035:-.03,.006);else gpv.set(k==='R'?.05:-.05,-.088,.004);
+   gpv.applyMatrix4(p.paper.matrixWorld);
+   gq1.copy(a.sh.quaternion);gq2.copy(a.el.quaternion);
+   placeArmIK(p,a,gpv,s,high?POLE_HIGH:POLE_CHEST);
+   if(a.ikw<.995){gq3.copy(a.sh.quaternion);a.sh.quaternion.copy(gq1).slerp(gq3,a.ikw);gq3.copy(a.el.quaternion);a.el.quaternion.copy(gq2).slerp(gq3,a.ikw);}
+  }
+ }
 
  /* ---- 10%: 앞을 막아서기 ---- */
  function wallStart(at){
   showAll();setMode('wall',at);clearEvents();
+  // 넷이 설계자 다리 앞에 한 줄로 서서 막는다(화면을 머리 하나로 꽉 채우지 않게 거리·크기를 둔다)
   for(let i=2;i<6;i++){const p=people[i],k=i-2,s=k<2?-1:1;
-   p.goal.x=s*2.4;p.goal.z=1.0+k*.08;p.x=p.goal.x;p.z=p.goal.z;p.root.visible=true;p.root.scale.setScalar(1.4);
-   goTo(p,WALLX[k]*1.15,1.1,{ry:0,speed:7.5});stance(p,'block');mood(p,'warn');}
-  // 2번은 코앞까지 와서 손가락질
-  sched(.55,()=>{const p=people[2];p.root.scale.setScalar(1.55);goTo(p,-.2,1.6,{ry:0,speed:7});stance(p,'point');p.arms.R.finger.visible=true;});
+   p.goal.x=s*2.4;p.goal.z=.85+k*.06;p.x=p.goal.x;p.z=p.goal.z;p.root.visible=true;p.root.scale.setScalar(1.28);
+   goTo(p,WALLX[k]*1.12,.92,{ry:0,speed:7.5});stance(p,'block');mood(p,'warn');}
+  // 2번은 한 걸음 나와서 손가락질
+  sched(.55,()=>{const p=people[2];p.root.scale.setScalar(1.34);goTo(p,-.16,1.3,{ry:0,speed:7});stance(p,'point');p.arms.R.finger.visible=true;});
   const an=i=>({obj:people[i].head,off:V3(0,.1,0),cam:'main'});
   sched(.75,()=>BUB.say(an(2),'억울하면 당신 것만 다시 써달라고 해요.',1.9));
   sched(1.2,()=>BUB.say(an(4),'저 사람 액운이 우리한테 붙잖아요!',1.5));
@@ -2218,8 +2319,9 @@ const CROWD=(()=>{
    p.py=damp(p.py,g.py,11,dt);p.px=damp(p.px,g.px,11,dt);p.pz=damp(p.pz,g.pz,11,dt);p.prx=adamp(p.prx,g.prx,10,dt);
    p.root.position.set(p.x,0,p.z);p.root.rotation.y=p.ry;p.body.position.y=p.y;p.body.rotation.set(p.rx,0,p.rz);
    p.paper.position.set(p.px,p.py,p.pz);p.paper.rotation.x=p.prx;
-   const A=ARMS[p.run>.5&&!['pray','up','cheer'].includes(g.arms)?'run':g.arms]||ARMS.down;
-   armPose(p,'L',A.L,dt);armPose(p,'R',A.R,dt);
+   const akey=p.run>.5&&!GRIP[g.arms]?'run':g.arms,A=ARMS[akey]||ARMS.down;
+   armPose(p,'L',A,dt);armPose(p,'R',A,dt);
+   gripPaper(p,akey,dt);
    mood(p,g.mood||p.mood);
    const cry=p.mood==='wail'||p.mood==='pray';
    p.head.rotation.set(g.arms==='pray'?-.35:cry?-.1:0,0,cry?Math.sin(now*11+p.i)*.07:0);
@@ -2237,7 +2339,7 @@ const CROWD=(()=>{
   rev.on=false;rev.gather=false;rev.impact=false;if(rev.wisps){rev.wisps.visible=false;rev.glow.visible=false;rev.core.visible=false;rev.light.intensity=0;rev.glow.material.opacity=1;}
   for(const p of [...people,...grabbers]){p.root.visible=false;p.hidden=true;p.root.scale.setScalar(p.s);p.x=p.z=0;p.y=.015;p.ry=p.rx=p.rz=0;p.run=0;p.bob=0;p.stampT=-1;p.shakeT=-1;p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;p.ink.visible=false;
    Object.assign(p.goal,{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'hold',speed:9});mood(p,'normal');
-   for(const k of ['L','R']){const a=p.arms[k],v=ARMS.hold[k];a.z=v[0];a.ez=v[1];a.x=v[2];a.sh.rotation.set(a.x,0,a.z);a.el.rotation.set(0,0,a.ez);a.finger.visible=false;}
+   for(const k of ['L','R']){const a=p.arms[k],v=ARMS.hold,s=k==='L'?-1:1;a.z=v[0];a.x=v[1];a.ez=v[2];a.sh.rotation.set(-a.x,0,s*a.z);a.el.rotation.set(-a.ez,0,0);a.ikw=1;a.finger.visible=false;}
    p.paper.visible=true;p.paper.position.set(0,.31,.108);p.paper.rotation.set(0,0,0);p.head.rotation.set(0,0,0);p.body.position.y=.015;p.body.rotation.set(0,0,0);p.root.position.set(0,0,0);p.root.rotation.set(0,0,0);}
   BUB.clear();VM.setGrab('L',0);VM.setGrab('R',0);
  }
@@ -2280,15 +2382,22 @@ const BLOOD=(()=>{
  const pool=new Float32Array(64*64);let flDirty=false,flUploadAcc=0;
  function floorUV(x,z){return [(x-FL.x0)/FL.w*FL.res,(z-FL.z0)/FL.h*FL.res];}
  function blob(g,x,y,r,col_,a){g.globalAlpha=a;g.fillStyle=col_;g.beginPath();g.ellipse(x,y,r,r*rnd(.75,1),rnd(0,PI),0,TAU);g.fill();g.globalAlpha=1;}
+ /* 떨어진 방울은 방울 크기만큼만 묻고, 같은 자리에 계속 떨어질 때만 웅덩이로 번진다.
+  * (예전에는 방울 하나가 손바닥만 한 자국을 남겨 바닥 전체가 파란 페인트처럼 덮였다) */
  function paintFloor(x,z,vol,impact){
   if(!PREF.blood)return;const [u,v]=floorUV(x,z);if(u<0||v<0||u>FL.res||v>FL.res)return;
   const ci=clamp(Math.floor(u/16),0,63)+clamp(Math.floor(v/16),0,63)*64;pool[ci]+=vol;
-  const r=clamp(Math.sqrt(pool[ci])*95,3,70);
-  blob(flCtx,u+rnd(-3,3),v+rnd(-3,3),r*rnd(.6,1),'#13328f',.55);blob(flCtx,u,v,r*.55,'#1a45bd',.45);
-  if(impact>2.5){for(let i=0;i<4;i++){const a=rnd(0,TAU),d=rnd(6,22);blob(flCtx,u+Math.cos(a)*d,v+Math.sin(a)*d,rnd(1.5,4),'#173da8',.8);}}
+  const s=clamp(Math.sqrt(vol)*230,2,8),pr=Math.sqrt(pool[ci]);
+  blob(flCtx,u+rnd(-2,2),v+rnd(-2,2),s*rnd(.8,1.1),'#173da8',.82);
+  if(pr>.06){const r=clamp(pr*62,5,42);blob(flCtx,u+rnd(-5,5),v+rnd(-5,5),r*rnd(.7,1),'#11308a',.13);}
+  if(impact>3.2){const n=2+(Math.random()*3|0);for(let i=0;i<n;i++){const a=rnd(0,TAU),d=rnd(6,18);blob(flCtx,u+Math.cos(a)*d,v+Math.sin(a)*d,rnd(1.2,2.6),'#173da8',.75);}}
   flDirty=true;
  }
- function poolUnder(x,z,amount){if(!PREF.blood||amount<=0)return;const [u,v]=floorUV(x,z);const ci=clamp(Math.floor(u/16),0,63)+clamp(Math.floor(v/16),0,63)*64;pool[ci]+=amount;const r=clamp(Math.sqrt(pool[ci])*90,4,190);blob(flCtx,u+rnd(-6,6),v+rnd(-6,6),r,'#12308a',.18);flDirty=true;}
+ // 쓰러진 몸 밑 웅덩이: 몇 프레임마다 한 번씩, 가장자리가 울퉁불퉁하게 넓어진다
+ let underT=0;
+ function poolUnder(x,z,amount){if(!PREF.blood||amount<=0)return;const [u,v]=floorUV(x,z);const ci=clamp(Math.floor(u/16),0,63)+clamp(Math.floor(v/16),0,63)*64;pool[ci]+=amount;
+  underT-=1;if(underT>0)return;underT=6;
+  const r=clamp(Math.sqrt(pool[ci])*48,6,88);for(let i=0;i<3;i++){const a=rnd(0,TAU),d=rnd(0,r*.45);blob(flCtx,u+Math.cos(a)*d,v+Math.sin(a)*d*.7,r*rnd(.45,.8),'#11308a',.1);}flDirty=true;}
  // 등받이 판
  let pnCanvas=null,pnCtx=null,pnSaved=null;
  function panelInit(){if(pnCtx)return;pnCanvas=WORLD.panelTex.userData.canvas;pnCtx=WORLD.panelTex.userData.ctx;pnSaved=document.createElement('canvas');pnSaved.width=pnCanvas.width;pnSaved.height=pnCanvas.height;pnSaved.getContext('2d',TEX_CTX).drawImage(pnCanvas,0,0);}
@@ -2682,7 +2791,7 @@ const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);po
     d.p.addScaledVector(d.v,dt);
     if(kind!=='dust'){
      if(d.p.y<.01){d.on=false;if(kind==='blood')paintFloor(d.p.x,d.p.z,d.size*d.size*30,d.v.length());else if(Math.random()<.2)AUDIO.drip(.3);continue;}
-     if(kind==='blood'&&d.v.z<0&&d.p.z<-1.05&&d.p.z>-1.16){if(paintPanel(d.p,d.size*1.6)){d.on=false;continue;}}
+     if(kind==='blood'&&d.v.z<0&&d.p.z<-1.05&&d.p.z>-1.16){if(paintPanel(d.p,d.size*1.2)){d.on=false;continue;}}
      // 화면 쪽으로 날아온 피는 화면에 묻는다
      if(kind==='blood'&&d.v.z>0&&d.p.z>camera.position.z-.42){d.on=false;const s=v1.copy(d.p).project(camera);if(Math.abs(s.x)<1&&Math.abs(s.y)<1&&Math.random()<.5)SB.add((s.x*.5+.5)*sw,(-s.y*.5+.5)*sh,rnd(7,15));continue;}
     }
@@ -2872,6 +2981,11 @@ const FX=(()=>{
   const p=pos.clone().project(camera);if(p.z>1)return;
   const W=innerWidth,H=innerHeight;
   const x=clamp((p.x*.5+.5)*W+rnd(-26,26)+(o.dx||0),40,W-40),y=clamp((-p.y*.5+.5)*H+rnd(-46,-16)+(o.dy||0),90,H-150);
+  wordAt(text,x,y,o);
+ }
+ // 화면 좌표에 바로 띄우는 충격 글자(이야기 장면처럼 3D 밖에서 칠 때). parent를 주면 그 안에 띄운다
+ function wordAt(text,x,y,o={}){
+  const host=o.parent||layer;if(!host)return;const W=innerWidth,H=innerHeight;
   const el=document.createElement('div');el.className='pop';
   const sz=(o.size||48)*clamp(Math.min(W,H)/390,.85,1.35),dur=o.dur||.58,shc=o.color||'#d8352a';
   el.style.cssText=`left:${x}px;top:${y}px;font-size:${sz}px;--sh:${shc};--r:${(o.rot!=null?o.rot:rnd(-11,11)).toFixed(1)}deg;--sw:${Math.max(4,sz*.11).toFixed(1)}px;--ox:${(sz*.11).toFixed(0)}px;--oy:${(sz*.13).toFixed(0)}px;--d:${dur}s`;
@@ -2881,7 +2995,7 @@ const FX=(()=>{
    const ang=rnd(0,TAU),dist=sz*rnd(.5,1.15);
    sp.style.cssText=`--lr:${rnd(-9,9).toFixed(1)}deg;--ls:${rnd(-45,45).toFixed(0)}deg;--lj:${rnd(-.07,.07)*sz|0}px;--lx:${(Math.cos(ang)*dist)|0}px;--ly:${(Math.sin(ang)*dist-sz*.35)|0}px;animation-delay:${(i*.02).toFixed(3)}s`;
    el.appendChild(sp);}
-  layer.appendChild(el);while(layer.childElementCount>3)layer.firstElementChild.remove();
+  host.appendChild(el);if(host===layer)while(layer.childElementCount>3)layer.firstElementChild.remove();
   setTimeout(()=>el.remove(),dur*1000+160);
  }
  function update(dt){
@@ -2894,7 +3008,7 @@ const FX=(()=>{
   }
  }
  function clear(){for(const f of live){f.s.removeFromParent();f.s.visible=false;pool.push(f.s);}live.length=0;if(layer)layer.textContent='';}
- return {add,lift,word,update,clear,scene:over};
+ return {add,lift,word,wordAt,update,clear,scene:over};
 })();
 /* ===== 5-3. 동전 =====
  * 돼지저금통(배)에서 쏟아지는 금화(福)와 엽전(常平通寶). 종류마다 메시 하나(인스턴스)로 그린다.
@@ -3866,8 +3980,9 @@ Object.assign(Emperor.prototype,{
   const blinkClose=this.blink>0?Math.sin(clamp(1-this.blink,0,1)*PI):0;this.blink=Math.max(0,this.blink-dt/.15);
   // 웃음·말할 때 입이 들썩
   if(this.laughAmt>0){this.talkPhase+=dt*TAU*5.6;const w=(.5+.5*Math.sin(this.talkPhase))*this.laughAmt;T.mOpen+=w*.3;T.jaw+=w*.14;T.lidU-=w*.05;}
-  if(this.talk>0){this.talkPhase+=dt*TAU*7;const w=Math.max(0,Math.sin(this.talkPhase))*this.talk;T.mOpen+=w*.35;T.jaw+=w*.2;}
-  const r=instant?1:1-Math.exp(-dt*(this.flinch>.3?30:16));
+  // 말할 때: 음절마다 벌리는 크기가 다르게(로봇처럼 똑같이 뻐끔거리지 않게)
+  if(this.talk>.01){this.talkPhase+=dt*TAU*5.2;const amp=.55+.45*Math.sin(this.talkPhase*.43+1.7),w=Math.max(0,Math.sin(this.talkPhase))*amp*this.talk;T.mOpen+=w*.95;T.jaw+=w*.55;T.mWide+=Math.sin(this.talkPhase*.71)*.16*this.talk;}
+  const r=instant?1:1-Math.exp(-dt*(this.flinch>.3?30:this.talk>.2?26:16));
   for(const k of EXPR_KEYS)f[k]=lerp(f[k],T[k],r);
   for(const k of ['bY','bIn','bOut'])for(let i=0;i<2;i++)f[k][i]=lerp(f[k][i],T[k][i],r);
   this._applyBrows(f,time);this._applyEyes(f,blinkClose,dt,time);this._applyMouth(f,time);
@@ -4143,6 +4258,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
  /* ---- 매 프레임 ---- */
  update(dt,time){
   this.stateT+=dt;this.sinceHit+=dt;this.breath+=dt*(1.6+this.mood*1.4);this._ikFrame++;
+  this.talk=damp(this.talk||0,G.time<(this.talkUntil||0)?1:0,14,dt);
   const p=this.poseTmp;this.basePose(p,dt,time);
   if(this.shockT>0)this.shockT-=dt;else this.setEmotion(this.baseEmotion());
   if(this.state==='stand')this.updateIdle(dt,time);
@@ -4170,11 +4286,12 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
  },
  updateSecondary(dt){
   // 매달린 것들(구슬줄·끈·수염): 부모의 월드 회전을 거꾸로 적용해 늘 아래로 처지게, 스프링으로 늦게 따라오게
-  const hang=(piv,sx,sz)=>{const P=piv.parent;P.matrixWorld.decompose(_av6,_aq2,_av7);_aq2.invert();const d=_av1.set(0,-1,0).applyQuaternion(_aq2);
-   sx.t=Math.atan2(-d.z,-d.y);sz.t=Math.atan2(d.x,-d.y);sx.step(dt);sz.step(dt);piv.rotation.set(sx.x,0,sz.x);piv.updateMatrix();piv.matrixWorld.multiplyMatrices(P.matrixWorld,piv.matrix);};
+  const hang=(piv,sx,sz,dw)=>{const P=piv.parent;P.matrixWorld.decompose(_av6,_aq2,_av7);_aq2.invert();const d=(dw?_av1.copy(dw):_av1.set(0,-1,0)).applyQuaternion(_aq2);
+   sx.t=Math.atan2(-d.z,-d.y);sz.t=Math.atan2(d.x,-d.y);if(!sx.ready){sx.ready=1;sx.x=sx.t;sz.x=sz.t;}sx.step(dt);sz.step(dt);piv.rotation.set(sx.x,0,sz.x);piv.updateMatrix();piv.matrixWorld.multiplyMatrices(P.matrixWorld,piv.matrix);};
   for(const s of this.strings)if(s.piv.parent)hang(s.piv,s.sx,s.sz);
   for(const c of this.cords)if(c.piv.parent)hang(c.piv,c.sx,c.sz);
-  for(const strand of this.beard)for(let i=0;i<strand.length;i++){const s=strand[i];hang(s.g,s.sx,s.sz);}
+  // 턱수염은 가슴을 타고 앞으로 늘어진다(곧장 아래로 늘어지면 옷깃 뒤로 들어가 턱 밑에 검은 말뚝 두 개만 보였다)
+  for(const strand of this.beard)for(let i=0;i<strand.length;i++){const s=strand[i];hang(s.g,s.sx,s.sz,_av9.set(0,-1,BEARD_FWD[i]||1).normalize());}
   // 소매 자락: 아래팔이 수평에 가까울수록 크게 늘어진다
   for(const a of this.arms){const d=a.drape;if(!d||d.userData.detached||a.el.userData.detached)continue;
    a.el.matrixWorld.decompose(_av6,_aq4,_av7);
@@ -4217,6 +4334,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
  },
 });
 const _glowC=new THREE.Color();
+const BEARD_FWD=[.76,.77,1.4];// 턱수염 마디마다 앞으로 나오는 정도(서 있을 때 가슴·배 앞면 기울기에 맞춤, 월드 기준)
 const _down=V3(0,-1,0),_av1=V3(),_av2=V3(),_av3=V3(),_av4=V3(),_av5=V3(),_av6=V3(),_av7=V3(),_av8=V3(),_av9=V3(),_av10=V3();
 const _aq1=new THREE.Quaternion(),_aq2=new THREE.Quaternion(),_aq3=new THREE.Quaternion(),_aq4=new THREE.Quaternion(),_aq5=new THREE.Quaternion(),_aq6=new THREE.Quaternion(),_am=new THREE.Matrix4();
 /* ===== 6-4. 운명 설계자 — 상태·행동·다운 =====
@@ -4529,7 +4647,12 @@ Object.assign(Emperor.prototype,{
   if(PREF.blood&&this.headTear>2&&(this.headTear-amt|0)!==(this.headTear|0)){
    CHUNKS.burst(pt.clone().addScaledVector(n,.01),2+(Math.random()*2|0),n,.03,this.chunkKind({obj:activeSkull,part:'head'}),{speed:1.3});
   }
-  if(this.headTear>=7)this.severHead(dir,{torn:true});
+  // 사람 머리는 두 번째 다운(무릎 꿇고 비는 장면)이 끝나고 다시 일어선 뒤에야 총·칼질로 떨어진다. 그 전에는 살점만 튀고 버틴다
+  // (처음부터 얼굴 연기 — 비웃음·화남·겁·울며 빎 — 를 볼 수 있게. 목을 그어 베면 그때와 상관없이 바로 떨어진다)
+  if(this.headTear>=7){
+   if(this.headKind==='human'&&(G.kd<2||(G.kd===2&&this.state!=='stand'))&&this.state!=='dead')this.headTear=6.4;
+   else this.severHead(dir,{torn:true});
+  }
  },
  // 머리 살에서 조각 하나를 평면으로 썰어 날린다
  tearHeadPiece(pt,n,dir){
@@ -4693,7 +4816,10 @@ const rg=grp(grow,[0,.15,.02]);
  // 파충류 얼굴: 턱 숨쉬기·가끔 혀 날름·눈이 나를 본다
  updateRepFace(dt,time){
   if(this.headGone||this.headKind!=='rep'||!this.repHead)return;
-  const open=.1+.09*Math.max(0,Math.sin(time*1.1))+(this.flinch>.2?.25*this.flinch:0);
+  // 말할 때는 턱을 벌렸다 닫는다
+  if(this.talk>.01)this.talkPhase=(this.talkPhase||0)+dt*TAU*5.4;
+  const talkOpen=this.talk>.01?this.talk*(.05+.24*Math.max(0,Math.sin(this.talkPhase))*(.6+.4*Math.sin(this.talkPhase*.43+1.7))):0;
+  const open=.1+.09*Math.max(0,Math.sin(time*1.1))+(this.flinch>.2?.25*this.flinch:0)+talkOpen;
   if(this.repJawBone)this.repJawBone.rotation.x=open;
   if(this.flinch>0)this.flinch=Math.max(0,this.flinch-dt*2.6);
   // 세로 동공이 나를(카메라) 노려본다
@@ -5737,7 +5863,8 @@ Object.assign(Emperor.prototype,{
   h.plate.visible=false;
   const chest=this.bones.chest,r=h.root;r.updateWorldMatrix(true,true);chest.attach(r);
   r.quaternion.multiply(h.tilt.quaternion);h.tilt.quaternion.identity();h.tilt.rotation.set(0,0,0);
-  const q1=new THREE.Quaternion().setFromEuler(new THREE.Euler(.3,0,rnd(.1,.2)*(Math.random()<.5?-1:1))).multiply(new THREE.Quaternion().setFromAxisAngle(V3(1,0,0),-PI/2));
+  // 앞쪽이 가슴에 얹혀 비스듬히 걸린다(수평으로 누우면 정면에서 목을 가로지르는 막대처럼 보였다)
+  const q1=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,rnd(.1,.2)*(Math.random()<.5?-1:1))).multiply(new THREE.Quaternion().setFromAxisAngle(V3(1,0,0),-PI/2));
   h.falling={t:0,p0:r.position.clone(),q0:r.quaternion.clone(),pTop:V3(0,1.02,.03),p1:V3(0,.335,.02),q1,landed:false,wob:new Spring3(70,4.5),taps:0};
   AUDIO.haloCrack(.7);
  },
@@ -5815,6 +5942,31 @@ const VM=(()=>{
   steelD:S('#5f6670',{roughness:.4,metalness:.8}),blade:S('#d7dee4',{roughness:.16,metalness:.92}),edge:S('#f4f8fb',{roughness:.08,metalness:.95}),
   handle:S('#2b2522',{roughness:.45}),rivet:S('#d8c08a',{roughness:.3,metalness:.8}),gunD:S('#1b1c21',{roughness:.5,metalness:.4}),brass:S('#d9a84a',{roughness:.28,metalness:.88}),
   tape:S('#e7ddc8',{roughness:.86}),blood:S('#1d4bc4',{roughness:.12})};
+ /* 식칼 날: 흰 판자처럼 보이지 않게 강철 결을 그린다. 날 모양 좌표(가로 0~.235, 세로 -.04~.04)를 그대로 텍스처 좌표로 쓴다.
+  * 위(등)는 어둡고, 아래 날 쪽으로 갈수록 밝게 갈린 면(배)과 번쩍이는 날선 */
+ const bladeTex=canvasTex(512,176,(g,w,h)=>{
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#6f7a85');gr.addColorStop(.12,'#8d98a3');gr.addColorStop(.5,'#a9b3bc');gr.addColorStop(.66,'#9aa5af');gr.addColorStop(.69,'#68737e');gr.addColorStop(.72,'#cdd6dd');gr.addColorStop(.93,'#e6edf2');gr.addColorStop(1,'#ffffff');
+  g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let i=0;i<70;i++){const y=rnd(0,h*.66),a=rnd(.03,.09);g.fillStyle=`rgba(${Math.random()<.5?'255,255,255':'40,48,60'},${a})`;g.fillRect(rnd(-40,w*.6),y,rnd(80,w),1);}
+  for(let i=0;i<40;i++){const y=rnd(h*.72,h),a=rnd(.04,.1);g.fillStyle=`rgba(255,255,255,${a})`;g.fillRect(rnd(-40,w*.6),y,rnd(60,w),1);}
+  // 손잡이 쪽 받침 그늘과 각인
+  const sh=g.createLinearGradient(0,0,w*.12,0);sh.addColorStop(0,'rgba(40,46,56,.55)');sh.addColorStop(1,'rgba(40,46,56,0)');g.fillStyle=sh;g.fillRect(0,0,w*.12,h);
+  g.strokeStyle='rgba(50,58,70,.55)';g.lineWidth=2;g.strokeRect(w*.12,h*.22,w*.07,h*.22);g.beginPath();g.moveTo(w*.135,h*.33);g.lineTo(w*.175,h*.33);g.moveTo(w*.155,h*.26);g.lineTo(w*.155,h*.4);g.stroke();
+ });
+ bladeTex.repeat.set(1/.235,1/.08);bladeTex.offset.set(0,.5);
+ /* 칼에 묻은 피: 칼끝 쪽에 번진 얼룩 + 날 쪽으로 흐른 줄기 + 젖은 반사. 같은 날 모양 좌표 */
+ const bloodTex=canvasTex(512,176,(g,w,h)=>{
+  g.clearRect(0,0,w,h);
+  const edge=(x)=>h*(.2+.1*Math.sin(x*.021)+.06*Math.sin(x*.057+1.3));
+  g.beginPath();g.moveTo(w,h*.08);for(let x=w;x>=w*.42;x-=8)g.lineTo(x,edge(x)+(x<w*.5?(w*.5-x)*.9:0));g.lineTo(w*.42,h);g.lineTo(w,h);g.closePath();
+  const gr=g.createLinearGradient(w*.4,0,w,0);gr.addColorStop(0,'rgba(18,52,150,.55)');gr.addColorStop(.35,'rgba(16,48,148,.86)');gr.addColorStop(1,'rgba(12,38,128,.95)');g.fillStyle=gr;g.fill();
+  for(let i=0;i<6;i++){const x=rnd(w*.46,w*.95),y0=edge(x)+rnd(0,h*.15),len=rnd(h*.25,h*.6);g.fillStyle='rgba(14,44,140,.9)';g.fillRect(x-3,y0,6,len);g.beginPath();g.arc(x,y0+len,5.5,0,TAU);g.fill();}
+  for(let i=0;i<9;i++){const x=rnd(w*.3,w*.5),y=rnd(h*.35,h*.95),r=rnd(3,9);g.fillStyle='rgba(16,48,150,.75)';g.beginPath();g.ellipse(x,y,r*1.6,r,0,0,TAU);g.fill();}
+  g.strokeStyle='rgba(150,190,255,.55)';g.lineWidth=2.5;g.lineCap='round';for(let i=0;i<5;i++){const y=rnd(h*.45,h*.9);g.beginPath();g.moveTo(rnd(w*.5,w*.7),y);g.lineTo(rnd(w*.8,w*.97),y+rnd(-6,6));g.stroke();}
+ });
+ bloodTex.repeat.set(1/.235,1/.08);bloodTex.offset.set(0,.5);
+ M.blade=S('#ffffff',{map:bladeTex,roughness:.3,metalness:.55});M.edge=S('#f4f8fb',{roughness:.12,metalness:.8});
+ M.blood=new THREE.MeshStandardMaterial({map:bloodTex,transparent:true,depthWrite:false,roughness:.14,metalness:0,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
  // 칼이 몸에 들어간 만큼은 안 보이게: 피부 자리에 자르는 면을 두고 칼날·칼에 묻은 피에만 적용한다
  const clip=new THREE.Plane(new THREE.Vector3(0,0,1),1e3);
  renderer.localClippingEnabled=true;
@@ -5842,11 +5994,19 @@ const VM=(()=>{
   g.updateMatrixWorld(true);for(const m of [...th.children]){g.attach(m);}th.removeFromParent();mergeChildren(g);
   return g;
  }
- /* 팔뚝+소매: +y 방향으로. 소매 끝은 투명하게 사라진다 */
- const fadeTex=canvasTex(4,128,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#000');gr.addColorStop(.55,'#000');gr.addColorStop(.92,'#bcbcbc');gr.addColorStop(1,'#bcbcbc');g.fillStyle=gr;g.fillRect(0,0,w,h);},{srgb:false});
- const sleeveMat=S('#2c3752',{roughness:.78,transparent:true,alphaMap:fadeTex,depthWrite:false});
- function arm(){const g=grp(root);const sl=grp(g);const m=mk(cylGeo(.036,.046,.36,18,true),sleeveMat,sl,{p:[0,.18+.1,0]});m.renderOrder=5;
-  mk(cylGeo(.028,.034,.14,16),M.skin,g,{p:[0,.055,0]});const cf=mk(cylGeo(.042,.042,.03,18),M.cuff,g,{p:[0,.115,0]});return {g,sl,cf};}
+ /* 팔뚝+소매: +y 방향으로. 소매는 화면 밖 어깨 자리까지 이어진다(팔을 뻗어도 팔이 허공에서 끊기지 않게).
+  * 길이는 매 프레임 손목~어깨 거리에 맞춰 늘인다. 천 주름은 결 무늬로 */
+ const sleeveTex=canvasTex(64,256,(g,w,h)=>{
+  const gr=g.createLinearGradient(0,0,w,0);gr.addColorStop(0,'#26304a');gr.addColorStop(.35,'#3a4870');gr.addColorStop(.6,'#33406a');gr.addColorStop(1,'#222b44');g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let i=0;i<14;i++){const y=rnd(0,h),t=rnd(3,9);const f=g.createLinearGradient(0,y-t,0,y+t);f.addColorStop(0,'rgba(10,14,30,0)');f.addColorStop(.5,'rgba(10,14,30,.28)');f.addColorStop(1,'rgba(10,14,30,0)');g.fillStyle=f;g.fillRect(0,y-t,w,t*2);
+   g.fillStyle='rgba(150,170,220,.12)';g.fillRect(0,y+t*.7,w,1.5);}
+  for(let x=0;x<w;x+=3){g.fillStyle=`rgba(255,255,255,${x%6?.03:.05})`;g.fillRect(x,0,1,h);}
+ },{repeat:[2,1]});
+ sleeveTex.wrapS=THREE.RepeatWrapping;
+ const sleeveMat=S('#ffffff',{map:sleeveTex,roughness:.82});
+ const sleeveGeo=(()=>{const g=cylGeo(.064,.047,1,20,true);g.translate(0,.5,0);return g;})();
+ function arm(){const g=grp(root);const sl=grp(g,[0,.108,0]);mk(sleeveGeo,sleeveMat,sl,{cast:false});
+  mk(cylGeo(.028,.034,.14,16),M.skin,g,{p:[0,.055,0]});const cf=mk(cylGeo(.05,.05,.034,20),M.cuff,g,{p:[0,.116,0]});return {g,sl,cf};}
  const R={hand:grp(root),arm:arm()},L={hand:grp(root),arm:arm()};
  R.fist=fist(R.hand,1);L.fist=fist(L.hand,-1);R.fist.scale.setScalar(1.02);L.fist.scale.setScalar(1.02);
  // 칼: 폭이 넓고 날선이 곧은 부엌 식도
@@ -5858,8 +6018,9 @@ const VM=(()=>{
   const bg=new THREE.ExtrudeGeometry(sh,{depth:.0026,bevelEnabled:true,bevelThickness:.0008,bevelSize:.0012,bevelSegments:1,curveSegments:10});bg.translate(0,0,-.0013);
   mk(bg,M.blade,k,{p:[0,.004,.054],r:[0,-PI/2,0]});
   mk(new THREE.BoxGeometry(.0009,.0035,.18),M.edge,k,{p:[0,-.036,.144],cast:false});
-  // 칼에 묻은 피: 날 양면 앞쪽
-  const bl=grp(k);for(const x of [-.0024,.0024]){mk(new THREE.BoxGeometry(.0006,.048,.12),M.blood,bl,{p:[x,-.001,.215],cast:false});mk(sphereGeo(8),M.blood,bl,{p:[x,-.027,.17],s:[.0008,.009,.02],cast:false});}
+  // 칼에 묻은 피: 날 모양 그대로 오린 얇은 판 두 장(양면). 칼끝 쪽에 번지고 날 쪽으로 흘러내린 자국
+  const bl=grp(k),bsg=new THREE.ShapeGeometry(sh,10);
+  for(const x of [-.0026,.0026])mk(bsg,M.blood,bl,{p:[x,.004,.054],r:[0,-PI/2,0],cast:false,receive:false});
   bl.visible=false;k.userData.blood=bl;}
  // 권총: 옆모습을 깎아 만든 슬라이드·몸통
  const gun=grp(R.hand);
@@ -5915,7 +6076,8 @@ const VM=(()=>{
   computeHeld();
   const pr=portrait(),dy=pr?dockY():-1;
   for(const k of ['R','L']){const s=k==='R'?1:-1;const r=rest[k];
-   if(st.tool==='hand'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.3,.8,-1),V3(s*.85,.4,.2));}
+   // 왼손은 칼·총을 들 때 안 보이지만, 붙잡힐 때는 주먹 자리에서 나온다
+   if(st.tool==='hand'||k==='L'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.3,.8,-1),V3(s*.85,.4,.2));}
    else if(st.tool==='knife'){at(pr?KREST.x:.5,pr?dy+KREST.y:-.74,KREST.d,r.p);orient(r.q,KREST.dir,KN_UP);}
    else{at(pr?.6:.36,pr?dy+.16:-.62,.42,r.p);orient(r.q,V3(-.08,.05,-1),UP);}
   }
@@ -5924,7 +6086,7 @@ const VM=(()=>{
  /* ---- 붙잡힘: 수혜자들이 내 아래팔을 잡고 늘어진다. 뿌리치면 팔이 휙 돌아온다 ---- */
  const GR={L:0,R:0,goal:{L:0,R:0},shake:-1};
  const held={R:V3(),L:V3()},heldQ={R:new THREE.Quaternion(),L:new THREE.Quaternion()};
- function computeHeld(){const pr=portrait();for(const k of ['R','L']){const s=k==='R'?1:-1;at(s*(pr?.5:.38),pr?-.66:-.62,.5,held[k]);orient(heldQ[k],V3(-s*.25,.9,-.5),V3(s*.6,.5,.6));}}
+ function computeHeld(){const GL=grabLayout();for(const k of ['R','L']){const s=k==='R'?1:-1;at(s*GL.fx,GL.fy,GL.fd,held[k]);orient(heldQ[k],V3(-s*.25,.9,-.5),V3(s*.6,.5,.6));}}
  function setGrab(side,w){GR.goal[side]=w;}
  function shakeOff(){GR.shake=0;}
  function handPos(side,out){return out.copy(H[side].p);}
@@ -5978,8 +6140,9 @@ const VM=(()=>{
  const tmpP=V3(),tmpQ=new THREE.Quaternion(),tmpQ2=new THREE.Quaternion(),tv=V3(),tv2=V3(),tv3=V3();
  function placeArm(side){
   const h=side==='R'?R:L,ar=h.arm;h.hand.updateMatrix();
-  const wrist=tv.set(0,0,-.1).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);d.normalize();
+  const wrist=tv.set(0,0,-.1).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
   ar.g.position.copy(wrist);ar.g.quaternion.setFromUnitVectors(UP,d);
+  ar.sl.scale.set(1,Math.max(.05,len-.08),1);
  }
  function update(dt,frozen,rdt){
   // 총 반동·칼 긋기는 멈춤(히트스톱)과 상관없이 실제 시간으로 움직인다(쏘는 순간 바로 튀어야 하니까)
@@ -6058,7 +6221,8 @@ const VM=(()=>{
    if(GR.shake>=0){const u=GR.shake/.55,e=Math.sin(Math.min(1,u)*PI),h=H[k];h.p.x+=s*.17*e;h.p.y+=.21*e*(1-u*.4);h.p.z+=.03*e;tmpQ.setFromAxisAngle(tv2.set(0,0,1),-s*.8*e);h.q.premultiply(tmpQ);}}
   if(GR.shake>=0){GR.shake+=rdt;if(GR.shake>.55)GR.shake=-1;}
   for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
-  // 손 배치
+  // 손 배치(칼·총을 들 때도 붙잡히면 왼팔이 보인다: 왼쪽 사람이 허공을 붙잡지 않게)
+  {const showL=st.tool==='hand'||GR.L>.03||GR.goal.L>0;L.hand.visible=L.arm.g.visible=showL;}
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);if(h.hand.visible)placeArm(k);}
   knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;
  }
@@ -6086,6 +6250,7 @@ function clearTalk(){
  TALK.q.length=0;
  TALK.cur=null;
  TALK.left=TALK.gap=0;
+ if(G.E)G.E.talkUntil=0;
 
  const el=$('#talk');
  if(el){
@@ -6108,6 +6273,18 @@ function queueTalk(lines,replace=false){
 }
 
 function talkBusy(){return !!(TALK.cur||TALK.q.length||TALK.gap>0);}
+// 내 대사창은 아래쪽 안내문·무기 카드보다 위에 띄운다(가로로 겹치는 것만 본다)
+function placeTalk(el,who){
+ if(who!=='player'){if(el.style.bottom)el.style.bottom='';return;}
+ if(el._base==null){const prev=el.style.bottom;el.style.bottom='';el._base=parseFloat(getComputedStyle(el).bottom)||126;el.style.bottom=prev;}
+ const W=innerWidth,H=innerHeight,half=Math.min(W*.43,195)+8;let top=H;
+ for(const s of ['#hint','#tools','#submitDock']){
+  const e=$(s);if(!e||!e.offsetParent)continue;if(s==='#hint'&&e.classList.contains('off'))continue;
+  const r=e.getBoundingClientRect();if(!r.height||r.right<W/2-half||r.left>W/2+half)continue;top=Math.min(top,r.top);
+ }
+ const need=H-top+10,want=need>el._base?Math.round(need)+'px':'';
+ if(el.style.bottom!==want)el.style.bottom=want;
+}
 
 function updateTalk(dt){
  const el=$('#talk');
@@ -6115,6 +6292,8 @@ function updateTalk(dt){
 
  if(TALK.cur){
   TALK.left-=dt;
+  // 내 대사가 떠 있는 동안 아래 안내문·무기 카드가 새로 나타나면 그 위로 비켜 선다
+  if(TALK.cur.who==='player')placeTalk(el,'player');
   if(TALK.left>0)return;
 
   TALK.cur=null;
@@ -6143,6 +6322,9 @@ function updateTalk(dt){
  $('#talkWho').textContent=n.who==='boss'?'운명 설계자':'나';
  $('#talkText').textContent=n.text;
  el.setAttribute('aria-hidden','false');
+ placeTalk(el,n.who);
+ // 설계자 대사가 뜨는 동안 입이 움직인다(글자 수만큼, 대사 길이를 넘지 않게)
+ if(n.who==='boss'&&G.E)G.E.talkUntil=G.time+Math.min(Math.max(.45,n.dur-.2),.35+[...n.text].length*.08);
 
  requestAnimationFrame(()=>{
   if(TALK.cur===n)el.classList.add('on');
@@ -6273,10 +6455,9 @@ function openOffer(){
  requestAnimationFrame(()=>$('#offerPaper').focus());
 }
 function finishOffer(){
- const sc=$('#offerScene');sc.hidden=true;sc.className='story-scene';
+ resetOfferScene();
  G.offerOpen=false;G.offerBreaking=false;G.offerBreakAt=0;G.inputLocked=false;$('#dock').hidden=false;
  if(G.E&&G.E.down)G.E.down.stay=Math.min(G.E.down.stay,.35);
- queueTalk([['player','니들이 정한 팔자, 니들이 살아.',1.9,.08]]);
  hint(HINTS[G.tool],2.8);
  focusCanvas();
 }
@@ -6311,6 +6492,14 @@ function beginRevival(){
 // 컷씬 카메라: 꿇은 사람들 등 너머로 설계자(0) → 든 손으로 다가감(1) → 몸통(2) → 얼굴(3)
 function cutCam(n){
  const pr=innerWidth<innerHeight,f=pr?1.5:1;
+ // 가로 화면(PC)은 세로 시야가 좁아 꿇은 사람들이 화면 아래로 잘렸다: 조금 더 물러나 낮게 본다
+ if(!pr){
+  if(n===0){CAM.goalPos.set(0,1.55,3.45);CAM.goalLook.set(0,.84,-.2);}
+  else if(n===1){CAM.goalPos.set(.3,1.5,3.05);CAM.goalLook.set(-.08,.98,-.1);}
+  else if(n===2){CAM.goalPos.set(0,1.3,2.75);CAM.goalLook.set(0,1.0,0);}
+  else{CAM.goalPos.set(.1,1.4,2.35);CAM.goalLook.set(0,1.16,0);}
+  return;
+ }
  if(n===0){CAM.goalPos.set(0,1.78,2.6*f+.3);CAM.goalLook.set(0,.88,-.1);}
  else if(n===1){CAM.goalPos.set(.32,1.58,2.55*f+.2);CAM.goalLook.set(-.1,1.02,-.05);}
  else if(n===2){CAM.goalPos.set(0,1.28,2.35*f);CAM.goalLook.set(0,1.0,0);}
@@ -6321,7 +6510,8 @@ function flashRelease(dur){const el=$('#flash');el.style.transition='opacity '+d
 function replaceEmperorForRevival(){
  const old=G.E;if(!old)return;
  old.endAct();old.root.removeFromParent();G.retired.push(old);
- const E=new Emperor(G.result);E.bloodRawBase=BLOOD.rawLost;E.taunt=false;E.setPhase(4);
+ // 되살아난 설계자는 처음처럼 멀쩡하고 거만하다(비웃는 얼굴로 꼿꼿이 선다). 맞기 시작하면 남은 게이지에 따라 다시 무너진다
+ const E=new Emperor(G.result);E.bloodRawBase=BLOOD.rawLost;E.taunt=true;E.setPhase(0);
  E.idleT=1e9;E.sobT=1e9;E.lookedHand=true;E.reviveGlow=1.7;
  wireEmperor(E);G.E=E;
  BLOOD.rebindKeepStage(E);if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
@@ -6378,6 +6568,8 @@ function damageBar(d,o={},fromStand=false){
   if(nb<=8){G.bar=G.shown=8;gaugeHit();updateGauge();if(!beginRevival())G.revivalPending=true;return;}
  }
  G.bar=nb;G.shown=nb;gaugeHit();
+ // 되살아난 뒤에는 다운 없이 남은 30%를 맞는다: 게이지가 줄어드는 만큼 화남 → 아픔 → 울며 빎 → 다 무너짐
+ if(G.revived&&!E.taunt){const ph=nb<=7?4:nb<=15?3:nb<=23?2:1;if(E.phase<ph)E.setPhase(ph);}
  if(G.kd<4&&G.bar<=next+1e-6){G.bar=next;G.shown=next;knockdown();}
  updateGauge();
 }
@@ -6717,15 +6909,49 @@ $('#fateSeal').addEventListener('click',()=>{
  if(G.mode!=='submit'||G.sealAt||$('#submitWorkflow').classList.contains('stamped'))return;
  AUDIO.unlock();AUDIO.ui();$('#submitWorkflow').classList.add('stamped');G.sealAt=G.time+.55;
 });
-$('#offerPaper').addEventListener('click',()=>{
+/* 나만 좋게 고친 사주를 친다: 친 자리를 지나 위아래로 찢어져 두 쪽이 양옆으로 날아가고, 그 뒤에 깔려 있던
+ * '다음 사람의 사주'(불리한 배정 유지)가 드러난다. 그걸 보며 내가 한마디 하고 장면이 닫힌다 */
+function tearOffer(e){
+ const paper=$('#offerPaper'),stack=paper.parentNode,r=paper.getBoundingClientRect();
+ const cx=e&&e.clientX>0&&r.width?(e.clientX-r.left)/r.width:.5,x0=clamp(cx,.34,.66)*100,pts=[];
+ for(let i=0;i<=12;i++)pts.push([clamp(x0+rnd(-5,5)+(i%2?2.5:-2.5),8,92),i/12*100]);
+ const line=pts.map(p=>p[0].toFixed(1)+'% '+p[1].toFixed(1)+'%').join(',');
+ for(const [cp,cls] of [['polygon(0% 0%,'+line+',0% 100%)','l'],['polygon(100% 0%,'+line+',100% 100%)','r']]){
+  const h=paper.cloneNode(true);h.removeAttribute('id');h.className='fate-paper half '+cls;h.setAttribute('aria-hidden','true');h.tabIndex=-1;h.style.clipPath=cp;h.style.webkitClipPath=cp;stack.appendChild(h);}
+ paper.style.visibility='hidden';
+ for(let i=0;i<9;i++){const s=document.createElement('i');s.className='scrap';s.style.cssText=`left:${(x0+rnd(-3,3)).toFixed(1)}%;top:${rnd(4,94).toFixed(1)}%;--dx:${rnd(-130,130)|0}px;--dy:${rnd(40,240)|0}px;--rr:${rnd(-300,300)|0}deg`;stack.appendChild(s);}
+}
+function resetOfferScene(){
+ const sc=$('#offerScene');sc.hidden=true;sc.className='story-scene';
+ sc.querySelectorAll('.fate-paper.half,.scrap').forEach(n=>n.remove());$('#offerPaper').style.visibility='';
+}
+$('#offerPaper').addEventListener('click',e=>{
  if(!G.offerOpen||G.offerBreaking)return;
- G.offerBreaking=true;G.hits++;G.offerBreakAt=G.time+.62;$('#offerScene').classList.add('breaking');AUDIO.crack(1.1);flash(.22);
+ G.offerBreaking=true;G.hits++;G.offerBreakAt=G.time+1.5;
+ tearOffer(e);$('#offerScene').classList.add('breaking');
+ AUDIO.unlock();AUDIO.paper(1.1);AUDIO.hit('hand','hook','chest',1.1,false);flash(.16);camHit({shake:.02,zoom:.012});
+ if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([18,10,26]);}catch(_){}
+ queueTalk([['player','니들이 정한 팔자, 니들이 살아.',1.6,.3]],true);
 });
-$('#fatePrinter').addEventListener('click',()=>{
+// 발급기 치기: 칠 때마다 흔들리고 금이 가며 불똥이 튄다. 세 번째에 무너진다
+function printerSparks(x,y,n){
+ const sc=$('#printerScene');for(let i=0;i<n;i++){const s=document.createElement('i');s.className='pr-spark';const a=rnd(0,TAU),d=rnd(40,120);
+  s.style.cssText=`--x0:${x.toFixed(0)}px;--y0:${y.toFixed(0)}px;--x1:${(x+Math.cos(a)*d).toFixed(0)}px;--y1:${(y+Math.sin(a)*d-20).toFixed(0)}px;--a:${(a*180/PI).toFixed(0)}deg`;
+  sc.appendChild(s);setTimeout(()=>s.remove(),520);}
+}
+$('#fatePrinter').addEventListener('click',e=>{
  if(!G.printerShown||G.printerDoneAt||G.printerHits>=3)return;
- AUDIO.unlock();G.printerHits++;G.hits++;const sc=$('#printerScene');sc.classList.remove('hit1','hit2');
- if(G.printerHits<3){sc.classList.add('hit'+G.printerHits);AUDIO.crack(.65);flash(.12);}
- else{sc.classList.add('destroyed');AUDIO.haloCrack(1.15);flash(.3);G.tEnd=G.time;G.printerDoneAt=G.time+.95;}
+ AUDIO.unlock();G.printerHits++;G.hits++;const sc=$('#printerScene');sc.classList.remove('jolt');void sc.offsetWidth;
+ const r=$('#fatePrinter').getBoundingClientRect(),x=e&&e.clientX>0?e.clientX:r.left+r.width/2,y=e&&e.clientY>0?e.clientY:r.top+r.height/2;
+ if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate(G.printerHits<3?[20,10,30]:[40,20,80]);}catch(_){}
+ if(G.printerHits<3){
+  sc.classList.add('hit'+G.printerHits,'jolt');AUDIO.machine(.8+G.printerHits*.2);flash(.12);camHit({shake:.025,zoom:.01});
+  printerSparks(x,y,7+G.printerHits*3);FX.wordAt(G.printerHits===1?'쾅!':'빠각!',x,y-34,{size:58,color:'#ffd84a',parent:sc,rot:rnd(-12,12)});
+ }else{
+  sc.classList.add('hit2','destroyed');AUDIO.machine(1.3,true);AUDIO.boom(.7);flash(.32);camHit({shake:.05,zoom:.03});
+  printerSparks(x,y,18);FX.wordAt('와장창!',x,y-40,{size:66,color:'#ff6a3d',parent:sc,dur:.8,rot:rnd(-8,8)});
+  G.tEnd=G.time;G.printerDoneAt=G.time+1.25;
+ }
 });
 
 $('#submitShare').addEventListener('click',async()=>{
@@ -6781,7 +7007,7 @@ Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,act
 $('#settingsModal').hidden=true;
 $('#submitShare').textContent='처리 내역 공유하기';
  resetSubmitWorkflow();
- for(const id of ['offerScene','printerScene']){$('#'+id).hidden=true;$('#'+id).className='story-scene';}
+ resetOfferScene();$('#printerScene').hidden=true;$('#printerScene').className='story-scene';
  CAM.rate=0;$('#fight .gauge').style.visibility='';$('#flash').style.background='#fff';
  $('#dock').hidden=mode!=='fight';$('#submitDock').hidden=true;$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
  setTool('hand');updateGauge();updateAmmo();syncPrefs();VM.root.visible=mode==='fight';
@@ -6875,7 +7101,7 @@ window.PaljaGame={enter,leave,pause,
  screenPart(name){const E=G.E;if(!E)return null;const m=E.parts.find(o=>o.userData.part===name&&o.visible);if(!m)return null;const p=m.getWorldPosition(V3()).project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  project(v){const p=v.clone().project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD};},
- debug:{audio:AUDIO,round(m){startRound(m||"fight");},
+ debug:{audio:AUDIO,crowd:CROWD,round(m){startRound(m||"fight");},
   cam(p,l,fov){CAM.frame='debug';CAM.goalPos.set(p[0],p[1],p[2]);CAM.goalLook.set(l[0],l[1],l[2]);CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);if(fov){CAM.fovBase=fov;CAM.fov=fov;}},
   standCam(){setFrame('stand',true);},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
