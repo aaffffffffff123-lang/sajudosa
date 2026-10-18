@@ -1689,6 +1689,22 @@ const WORLD={};
   g.strokeStyle='rgba(255,240,200,.55)';g.lineWidth=2;for(let k=0;k<=4;k++){g.beginPath();g.moveTo(k*w/4+3,0);g.lineTo(k*w/4+3,h);g.stroke();}
  },{repeat:[6,6]});
  const floor=mk(new THREE.PlaneGeometry(14,14),STD('#ffffff',{map:floorTex,roughness:.3}),root,{r:[-PI/2,0,0],cast:false});floor.name='floor';
+ // 옥좌 앞에서 카메라 쪽으로 깐 붉은 깔개: 무릎 꿇고 주저앉은 흰 예복이 흰 대리석에 묻히지 않게 몸 밑을 붉게 깐다.
+ // 바닥 피 자국 판(높이 .004)보다 아래에 붙여 피가 깔개 위에 그대로 보인다. 그림 한 장 = 깔개 폭(1.9m) 정사각형
+ const rugTex=canvasTex(256,256,(g,w,h)=>{
+  g.fillStyle='#b8291f';g.fillRect(0,0,w,h);
+  for(let i=0;i<2600;i++){const v=Math.random();g.fillStyle=v<.5?`rgba(70,0,6,${.05+v*.1})`:`rgba(255,140,110,${(v-.5)*.12})`;g.fillRect(Math.random()*w,Math.random()*h,1+Math.random()*2,1);}
+  // 가운데 무늬: 같은 빛깔의 마름모와 금빛 점
+  g.strokeStyle='rgba(84,4,10,.32)';g.lineWidth=5;
+  for(let y=-32;y<=h+32;y+=64)for(let x=64;x<=192;x+=64){g.beginPath();g.moveTo(x,y-26);g.lineTo(x+26,y);g.lineTo(x,y+26);g.lineTo(x-26,y);g.closePath();g.stroke();}
+  g.fillStyle='rgba(255,198,112,.45)';for(let y=0;y<=h;y+=64)for(let x=96;x<=160;x+=64){g.beginPath();g.arc(x,y,2.6,0,TAU);g.fill();}
+  // 가장자리: 짙은 테 + 금줄 두 줄
+  for(const sd of [0,1]){const X=x=>sd?w-x:x;
+   g.fillStyle='#7c1117';g.fillRect(sd?w-12:0,0,12,h);
+   g.fillStyle='#e2ab42';g.fillRect(sd?w-19:15,0,4,h);g.fillRect(sd?w-27:25,0,2,h);
+   g.fillStyle='rgba(84,4,10,.35)';for(let y=8;y<h;y+=16){g.beginPath();g.arc(X(36),y,2.4,0,TAU);g.fill();}}
+ },{repeat:[1,4.7/1.9]});
+ const rug=mk(new THREE.PlaneGeometry(1.9,4.7),STD('#ffffff',{map:rugTex,roughness:.9}),root,{p:[0,.0015,-.53+2.35],r:[-PI/2,0,0],cast:false});rug.name='rug';
  // 옥좌 단: 붉은 칠 + 금테
  const red=STD('#b3261c',{roughness:.38}),gold=STD('#e3ad48',{metalness:.78,roughness:.3}),goldD=STD('#a8761f',{metalness:.7,roughness:.42});
  const throne=grp(root,[0,0,-.86],'throne');WORLD.throne=throne;
@@ -1698,17 +1714,25 @@ const WORLD={};
  // 앞판 금장식(구름무늬)
  const frontTex=canvasTex(512,160,(g,w,h)=>{g.fillStyle='#b3261c';g.fillRect(0,0,w,h);g.strokeStyle='#f1c25a';g.lineWidth=7;g.lineCap='round';for(let i=0;i<5;i++){const cx=56+i*100,cy=82;g.beginPath();g.arc(cx,cy,26,.3,5.6);g.stroke();g.beginPath();g.arc(cx+20,cy+6,14,3.4,7.4);g.stroke();g.beginPath();g.moveTo(cx-36,cy+30);g.quadraticCurveTo(cx,cy+48,cx+44,cy+24);g.stroke();}});
  mk(new THREE.PlaneGeometry(1.24,.3),STD('#ffffff',{map:frontTex,roughness:.4}),throne,{p:[0,.2,.331],cast:false});
- // 방석(앉을 때 닿는 곳)
- const cushTex=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#f0c23a';g.fillRect(0,0,w,h);g.strokeStyle='rgba(176,108,10,.55)';g.lineWidth=3;for(let y=16;y<h;y+=32)for(let x=(y/32%2)*16;x<w;x+=32){g.beginPath();g.arc(x,y,8,0,TAU);g.stroke();}},{repeat:[2,1]});
+ // 방석(앉을 때 닿는 곳): 짙은 붉은 비단. 설계자 옷이 흰 비단에 금빛 구름이라 방석에는 노란빛·금빛을 쓰지 않는다
+ const cushTex=canvasTex(256,256,(g,w,h)=>{
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#b31a2e');gr.addColorStop(1,'#971526');g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let y=0;y<h;y+=3){g.fillStyle=`rgba(255,255,255,${y%6?.025:.05})`;g.fillRect(0,y,w,1.2);}
+  g.lineWidth=3;
+  for(let y=16;y<h;y+=32)for(let x=(y/32%2)*16;x<w;x+=32){g.strokeStyle='rgba(62,0,12,.45)';g.beginPath();g.arc(x,y,8,0,TAU);g.stroke();g.fillStyle='rgba(255,196,140,.32)';g.beginPath();g.arc(x,y,1.8,0,TAU);g.fill();}
+ },{repeat:[2,1]});
  const cush=mk(new THREE.BoxGeometry(1.12,.11,.6),STD('#ffffff',{map:cushTex,roughness:.75}),throne,{p:[0,.43,.02]});cush.name='seat';
- // 등받이: 금 틀 + 연옥빛 판(피가 튀어 묻는 곳)
+ // 등받이: 금 틀 + 짙은 비취색 판(피가 튀어 묻는 곳). 흰 예복이 판에 묻히지 않게 판은 진하게 칠하고, 구름무늬는 판과 같은 빛깔로만 짠다
  const back=grp(throne,[0,0,-.29]);
  mk(new THREE.BoxGeometry(1.36,1.42,.1),gold,back,{p:[0,1.16,0]});
  const panelTex=canvasTex(512,512,(g,w,h)=>{
-  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#cfeadb');gr.addColorStop(1,'#a9d6be');g.fillStyle=gr;g.fillRect(0,0,w,h);
-  g.strokeStyle='rgba(196,150,52,.9)';g.lineWidth=5;g.lineCap='round';
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#0f6046');gr.addColorStop(1,'#187a5c');g.fillStyle=gr;g.fillRect(0,0,w,h);
+  g.lineCap='round';
   const cloud=(cx,cy,s)=>{g.beginPath();g.arc(cx,cy,18*s,.2,5.7);g.stroke();g.beginPath();g.arc(cx+16*s,cy+5*s,11*s,3.3,7.6);g.stroke();g.beginPath();g.moveTo(cx-28*s,cy+22*s);g.quadraticCurveTo(cx,cy+36*s,cx+34*s,cy+18*s);g.stroke();};
+  g.strokeStyle='rgba(4,52,38,.42)';g.lineWidth=7;
   for(let r=0;r<5;r++)for(let c=0;c<4;c++)cloud(70+c*125+(r%2)*60,60+r*100,1);
+  g.strokeStyle='rgba(170,240,212,.2)';g.lineWidth=2;
+  for(let r=0;r<5;r++)for(let c=0;c<4;c++)cloud(68+c*125+(r%2)*60,58+r*100,1);
   g.strokeStyle='#c4963a';g.lineWidth=14;g.strokeRect(10,10,w-20,h-20);
   g.strokeStyle='rgba(255,236,190,.8)';g.lineWidth=3;g.strokeRect(22,22,w-44,h-44);
  });
@@ -1727,18 +1751,19 @@ const WORLD={};
   mk(cylGeo(.25,.21,.16,24),gold,p,{p:[0,5.28,0]});mk(cylGeo(.13,.24,.1,24),goldD,p,{p:[0,5.41,0]});
   mk(sphereGeo(20),gold,p,{p:[0,5.6,0],s:[.15,.17,.15]});mk(new THREE.ConeGeometry(.07,.2,16),gold,p,{p:[0,5.84,0]});}
  // 뒷벽: 붉은 틀 + 밝은 창살
- const latTex=canvasTex(512,512,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#fffdf6');gr.addColorStop(1,'#eaf6ff');g.fillStyle=gr;g.fillRect(0,0,w,h);g.strokeStyle='#b8341f';g.lineWidth=9;for(let i=0;i<=8;i++){g.beginPath();g.moveTo(i*w/8,0);g.lineTo(i*w/8,h);g.stroke();g.beginPath();g.moveTo(0,i*h/8);g.lineTo(w,i*h/8);g.stroke();}g.strokeStyle='rgba(184,52,31,.75)';g.lineWidth=4;for(let i=0;i<8;i++)for(let j=0;j<8;j++){g.beginPath();g.moveTo(i*w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8);g.lineTo(i*w/8+w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8+h/8);g.closePath();g.stroke();}},{repeat:[3,1.3]});
+ const latTex=canvasTex(512,512,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#fffdf6');gr.addColorStop(1,'#eaf6ff');g.fillStyle=gr;g.fillRect(0,0,w,h);g.strokeStyle='#b8341f';g.lineWidth=9;for(let i=0;i<=8;i++){g.beginPath();g.moveTo(i*w/8,0);g.lineTo(i*w/8,h);g.stroke();g.beginPath();g.moveTo(0,i*h/8);g.lineTo(w,i*h/8);g.stroke();}g.strokeStyle='rgba(184,52,31,.75)';g.lineWidth=4;for(let i=0;i<8;i++)for(let j=0;j<8;j++){g.beginPath();g.moveTo(i*w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8);g.lineTo(i*w/8+w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8+h/8);g.closePath();g.stroke();}},{repeat:[3*16/9,1.3]});
+ // 뒷벽은 16m(예전 9m): 카메라가 뒤로 물러나 가로로 넓은 화면에서도 벽 양 끝이 보이지 않게
  const wall=grp(root,[0,0,-2.85]);
- mk(new THREE.PlaneGeometry(9,4.6),STD('#ffffff',{map:latTex,roughness:.8,emissive:col('#fff6e6'),emissiveIntensity:.22}),wall,{p:[0,2.3,0],cast:false,receive:false});
+ mk(new THREE.PlaneGeometry(16,4.6),STD('#ffffff',{map:latTex,roughness:.8,emissive:col('#fff6e6'),emissiveIntensity:.22}),wall,{p:[0,2.3,0],cast:false,receive:false});
  // 뒷벽 장식은 그림자를 받지 않는다(옥좌 그림자가 걸레받이에 회색 네모 덩어리로 찍히지 않게)
- for(const x of [-3,-1.1,1.1,3])mk(new THREE.BoxGeometry(.16,4.6,.12),pillarMat,wall,{p:[x,2.3,.06],cast:false,receive:false});
- mk(new THREE.BoxGeometry(9,.22,.16),pillarMat,wall,{p:[0,3.1,.08],cast:false,receive:false});
- mk(new THREE.BoxGeometry(9,.06,.18),gold,wall,{p:[0,3.24,.09],cast:false,receive:false});
- mk(new THREE.BoxGeometry(9,.5,.12),STD('#e6dccb'),wall,{p:[0,.25,.06],cast:false,receive:false});
+ for(const x of [-6.8,-4.9,-3,-1.1,1.1,3,4.9,6.8])mk(new THREE.BoxGeometry(.16,4.6,.12),pillarMat,wall,{p:[x,2.3,.06],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(16,.22,.16),pillarMat,wall,{p:[0,3.1,.08],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(16,.06,.18),gold,wall,{p:[0,3.24,.09],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(16,.5,.12),STD('#e6dccb'),wall,{p:[0,.25,.06],cast:false,receive:false});
  // 벽 위 끝: 붉은 도리 + 금선(끝에 올려다볼 때만 보인다)
- mk(new THREE.BoxGeometry(9.2,.3,.12),pillarMat,wall,{p:[0,4.5,.07],cast:false,receive:false});
- mk(new THREE.BoxGeometry(9.2,.05,.14),gold,wall,{p:[0,4.36,.08],cast:false,receive:false});
- mk(new THREE.BoxGeometry(9.2,.06,.14),gold,wall,{p:[0,4.66,.08],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(16.2,.3,.12),pillarMat,wall,{p:[0,4.5,.07],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(16.2,.05,.14),gold,wall,{p:[0,4.36,.08],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(16.2,.06,.14),gold,wall,{p:[0,4.66,.08],cast:false,receive:false});
  // 바닥 구름(멀리)
  const cloudMat=STD('#ffffff',{roughness:1,emissive:col('#ffffff'),emissiveIntensity:.15});
  for(let i=0;i<14;i++){const a=PI*.15+i/13*PI*.7;mk(sphereGeo(14),cloudMat,root,{p:[Math.cos(a)*5.8,-.25,-Math.sin(a)*4.2+.6],s:[rnd(.7,1.2),rnd(.35,.5),rnd(.7,1)],cast:false});}
@@ -1750,77 +1775,85 @@ const WORLD={};
  metalEnv(root);
 })();
 
-/* ---- 카메라 구도 ----
- * 서 있을 때: 면류관 꼭대기가 위쪽 막대 바로 밑, 발바닥이 화면 맨 아래에 오게 맞춘다(무릎까지 도구칸 위로 보여 다리를 벨 수 있다).
- * 넘어질 때: 정해 둔 구도로 부드럽게 옮긴다(옆으로 돌지 않는다). */
-const CAM={pos:V3(0,1.3,2.2),look:V3(0,1.3,0),goalPos:V3(0,1.3,2.2),goalLook:V3(0,1.3,0),frame:'stand',kick:V3(),kickV:V3(),shake:0,shakeT:0,fovBase:40,zoom:0,zoomV:0,ready:false,
- rot:new Spring3(330,24),push:new Spring(300,22),jit:V3(),jitT:0};
-const FRAMES={
- stand:{top:1.88,bot:0,botL:0,z:.18},
- // 넘어진 뒤에는 서 있는 내가 내려다보는 구도(대상 위치·카메라 방향·거리)
- throne:{look:[0,1.0,-.6],dir:[0,.3,1],W:1.05,H:1.45},
- kneel:{look:[0,.8,.05],dir:[0,.45,1],W:1.0,H:1.35},
- floor:{look:[0,.62,-.16],dir:[0,.5,1],W:.95,H:1.02},
- final:{look:[0,.55,-.32],dir:[0,.5,1],W:1,H:1.32},
- revival:{look:[0,.92,-.08],dir:[0,.2,1],W:1.02,H:1.88},
-};
+/* ---- 카메라: 한 자리에 고정 ----
+ * 족치는 동안 카메라는 움직이지 않는다. 쓰러지거나 일어나거나 맞혀도 다가가거나 물러서지 않는다(무기와 설계자 몸의 크기 비율이 늘 같다).
+ * 서 있을 때·옥좌에 앉았을 때·무릎 꿇었을 때·주저앉았을 때 어느 자세든 팔다리 끝까지 위쪽 막대 밑·도구칸 위에 들어오게
+ * 끝자리 점들(FIXPTS)을 정해 두고, 화면 크기가 바뀔 때만 그 점들에 맞춰 다시 잡는다. 맞을 때는 짧게 떨리기만 한다.
+ * (끝에 뒤에 있던 것을 올려다보는 장면만 BEYOND가 카메라를 직접 움직인다: frame 'cut') */
+const CAM={pos:V3(0,1.5,4.4),look:V3(0,1,0),goalPos:V3(0,1.5,4.4),goalLook:V3(0,1,0),frame:'stand',shake:0,fovBase:40,ready:false,jit:V3(),jitT:0,unit:.32};
+// 설계자가 어느 자세로든 닿는 끝자리(m, 좌우는 대칭). 서기·옥좌·무릎·주저앉음·마지막 자세와 맞는 동안 몸·후광의 가장 바깥 점을 재서
+// 조금 넉넉히 잡았다: 마지막에 바닥을 짚은 두 손, 주저앉을 때 벌린 팔, 옥좌 팔걸이, 맞아 젖혀진 후광, 서 있을 때 후광 꼭대기,
+// 마지막에 앞으로 넘어갈 때·주저앉을 때 후광 꼭대기, 무릎 꿇을 때 앞으로 나온 무릎·발
+const FIXPTS=[[.7,.27,.16],[.7,.75,.15],[.66,.82,-.6],[.62,1.6,-.55],[0,2.02,-.5],[0,2.0,.4],[0,2.0,-.1],[.42,.02,.56]];
+const FIX_PITCH=.12;// 살짝 내려다본다(라디안). 서 있는 사람 눈높이쯤에서 쓰러진 몸도 잘 보이게
+let dockBox=null,onCamUnit=null;// 무기 카드 자리(도구칸이 숨어 있을 때도 같은 구도를 쓰려고 마지막으로 잰 값을 둔다)
+function measureDock(){
+ const el=$('#dock'),tl=$('#tools');if(!el||!tl)return null;
+ const was=el.hidden;let d=null,t=null;
+ try{if(was){el.style.visibility='hidden';el.hidden=false;}d=el.getBoundingClientRect();t=tl.getBoundingClientRect();}finally{if(was){el.hidden=true;el.style.visibility='';}}
+ if(t&&t.height>0)dockBox={top:t.top,left:d.left,width:d.width,w:innerWidth,h:innerHeight};
+ return dockBox&&dockBox.w===innerWidth&&dockBox.h===innerHeight?dockBox:null;
+}
+// 설계자가 들어가야 하는 화면 칸(px): 위쪽 막대 밑 ~ 무기 카드 위 안내 글(한 줄) 위.
+// 안내 글은 글이 바뀌면 높이가 달라지므로 재지 않고 한 줄 높이로 친다(구도가 판마다 달라지지 않게).
+// 가로로 눕힌 휴대폰은 카드가 오른쪽에 세로로 서고 안내 글이 아래 가운데에 뜬다
+function safeRect(){
+ const w=innerWidth||1,h=innerHeight||1,topEl=$('#fight .ftop');
+ const top=(topEl&&!topEl.hidden?topEl.getBoundingClientRect().bottom:56)+10;
+ let bot=h-10,left=8,right=w-8;const d=measureDock();
+ if(d){if(d.width<w*.5&&d.left>w*.55){right=d.left-8;bot=h-44;}else bot=d.top-7-29-6;}
+ else bot=h-(w<h?190:120);
+ return {top,bot:Math.max(top+40,bot),left,right};
+}
 function frameCamera(name,outPos,outLook){
  if(name==='debug'||name==='cut')return;
  const w=innerWidth||1,h=innerHeight||1,aspect=w/h,portrait=aspect<1;
- const fr=FRAMES[name]||FRAMES.stand;
- if(fr.look){
-  const fov=CAM.fovBase=portrait?50:38,tv=Math.tan(THREE.MathUtils.degToRad(fov/2)),th=tv*aspect;
-  const dist=Math.max(fr.W/2/th,fr.H/2/tv);const d=V3(fr.dir[0],fr.dir[1],fr.dir[2]).normalize();
-  outLook.set(fr.look[0],fr.look[1],fr.look[2]);outPos.copy(outLook).addScaledVector(d,dist);return;}
- const fov=CAM.fovBase=portrait?40:34,tanH=Math.tan(THREE.MathUtils.degToRad(fov/2));
- const topEl=$('#fight .ftop');const topPx=(topEl?topEl.getBoundingClientRect().bottom:60)+6;
- const top=fr.top,bot=portrait?fr.bot:fr.botL;
- const ndcTop=1-2*topPx/h,ndcBot=-1;
- const dt=(top-bot)/((ndcTop-ndcBot)*tanH);
- const cy=top-ndcTop*dt*tanH;
- outPos.set(0,cy,fr.z+dt);outLook.set(0,cy,fr.z);
+ const fov=CAM.fovBase=portrait?40:34,tv=Math.tan(THREE.MathUtils.degToRad(fov/2)),th=tv*aspect;
+ const R=safeRect(),nT=1-2*R.top/h,nB=1-2*R.bot/h,nX=Math.max(.2,Math.min(R.right-w/2,w/2-R.left)/(w/2));
+ const sp=Math.sin(FIX_PITCH),cp=Math.cos(FIX_PITCH);
+ // 바라보는 점 L에서 D만큼 물러선 자리 C=L+(0,sp,cp)·D. 끝자리 점들을 카메라 좌표로 옮겨 화면에 비춘다
+ const fit=(D,ly)=>{let yMin=1e9,yMax=-1e9,xMax=0,dSum=0;const lz=.1,cy=ly+sp*D,cz=lz+cp*D;
+  for(const [x,y,z] of FIXPTS){const vy=y-cy,vz=z-cz,dep=-sp*vy-cp*vz,up=cp*vy-sp*vz,ny=up/(dep*tv),nx=x/(dep*th);
+   if(ny<yMin)yMin=ny;if(ny>yMax)yMax=ny;if(nx>xMax)xMax=nx;dSum+=dep;}
+  return {yMin,yMax,xMax,dep:dSum/FIXPTS.length,cy,cz,lz};};
+ // 세로는 칸 가운데에 오게 바라보는 높이를 맞추고, 칸에 들어가는 가장 가까운 거리를 찾는다
+ const centered=(D)=>{let ly=1;for(let i=0;i<8;i++){const f=fit(D,ly),c=(f.yMin+f.yMax)/2,c0=(nT+nB)/2;ly+=(c-c0)*f.dep*tv/cp;}return ly;};
+ let lo=1.5,hi=14;
+ for(let i=0;i<40;i++){const D=(lo+hi)/2,ly=centered(D),f=fit(D,ly);if(f.yMax-f.yMin<=nT-nB&&f.xMax<=nX)hi=D;else lo=D;}
+ const D=hi,ly=centered(D),f=fit(D,ly);
+ outLook.set(0,ly,f.lz);outPos.set(0,f.cy,f.cz);
+ // 설계자가 서는 자리에서 1m가 화면 높이의 몇 배인지(1인칭 손·무기 크기를 여기에 맞춘다)
+ const dep=-sp*(1-f.cy)-cp*(.15-f.cz);CAM.unit=1/(2*dep*tv);
+ if(onCamUnit)onCamUnit(CAM.unit);
 }
-function setFrame(name,instant){CAM.frame=name;frameCamera(name,CAM.goalPos,CAM.goalLook);if(instant||!CAM.ready){CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);CAM.fov=CAM.fovBase;CAM.ready=true;}}
+function snapCam(){CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);CAM.fov=CAM.fovBase;CAM.ready=true;}
+function setFrame(name,instant){CAM.frame=name;frameCamera(name,CAM.goalPos,CAM.goalLook);if(name!=='cut'&&name!=='debug')snapCam();else if(instant||!CAM.ready)snapCam();}
 function fitView(){
  const w=innerWidth||1,h=innerHeight||1;renderer.setSize(w,h,false);
  camera.aspect=w/h;vmCam.aspect=w/h;
  frameCamera(CAM.frame,CAM.goalPos,CAM.goalLook);
- camera.fov=CAM.fovBase;camera.updateProjectionMatrix();vmCam.updateProjectionMatrix();
- if(!CAM.ready){CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);CAM.ready=true;}
+ if(CAM.frame!=='cut'&&CAM.frame!=='debug'||!CAM.ready)snapCam();
+ camera.fov=CAM.fov;camera.updateProjectionMatrix();vmCam.updateProjectionMatrix();
  SBLOOD.resize(w,h);
 }
-/* 카메라 반응: 맞힐 때 화면이 같이 움직여야 손맛이 난다.
- * kick=맞은 방향으로 밀림, rot=고개가 들리고 돌아감(라디안), push=앞으로 쏠림(미터), shake=떨림(미터), zoom=시야 조임 */
+/* 카메라 반응: 맞혀도 시점은 그대로 두고 짧게 떨리기만 한다(다가가거나 물러서거나 확대되지 않는다). shake=떨림(미터) */
 function camHit(o){
- const k=PREF.shake?1:.25;
- if(o.dir&&o.kick)CAM.kickV.addScaledVector(o.dir,o.kick*9*k);
- if(o.pitch||o.yaw||o.roll){CAM.rot.push((o.pitch||0)*k,(o.yaw||0)*k,(o.roll||0)*k,.12);CAM.rot.kick((o.pitch||0)*6*k,(o.yaw||0)*6*k,(o.roll||0)*6*k);}
- if(o.push){CAM.push.push(o.push*k,.2);}
- if(o.zoom)CAM.zoomV+=o.zoom*10*(PREF.shake?1:.3);
  if(o.shake&&PREF.shake)CAM.shake=Math.max(CAM.shake,o.shake);
 }
-function camKick(dir,amount){camHit({dir,kick:amount});}
 function camShake(a){camHit({shake:a});}
-function camPunchZoom(a){camHit({zoom:a});}
 function updateCamera(dt){
- const k=1-Math.exp(-dt*(CAM.rate||(CAM.frame==='stand'?3.2:2.2)));
- CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);
- // 반동 스프링
- CAM.kickV.addScaledVector(CAM.kick,-260*dt);CAM.kickV.multiplyScalar(Math.exp(-dt*20));CAM.kick.addScaledVector(CAM.kickV,dt);
- CAM.zoomV+=(-200*CAM.zoom)*dt;CAM.zoomV*=Math.exp(-dt*18);CAM.zoom+=CAM.zoomV*dt;
- CAM.rot.step(dt);CAM.push.step(dt);
+ if(CAM.frame==='cut'||CAM.frame==='debug'){const k=1-Math.exp(-dt*3);CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);}
+ else{CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);}
  // 떨림: 프레임마다 새로 뽑은 방향으로 튄다(사인파보다 또렷하다). 빠르게 줄어든다
- CAM.shake*=Math.exp(-dt*11);if(CAM.shake<.0004)CAM.shake=0;
+ CAM.shake*=Math.exp(-dt*13);if(CAM.shake<.0004)CAM.shake=0;
  CAM.jitT-=dt;if(CAM.jitT<=0){CAM.jitT=1/45;CAM.jit.set(rnd(-1,1),rnd(-1,1),rnd(-.4,.4)).multiplyScalar(CAM.shake);}
  const sx=CAM.jit.x,sy=CAM.jit.y;
- _cf.subVectors(CAM.look,CAM.pos).normalize();
- camera.position.copy(CAM.pos).add(CAM.kick).addScaledVector(_cf,CAM.push.x);camera.position.x+=sx;camera.position.y+=sy;
- _cv.copy(CAM.look).add(CAM.kick);_cv.x+=sx*.35;_cv.y+=sy*.35;
- camera.lookAt(_cv);
- const r=CAM.rot;camera.rotateX(r.X);camera.rotateY(r.Y);camera.rotateZ(r.Z+CAM.jit.z*1.5);
+ camera.position.copy(CAM.pos);camera.position.x+=sx;camera.position.y+=sy;
+ _cv.copy(CAM.look);_cv.x+=sx*.35;_cv.y+=sy*.35;
+ camera.lookAt(_cv);camera.rotateZ(CAM.jit.z*1.5);
  // 1인칭 손도 화면과 같이 조금 흔들린다
- vmCam.rotation.set(r.X*.6,r.Y*.6,(r.Z+CAM.jit.z*1.5)*.6);vmCam.position.set(sx*.25,sy*.25,0);
- CAM.fov=CAM.fov==null?CAM.fovBase:damp(CAM.fov,CAM.fovBase,2.5,dt);camera.fov=CAM.fov*(1-clamp(CAM.zoom,-.2,.2));camera.updateProjectionMatrix();
+ vmCam.rotation.set(0,0,CAM.jit.z*.9);vmCam.position.set(sx*.25,sy*.25,0);
+ CAM.fov=CAM.fov==null?CAM.fovBase:CAM.frame==='cut'?damp(CAM.fov,CAM.fovBase,2.5,dt):CAM.fovBase;camera.fov=CAM.fov;camera.updateProjectionMatrix();
 }
 const _cv=V3(),_cf=V3();
 
@@ -2021,15 +2054,26 @@ void main(){
 
  let active=false,t0=0,from=null;
  const DUR=6.4;
- // 끝 구도: 한 걸음 물러서며 고개를 들어, 벽 위 하늘 대부분이 그것으로 차게 본다
+ // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
+ // 카메라가 앞에 있던 예전과 같은 그림이 되게, 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
+ // 화면 위 끝이 같은 하늘 높이(top: 올려다본 각도, 라디안)까지 오도록 고개 각도와 시야를 정한다
  const portrait=()=>innerWidth<innerHeight;
- const endPitch=()=>portrait()?.82:.79;
- const endFov=()=>portrait()?52:42;
+ const END_P={top:1.274,beam:-.7},END_L={top:1.157,beam:-.66};
+ function endView(pos){
+  const E_=portrait()?END_P:END_L,tb=Math.atan2(4.66-pos.y,pos.z+2.78),k=-E_.beam;
+  let lo=.26,hi=.6;// 시야 절반(라디안)
+  for(let i=0;i<30;i++){const h=(lo+hi)/2;if(Math.tan(E_.top-h-tb)>k*Math.tan(h))lo=h;else hi=h;}
+  let h=(lo+hi)/2,pitch=E_.top-h;
+  // 가로로 아주 넓은 화면(눕힌 휴대폰)은 가로 시야가 88도를 넘으면 양 끝 구슬이 길쭉하게 늘어난다: 시야를 줄이고 위 끝을 조금 양보한다
+  const hMax=Math.atan(Math.tan(THREE.MathUtils.degToRad(44))/Math.max(1,innerWidth/innerHeight));
+  if(h>hMax){h=hMax;pitch=tb+Math.atan(k*Math.tan(h));}
+  return {pitch,fov:THREE.MathUtils.radToDeg(h*2)};
+ }
  function begin(){
   if(active)return;build();active=true;t0=G.time;
   const d=V3().subVectors(CAM.look,CAM.pos),len=d.length()||1;
   from={pos:CAM.pos.clone(),pitch:Math.asin(clamp(d.y/len,-1,1)),yaw:Math.atan2(d.x,-d.z),fov:CAM.fovBase};
-  CAM.frame='cut';CAM.rate=60;
+  CAM.frame='cut';
   const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
   $('#hint').classList.add('off');
   AUDIO.beyond();
@@ -2037,11 +2081,11 @@ void main(){
  function update(dt){
   if(!active)return;
   const k=G.time-t0,p=smoother(k/DUR);
-  const pitch=lerp(from.pitch,endPitch(),p),yaw=lerp(from.yaw,0,p);
-  const pos=_cp.copy(from.pos);pos.y+=.15*p;pos.z+=.9*p;
+  const ev=endView(from.pos),pitch=lerp(from.pitch,ev.pitch,p),yaw=lerp(from.yaw,0,p);
+  const pos=_cp.copy(from.pos);
   CAM.goalPos.copy(pos);CAM.pos.copy(pos);
   CAM.goalLook.set(pos.x+Math.sin(yaw)*Math.cos(pitch)*4,pos.y+Math.sin(pitch)*4,pos.z-Math.cos(yaw)*Math.cos(pitch)*4);CAM.look.copy(CAM.goalLook);
-  CAM.fovBase=lerp(from.fov,endFov(),p);
+  CAM.fovBase=lerp(from.fov,ev.fov,p);
   // 손은 내려간다
   if(VM.root.visible){const h=clamp(k/1.1,0,1);VM.root.position.y=-.6*easeIn(h);if(h>=1)VM.root.visible=false;}
   pose(G.time);
@@ -3122,8 +3166,8 @@ const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);po
     if(kind!=='dust'){
      if(d.p.y<.01){d.on=false;if(kind==='blood')paintFloor(d.p.x,d.p.z,d.size*d.size*30,d.v.length());else if(Math.random()<.2)AUDIO.drip(.3);continue;}
      if(kind==='blood'&&d.v.z<0&&d.p.z<-1.05&&d.p.z>-1.16){if(paintPanel(d.p,d.size*1.2)){d.on=false;continue;}}
-     // 화면 쪽으로 날아온 피는 화면에 묻는다
-     if(kind==='blood'&&d.v.z>0&&d.p.z>camera.position.z-.42){d.on=false;const s=v1.copy(d.p).project(camera);if(Math.abs(s.x)<1&&Math.abs(s.y)<1&&Math.random()<.5)SB.add((s.x*.5+.5)*sw,(-s.y*.5+.5)*sh,rnd(7,15));continue;}
+     // 화면 쪽으로 날아온 피는 화면에 묻는다(카메라가 뒤로 물러나 있어도 예전처럼 설계자 앞 2.5m쯤을 넘으면 화면에 묻은 것으로 친다)
+     if(kind==='blood'&&d.v.z>0&&d.p.z>Math.min(camera.position.z-.42,2.5)){d.on=false;const s=v1.copy(d.p).project(camera);if(Math.abs(s.x)<1&&Math.abs(s.y)<1&&Math.random()<.5)SB.add((s.x*.5+.5)*sw,(-s.y*.5+.5)*sh,rnd(7,15));continue;}
     }
     const sp=d.v.length(),s=kind==='dust'?d.size*(1+d.age*2.2)*(1-d.age/d.life):d.size;
     dummy.position.copy(d.p);if(kind==='dust'||sp<.01){dummy.quaternion.identity();dummy.scale.setScalar(s);}else{dummy.quaternion.setFromUnitVectors(UP,v1.copy(d.v).divideScalar(sp));dummy.scale.set(s,s*(1+Math.min(2.6,sp*.5)),s);}
@@ -3317,7 +3361,7 @@ const FX=(()=>{
  function wordAt(text,x,y,o={}){
   const host=o.parent||layer;if(!host)return;const W=innerWidth,H=innerHeight;
   const el=document.createElement('div');el.className='pop';
-  const sz=(o.size||48)*clamp(Math.min(W,H)/390,.85,1.35),dur=o.dur||.58,shc=o.color||'#d8352a';
+  const sz=(o.size||48)*clamp(Math.min(W,H)/390,.85,1.35)*(o.parent?1:clamp(Math.sqrt(CAM.unit/.49),.8,1)),dur=o.dur||.58,shc=o.color||'#d8352a';
   el.style.cssText=`left:${x}px;top:${y}px;font-size:${sz}px;--sh:${shc};--r:${(o.rot!=null?o.rot:rnd(-11,11)).toFixed(1)}deg;--sw:${Math.max(4,sz*.11).toFixed(1)}px;--ox:${(sz*.11).toFixed(0)}px;--oy:${(sz*.13).toFixed(0)}px;--d:${dur}s`;
   // 한 글자씩: 흔들린 각도·세로 지터로 손으로 쓴 느낌 + 끝에 바깥으로 흩어진다
   const chars=[...text];
@@ -4529,7 +4573,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   t.rotation.x+=b.w.x*dt;t.rotation.y+=b.w.y*dt;t.rotation.z+=b.w.z*dt;
   if(t.position.y<.03){
    t.position.y=.03;
-   b.v.y*=-.25;b.v.x*=.5;b.v.z*=.5;b.w.multiplyScalar(.4);if(Math.abs(b.v.y)<.3){b.rest=true;t.rotation.set(-PI/2,t.rotation.y,0);}
+   b.v.y*=-.25;b.v.x*=.5;b.v.z*=.5;b.w.multiplyScalar(.4);if(Math.abs(b.v.y)<.3){b.rest=true;t.position.y=.009;t.rotation.set(-PI/2,0,t.rotation.y);}// 판을 바닥에 납작하게 눕힌다(돌던 각도는 바닥 위 방향으로만 남긴다. 예전에는 모서리로 선 채 멈추곤 했다)
   }
  },
 
@@ -6400,6 +6444,11 @@ const VM=(()=>{
  const KN_DIR=V3(-.5,.55,-1).normalize(),KN_UP=V3(.35,1,0);
  const BLADE=t=>t==='knife';
  const REACH={knife:KREACH};
+ /* 1인칭 손·무기 크기: 카메라가 설계자를 담는 크기(1m가 화면 높이의 몇 배인지)에 맞춘다. 예전 서 있을 때 구도(0.49)일 때가 1.
+  * 카메라가 멀어진 만큼 주먹·칼·총도 작아져서, 칼이 설계자 몸에 비해 커 보이거나 작아 보이지 않는다. 붙잡힐 때는 원래 크기로 끌려온다.
+  * 주먹을 뻗고 거두는 폭·칼 튕김·총 반동·탄피도 같은 비율로 줄인다 */
+ let SC=1;
+ function setScale(unit){SC=clamp(unit/.49,.45,1);REACH.knife=KREACH*SC;for(const k of ['R','L'])(k==='R'?R:L).hand.scale.setScalar(lerp(SC,1,GR[k]||0));}
  // 날붙이를 들고 있는 자리(화면 오른쪽 아래, 날이 화면 안쪽으로 눕게): 몸을 덜 가린다
  const KREST={x:.9,y:.1,d:.48,dir:V3(-.08,.6,-1).normalize()};
  function computeRest(){
@@ -6439,11 +6488,11 @@ const VM=(()=>{
    const fwd=V3().subVectors(target,ANCH[side]).normalize();a.fwd=fwd;
    if(kind==='hook'){at(s*1.1,ny*.5-.15,.75,W);C.set(lerp(W.x,target.x,.15),target.y+.02,lerp(W.z,target.z,.75));orient(Q0,V3(-s*.6,.1,-.5),V3(0,1,.2));orient(Q1,V3(-s*.75,0,-.65),V3(0,1,0));a.dur=[.07,.07,.05,.13];}
    else if(kind==='upper'){at(s*.25,-1.2,.7,W);C.set(target.x,lerp(W.y,target.y,.2),lerp(W.z,target.z,.7));orient(Q0,V3(-s*.1,1,-.3),V3(0,.2,1));orient(Q1,V3(0,.8,-.6),V3(0,.3,1));a.dur=[.07,.075,.05,.13];}
-   else{W.copy(rest[side].p).add(V3(s*.02,-.04,.08));C.copy(W).lerp(target,.5);C.y+=.03;orient(Q0,V3(-s*.2,.4,-1),V3(s*.9,.4,.2));orient(Q1,fwd,V3(-s*.25,1,0));a.dur=[.04,.055,.045,.12];}
+   else{W.copy(rest[side].p).add(V3(s*.02,-.04,.08).multiplyScalar(SC));C.copy(W).lerp(target,.5);C.y+=.03*SC;orient(Q0,V3(-s*.2,.4,-1),V3(s*.9,.4,.2));orient(Q1,fwd,V3(-s*.25,1,0));a.dur=[.04,.055,.045,.12];}
   }else if(BLADE(tool)){
    const reach=REACH[tool];
    const H0=at(pr?.42:.4,-.74,.42);const dir=V3().subVectors(target,H0).normalize();a.dir1=dir;a.hand1=V3().copy(target).addScaledVector(dir,-reach);
-   a.hand0=V3().copy(rest.R.p).add(V3(.02,-.03,.09));a.dir0=V3(-.15,.3,-1).normalize();a.pen=.12;a.dur=[.05,.06,.17,.15];
+   a.hand0=V3().copy(rest.R.p).add(V3(.02,-.03,.09).multiplyScalar(SC));a.dir0=V3(-.15,.3,-1).normalize();a.pen=.12*SC;a.dur=[.05,.06,.17,.15];
   }
   a.W=W;a.C=C;a.Q0=Q0;a.Q1=Q1;a.contact=a.dur[0]+a.dur[1];a.total=a.dur.reduce((x,y)=>x+y,0);
   st.acts.push(a);AUDIO.whoosh(tool==='hand'?(kind==='jab'?.6:.85):.5,kind);
@@ -6455,7 +6504,7 @@ const VM=(()=>{
   if(fireCool>0)return false;
   fireCool=.15;st.recoil=1;st.slide=1;st.flash=.035;st.lastShot=st.time;
   const [nx,ny]=ndc(sx,sy);st.aimGoal.copy(at(nx,ny,3)).normalize();st.aim.copy(st.aimGoal);
-  const sh=shells[shellI++%shells.length];sh.life=.9;sh.m.visible=true;gun.updateWorldMatrix(true,false);sh.m.position.copy(gun.localToWorld(V3(.016,.052,.03)));sh.v.set(rnd(.6,.9),rnd(.7,1.1),rnd(.1,.3));sh.w.set(rnd(10,20),rnd(5,10),rnd(10,20));
+  const sh=shells[shellI++%shells.length];sh.life=.9;sh.m.visible=true;sh.m.scale.setScalar(SC);gun.updateWorldMatrix(true,false);sh.m.position.copy(gun.localToWorld(V3(.016,.052,.03)));sh.v.set(rnd(.6,.9),rnd(.7,1.1),rnd(.1,.3)).multiplyScalar(SC);sh.w.set(rnd(10,20),rnd(5,10),rnd(10,20));
   AUDIO.gunshot();
   if(st.onFire)st.onFire(sx,sy,info);
   return true;
@@ -6470,9 +6519,10 @@ const VM=(()=>{
  const tmpP=V3(),tmpQ=new THREE.Quaternion(),tmpQ2=new THREE.Quaternion(),tv=V3(),tv2=V3(),tv3=V3();
  function placeArm(side){
   const h=side==='R'?R:L,ar=h.arm;h.hand.updateMatrix();
+  const k=h.hand.scale.x;
   const wrist=tv.set(0,0,-.1).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
-  ar.g.position.copy(wrist);ar.g.quaternion.setFromUnitVectors(UP,d);
-  ar.sl.scale.set(1,Math.max(.05,len-.08),1);
+  ar.g.position.copy(wrist);ar.g.quaternion.setFromUnitVectors(UP,d);ar.g.scale.setScalar(k);
+  ar.sl.scale.set(1,Math.max(.05,(len-.08*k)/k),1);
  }
  function update(dt,frozen,rdt){
   // 총 반동·칼 긋기는 멈춤(히트스톱)과 상관없이 실제 시간으로 움직인다(쏘는 순간 바로 튀어야 하니까)
@@ -6495,14 +6545,14 @@ const VM=(()=>{
     else if(t<c+d2){
      // 맞히면: 얼굴에 박혔다가(멈춤 동안 이 모습) 튕겨 나온다. 헛치면 더 뻗었다가 돌아온다
      const u=(t-c)/d2;
-     if(hit)h.p.copy(a.target).addScaledVector(a.fwd,lerp(.024,-.06,easeOut(u)));
-     else h.p.copy(a.target).addScaledVector(a.fwd,Math.sin(u*PI)*.06);
+     if(hit)h.p.copy(a.target).addScaledVector(a.fwd,lerp(.024,-.06,easeOut(u))*SC);
+     else h.p.copy(a.target).addScaledVector(a.fwd,Math.sin(u*PI)*.06*SC);
      h.q.copy(a.Q1);}
     else if(t<a.total){
      // 얼굴 앞에서 빨리 빠진다: 아래·바깥으로 휘며 제자리로
      const u=(t-c-d2)/d3,e=easeOut3(u);
-     tmpP.copy(a.target).addScaledVector(a.fwd,hit?-.06:0);
-     tv3.copy(h.p);h.p.copy(tmpP).lerp(tv3,e);h.p.y-=Math.sin(e*PI)*.08;h.p.x+=a.s*Math.sin(e*PI)*.05;
+     tmpP.copy(a.target).addScaledVector(a.fwd,hit?-.06*SC:0);
+     tv3.copy(h.p);h.p.copy(tmpP).lerp(tv3,e);h.p.y-=Math.sin(e*PI)*.08*SC;h.p.x+=a.s*Math.sin(e*PI)*.05*SC;
      tmpQ.copy(a.Q1).slerp(h.q,e);h.q.copy(tmpQ);}
    }else if(BLADE(a.tool)){
     const reach=REACH[a.tool],RDIR=KN_DIR,RUP=KN_UP;
@@ -6513,7 +6563,7 @@ const VM=(()=>{
      const u=(t-c)/d2;dir=tv2.copy(a.dir1);
      if(hit&&!hard){// 날이 몸 안으로 들어간다(피부 면에서 잘려 보임). 후광처럼 딱딱한 데는 튕겨 나온다
       const k=easeOut(Math.min(1,u*1.7));hand=tv.copy(a.hand1).addScaledVector(a.dir1,k*a.pen);setClip(a.target,a.dir1);
-     }else hand=tv.copy(a.hand1).addScaledVector(a.dir1,Math.sin(u*PI)*(hard?-.035:.05));}
+     }else hand=tv.copy(a.hand1).addScaledVector(a.dir1,Math.sin(u*PI)*(hard?-.035:.05)*SC);}
     else{
      const u=(t-c-d2)/d3,e=easeOut3(u);dir=tv2.copy(a.dir1).lerp(RDIR,e).normalize();
      if(hit&&!hard){// 뽑는다: 처음엔 날을 빼내고(피가 왈칵), 그다음 제자리로
@@ -6531,7 +6581,7 @@ const VM=(()=>{
    const s=st.slash,[nx,ny]=ndc(s.sx,s.sy),T=at(nx,ny,.74),H0=at(1.05,-1.05,.62);const dir=tv.subVectors(T,H0).normalize();
    const touching=s.touching||G.time<s.touchUntil;
    s.bite=damp(s.bite,touching?1:0,touching?30:16,rdt);
-   H.R.p.copy(T).addScaledVector(dir,-reach+s.bite*.1);if(s.bite>.02)setClip(T,dir);
+   H.R.p.copy(T).addScaledVector(dir,-reach+s.bite*.1*SC);if(s.bite>.02)setClip(T,dir);
    const mv=tv2.set(s.sx-s.px,-(s.sy-s.py),0);if(mv.lengthSq()>1)mv.normalize();else mv.set(1,0,0);orient(H.R.q,dir,tv3.set(-mv.y,mv.x,0).lerp(RUP,.3));}
   if(!clipOn){clip.normal.set(0,0,1);clip.constant=1e3;}
   // 총: 겨냥·반동
@@ -6542,7 +6592,7 @@ const VM=(()=>{
    orient(h.q,muzzleTo,UP);
    // 반동: 30ms 만에 확 튀었다가 천천히 내려온다
    const u=1-st.recoil,k=st.recoil<=0?0:u<.15?u/.15:Math.pow(1-(u-.15)/.85,2);
-   tmpQ.setFromAxisAngle(tv2.set(1,0,0),-k*.55);h.q.multiply(tmpQ);h.p.addScaledVector(muzzleTo,-k*.075);h.p.y+=k*.022;
+   tmpQ.setFromAxisAngle(tv2.set(1,0,0),-k*.55);h.q.multiply(tmpQ);h.p.addScaledVector(muzzleTo,-k*.075*SC);h.p.y+=k*.022*SC;
    gun.userData.slide.position.z=-st.slide*.026;const fl=gun.userData.flash;fl.visible=st.flash>0;fl.rotation.z=rnd(0,TAU);fl.scale.setScalar(rnd(1.05,1.45));gun.userData.light.intensity=st.flash>0?3:0;
   }
   // 붙잡힘·뿌리침
@@ -6550,16 +6600,17 @@ const VM=(()=>{
    if(w>.001){const h=H[k];tmpP.copy(held[k]);tmpP.x+=Math.sin(st.time*21+(k==='R'?0:2))*.009*w;tmpP.y+=Math.cos(st.time*17+(k==='R'?1:0))*.008*w;h.p.lerp(tmpP,w);h.q.slerp(heldQ[k],w);}
    if(GR.shake>=0){const u=GR.shake/.55,e=Math.sin(Math.min(1,u)*PI),h=H[k];h.p.x+=s*.17*e;h.p.y+=.21*e*(1-u*.4);h.p.z+=.03*e;tmpQ.setFromAxisAngle(tv2.set(0,0,1),-s*.8*e);h.q.premultiply(tmpQ);}}
   if(GR.shake>=0){GR.shake+=rdt;if(GR.shake>.55)GR.shake=-1;}
-  for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
+  for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*SC*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
   // 손 배치(칼·총을 들 때도 붙잡히면 왼팔이 보인다: 왼쪽 사람이 허공을 붙잡지 않게)
   {const showL=st.tool==='hand'||GR.L>.03||GR.goal.L>0;L.hand.visible=L.arm.g.visible=showL;}
-  for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);if(h.hand.visible)placeArm(k);}
+  for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(SC,1,GR[k]));if(h.hand.visible)placeArm(k);}
   knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;
  }
  function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
- return {root,st,setTool,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,get busy(){return st.acts.length>0;}};
+ return {root,st,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,get busy(){return st.acts.length>0;}};
 })();
+onCamUnit=VM.setScale;VM.setScale(CAM.unit);
 const _fz=V3(0,0,1),_aimRest=V3(-.04,.12,-1).normalize();
 /* ===== 8. 진행과 입력 =====
  * 실제로 맞힌 피해만큼 버팀 게이지가 줄어든다.
@@ -6652,14 +6703,14 @@ function impactFX(tool,kind,info,r,dir,s,extra){
  const pt=info.point,n=info.normal,head=r.isHead;
  if(r.blocked){
   FX.add('star',FX.lift(pt,n,.05),{size:.13,life:.1,color:'#d9d6e6'});FX.word('탁!',pt,{size:34,color:'#e6e2f2'});
-  camHit({shake:.012,push:-.035,dir,kick:.012});return;
+  camHit({shake:.012});return;
  }
  // 후광: 불꽃 튀는 금속
  if(r.halo){
   FX.add('star',FX.lift(pt,n,.03),{size:.12,life:.09,color:'#fff3b8'});
   for(let i=0;i<7;i++)FX.add('glint',FX.lift(pt,n,.03),{size:rnd(.025,.045),life:rnd(.18,.32),start:1,grow:-.6,fade:1.5,vel:V3(rnd(-1.4,1.4),rnd(-.4,1.6),rnd(.2,1)),drag:3,color:'#ffd35a'});
   FX.word(pick(['깡!','쨍!','팅!']),pt,{size:tool==='gun'?44:50,color:'#ffe066',dx:-s*rnd(60,100),dy:-24});
-  camHit({dir,kick:.01,shake:.012,push:.025,zoom:.008});return;
+  camHit({shake:.012});return;
  }
  if(tool==='hand'){
   const big=kind!=='jab';
@@ -6669,19 +6720,17 @@ function impactFX(tool,kind,info,r,dir,s,extra){
   const list=head?WORDS[kind]:WORDS.body;
   // 글자는 얼굴을 덮지 않게 주먹이 날아온 반대쪽 옆에 띄운다
   FX.word(pick(list),pt,{size:kind==='jab'?46:kind==='hook'?56:62,color:kind==='upper'?'#ff5640':kind==='hook'?'#ffa23a':'#ffd84a',rot:kind==='hook'?s*-12:undefined,dx:-s*rnd(70,110),dy:-20});
-  if(kind==='jab')camHit({dir,kick:.018,shake:.016,push:.055,pitch:rnd(-.004,.004),roll:rnd(-.006,.006),zoom:.012});
-  else if(kind==='hook')camHit({dir,kick:.022,shake:.02,push:.04,yaw:s*.022,roll:s*.018,zoom:.014});
-  else camHit({dir,kick:.02,shake:.022,push:.035,pitch:.024,zoom:.016});
+  camHit({shake:kind==='jab'?.016:kind==='hook'?.02:.022});
  }else if(tool==='knife'){
   if(kind==='stab'){
    FX.add('bl',FX.lift(pt,n,.04),{size:.12,life:.1});
    for(let i=0;i<3;i++)FX.add('mist',FX.lift(pt,n,.03),{size:rnd(.07,.11),life:rnd(.35,.5),start:.5,grow:1.6,top:false,vel:n.clone().multiplyScalar(rnd(.25,.6)).add(V3(rnd(-.2,.2),rnd(-.05,.25),0)),drag:4,fade:1.4});
    FX.word(pick(WORDS.stab),pt,{size:46,color:'#ff6a55',dx:-rnd(70,110)});
-   camHit({dir,kick:.012,shake:.016,push:.07,zoom:.016});
+   camHit({shake:.016});
   }else{
    FX.add('mist',FX.lift(pt,n,.02),{size:rnd(.05,.08),life:rnd(.3,.45),start:.5,grow:1.5,top:false,vel:n.clone().multiplyScalar(rnd(.2,.5)).add(V3(rnd(-.15,.15),rnd(0,.2),0)),drag:4,fade:1.4});
    if(extra.firstCut)FX.word(pick(WORDS.slash),pt,{size:50,color:'#ff6a55',rot:rnd(-20,20),dx:rnd(-90,90)});
-   camHit({shake:.007,yaw:rnd(-.004,.004)});
+   camHit({shake:.007});
   }
  }else if(tool==='gun'){
   FX.add('bl',FX.lift(pt,n,.04),{size:.1,life:.08});
@@ -6691,7 +6740,7 @@ function impactFX(tool,kind,info,r,dir,s,extra){
   for(let i=0;i<2;i++)FX.add('mist',_fxv.copy(pt).addScaledVector(back,.22),{size:rnd(.1,.16),life:rnd(.4,.6),start:.5,grow:1.7,top:false,vel:back.clone().multiplyScalar(rnd(.6,1.4)).add(V3(rnd(-.3,.3),rnd(0,.3),0)),drag:3,fade:1.3});
   if(head)FX.add('ring',FX.lift(pt,n,.04),{size:.13,life:.13,start:.4,grow:1.5,fade:1,color:'#ffd9cf'});
  }
- if(r.big){camHit({shake:.03,roll:rnd(-.012,.012)});}
+ if(r.big){camHit({shake:.03});}
 }
 const _fxv=V3();
 function wireEmperor(E){
@@ -6725,11 +6774,12 @@ function warnCrowd(){ // 10%: 넷이 설계자 앞을 막아선다
  CROWD.wallStart(G.time);
 }
 /* 5%: 되살리기 컷씬
- * 0.0 마지막 타격, 멈춤 → 카메라가 꿇는 사람들 등 뒤로 빠진다 → 설계자가 무너진다(2.4초)
+ * 카메라는 족칠 때 자리 그대로 둔다(다가가거나 물러서지 않는다).
+ * 0.0 마지막 타격, 멈춤 → 사람들이 뛰어와 꿇는다 → 설계자가 무너진다(2.4초)
  * 3.0 설계자가 손을 든다 / 사람들이 손을 모은다
  * 3.5 소원의 불씨가 손바닥으로 모인다(2.3초)
  * 6.2 손을 가슴으로 → 6.55 박힘: 금빛 과노출, 그 안에서 몸을 갈아 끼운다(6.9)
- * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.0 설계자 앞으로 → 9.65 '암백ㅋ' → 끝나면 다시 1인칭 */
+ * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.65 '암백ㅋ' → 끝나면 다시 1인칭 */
 function beginRevival(){
  const E=G.E;if(!E||G.revivalUsed||E.state!=='stand')return false;
  G.revivalUsed=true;G.revivalPending=false;G.inputLocked=true;G.crowdBeatUntil=0;clearPointers();$('#dock').hidden=true;VM.root.visible=false;
@@ -6737,25 +6787,8 @@ function beginRevival(){
  if(E.tabletHeld)E.dropTablet(V3(-2.4,.45,.7));
  E.startFall('final');E.haloStage(4);G.hitstop=Math.max(G.hitstop,.3);G.slow=Math.max(G.slow,.5);flash(.3);
  G.revival={at:G.time,raised:false,cam1:false,gather:false,chest:false,impact:false,swapped:false,released:false,stamped:false,cheered:false,home:false,spoken:false};
- CAM.frame='cut';CAM.rate=1.5;cutCam(0);
  CROWD.reviveStart(G.time,E);
  return true;
-}
-// 컷씬 카메라: 꿇은 사람들 등 너머로 설계자(0) → 든 손으로 다가감(1) → 몸통(2) → 얼굴(3)
-function cutCam(n){
- const pr=innerWidth<innerHeight,f=pr?1.5:1;
- // 가로 화면(PC)은 세로 시야가 좁아 꿇은 사람들이 화면 아래로 잘렸다: 조금 더 물러나 낮게 본다
- if(!pr){
-  if(n===0){CAM.goalPos.set(0,1.55,3.45);CAM.goalLook.set(0,.84,-.2);}
-  else if(n===1){CAM.goalPos.set(.3,1.5,3.05);CAM.goalLook.set(-.08,.98,-.1);}
-  else if(n===2){CAM.goalPos.set(0,1.3,2.75);CAM.goalLook.set(0,1.0,0);}
-  else{CAM.goalPos.set(.1,1.4,2.35);CAM.goalLook.set(0,1.16,0);}
-  return;
- }
- if(n===0){CAM.goalPos.set(0,1.78,2.6*f+.3);CAM.goalLook.set(0,.88,-.1);}
- else if(n===1){CAM.goalPos.set(.32,1.58,2.55*f+.2);CAM.goalLook.set(-.1,1.02,-.05);}
- else if(n===2){CAM.goalPos.set(0,1.28,2.35*f);CAM.goalLook.set(0,1.0,0);}
- else{CAM.goalPos.set(.1,1.4,2.05*f);CAM.goalLook.set(0,1.18,0);}
 }
 function flashHold(color,a,rise){const el=$('#flash');el.style.background=color;el.style.transition='opacity '+rise+'s';el.style.opacity=a;}
 function flashRelease(dur){const el=$('#flash');el.style.transition='opacity '+dur+'s';el.style.opacity=0;setTimeout(()=>{el.style.background='#fff';},dur*1000+60);}
@@ -6772,7 +6805,7 @@ function replaceEmperorForRevival(){
 }
 function finishRevival(){
  G.revival=null;G.revived=true;G.inputLocked=false;G.bar=G.shown=G.lag=30;G.kd=3;
- CAM.rate=0;setFrame('stand');$('#fight .gauge').style.visibility='';
+ $('#fight .gauge').style.visibility='';
  if(G.E){G.E.idleT=2.5;G.E.sobT=G.time+2.5;}
  CROWD.sides();
  VM.root.visible=G.mode==='fight';$('#dock').hidden=false;
@@ -6789,15 +6822,13 @@ function updateStory(){
   const r=G.revival,t=G.time-r.at,E=G.E;
   if(t>=3.0&&!r.raised){r.raised=true;if(E)E.revive={k:0,dur:1.1,c:0,toChest:false};}
   if(t>=3.5&&!r.gather){r.gather=true;CROWD.gatherStart(2.3);}
-  if(t>=3.7&&!r.cam1){r.cam1=true;CAM.rate=1.2;cutCam(1);}
   if(t>=6.2&&!r.chest){r.chest=true;if(E&&E.revive)E.revive.toChest=true;}
-  if(t>=6.55&&!r.impact){r.impact=true;CROWD.impact();AUDIO.boom(1);flashHold('#fff3cf',.985,.16);if(E)E.reviveGlow=1.7;camHit({shake:.05,zoom:.03});CAM.rate=2.2;cutCam(2);
+  if(t>=6.55&&!r.impact){r.impact=true;CROWD.impact();AUDIO.boom(1);flashHold('#fff3cf',.985,.16);if(E)E.reviveGlow=1.7;camHit({shake:.05});
    if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([40,30,60]);}catch(_){}}
   if(t>=6.9&&!r.swapped){r.swapped=true;replaceEmperorForRevival();}
-  if(t>=7.1&&!r.released){r.released=true;flashRelease(1.2);CAM.rate=1.6;cutCam(3);}
-  if(t>=7.9&&!r.stamped){r.stamped=true;CROWD.restamp();CAM.rate=1.4;cutCam(2);}
+  if(t>=7.1&&!r.released){r.released=true;flashRelease(1.2);}
+  if(t>=7.9&&!r.stamped){r.stamped=true;CROWD.restamp();}
   if(t>=8.5&&!r.cheered){r.cheered=true;CROWD.cheer();}
-  if(t>=9.0&&!r.home){r.home=true;CAM.rate=2.4;setFrame('stand');}
   if(t>=9.65&&!r.spoken){r.spoken=true;queueTalk([['boss',LINES.back,1.7,0,1.45]]);}
   if(r.spoken&&!talkBusy())finishRevival();
  }
@@ -6838,13 +6869,12 @@ function knockdown(){
  G.kd++;
 
  E.startFall(type);
- setFrame(type==='final'?'final':type);
  E.haloStage(G.kd);
 
  G.hitstop=Math.max(G.hitstop,.14);
  G.slow=Math.max(G.slow,type==='final'?.9:.45);
  flash(type==='final'?.35:.2);
- camHit({shake:.04,roll:rnd(-.02,.02),zoom:.03});
+ camHit({shake:.04});
 
  if(type==='final'){
   if(!E.headDestroyed)AUDIO.voice('final',1);
@@ -6856,12 +6886,12 @@ function knockdown(){
 
  updateGauge();
 }
-function onRiseStart(){setFrame('stand');}
-// 다리가 잘려 옥좌에 주저앉음: 다운과 같은 구도로(게이지·후광은 그대로)
-function onLegFall(){setFrame('throne');G.hitstop=Math.max(G.hitstop,.1);G.slow=Math.max(G.slow,.35);camHit({shake:.035,roll:rnd(-.02,.02),zoom:.02});}
+function onRiseStart(){}
+// 다리가 잘려 옥좌에 주저앉음(카메라는 그대로, 게이지·후광도 그대로)
+function onLegFall(){G.hitstop=Math.max(G.hitstop,.1);G.slow=Math.max(G.slow,.35);camHit({shake:.035});}
 function onRise(){const E=G.E;E.setPhase(Math.min(4,G.kd+1));}
 function onImpact(type){
- const E=G.E;camHit({shake:type==='final'?.06:.05,pitch:-.012,roll:rnd(-.015,.015)});
+ const E=G.E;camHit({shake:type==='final'?.06:.05});
  if(type==='throne'){AUDIO.fall('throne');if(E.crownOn!==false)E.knockCrown(V3(rnd(-.4,.4),.6,.2));}else if(type==='knees'){AUDIO.fall('knees');}else AUDIO.fall('floor');
  if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([30,20,40]);}catch(_){}
  const p=E.bones.pelvis.getWorldPosition(V3());BLOOD.spray(V3(p.x,.05,p.z+.2),V3(0,1,0),14,{kind:'dust',max:1.2});
@@ -6916,7 +6946,7 @@ VM.st.onPull=a=>{
 VM.st.onFire=(sx,sy)=>{
  if(G.inputLocked)return;
  updateAmmo();flash(.07);gunLight();
- camHit({pitch:.028,roll:rnd(-.012,.012),shake:.012,zoom:.022});
+ camHit({shake:.012});
  if(G.mode!=='fight'||!G.E)return;
  const hits=pickAll(sx,sy);if(!hits.length)return;
  const first=hits[0];resolveHit('gun','shot',first,'R');
@@ -7145,7 +7175,7 @@ $('#offerPaper').addEventListener('click',e=>{
  if(!G.offerOpen||G.offerBreaking)return;
  G.offerBreaking=true;G.hits++;G.offerBreakAt=G.time+1.5;
  tearOffer(e);$('#offerScene').classList.add('breaking');
- AUDIO.unlock();AUDIO.paper(1.1);AUDIO.hit('hand','hook','chest',1.1,false);flash(.16);camHit({shake:.02,zoom:.012});
+ AUDIO.unlock();AUDIO.paper(1.1);AUDIO.hit('hand','hook','chest',1.1,false);flash(.16);camHit({shake:.02});
  if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([18,10,26]);}catch(_){}
 });
 $('#submitShare').addEventListener('click',async()=>{
@@ -7195,13 +7225,13 @@ function startRound(mode){
 Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,prepAt:0,laughAt:0,submitWaiting:mode==='submit',againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,sealAt:0});
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
- CAM.kick.set(0,0,0);CAM.kickV.set(0,0,0);CAM.rot.reset();CAM.push.reset();CAM.shake=0;CAM.zoom=CAM.zoomV=0;CAM.jit.set(0,0,0);gunLT=0;
+ CAM.shake=0;CAM.jit.set(0,0,0);gunLT=0;
  clearTimeout(gaugeHitT);const gauge=$('#fight .gauge');if(gauge._hitAnim)gauge._hitAnim.cancel();gauge.classList.remove('hit');$('#gaugeFill').classList.remove('flash');$('#flash').style.opacity=0;
 $('#settingsModal').hidden=true;
 $('#submitShare').textContent='처리 내역 공유하기';
  resetSubmitWorkflow();hideAgain();
  resetOfferScene();BEYOND.reset();
- CAM.rate=0;$('#fight .gauge').style.visibility='';$('#flash').style.background='#fff';
+ $('#fight .gauge').style.visibility='';$('#flash').style.background='#fff';
  $('#dock').hidden=mode!=='fight';$('#submitDock').hidden=true;$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
  setTool('hand');updateGauge();updateAmmo();syncPrefs();VM.root.visible=mode==='fight';
  fitView();setFrame('stand',true);
@@ -7245,7 +7275,10 @@ FX.update(dt);
 updateTalk(dt);BUB.step();
 BEYOND.update(dt);
 updateCamera(dt);SBLOOD.update(dt);updateLag(dt);
- gunLT=Math.max(0,gunLT-dt);gunL.intensity=gunLT>0?1.5:0;gunL.position.set(camera.position.x+.15,camera.position.y-.1,camera.position.z-.3);
+ // 총구 불빛: 카메라가 멀리 있어도 설계자를 예전만큼 밝히게 설계자 쪽으로 2.6m 앞까지 당겨 둔다
+ gunLT=Math.max(0,gunLT-dt);gunL.intensity=gunLT>0?1.5:0;
+ _cf.subVectors(CAM.look,camera.position);{const dl=_cf.length()||1;_cf.multiplyScalar(Math.max(0,dl-2.6)/dl);}
+ gunL.position.set(camera.position.x+.15+_cf.x,camera.position.y-.1+_cf.y,camera.position.z-.3+_cf.z);
  if(G.time>hintUntil)$('#hint').classList.add('off');
  if(G.laughAt&&G.time>=G.laughAt){G.laughAt=0;if(G.E&&G.mode==='submit'){G.E.doAct('laugh',{dur:2.4,L:false,R:false});AUDIO.voice('laugh',1.2);}}
 }
