@@ -1073,7 +1073,8 @@
       if (!ART.crowdReady || !cell) return false;
       const inward = x < VIEW.cx ? 1 : -1;
       const kneeling = ['kneel', 'pray', 'wail', 'stamp', 'cheer'].includes(pose);
-      const size = 260 * scale, bottom = (kneeling ? 16 : 64) * scale;
+      const baseSize = pose === 'run' || pose === 'grab' ? 440 : kneeling ? 365 : 400;
+      const size = baseSize * scale, bottom = (kneeling ? 5 : 10) * scale;
       c.save();
       c.globalAlpha *= alpha == null ? 1 : alpha;
       c.translate(x, y);
@@ -1135,13 +1136,14 @@
         const p = out3(G.stateT / .42), leave = G.stateT > 1.38 ? smooth((G.stateT - 1.38) / .72) : 0;
         const y = VIEW.floor + 12, s = VIEW.s * .92;
         for (let i = 0; i < 4; i++) {
-          const side = i < 2 ? -1 : 1, x = VIEW.cx + (i - 1.5) * 52 * VIEW.s + side * leave * VIEW.w * .42;
+          const side = i < 2 ? -1 : 1, x = VIEW.cx + (i - 1.5) * 92 * VIEW.s + side * leave * VIEW.w * .42;
           drawCrowdFigure(c, x, y + Math.abs(i - 1.5) * 6, s, i === 0 ? 'point' : 'block', p * (1 - leave * .35));
         }
       }
     }
     function drawGrabScene(c, side, p) {
-      const figureX = side < 0 ? VIEW.w * .16 : VIEW.w * .84, wristX = VIEW.cx + side * Math.min(VIEW.w * .22, 104), wristY = Math.min(VIEW.floor - 64, VIEW.h * .7);
+      const wristX = VIEW.cx + side * Math.min(VIEW.w * .22, 104), wristY = Math.min(VIEW.floor - 64, VIEW.h * .7);
+      const figureX = wristX + side * Math.min(VIEW.w * .18, 138 * VIEW.s);
       const actorX = lerp(side < 0 ? -70 : VIEW.w + 70, figureX, p), spritePose = G.stateT < .48 ? 'run' : 'grab';
       if (!ART.crowdReady) drawCrowdFigure(c, actorX, VIEW.floor + 8, VIEW.s * .78, 'block', p);
       c.save(); c.globalAlpha = p; c.lineCap = 'round';
@@ -1155,7 +1157,7 @@
         c.fillStyle = '#c89472'; c.strokeStyle = '#181224'; c.lineWidth = 3; c.beginPath(); c.ellipse(wristX - side * 5, wristY, 15 * VIEW.s, 18 * VIEW.s, side * .35, 0, TAU); c.fill(); c.stroke();
       }
       c.restore();
-      if (ART.crowdReady) drawCrowdFigure(c, actorX, VIEW.floor + 8, VIEW.s * .78, spritePose, p);
+      if (ART.crowdReady) drawCrowdFigure(c, actorX, VIEW.floor + 8, VIEW.s * .88, spritePose, p);
     }
 
     function drawSlashTrails(c) {
