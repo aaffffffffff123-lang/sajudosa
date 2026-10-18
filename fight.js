@@ -6608,10 +6608,7 @@ function knockdown(){
    ['player','남의 고생을 운명이라고 부르지 마.',1.9,.15]
   ]);
  }else if(type==='kneel'){
-  queueTalk([
-   ['boss','잠깐. 네 팔자만 좋게 다시 써주마.',2,.15]
-  ]);
-  G.offerPending=true;
+  // 중간 문서 없이 다운 동작만 재생하고 곧바로 전투를 잇는다.
  }else if(type==='floor'){
   queueTalk([
    ['boss','운명은… 원래 해석하기 나름이니라.',2.1,.15],
