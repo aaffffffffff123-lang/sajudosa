@@ -697,7 +697,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 /* =====================================================================
  * 사주도사 (index.html)
  * 이 파일: 입력 화면, 사주 계산, 풀이, 결과 화면.
- * 족치기 화면은 별도 Canvas2D 모듈인 fight.js에 있다(같은 폴더).
+ * 족치기 화면은 fight.js, 3D 라이브러리는 three.min.js 에 따로 있다(같은 폴더).
  * 차례: 1. 달력 데이터 / 2. 달력·사주 계산 / 3. 풀이 / 4. 화면 / 5. 족치기 불러오기
  * ===================================================================== */
 (function(){
@@ -2927,14 +2927,11 @@ $('start-over').addEventListener('click',resetAll);
 $('go-home').addEventListener('click',resetAll);
 
 /* ===== 5. 족치기 불러오기 =====
- * Canvas2D 기반 fight.js(족치기 화면)를 결과가 뜨면 미리 받아 둔다.
+ * three.min.js(3D 라이브러리)와 fight.js(족치기 화면)를 결과가 뜨면 미리 받아 둔다.
  * fight.js는 window.PaljaBoot()로 화면을 만들고 window.PaljaGame.enter(결과, 'fight'|'submit')로 시작한다.
  */
-const FIGHT={state:'idle',want:null,art:[]};
-function preloadFightArt(){
- if(FIGHT.art.length)return;
- ['assets/fate-court-2d.webp','assets/fate-designer-2d.webp'].forEach(src=>{const img=new Image();img.decoding='async';img.src=src;FIGHT.art.push(img);});
-}
+const FIGHT={state:'idle',want:null};
+const THREE_SRC=['three.min.js','https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'];
 function loadOne(srcs,ok,done,i){
  i=i||0;if(ok())return done(true);if(i>=srcs.length)return done(false);
  const s=document.createElement('script');let fin=false;
@@ -2943,9 +2940,11 @@ function loadOne(srcs,ok,done,i){
 }
 function preloadFight(){
  if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';
- preloadFightArt();
  const bust=/^https?:/.test(location.protocol)?'?t='+Math.floor(Date.now()/60000):'';
- loadOne(['fight.js'+bust],()=>!!window.PaljaBoot,ok=>{FIGHT.state=ok?'ready':'failed';if(!ok)fightFailed();else if(FIGHT.want){const m=FIGHT.want;FIGHT.want=null;openFight(m);}});
+ loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
+  if(!ok){FIGHT.state='failed';fightFailed();return;}
+  loadOne(['fight.js'+bust],()=>!!window.PaljaBoot,ok2=>{FIGHT.state=ok2?'ready':'failed';if(!ok2)fightFailed();else if(FIGHT.want){const m=FIGHT.want;FIGHT.want=null;openFight(m);}});
+ });
 }
 function fightFailed(){if(!FIGHT.want)return;$('fightWaitTitle').textContent='족치기 화면을 불러오지 못했습니다.';$('fightWaitDetail').textContent='인터넷 연결을 확인하고 다시 눌러 주세요.';$('fightWaitBtn').hidden=false;}
 $('fightWaitBtn').addEventListener('click',()=>{const m=FIGHT.want||'fight';$('fightWaitBtn').hidden=true;$('fightWaitTitle').textContent='불러오는 중…';$('fightWaitDetail').textContent='';FIGHT.state='idle';FIGHT.want=m;preloadFight();});
