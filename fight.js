@@ -79,7 +79,7 @@
 #fight .switch{position:relative;width:51px;height:30px;border:0;border-radius:99px;background:#d3cbbd;padding:0;flex:none}
 #fight .switch::after{content:"";position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .14s}
 #fight .switch[aria-checked=true]{background:#49319c}#fight .switch[aria-checked=true]::after{left:24px}
-#fight .btn{min-height:47px;border:2px solid var(--ink);border-radius:13px;padding:10px 14px;background:#fff;font-size:14px;font-weight:900;box-shadow:0 4px 0 var(--ink)}
+#fight .btn{min-height:47px;border:2px solid var(--ink);border-radius:13px;padding:10px 14px;background:#fff;color:var(--ink);font-size:14px;font-weight:900;box-shadow:0 4px 0 var(--ink)}
 #fight .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}#fight .btn.danger{background:#d8372b;color:#fff}
 #fight #ending{position:absolute;inset:0;z-index:15;display:flex;align-items:flex-end;justify-content:center;padding:18px 12px calc(91px + var(--safe-b));
  pointer-events:none;background:linear-gradient(transparent 35%,rgba(27,20,43,.46))}
