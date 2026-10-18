@@ -105,16 +105,6 @@ const FIGHT_CSS = `
 #fight .switch::after{content:"";position:absolute;top:3px;left:3px;width:25px;height:25px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.22);transition:left .15s}
 #fight .switch[aria-checked=true]{background:var(--plum)}
 #fight .switch[aria-checked=true]::after{left:24px}
-#fight #ending{position:absolute;inset:0;z-index:15;display:flex;align-items:flex-end;justify-content:center;padding:18px 14px calc(96px + var(--safe-b));background:linear-gradient(rgba(36,28,58,0) 30%,rgba(36,28,58,.4))}
-#fight #ending .card{width:min(100%,380px);background:#fff;border-radius:22px;box-shadow:0 14px 44px rgba(0,0,0,.3);padding:20px 18px 16px;text-align:center;animation:fcardin .5s cubic-bezier(.2,1.35,.4,1) both}
-@keyframes fcardin{from{transform:translateY(40px) scale(.92);opacity:0}to{transform:none;opacity:1}}
-#fight #ending h2{margin:0 0 8px;font-family:var(--serif);font-size:24px;line-height:1.35}
-#fight #ending p{margin:0;font-size:14.5px;line-height:1.7;color:#4a4455;word-break:keep-all}
-#fight #ending .stats{display:flex;justify-content:center;gap:20px;margin:16px 0 8px;font-size:12px;color:var(--muted)}
-#fight #ending .stats b{display:block;font-size:21px;color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
-#fight #ending .btns{display:flex;flex-direction:column;gap:9px;margin-top:14px}
-#fight #ending .btns .pair{display:flex;gap:9px}
-#fight #ending .btns .pair .btn{flex:1}
 #fight #fallback{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:30px;text-align:center;font-weight:800;background:#cfe7f7}
 #fight #fallback small{font-weight:400;color:var(--muted)}
 
@@ -218,44 +208,6 @@ const FIGHT_CSS = `
 #fight .bub.on{opacity:1}#fight .bub.on span{transform:scale(1)}
 #fight .bub.moved::after{display:none}
 
-/* 보스가 죽어도 계속 운명을 찍는 발급기. 이것까지 부숴야 끝난다. */
-#fight #printerScene{z-index:12;display:flex;align-items:flex-end;justify-content:center;padding:80px 18px calc(94px + var(--safe-b));background:linear-gradient(rgba(23,17,35,.05),rgba(23,17,35,.68))}
-#fight .printer-wrap{position:relative;width:min(86vw,370px);text-align:center}
-#fight .printer-note{display:inline-block;margin-bottom:8px;padding:6px 12px;border-radius:99px;background:#241c3a;color:#fff;font-size:12px;font-weight:800}
-#fight .fate-printer{position:relative;width:100%;min-height:200px;border:3px solid #241c3a;border-radius:19px;background:linear-gradient(#f3eee2,#ddd5c4 58%,#c7bda9);box-shadow:0 7px 0 #241c3a,0 20px 34px rgba(0,0,0,.35),inset 0 3px 0 rgba(255,255,255,.7),inset 0 -6px 0 rgba(90,80,60,.18);padding:36px 20px 26px;color:#241c3a;pointer-events:auto}
-#fight .fate-printer::before{content:"";position:absolute;inset:8px;pointer-events:none;
- background:radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) left top/12px 12px no-repeat,radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) right top/12px 12px no-repeat,radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) left bottom/12px 12px no-repeat,radial-gradient(circle,#7d7462 0 2.4px,#f6f1e6 2.9px,transparent 3.5px) right bottom/12px 12px no-repeat}
-#fight .fate-printer:active{transform:translateY(3px);box-shadow:0 4px 0 #241c3a,0 12px 24px rgba(0,0,0,.32)}
-#fight .pr-plate{position:absolute;left:50%;top:9px;transform:translateX(-50%);padding:2px 11px;border-radius:5px;background:linear-gradient(#f6dc84,#c79528);border:1.5px solid #6b4a10;font-family:var(--serif);font-size:11px;font-weight:900;letter-spacing:.22em;color:#4a300a;white-space:nowrap}
-#fight .pr-lamp{position:absolute;right:16px;top:11px;width:13px;height:13px;border-radius:50%;border:1.5px solid #6a150c;background:radial-gradient(circle at 35% 35%,#ffd8cf,#ff3b22 48%,#a3150a);box-shadow:0 0 10px 3px rgba(255,60,30,.55);animation:prLamp .8s steps(2,end) infinite}
-@keyframes prLamp{50%{background:radial-gradient(circle at 35% 35%,#e9b6ad,#9c2a1c 55%,#5e0d05);box-shadow:none}}
-#fight .pr-vent{position:absolute;left:18px;bottom:12px;width:48px;height:12px;border-radius:3px;background:repeating-linear-gradient(90deg,#8a8170 0 4px,transparent 4px 8px);opacity:.75}
-#fight .pr-crack{position:absolute;inset:0;border-radius:16px;pointer-events:none;opacity:0;background-repeat:no-repeat;background-size:100% 100%}
-#fight #printerScene.hit1 .pr-crack{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M71 0L64 14L72 23L58 41L66 52L55 70L61 83' fill='none' stroke='%23241c3a' stroke-width='2.6' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M66 52L80 60L86 74M58 41L46 36' fill='none' stroke='%23241c3a' stroke-width='1.8' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")}
-#fight #printerScene.hit2 .pr-crack,#fight #printerScene.destroyed .pr-crack{opacity:1;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath d='M71 0L64 14L72 23L58 41L66 52L55 70L61 83L54 100' fill='none' stroke='%23241c3a' stroke-width='2.6' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M66 52L80 60L86 74M58 41L46 36M0 63L14 58L22 66L35 55L44 62L58 41' fill='none' stroke='%23241c3a' stroke-width='2' vector-effect='non-scaling-stroke' stroke-linejoin='round'/%3E%3Cpath d='M22 66L19 82L28 96M35 55L33 40L41 30' fill='none' stroke='%23241c3a' stroke-width='1.5' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E")}
-#fight #printerScene.jolt .fate-printer{animation:prJolt .32s cubic-bezier(.3,.9,.4,1)}
-@keyframes prJolt{0%{transform:translate(0,0)}18%{transform:translate(-7px,5px) rotate(-2.2deg) scale(.97)}42%{transform:translate(6px,-3px) rotate(1.6deg)}70%{transform:translate(-3px,1px) rotate(-.6deg)}100%{transform:translate(0,0)}}
-#fight .printer-command{display:inline-block;margin-top:14px;padding:7px 14px;border-radius:99px;background:rgba(36,28,58,.92);color:#fff;font-size:12.5px;font-weight:800;animation:prPulse 1.1s ease-in-out infinite;pointer-events:none}
-@keyframes prPulse{50%{transform:scale(1.07)}}
-#fight #printerScene.destroyed .printer-command{visibility:hidden}
-#fight .pr-spark{position:absolute;left:0;top:0;width:16px;height:3px;border-radius:2px;background:#ffd84a;box-shadow:0 0 6px 2px rgba(255,190,60,.8);pointer-events:none;animation:prSpark .45s ease-out forwards}
-@keyframes prSpark{0%{transform:translate(var(--x0),var(--y0)) rotate(var(--a)) scaleX(.4);opacity:1}100%{transform:translate(var(--x1),var(--y1)) rotate(var(--a)) scaleX(1.3);opacity:0}}
-#fight .printer-slot{height:22px;margin:0 auto 15px;border:3px solid #241c3a;border-radius:4px;background:#17121e;box-shadow:inset 0 0 8px #000}
-#fight .issued-paper{margin:-4px auto 13px;width:88%;padding:10px 11px;border:1.5px solid #8e826c;background:#fff8db;font-family:var(--serif);font-size:12px;line-height:1.55;text-align:left;box-shadow:0 3px 0 rgba(36,28,58,.25);animation:printPaper 1.1s steps(5,end) infinite}
-#fight .issued-paper b{display:inline-block;min-width:45%;color:#941e18}
-@keyframes printPaper{from{transform:translateY(-12px)}to{transform:translateY(2px)}}
-#fight .printer-core{font-size:20px;font-weight:900;letter-spacing:.08em}
-#fight #printerScene.hit1 .fate-printer{transform:rotate(-1deg)}#fight #printerScene.hit2 .fate-printer{transform:rotate(1.5deg);filter:contrast(1.2)}
-#fight #printerScene.destroyed .fate-printer{animation:printerDie .85s cubic-bezier(.35,.1,.7,1) forwards}
-@keyframes printerDie{0%{transform:none}12%{transform:scale(1.06) rotate(-3deg);filter:brightness(1.9)}30%{transform:translate(7px,6px) rotate(4deg) scale(.98);filter:none}100%{transform:translate(26px,170px) rotate(16deg) scale(.55);opacity:0}}
-#fight #printerScene.destroyed .issued-paper{animation:prPaperFly .7s ease-out forwards}
-@keyframes prPaperFly{to{transform:translate(-90px,-150px) rotate(-38deg);opacity:0}}
-/* 부서진 발급기 자리에 '발급 중단' 붉은 인장이 쾅 찍힌다(장면 위에 글씨만 떠 있지 않게 인장 바탕을 깐다) */
-#fight .printer-stamp{position:absolute;left:50%;top:52%;z-index:3;padding:7px 15px 8px;border:3px double #b51f18;border-radius:9px;background:rgba(255,249,234,.95);box-shadow:0 0 0 3px rgba(255,249,234,.95),0 8px 22px rgba(25,18,45,.3);font-family:var(--serif);font-size:22px;font-weight:900;line-height:1.15;letter-spacing:.14em;white-space:nowrap;color:#b51f18;opacity:0;transform:translate(-50%,-50%) scale(1.9) rotate(-7deg);pointer-events:none}
-#fight .printer-stamp small{display:block;margin-top:3px;font-family:var(--sans);font-size:11.5px;font-weight:900;letter-spacing:.32em}
-#fight #printerScene.destroyed .printer-stamp{animation:stampIn .32s .35s cubic-bezier(.3,.1,.5,1) forwards}
-@keyframes stampIn{72%{opacity:1;transform:translate(-50%,-50%) scale(.93) rotate(-7deg)}100%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-7deg)}}
-
 /* 순응: 내 불행을 받은 것과 타인의 불행에 도장을 찍는 것을 분리한다. */
 #fight .submit-workflow{background:rgba(255,253,246,.98);border:2.5px solid var(--ink);border-radius:19px;box-shadow:0 5px 0 var(--ink),0 12px 28px rgba(25,18,45,.25);padding:14px;text-align:center}
 #fight .fate-receipt{padding:10px;border:1.5px solid #b7aa8c;background:#eee9dc;color:#6c6558;font-family:var(--serif);font-weight:700;transform:rotate(-1deg)}
@@ -270,7 +222,6 @@ const FIGHT_CSS = `
 #fight .submit-workflow.stamped .next-fate{animation:stampPaper .5s ease-out both}
 @keyframes stampPaper{40%{filter:brightness(1.7);transform:scale(1.04)}100%{transform:scale(.96);filter:sepia(.35)}}
 #fight .submit-result .alias{margin:5px 0 10px;font-size:11px;color:var(--muted)}
-#fight #endKicker{display:block;margin-bottom:5px;color:var(--red);font-size:11px;font-weight:900;letter-spacing:.16em}
 @media (min-width:760px){#fight .tool{width:84px;height:108px}#fight .tool .art{width:54px;height:54px}#fight .tool .nm{font-size:11px}#fight .gauge .grow{font-size:13.5px}}
 @media (max-width:370px){#fight .tool{width:67px;height:88px;margin:0 -6px}#fight .tool .art{width:41px;height:41px}#fight .tool .nm{font-size:9px}#fight .ftop{gap:5px}#fight .pill{width:38px;min-width:38px}}
 @media (max-width:340px){#fight .tool{width:61px;height:82px}#fight .tool .art{width:37px;height:37px}#fight .gauge{padding:6px 8px 7px}#fight .gauge .grow{font-size:11.5px;gap:5px}#fight .gauge small{display:none}}
@@ -287,12 +238,10 @@ const FIGHT_CSS = `
  #fight .dock#dock .hint{position:fixed;left:50%;bottom:calc(8px + var(--safe-b));transform:translateX(-50%);max-width:56vw;white-space:nowrap}
  #fight #offerScene{padding:48px 145px 10px 8px}
  #fight #offerScene .offer-stack{width:250px;height:350px;transform:scale(.74);transform-origin:center}
- #fight #printerScene{align-items:center;padding:48px 14px 8px}
- #fight #printerScene .printer-wrap{width:min(70vw,350px);transform:scale(.78)}
  #fight #submitDock{left:auto;right:10px;bottom:8px;transform:none;width:min(48vw,390px);max-height:calc(100vh - 68px);overflow:auto;padding:0 4px 6px}
  #fight #submitDock .submit-workflow,#fight #submitDock .submit-result{padding:10px}
 }
-@media (prefers-reduced-motion:reduce){#fight #ending .card{animation-duration:.01s}#fight .gauge.hit{animation:none}#fight .chorus{transition:none!important}#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .revival-seal,#fight #goldShell,#fight .fate-printer,#fight .printer-stamp,#fight .submit-workflow.stamped .next-fate{animation-duration:.01s!important;animation-delay:0s!important}#fight #offerScene.breaking .other-fate{animation:none!important;transform:rotate(-1deg) translateY(-150px) scale(1.12);opacity:1}#fight .offer-stack .scrap,#fight .pr-spark{display:none}}
+@media (prefers-reduced-motion:reduce){#fight .gauge.hit{animation:none}#fight .chorus{transition:none!important}#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .revival-seal,#fight #goldShell,#fight .submit-workflow.stamped .next-fate{animation-duration:.01s!important;animation-delay:0s!important}#fight #offerScene.breaking .other-fate{animation:none!important;transform:rotate(-1deg) translateY(-150px) scale(1.12);opacity:1}#fight .offer-stack .scrap{display:none}}
 `;
 
 const FIGHT_HTML = `<section id="fight" hidden>
@@ -314,20 +263,6 @@ const FIGHT_HTML = `<section id="fight" hidden>
     <em>단, 기존 질서에 이의를 제기하지 않을 것</em>
    </button>
    <span class="offer-command">이 종이를 쳐서 계속</span>
-  </div>
- </div>
- <div id="printerScene" class="story-scene" hidden>
-  <div class="printer-wrap">
-   <div class="printer-note">설계자가 쓰러졌는데도 계속 찍혀 나온다.</div>
-   <button type="button" class="fate-printer" id="fatePrinter" aria-label="운명 발급기를 세 번 쳐서 부순다" aria-describedby="issuedMap">
-    <span class="pr-plate">運命 自動 發給機</span><span class="pr-lamp"></span>
-    <div class="printer-slot"></div>
-    <div class="issued-paper" id="issuedMap"><b>물려받은 특혜</b> 집안복<br><b>저임금·착취</b> 재물운 부족<br><b>법률 비용의 격차</b> 송사를 피할 팔자<br><b>함께 바꾸려는 행동</b> 관재수</div>
-    <div class="printer-core">운명 자동 발급 중</div>
-    <span class="pr-vent"></span><span class="pr-crack"></span>
-   </button>
-   <span class="printer-command">발급기를 쳐서 부순다</span>
-   <div class="printer-stamp">運命發給 中斷<small>운명 발급 중단</small></div>
   </div>
  </div>
  <header class="ftop">
@@ -372,15 +307,6 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <div class="row"><div>피<small>끄면 피 대신 먼지가 납니다.</small></div><button class="switch" id="swBlood" type="button" role="switch" aria-checked="true" aria-label="피"></button></div>
    <div class="row"><div>살 변형<small>맞은 자리가 파이고 뜯깁니다. 느린 기기는 끄세요.</small></div><button class="switch" id="swDeform" type="button" role="switch" aria-checked="true" aria-label="살 변형"></button></div>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
-  </div>
- </div>
- <div id="ending" hidden>
-  <div class="card" role="dialog" aria-modal="true" aria-labelledby="endTitle">
-   <small id="endKicker">운명 발급 중단</small>
-   <h2 id="endTitle">운명 설계자의 운명을 설계했습니다</h2>
-<p>운명은 좁밥이었습니다.</p>
-   <div class="stats"><div><b id="stTime">0:00</b>걸린 시간</div><div><b id="stHits">0</b>때린 횟수</div><div><b id="stBlood">0.0L</b>흘린 피</div></div>
-   <div class="btns"><button type="button" class="btn danger" id="endAgain">처음부터 다시</button><div class="pair"><button type="button" class="btn soft" id="endHome">사주 풀이로</button><button type="button" class="btn soft" id="endMore">계속 패기</button></div></div>
   </div>
  </div>
  <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">불러오는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
@@ -1636,12 +1562,29 @@ const AUDIO=(()=>{
  // 종이가 찢어지는 소리: 높고 거친 찢김 두 겹 + 섬유가 뜯기는 바스락
  function paper(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(R(-.2,.2),.12),d=drive(o,1.4);
   tearNoise(d,t,.34,3200,.85*k,R(30,42));tearNoise(d,t+.03,.26,1500,.42*k,R(55,70));clicks(o,t+.02,7,.3,5200,.18*k);}
- // 발급기를 칠 때: 철판 쾅 + 속에서 부품이 덜그럭. 마지막엔 무너지며 와장창
- function machine(k=1,fin){if(!ready())return;const t=ctx.currentTime+.003,o=out(R(-.2,.2),.22),d=drive(o,2);
-  osc(d,t,{f0:150,f1:52,dur:.17,peak:.85*k});nz(d,t,{dur:.05,peak:.6*k,f:1800,q:.7});
-  ring(o,t+.004,[410,1130,2370,3650],.38,.12*k);clicks(o,t+.012,fin?20:7,fin?.6:.14,4200,.3*k);
-  if(fin){nz(d,t+.02,{dur:.55,peak:.38*k,f:900,f1:220,type:'lowpass',q:.6});ring(o,t+.06,[260,760,1500,2800],.9,.1*k);clicks(o,t+.25,14,.5,6200,.22);}}
- return {unlock,murmur,cheer,charge,twinkle,boom,stamp,paper,machine,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ // 뒤에 있던 것: 아주 낮게 웅웅거리는 덩어리(서로 조금 어긋난 두 톱니파가 천천히 맥놀이하고, 숨 쉬듯 부풀었다 가라앉는다)
+ // + 그 위에 멀리서 '아—' 하는 듯한 모음 울림 + 젖은 유리잔 테두리를 문지르는 듯한 높은 울림. 고개를 드는 동안 천천히 차오르고, 끝나지 않는다
+ function beyond(){if(!ready())return;const t=ctx.currentTime+.02,o=out(0,.55);
+  const add=(type,f,a,dst)=>{const s=ctx.createOscillator(),g=ctx.createGain();s.type=type;s.frequency.setValueAtTime(f,t);g.gain.value=a;s.connect(g);g.connect(dst);s.start(t);track(s);return {s,g};};
+  const swell=(dst,peak,from,to)=>{const g=ctx.createGain();g.gain.setValueAtTime(.0001,t);g.gain.setValueAtTime(.0001,t+from);g.gain.exponentialRampToValueAtTime(peak,t+to);g.connect(dst);return g;};
+  // 낮은 덩어리
+  const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.Q.value=.9;lp.frequency.setValueAtTime(120,t);lp.frequency.linearRampToValueAtTime(480,t+7);
+  const body=swell(o,.34,0,6);lp.connect(body);
+  add('sawtooth',55,.3,lp);add('sawtooth',55.42,.28,lp);add('sawtooth',82.41,.12,lp);add('sine',27.5,.5,body);
+  add('sine',.085,110,lp.frequency);
+  // 모음 울림(아—): 톱니파를 좁은 울림통 세 개에 통과시킨다
+  const vow=swell(o,.7,.8,7.5);
+  for(const [f,q,a] of [[520,2.6,1],[880,3.2,.6],[2450,5,.12]]){const bp=ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=f;bp.Q.value=q;const g=ctx.createGain();g.gain.value=a;bp.connect(g);g.connect(vow);
+   for(const ff of [110,110.6,164.8])add('sawtooth',ff,.33,bp);}
+  // 바람 같은 결(아주 작게)
+  const air=ctx.createBufferSource();air.buffer=noise;air.loop=true;const bf=ctx.createBiquadFilter();bf.type='bandpass';bf.frequency.value=600;bf.Q.value=.6;
+  air.connect(bf);bf.connect(swell(o,.04,0,7));air.start(t);track(air);
+  // 유리 울림: 음마다 다른 빠르기로 천천히 커졌다 작아지고, 아주 조금 떨린다
+  const glass=swell(o,.065,1.2,8.5);
+  for(const [f,rate] of [[1318.5,.11],[1975.5,.07],[2489,.13],[3322.4,.05]]){
+   const v=add('sine',f*R(.998,1.002),.16,glass);add('sine',rate,.14,v.g.gain);add('sine',R(4.2,5.6),f*.0016,v.s.frequency);}
+ }
+ return {unlock,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -1739,9 +1682,11 @@ const WORLD={};
  for(const s of [-1,1]){mk(sphereGeo(16),gold,crest,{p:[s*.58,-.16,.03],s:[.1,.08,.07]});mk(new THREE.TorusGeometry(.07,.022,8,18,PI*1.4),gold,crest,{p:[s*.6,-.05,.04],r:[0,0,s>0?-.4:PI+.4]});}
  // 팔걸이
  for(const s of [-1,1]){const arm=grp(throne,[s*.6,.48,.02]);mk(new THREE.BoxGeometry(.09,.3,.56),red,arm,{p:[0,.12,0]});mk(new THREE.BoxGeometry(.12,.045,.62),gold,arm,{p:[0,.29,0]});mk(new THREE.TorusGeometry(.055,.025,8,18,PI*1.5),gold,arm,{p:[0,.28,.32],r:[0,PI/2,0]});}
- // 기둥: 붉은 칠 + 금 띠
+ // 기둥: 붉은 칠 + 금 띠. 꼭대기는 금 받침 위 보주(끝에 올려다볼 때 넓은 화면에서 보인다)
  const pillarMat=STD('#c22b20',{roughness:.34});
- for(const x of [-1.62,1.62]){const p=grp(root,[x,0,-1.7]);mk(cylGeo(.19,.19,5.2,24),pillarMat,p,{p:[0,2.6,0]});for(const y of [.06,.3,1.6,1.68,3.4,3.48])mk(cylGeo(.205,.205,y<.4?.12:.05,24),gold,p,{p:[0,y,0]});mk(cylGeo(.32,.36,.14,24),STD('#e6dccb',{roughness:.5}),p,{p:[0,.07,0]});}
+ for(const x of [-1.62,1.62]){const p=grp(root,[x,0,-1.7]);mk(cylGeo(.19,.19,5.2,24),pillarMat,p,{p:[0,2.6,0]});for(const y of [.06,.3,1.6,1.68,3.4,3.48,4.9,4.98])mk(cylGeo(.205,.205,y<.4?.12:.05,24),gold,p,{p:[0,y,0]});mk(cylGeo(.32,.36,.14,24),STD('#e6dccb',{roughness:.5}),p,{p:[0,.07,0]});
+  mk(cylGeo(.25,.21,.16,24),gold,p,{p:[0,5.28,0]});mk(cylGeo(.13,.24,.1,24),goldD,p,{p:[0,5.41,0]});
+  mk(sphereGeo(20),gold,p,{p:[0,5.6,0],s:[.15,.17,.15]});mk(new THREE.ConeGeometry(.07,.2,16),gold,p,{p:[0,5.84,0]});}
  // 뒷벽: 붉은 틀 + 밝은 창살
  const latTex=canvasTex(512,512,(g,w,h)=>{const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'#fffdf6');gr.addColorStop(1,'#eaf6ff');g.fillStyle=gr;g.fillRect(0,0,w,h);g.strokeStyle='#b8341f';g.lineWidth=9;for(let i=0;i<=8;i++){g.beginPath();g.moveTo(i*w/8,0);g.lineTo(i*w/8,h);g.stroke();g.beginPath();g.moveTo(0,i*h/8);g.lineTo(w,i*h/8);g.stroke();}g.strokeStyle='rgba(184,52,31,.75)';g.lineWidth=4;for(let i=0;i<8;i++)for(let j=0;j<8;j++){g.beginPath();g.moveTo(i*w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8);g.lineTo(i*w/8+w/8,j*h/8+h/16);g.lineTo(i*w/8+w/16,j*h/8+h/8);g.closePath();g.stroke();}},{repeat:[3,1.3]});
  const wall=grp(root,[0,0,-2.85]);
@@ -1751,6 +1696,10 @@ const WORLD={};
  mk(new THREE.BoxGeometry(9,.22,.16),pillarMat,wall,{p:[0,3.1,.08],cast:false,receive:false});
  mk(new THREE.BoxGeometry(9,.06,.18),gold,wall,{p:[0,3.24,.09],cast:false,receive:false});
  mk(new THREE.BoxGeometry(9,.5,.12),STD('#e6dccb'),wall,{p:[0,.25,.06],cast:false,receive:false});
+ // 벽 위 끝: 붉은 도리 + 금선(끝에 올려다볼 때만 보인다)
+ mk(new THREE.BoxGeometry(9.2,.3,.12),pillarMat,wall,{p:[0,4.5,.07],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(9.2,.05,.14),gold,wall,{p:[0,4.36,.08],cast:false,receive:false});
+ mk(new THREE.BoxGeometry(9.2,.06,.14),gold,wall,{p:[0,4.66,.08],cast:false,receive:false});
  // 바닥 구름(멀리)
  const cloudMat=STD('#ffffff',{roughness:1,emissive:col('#ffffff'),emissiveIntensity:.15});
  for(let i=0;i<14;i++){const a=PI*.15+i/13*PI*.7;mk(sphereGeo(14),cloudMat,root,{p:[Math.cos(a)*5.8,-.25,-Math.sin(a)*4.2+.6],s:[rnd(.7,1.2),rnd(.35,.5),rnd(.7,1)],cast:false});}
@@ -1836,6 +1785,239 @@ function updateCamera(dt){
 }
 const _cv=V3(),_cf=V3();
 
+/* ===== 4-1. 뒤에 있던 것 =====
+ * 설계자가 끝내 쓰러지고 '운명좁밥ㅋ' 한 뒤 고개를 들면, 궁전 뒷벽 너머 하늘을 무지갯빛 구슬 덩어리가 메우고 있다(요그소토스).
+ * 다가오지도, 이쪽을 보지도 않는다. 그걸 올려다보는 데서 끝난다.
+ * 궁전보다 훨씬 멀고 큰 것이라 따로 그린다: 하늘과 그것을 먼 시야 카메라로 먼저 그리고, 궁전은 하늘 없이 그 위에 그린다.
+ * 구슬 무늬는 구슬에 붙어 있고(화면에서 흘러 다니지 않게) 구슬만 아주 느리게 떠돌고 부푼다.
+ * 만드는 데 시간이 조금 걸려서 설계자가 죽은 뒤 대사가 나오는 동안 프레임마다 조금씩 미리 만들어 둔다. */
+const BEYOND=(()=>{
+ const far=new THREE.Scene();far.background=SKY;
+ const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
+ let built=false,SETS=[];
+
+ const NOISE=`
+vec4 perm4(vec4 x){return mod(((x*34.)+1.)*x,289.);}
+vec3 mod289v(vec3 x){return x-floor(x*(1./289.))*289.;}
+vec4 tis(vec4 r){return 1.79284291400159-.85373472095314*r;}
+float snoise(vec3 v){
+ const vec2 C=vec2(1./6.,1./3.);const vec4 D=vec4(0.,.5,1.,2.);
+ vec3 i=floor(v+dot(v,C.yyy));vec3 x0=v-i+dot(i,C.xxx);
+ vec3 g=step(x0.yzx,x0.xyz);vec3 l=1.-g;vec3 i1=min(g.xyz,l.zxy);vec3 i2=max(g.xyz,l.zxy);
+ vec3 x1=x0-i1+C.xxx;vec3 x2=x0-i2+C.yyy;vec3 x3=x0-D.yyy;
+ i=mod289v(i);
+ vec4 p=perm4(perm4(perm4(i.z+vec4(0.,i1.z,i2.z,1.))+i.y+vec4(0.,i1.y,i2.y,1.))+i.x+vec4(0.,i1.x,i2.x,1.));
+ float n_=.142857142857;vec3 ns=n_*D.wyz-D.xzx;
+ vec4 j=p-49.*floor(p*ns.z*ns.z);vec4 x_=floor(j*ns.z);vec4 y_=floor(j-7.*x_);
+ vec4 x=x_*ns.x+ns.yyyy;vec4 y=y_*ns.x+ns.yyyy;vec4 h=1.-abs(x)-abs(y);
+ vec4 b0=vec4(x.xy,y.xy);vec4 b1=vec4(x.zw,y.zw);vec4 s0=floor(b0)*2.+1.;vec4 s1=floor(b1)*2.+1.;vec4 sh=-step(h,vec4(0.));
+ vec4 a0=b0.xzyw+s0.xzyw*sh.xxyy;vec4 a1=b1.xzyw+s1.xzyw*sh.zzww;
+ vec3 p0=vec3(a0.xy,h.x);vec3 p1=vec3(a0.zw,h.y);vec3 p2=vec3(a1.xy,h.z);vec3 p3=vec3(a1.zw,h.w);
+ vec4 norm=tis(vec4(dot(p0,p0),dot(p1,p1),dot(p2,p2),dot(p3,p3)));p0*=norm.x;p1*=norm.y;p2*=norm.z;p3*=norm.w;
+ vec4 m=max(.6-vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.);m=m*m;
+ return 42.*dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));}`;
+ const mat=new THREE.ShaderMaterial({
+  uniforms:{uSun:{value:V3(-1.7,3.4,2.8).normalize()},uSkyHi:{value:col('#4f9be3')},uSkyLo:{value:col('#fff3df')},uHaze:{value:col('#8fc0ec')},uTime:{value:0}},
+  vertexShader:`
+attribute float aSeed;attribute float aOcc;attribute float aMacro;
+varying vec3 vN;varying vec3 vW;varying vec3 vO;varying float vSeed;varying float vOcc;varying float vMacro;
+void main(){
+ vec4 lp=vec4(position,1.);vec3 ln=normal;
+ #ifdef USE_INSTANCING
+ lp=instanceMatrix*lp;ln=mat3(instanceMatrix)*ln;
+ #endif
+ vec4 wp=modelMatrix*lp;vW=wp.xyz;vN=normalize(mat3(modelMatrix)*ln);vO=normal;vSeed=aSeed;vOcc=aOcc;vMacro=aMacro;
+ gl_Position=projectionMatrix*viewMatrix*wp;}`,
+  fragmentShader:`
+uniform vec3 uSun;uniform vec3 uSkyHi;uniform vec3 uSkyLo;uniform vec3 uHaze;uniform float uTime;
+varying vec3 vN;varying vec3 vW;varying vec3 vO;varying float vSeed;varying float vOcc;varying float vMacro;
+${NOISE}
+vec3 hsv(vec3 c){vec3 p=abs(fract(c.xxx+vec3(0.,2./3.,1./3.))*6.-3.);return c.z*mix(vec3(1.),clamp(p-1.,0.,1.),c.y);}
+void main(){
+ vec3 N=normalize(vN);vec3 V=normalize(cameraPosition-vW);
+ float ndv=clamp(dot(N,V),0.,1.);float rim=1.-ndv;
+ // 구슬에 붙은 크고 느슨한 결(움직이지 않는다)
+ vec3 o=normalize(vO);
+ float n1=snoise(o*1.2+vSeed*11.3);
+ float n2=snoise(o*3.+vec3(vSeed*4.1)+n1*.5);
+ float sw=n1*.65+n2*.25;
+ // 진주빛 속: 남빛~보랏빛, 드물게 청록·자홍. 결을 따라 색이 조금씩 번진다
+ float hue=fract((vSeed<.07?.52:vSeed>.9?.88:.72+(vSeed-.5)*.14)+sw*.035);
+ vec3 body=pow(hsv(vec3(hue,.62,.64)),vec3(2.2));
+ // 속에서 은은하게 비치는 빛: 아주 느리게 밝아졌다 어두워진다
+ vec3 glowC=pow(hsv(vec3(fract(hue+.07),.42,1.)),vec3(2.2));
+ float pulse=.7+.3*sin(uTime*(.33+vSeed*.45)+vSeed*40.);
+ // 비눗방울 막: 겉 전체에 옅게, 가장자리로 갈수록 진하고 촘촘하게
+ float film=(.5+.22*sw+vSeed*.6)*2.+pow(rim,1.4)*2.8;
+ vec3 irid=.5+.5*cos(6.28318*(film+vec3(0.,.33,.67)));irid=pow(irid,vec3(1.4));
+ // 빛: 구슬 하나의 명암 × 덩어리 전체의 명암(햇빛 쪽 비탈은 밝고 반대쪽은 그늘)
+ vec3 L=normalize(uSun);float lit=clamp(dot(N,L)*.5+.5,0.,1.);lit=lit*lit*(3.-2.*lit);
+ float macro=vMacro*(1.-.45*vOcc);lit*=macro;
+ vec3 H=normalize(L+V);float nh=max(dot(N,H),0.);
+ float spec=(pow(nh,240.)*3.+pow(nh,28.)*.18)*clamp(macro,0.,1.)*(1.-.8*vOcc*vOcc);
+ vec3 R=reflect(-V,N);vec3 env=mix(uSkyLo,uSkyHi,smoothstep(-.25,.6,R.y));
+ vec3 c=body*(.16+.84*lit);
+ c+=glowC*pow(ndv,2.6)*.3*pulse*(1.-.8*vOcc);
+ c=mix(c,irid*(.3+.8*lit),(.1+.55*pow(rim,1.5))*(1.-.6*vOcc*vOcc));
+ c+=env*pow(rim,3.2)*.35;
+ c+=vec3(1.,.97,.92)*spec;
+ // 사이의 공기: 높은(먼) 곳만 조금 옅게. 색은 살린다
+ float dist=length(vW-cameraPosition);float elev=clamp((vW.y-cameraPosition.y)/dist,0.,1.);
+ c=mix(c,uHaze,.05+.15*smoothstep(.74,.97,elev));
+ gl_FragColor=vec4(c,1.);
+ #include <tonemapping_fragment>
+ #include <encodings_fragment>
+}`});
+
+ // 만드는 일을 여러 토막으로 나눠 프레임마다 조금씩 한다(휴대폰에서 대사가 멈칫하지 않게)
+ function* builder(){
+  // 매번 같은 모양이 나오게 정해진 난수
+  let seed=20261018;const rr=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+  const rv=(a,b)=>a+rr()*(b-a);
+  const EYE=V3(0,1.7,2.5),D2R=PI/180;
+  // 보는 자리에서 방위각·올려다보는 각도·거리로 놓는다
+  const at=(az,el,d)=>{const a=az*D2R,e=el*D2R;return V3(EYE.x+d*Math.cos(e)*Math.sin(a),EYE.y+d*Math.sin(e),EYE.z-d*Math.cos(e)*Math.cos(a));};
+  /* 덩어리의 윤곽(방위각마다 어디까지 솟는지, 각도): 가운데 봉우리는 화면 위로 넘어가고, 양옆 어깨에 작은 봉우리 */
+  const TOP=az=>36+40*Math.exp(-Math.pow(az/13,2))+17*Math.exp(-Math.pow((az+25)/8,2))+14*Math.exp(-Math.pow((az-23)/7.5,2))+3*Math.sin(az*.37+1.2);
+  // 앞쪽 겉면까지 거리: 가운데가 조금 더 앞으로 불룩하다
+  const DIST=(az,el)=>2500-260*Math.exp(-Math.pow(az/22,2))+90*Math.sin(az*.21+el*.13);
+  const NODES=[],SHELL=[];
+  const add=(g)=>{NODES.push(g);return g;};
+  // 겉: 윤곽 안을 고르게 덮는다. 아래쪽은 크고 꼭대기로 갈수록 작다
+  for(let n=0,tries=0;n<560&&tries<30000;tries++){
+   // 처음 360개는 윤곽 안 아무 데나, 나머지는 윤곽선 근처에 몰아서(가장자리가 또렷하고 울퉁불퉁하게)
+   const az=rv(-62,62),top=TOP(az),el=n<360?rv(22,80):rv(top-13,top+1);if(el>top)continue;
+   const f=clamp((el-22)/(top-22),0,1),d=DIST(az,el)+rv(-60,60);
+   const r=lerp(150,46,Math.pow(f,.8))*rv(.78,1.15)*(d/2500)*(rr()<.08?1.7:1);
+   // 윤곽 바로 밑의 구슬은 윤곽선을 울퉁불퉁하게 만든다
+   const g=add({p:at(az,el-(f>.92?r/d/D2R*.3:0),d),r,az,el,top});SHELL.push(g);n++;
+  }
+  // 가까운 구슬만 빨리 찾게 칸을 나눠 둔다(휴대폰에서도 금방 만들어지게)
+  const CELL=420,key=(x,y,z)=>((x+600)*1200+(y+600))*1200+(z+600);
+  const grid=list=>{const m=new Map();for(const g of list){g.cx=Math.floor(g.p.x/CELL);g.cy=Math.floor(g.p.y/CELL);g.cz=Math.floor(g.p.z/CELL);const k=key(g.cx,g.cy,g.cz);let a=m.get(k);if(!a)m.set(k,a=[]);a.push(g);}return m;};
+  const neighbours=(m,g,out)=>{out.length=0;for(let x=-1;x<=1;x++)for(let y=-1;y<=1;y++)for(let z=-1;z<=1;z++){const a=m.get(key(g.cx+x,g.cy+y,g.cz+z));if(a)for(let i=0;i<a.length;i++)out.push(a[i]);}return out;};
+  // 겉 구슬끼리 너무 파고들지 않게 민다(반쯤 겹쳐 붙어 있게)
+  const nb=[];SHELL.forEach((g,i)=>g.i=i);
+  for(let it=0;it<16;it++){let moved=0;const m=grid(SHELL);
+   for(const a of SHELL){neighbours(m,a,nb);
+    for(let q=0;q<nb.length;q++){const b=nb[q];if(b.i<=a.i)continue;
+     const dx=b.p.x-a.p.x,dy=b.p.y-a.p.y,dz=b.p.z-a.p.z,need=(a.r+b.r)*.7,d2=dx*dx+dy*dy+dz*dz;if(d2>=need*need)continue;
+     const d=Math.sqrt(d2)||1,push=(need-d)/d*.5,wa=b.r/(a.r+b.r)*push,wb=a.r/(a.r+b.r)*push;
+     a.p.x-=dx*wa;a.p.y-=dy*wa;a.p.z-=dz*wa;b.p.x+=dx*wb;b.p.y+=dy*wb;b.p.z+=dz*wb;moved++;}}
+   if(!moved)break;yield;}
+  yield;
+  // 속: 겉 구슬 틈으로 하늘이 비치지 않게 뒤를 큰 구슬로 메운다
+  for(let az=-54;az<=54;az+=6){const top=TOP(az);for(let el=26;el<=top-10;el+=6.5){const d=DIST(az,el)+420;add({p:at(az+rv(-1.2,1.2),el+rv(-1.2,1.2),d),r:d*.075,core:true,az,el,top});}}
+  // 겉에 돋은 작은 구슬(바깥쪽으로 반쯤 묻혀)
+  const axisZ=at(0,0,2700).z;
+  const outward=g=>V3(g.p.x,0,g.p.z-axisZ).normalize().multiplyScalar(.8).add(V3(0,Math.pow(clamp((g.el-22)/(g.top-22),0,1),3)*1.4,0)).add(V3().subVectors(EYE,g.p).normalize().multiplyScalar(.6)).normalize();
+  for(let i=0;i<320;i++){
+   const host=SHELL[Math.floor(rr()*SHELL.length)],dir=outward(host).add(V3(rv(-.6,.6),rv(-.4,.6),rv(-.4,.4))).normalize();
+   const r=host.r*(rr()<.7?rv(.08,.18):rv(.18,.32));add({p:host.p.clone().addScaledVector(dir,host.r+r*.2),r,az:host.az,el:host.el,top:host.top});
+  }
+  // 윤곽 위로 조금 떨어져 떠 있는 것들
+  for(let i=0;i<22;i++){
+   const host=SHELL.filter(g=>g.el>g.top-8)[Math.floor(rr()*40)]||SHELL[0],dir=outward(host).add(V3(rv(-.4,.4),rv(.2,.8),0)).normalize();
+   const r=rv(12,40);add({p:host.p.clone().addScaledVector(dir,host.r+r*rv(1.6,3.6)),r,az:host.az,el:host.el,top:host.top});
+  }
+  // 덩어리 전체의 명암: 햇빛(왼쪽 위 앞)을 받는 비탈은 밝고, 오른쪽·아래로 돌아간 쪽은 그늘
+  const sun=V3(-1.7,3.4,2.8).normalize();
+  for(const g of NODES){const n=outward(g);g.macro=clamp(.62+.5*n.dot(sun),.42,1.12);}
+  yield;
+  // 다른 구슬에 둘러싸인 구슬일수록 어둡게(틈새 그늘)
+  {const m=grid(NODES);for(const a of NODES){if(a.core){a.occ=1;continue;}let n=0;neighbours(m,a,nb);for(const b of nb){if(a!==b&&a.p.distanceTo(b.p)<(a.r+b.r)*1.05)n+=b.r/a.r>.5?1:.4;}a.occ=clamp(n/9,0,1);}}
+  for(const g of NODES){g.seed=rr();g.ax=V3(rv(-1,1),rv(-1,1),rv(-1,1)).normalize();g.rot=rv(.003,.009)*(rr()<.5?-1:1);g.dr=V3(rv(-1,1),rv(-.6,.6),rv(-1,1)).normalize();
+   g.w1=TAU/rv(16,30);g.w2=TAU/rv(8,15);g.p1=rv(0,TAU);g.p2=rv(0,TAU);g.p3=rv(0,TAU);}
+  yield;
+  // 앞(보는 쪽)에 있는 것부터 그린다(겹친 구슬을 덜 칠하게). 큰 것은 매끈한 공, 작은 것은 거친 공
+  for(const g of NODES)g.de=g.p.distanceTo(EYE);NODES.sort((a,b)=>a.de-b.de);
+  const set=(list,ws,hs)=>{
+   const geo=new THREE.SphereGeometry(1,ws,hs);
+   for(const [k,f] of [['aSeed','seed'],['aOcc','occ'],['aMacro','macro']])geo.setAttribute(k,new THREE.InstancedBufferAttribute(Float32Array.from(list.map(g=>g[f])),1));
+   const m=new THREE.InstancedMesh(geo,mat,list.length);m.frustumCulled=false;far.add(m);return {m,list};
+  };
+  SETS=[set(NODES.filter(g=>g.r>=90),30,21),set(NODES.filter(g=>g.r<90&&g.r>=35),20,14),set(NODES.filter(g=>g.r<35),12,9)];
+
+  yield;
+  /* 밑동 앞을 가로지르는 뭉게구름 몇 점: 얼마나 먼지 알게 한다(움직이지 않는다) */
+  const cloudTex=canvasTex(256,128,(g,w,h)=>{
+   g.clearRect(0,0,w,h);
+   for(let i=0;i<22;i++){const t=i/21,x=w*(.12+.76*t)+rv(-8,8),y=h*(.66-.34*Math.sin(t*PI)*rv(.7,1.1)),r=h*(.13+.17*Math.sin(t*PI))*rv(.75,1.15);
+    const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'rgba(255,255,255,1)');gr.addColorStop(.72,'rgba(255,255,255,.92)');gr.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();}
+   g.globalCompositeOperation='source-atop';const sh=g.createLinearGradient(0,h*.35,0,h*.85);sh.addColorStop(0,'rgba(255,255,255,0)');sh.addColorStop(1,'rgba(176,200,230,.6)');g.fillStyle=sh;g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';
+  });
+  for(const [az,el,d,sz] of [[-44,30,1000,380],[-20,32,1050,300],[4,30,980,340],[25,31,1020,320],[48,32,1060,300],[-31,41,1150,210],[14,43,1200,190]]){
+   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:cloudTex,transparent:true,depthWrite:false,fog:false,toneMapped:false}));sp.position.copy(at(az,el,d));sp.scale.set(sz,sz*.5,1);far.add(sp);}
+  pose(0);
+ }
+ let job=null;
+ // 남은 토막을 시간 안에서 이어 한다. 다 되면 true
+ function step(budget){
+  if(built)return true;
+  if(!job)job=builder();
+  const t0=performance.now();
+  while(performance.now()-t0<budget){if(job.next().done){built=true;job=null;return true;}}
+  return false;
+ }
+ function build(){step(1e9);}
+ const _m=new THREE.Matrix4(),_q=new THREE.Quaternion(),_p=V3(),_s=V3(),_cp=V3();
+ function pose(t){
+  mat.uniforms.uTime.value=t;
+  for(const S of SETS){const L=S.list;
+   for(let i=0;i<L.length;i++){const g=L[i];
+    _p.copy(g.p).addScaledVector(g.dr,g.r*.03*Math.sin(t*g.w1+g.p1));
+    // 덩어리 전체가 아래에서 위로 천천히 부풀었다 가라앉는다(숨) + 구슬마다 조금씩 다르게
+    const sc=g.r*(1+.045*Math.sin(t*.85-g.el*.1-g.az*.025)+.018*Math.sin(t*g.w2+g.p2));_s.set(sc,sc,sc);
+    _q.setFromAxisAngle(g.ax,g.p3+t*g.rot);
+    _m.compose(_p,_q,_s);S.m.setMatrixAt(i,_m);}
+   S.m.instanceMatrix.needsUpdate=true;}
+ }
+ // 미리 만들고 셰이더도 미리 올려 둔다(고개를 드는 순간 끊기지 않게). 다 되면 true
+ let compiled=false;
+ function prepare(budget=6){
+  if(!step(budget))return false;
+  if(!compiled){compiled=true;try{fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);fcam.updateMatrixWorld();renderer.compile(far,fcam);}catch(_){}}
+  return true;
+ }
+
+ let active=false,t0=0,from=null;
+ const DUR=6.4;
+ // 끝 구도: 한 걸음 물러서며 고개를 들어, 벽 위 하늘 대부분이 그것으로 차게 본다
+ const portrait=()=>innerWidth<innerHeight;
+ const endPitch=()=>portrait()?.82:.79;
+ const endFov=()=>portrait()?52:42;
+ function begin(){
+  if(active)return;build();active=true;t0=G.time;
+  const d=V3().subVectors(CAM.look,CAM.pos),len=d.length()||1;
+  from={pos:CAM.pos.clone(),pitch:Math.asin(clamp(d.y/len,-1,1)),yaw:Math.atan2(d.x,-d.z),fov:CAM.fovBase};
+  CAM.frame='cut';CAM.rate=60;
+  const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
+  $('#hint').classList.add('off');
+  AUDIO.beyond();
+ }
+ function update(dt){
+  if(!active)return;
+  const k=G.time-t0,p=smoother(k/DUR);
+  const pitch=lerp(from.pitch,endPitch(),p),yaw=lerp(from.yaw,0,p);
+  const pos=_cp.copy(from.pos);pos.y+=.15*p;pos.z+=.9*p;
+  CAM.goalPos.copy(pos);CAM.pos.copy(pos);
+  CAM.goalLook.set(pos.x+Math.sin(yaw)*Math.cos(pitch)*4,pos.y+Math.sin(pitch)*4,pos.z-Math.cos(yaw)*Math.cos(pitch)*4);CAM.look.copy(CAM.goalLook);
+  CAM.fovBase=lerp(from.fov,endFov(),p);
+  // 손은 내려간다
+  if(VM.root.visible){const h=clamp(k/1.1,0,1);VM.root.position.y=-.6*easeIn(h);if(h>=1)VM.root.visible=false;}
+  pose(G.time);
+ }
+ function draw(){
+  fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);
+  if(fcam.fov!==camera.fov||fcam.aspect!==camera.aspect){fcam.fov=camera.fov;fcam.aspect=camera.aspect;fcam.updateProjectionMatrix();}
+  renderer.render(far,fcam);
+ }
+ function reset(){
+  active=false;t0=0;from=null;VM.root.position.y=0;
+  const gauge=$('#fight .gauge');if(gauge){gauge.style.transition='';gauge.style.opacity='';}
+ }
+ return {prepare,begin,update,draw,reset,get active(){return active;}};
+})();
 /* ===== 4-2. 운명의 수혜자들 =====
  * 大吉 보증서를 쥔 사람들(여섯 중 둘은 小吉·平, 별것 없는데도 똑같이 지킨다).
  * 12%: 둘이 화면 양옆에서 뛰어들어 내 팔을 붙잡고 늘어진다(1인칭 손 장면 안, vmScene).
@@ -6238,7 +6420,7 @@ const PREF={sound:true,blood:true,vibe:true,shake:true,deform:true};
 metalEnv(VM.root);
 try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof p[k]==='boolean')PREF[k]=p[k];}catch(_){}
 const KD_AT=[75,50,25,0],KD_TYPE=['throne','kneel','floor','final'];
-const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:0,tEnd:0,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,cardShown:false,result:null,round:0,retired:[],offerPending:false,offerOpen:false,offerBreaking:false,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,printerShown:false,printerHits:0};
+const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:0,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,result:null,round:0,retired:[],offerPending:false,offerOpen:false,offerBreaking:false,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false};
 const HINTS={hand:'누르면 맨주먹 잽 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
@@ -6527,11 +6709,6 @@ function finishRevival(){
  updateGauge();hint(HINTS[G.tool],2.6);
  focusCanvas();
 }
-function showPrinter(){
- if(G.printerShown)return;G.printerShown=true;G.printerPending=false;G.inputLocked=true;clearPointers();
- $('#dock').hidden=true;CROWD.hide();const sc=$('#printerScene');sc.hidden=false;sc.className='story-scene';
- requestAnimationFrame(()=>$('#fatePrinter').focus());
-}
 function updateStory(){
  if(G.offerPending){if(G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);if(!talkBusy())openOffer();}
  if(G.offerOpen&&G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
@@ -6553,8 +6730,10 @@ function updateStory(){
   if(t>=8.9&&!r.spoken){r.spoken=true;queueTalk([['boss','그래. 다들 자기 것만은 건드리지 말라지.',1.65,.05],['boss','그렇게 지킨 너희 복이, 내 살이 되어 돌아왔다.',2,.08]]);CAM.rate=2.4;setFrame('stand');}
   if(t>=10.6&&r.spoken&&!talkBusy())finishRevival();
  }
- if(G.printerPending&&!talkBusy())showPrinter();
- if(G.printerDoneAt&&G.time>=G.printerDoneAt){G.printerDoneAt=0;$('#printerScene').hidden=true;showEnding();}
+ // 마지막 대사('운명좁밥ㅋ')가 사라지고 조금 뒤, 뒤에 있던 것을 올려다본다(그것은 대사가 나오는 동안 미리 만들어 둔다)
+ if(G.prepAt&&G.time>=G.prepAt){if(BEYOND.prepare(6))G.prepAt=0;}
+ if(G.beyondAt&&!talkBusy()&&G.time>=G.beyondAt){G.beyondAt=0;BEYOND.begin();}
+ else if(G.beyondAt&&talkBusy())G.beyondAt=Math.max(G.beyondAt,G.time+.6);
  if(G.sealAt&&G.time>=G.sealAt){G.sealAt=0;$('#submitWorkflow').hidden=true;$('#submitCertificate').hidden=false;requestAnimationFrame(()=>$('#submitShare').focus());}
 }
 function damageBar(d,o={},fromStand=false){
@@ -6637,20 +6816,14 @@ function onImpact(type){
 function onDead(){
  if(G.revival||G.ended)return;
  G.ended=true;
- G.tEnd=G.time;
- G.inputLocked=true;clearPointers();G.printerPending=true;$('#dock').hidden=true;
+ G.inputLocked=true;clearPointers();$('#dock').hidden=true;
 
  queueTalk([
   ['boss','운명을 거슬러주세요…',2,.15],
-  ['boss','운명은 뻥이었습니다. ㅠㅠ',2.2,.18]
+  ['boss','운명은 뻥이었습니다. ㅠㅠ',2.2,.18],
+  ['player','운명좁밥ㅋ',1.9,.3]
  ]);
-}
-function showEnding(){
- clearTalk();
- G.cardShown=true;const t=Math.max(0,G.tEnd-G.t0),m=Math.floor(t/60),s=Math.floor(t%60);
- $('#stTime').textContent=m+':'+String(s).padStart(2,'0');$('#stHits').textContent=G.hits;$('#stBlood').textContent=(BLOOD.lost).toFixed(1)+'L';
- $('#ending').hidden=false;
- requestAnimationFrame(()=>$('#endAgain').focus());
+ G.beyondAt=G.time+.6;G.prepAt=G.time+1;
 }
 
 /* ---- 게이지 ---- */
@@ -6865,9 +7038,6 @@ function closeModal(){$('#settingsModal').hidden=true;G.paused=false;last=perfor
 $$('#settingsModal [data-close]').forEach(b=>b.addEventListener('click',closeModal));
 $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 $('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
-$('#endAgain').addEventListener('click',()=>startRound('fight'));
-$('#endHome').addEventListener('click',()=>leave(false));
-$('#endMore').addEventListener('click',()=>{$('#ending').hidden=true;G.inputLocked=false;$('#dock').hidden=false;hint('끝난 운명도 더 팰 수 있습니다.',2.5);focusCanvas();});
 $('#fightBack').addEventListener('click',()=>leave(false));
 function startFightFromSubmit(){
  AUDIO.unlock();
@@ -6930,27 +7100,6 @@ $('#offerPaper').addEventListener('click',e=>{
  if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([18,10,26]);}catch(_){}
  queueTalk([['player','니들이 정한 팔자, 니들이 살아.',1.6,.3]],true);
 });
-// 발급기 치기: 칠 때마다 흔들리고 금이 가며 불똥이 튄다. 세 번째에 무너진다
-function printerSparks(x,y,n){
- const sc=$('#printerScene');for(let i=0;i<n;i++){const s=document.createElement('i');s.className='pr-spark';const a=rnd(0,TAU),d=rnd(40,120);
-  s.style.cssText=`--x0:${x.toFixed(0)}px;--y0:${y.toFixed(0)}px;--x1:${(x+Math.cos(a)*d).toFixed(0)}px;--y1:${(y+Math.sin(a)*d-20).toFixed(0)}px;--a:${(a*180/PI).toFixed(0)}deg`;
-  sc.appendChild(s);setTimeout(()=>s.remove(),520);}
-}
-$('#fatePrinter').addEventListener('click',e=>{
- if(!G.printerShown||G.printerDoneAt||G.printerHits>=3)return;
- AUDIO.unlock();G.printerHits++;G.hits++;const sc=$('#printerScene');sc.classList.remove('jolt');void sc.offsetWidth;
- const r=$('#fatePrinter').getBoundingClientRect(),x=e&&e.clientX>0?e.clientX:r.left+r.width/2,y=e&&e.clientY>0?e.clientY:r.top+r.height/2;
- if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate(G.printerHits<3?[20,10,30]:[40,20,80]);}catch(_){}
- if(G.printerHits<3){
-  sc.classList.add('hit'+G.printerHits,'jolt');AUDIO.machine(.8+G.printerHits*.2);flash(.12);camHit({shake:.025,zoom:.01});
-  printerSparks(x,y,7+G.printerHits*3);FX.wordAt(G.printerHits===1?'쾅!':'빠각!',x,y-34,{size:58,color:'#ffd84a',parent:sc,rot:rnd(-12,12)});
- }else{
-  sc.classList.add('hit2','destroyed');AUDIO.machine(1.3,true);AUDIO.boom(.7);flash(.32);camHit({shake:.05,zoom:.03});
-  printerSparks(x,y,18);FX.wordAt('와장창!',x,y-40,{size:66,color:'#ff6a3d',parent:sc,dur:.8,rot:rnd(-8,8)});
-  G.tEnd=G.time;G.printerDoneAt=G.time+1.25;
- }
-});
-
 $('#submitShare').addEventListener('click',async()=>{
  const text=
   '저는 다음 사람의 불리한 운명 배정에 확인 도장을 찍었습니다.\n'+
@@ -6995,16 +7144,15 @@ function startRound(mode){
  const E=G.E;
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,tEnd:0,hitstop:0,slow:0,ended:false,cardShown:false,paused:false,inputLocked:false,cardAt:0,laughAt:0,submitWaiting:mode==='submit',headTalked:false,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,printerShown:false,printerHits:0,printerPending:false,printerDoneAt:0,sealAt:0});
+Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,prepAt:0,laughAt:0,submitWaiting:mode==='submit',headTalked:false,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,sealAt:0});
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
  CAM.kick.set(0,0,0);CAM.kickV.set(0,0,0);CAM.rot.reset();CAM.push.reset();CAM.shake=0;CAM.zoom=CAM.zoomV=0;CAM.jit.set(0,0,0);gunLT=0;
  clearTimeout(gaugeHitT);const gauge=$('#fight .gauge');if(gauge._hitAnim)gauge._hitAnim.cancel();gauge.classList.remove('hit');$('#gaugeFill').classList.remove('flash');$('#flash').style.opacity=0;
- $('#ending').hidden=true;
 $('#settingsModal').hidden=true;
 $('#submitShare').textContent='처리 내역 공유하기';
  resetSubmitWorkflow();
- resetOfferScene();$('#printerScene').hidden=true;$('#printerScene').className='story-scene';
+ resetOfferScene();BEYOND.reset();
  CAM.rate=0;$('#fight .gauge').style.visibility='';$('#flash').style.background='#fff';
  $('#dock').hidden=mode!=='fight';$('#submitDock').hidden=true;$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
  setTool('hand');updateGauge();updateAmmo();syncPrefs();VM.root.visible=mode==='fight';
@@ -7057,13 +7205,21 @@ function step(dt){
  BLOOD.update(sim);COINS.update(sim);CHUNKS.update(sim);VM.update(sim,G.hitstop>0,dt);
 FX.update(dt);
 updateTalk(dt);
+BEYOND.update(dt);
 updateCamera(dt);SBLOOD.update(dt);updateLag(dt);
  gunLT=Math.max(0,gunLT-dt);gunL.intensity=gunLT>0?1.5:0;gunL.position.set(camera.position.x+.15,camera.position.y-.1,camera.position.z-.3);
  if(G.time>hintUntil)$('#hint').classList.add('off');
- if(G.cardAt&&G.time>=G.cardAt){G.cardAt=0;if(G.ended&&G.E&&G.E.state==='dead'&&!G.cardShown)showEnding();}
  if(G.laughAt&&G.time>=G.laughAt){G.laughAt=0;if(G.E&&G.mode==='submit'){G.E.doAct('laugh',{dur:2.4,L:false,R:false});AUDIO.voice('laugh',1.2);}}
 }
-function render(){renderer.clear();renderer.render(scene,camera);renderer.clearDepth();renderer.render(vmScene,vmCam);renderer.clearDepth();renderer.render(FX.scene,camera);BUB.update();}
+function render(){
+ renderer.clear();
+ // 뒤에 있던 것: 하늘과 그것을 먼저 그리고, 궁전은 하늘 없이 그 위에 그린다
+ const far=BEYOND.active;
+ if(far){BEYOND.draw();renderer.clearDepth();scene.background=null;}
+ renderer.render(scene,camera);
+ if(far)scene.background=SKY;
+ renderer.clearDepth();renderer.render(vmScene,vmCam);renderer.clearDepth();renderer.render(FX.scene,camera);BUB.update();
+}
 function frame(now){
  if(!G.running)return;G.raf=requestAnimationFrame(frame);
  const raw=(now-last)/1000;last=now;const dt=clamp(raw,0,.05);
@@ -7082,13 +7238,13 @@ function enter(result,mode='fight'){
 function leave(home){
  pause();
  CROWD.reset();
- clearTalk();$('#settingsModal').hidden=true;$('#ending').hidden=true;$('#fight').hidden=true;
+ clearTalk();$('#settingsModal').hidden=true;$('#fight').hidden=true;
  const face=$('#arcadeFace');if(face){face.target='_top';face.removeAttribute('rel');}
  if(home&&window.__paljaRestart)window.__paljaRestart();else if(window.__paljaLeave)window.__paljaLeave();
 }
 let rsT=0;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(!$('#fight').hidden){fitView();VM.computeRest();}},40);});
 addEventListener('blur',clearPointers);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();AUDIO.stop();}else{last=performance.now();if(G.running){fitView();}}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();AUDIO.stop();}else{last=performance.now();if(G.running){fitView();if(BEYOND.active){AUDIO.unlock();setTimeout(()=>{if(BEYOND.active&&!document.hidden)AUDIO.beyond();},250);}}}});
 
 window.PaljaGame={enter,leave,pause,
  tick(dt=1/60,draw=true){step(dt);if(draw)render();},
@@ -7100,6 +7256,6 @@ window.PaljaGame={enter,leave,pause,
  get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD};},
  debug:{audio:AUDIO,crowd:CROWD,round(m){startRound(m||"fight");},
   cam(p,l,fov){CAM.frame='debug';CAM.goalPos.set(p[0],p[1],p[2]);CAM.goalLook.set(l[0],l[1],l[2]);CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);if(fov){CAM.fovBase=fov;CAM.fov=fov;}},
-  standCam(){setFrame('stand',true);},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
+  standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
