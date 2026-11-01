@@ -1947,7 +1947,7 @@ const COMBAT_STAGE=(()=>{
  const shadowTex=canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,5,64,64,64);r.addColorStop(0,'rgba(0,0,0,.8)');r.addColorStop(.48,'rgba(0,0,0,.4)');r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,0,w,h);});
  const contact=mk(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:.3}),root,{r:[-PI/2,0,0],p:[0,.006,0],cast:false});
  // Right bare foot in world space: heel at +z, toes point away from the player (-z).
- const boot=grp(scene);boot.name='player-bare-foot';boot.visible=false;
+ const boot=grp(vmScene);boot.name='player-bare-foot';boot.visible=false;
  const footSkin=STD('#d99c7b',{roughness:.72});
  const footSole=STD('#c48970',{roughness:.85});
  const footNail=STD('#e5bea5',{roughness:.48});
@@ -1963,9 +1963,9 @@ const COMBAT_STAGE=(()=>{
   mk(sphereGeo(12),footNail,boot,{p:[x,.062-i*.002,z-len*.36],s:[r*.65,.0035,len*.27],r:[-.12,0,0],cast:false});
  }
  const legMat=STD('#262d37',{roughness:.9,bumpMap:weave,bumpScale:.002});
- const shin=mk(cylGeo(.066,.048,1,16),legMat,boot);
- const thigh=mk(cylGeo(.105,.068,1,16),legMat,boot);
- const knee=mk(sphereGeo(16),legMat,boot,{s:.069});
+ const shin=mk(cylGeo(.072,.056,1,18),legMat,boot);
+ const thigh=mk(cylGeo(.1,.074,1,16),legMat,boot);
+ const knee=mk(sphereGeo(16),legMat,boot,{s:.076});
  const dust=new THREE.Group();root.add(dust);
  const dots=new Float32Array(180*3);for(let i=0;i<180;i++){dots[i*3]=rnd(-5,5);dots[i*3+1]=rnd(.3,5);dots[i*3+2]=rnd(-4,2);}
  const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dots,3));
@@ -2355,8 +2355,8 @@ const BUB=(()=>{
  * 붙잡힌 내 주먹 자리(fx·fy·fd), 그 사람 두 손이 내 팔을 쥐는 자리(주먹→어깨 사이 g0·g1, 비켜 놓는 정도 gx·gy·gz).
  * 세로 화면: 둘이 내 앞에 바짝 붙어 내 두 주먹을 화면 아래로 끌어내린다(얼굴이 가운데 아래에서 따로따로 또렷하게).
  * 가로 화면: 내 두 팔이 설계자 쪽으로 뻗어 있고, 양옆에서 둘이 소매를 붙잡고 늘어진다 */
-const GRAB_P={hx:.55,hy:-.3,hd:.74,sc:.85,turn:.4,lean:-.04,look:-.28,fx:.38,fy:-1.05,fd:.56,g0:-.05,g1:.04,gx:.03,gy:.06,gz:.05};
-const GRAB_L={hx:.44,hy:-.45,hd:.76,sc:.88,turn:.5,lean:-.04,look:-.28,fx:.24,fy:-.28,fd:.6,g0:.1,g1:.22,gx:.02,gy:.012,gz:.045};
+const GRAB_P={hx:.55,hy:-.3,hd:.74,sc:.85,turn:.4,lean:-.04,look:-.28,fx:.38,fy:-1.05,fd:.56,g0:-.02,g1:.09,gx:.03,gy:.05,gz:.08};
+const GRAB_L={hx:.44,hy:-.45,hd:.76,sc:.88,turn:.5,lean:-.04,look:-.28,fx:.24,fy:-.28,fd:.6,g0:.1,g1:.24,gx:.02,gy:.03,gz:.08};
 function grabLayout(){return innerWidth<innerHeight?GRAB_P:GRAB_L;}
 const CROWD=(()=>{
  const root=grp(scene,null,'fate-beneficiaries');root.visible=false;
@@ -2475,8 +2475,11 @@ const CROWD=(()=>{
    const fa=mk(capsuleGeo(.025,FA-.05,10),coat,el,{p:[0,-FA/2,.004],cast:false,receive:false});
    mk(cylGeo(.024,.024,.016,12),shirt,el,{p:[0,-FA+.02,.006],cast:false,receive:false});
    const hand=grp(el,[0,-FA,.008]);
-   mk(sphere,skin,hand,{s:[.031,.038,.026],cast:false,receive:false});
-   const finger=mk(capsuleGeo(.009,.05,8),skin,hand,{p:[0,-.045,.006],cast:false,receive:false});finger.visible=false;
+   // 손: 손바닥(납작한 공) + 모은 손가락 네 개 + 엄지. 손가락질할 때는 검지만 펴진다
+   mk(sphere,skin,hand,{p:[0,-.008,0],s:[.028,.03,.016],cast:false,receive:false});
+   for(let i=0;i<4;i++){const x=(i-1.5)*.012;mk(capsuleGeo(.0062,.028,8),skin,hand,{p:[x,-.045,.004],r:[.35,0,0],cast:false,receive:false});}
+   mk(capsuleGeo(.007,.024,8),skin,hand,{p:[-side*.026,-.018,.006],r:[0,0,side*.9],cast:false,receive:false});
+   const finger=mk(capsuleGeo(.0068,.05,8),skin,hand,{p:[-.018,-.058,.008],r:[.2,0,0],cast:false,receive:false});finger.visible=false;
    return {sh,el,hand,finger,ua,fa,z:0,ez:0,x:0,ex:0};
   }
   const arms={L:makeArm(-1),R:makeArm(1)};
@@ -2503,7 +2506,7 @@ const CROWD=(()=>{
   const ink=mk(ringGeo,inkMat.clone(),paper,{p:[0,-.06,.009],s:.03,cast:false,receive:false});ink.visible=false;
   return {i,s,cert,root:person,body,head,face,arms,legs,paper,stamp,ink,mood:'normal',
    x:0,y:.015,z:0,ry:0,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,bob:0,run:0,
-   goal:{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'down',speed:9},
+   goal:{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'down',speed:9,kneel:false},kneelF:0,
    stampT:-1,shakeT:-1,hidden:false};
  }
  const people=[];for(let i=0;i<6;i++)people.push(makePerson(root,i));
@@ -2523,7 +2526,7 @@ const CROWD=(()=>{
   up:[2.9,.15,.2],
   pray:[2.75,.35,.55],
   cheer:[2.7,.3,.35],
-  spread:[1.42,.2,.12],
+  spread:[1.05,.35,.75], // 막아서기: 팔을 양옆으로 벌리되 팔꿈치는 굽혀 손바닥을 앞으로 내민다(일자로 뻗으면 허수아비 같았다)
   point:[.5,1.62,.04],   // 손가락질: 팔을 얼굴 옆으로 비켜 들어 나를 가리킨다(정면으로 뻗으면 손이 제 입을 가린 것처럼 보였다)
  };
  // 보증서를 쥐는 손: both(두 손, 가장자리) / R(오른손만, 왼쪽 아래 모서리) / L(왼손만)
@@ -2549,6 +2552,7 @@ const CROWD=(()=>{
 
  function goTo(p,x,z,o={}){const g=p.goal;g.x=x;g.z=z;g.speed=o.speed||9;if(o.ry!=null)g.ry=o.ry;if(o.face)g.ry=faceDir(p,o.face[0],o.face[1]);p.run=1;}
  function stance(p,k){const g=p.goal;
+  g.kneel=k==='kneel'||k==='bow'||k==='pray'||k==='kneelUp';// 무릎 꿇기: 몸 높이는 update()가 무릎이 바닥에 닿게 맞춘다
   if(k==='stand'){g.y=.015;g.rx=0;g.py=.31;g.px=0;g.pz=.108;g.prx=0;g.arms='hold';}
   else if(k==='kneel'){g.y=-.13;g.rx=.42;g.py=.3;g.px=0;g.pz=.1;g.prx=-.2;g.arms='hold';}
   else if(k==='bow'){g.y=-.15;g.rx=.95;g.py=.28;g.px=0;g.pz=.12;g.prx=-.5;g.arms='hold';}
@@ -2609,7 +2613,7 @@ const CROWD=(()=>{
  // 사람 팔을 월드(vm) 좌표의 손 자리로 늘이기: 두 마디 IK
  function placeArmIK(p,a,targetW,s,poleL){
   const S=a.sh.getWorldPosition(iv1);const body=p.body;
-  const pole=iv3.copy(S).add((poleL?iv4.set(s*poleL[0],poleL[1],poleL[2]):iv4.set(s*.25,-.1,.2)).applyQuaternion(body.getWorldQuaternion(iq)));
+  const pole=iv3.copy(S).add((poleL?iv4.set(s*poleL[0],poleL[1],poleL[2]):iv4.set(s*.3,-.3,.05)).applyQuaternion(body.getWorldQuaternion(iq)));
   const sc=p.root.scale.x,L1=UA*sc,L2=FA*sc;
   const E=iv2;solveTwoBone(S,targetW,pole,L1,L2,E);
   // 어깨 → 팔꿈치
@@ -2779,20 +2783,20 @@ const CROWD=(()=>{
    else{p.ry=adamp(p.ry,g.ry,8,dt);}
    const bob=Math.abs(Math.sin(p.bob))*.03*p.run;
    const shake=p.shakeT>=0?Math.max(0,1-(now-p.shakeT)/.6):0;
-   const ty=g.y+bob+(shake?Math.sin(now*28)*.012*shake:0);
-   p.y=damp(p.y,ty,12,dt);p.rx=adamp(p.rx,g.rx+.28*p.run-.2*shake,9,dt);p.rz=adamp(p.rz,g.rz+(shake?Math.sin(now*31+p.i)*.06*shake:0),9,dt);
+   // 무릎 꿇기: 허벅지는 거의 수직으로 세우고 정강이는 뒤로 눕혀 바닥에 댄다. 몸 높이는 무릎 밑이 바닥에 닿게 맞춘다
+   const kneel=p.kneelF=damp(p.kneelF||0,g.kneel&&p.run<.5?1:0,8,dt);
+   const rxNow=g.rx+.28*p.run-.2*shake;
+   const yKneel=THIGH*Math.cos(.1)+.035-.15*Math.cos(rxNow)-LEG_LIFT;
+   const ty=lerp(g.y,yKneel,kneel)+bob+(shake?Math.sin(now*28)*.012*shake:0);
+   p.y=damp(p.y,ty,12,dt);p.rx=adamp(p.rx,rxNow,9,dt);p.rz=adamp(p.rz,g.rz+(shake?Math.sin(now*31+p.i)*.06*shake:0),9,dt);
    p.py=damp(p.py,g.py,11,dt);p.px=damp(p.px,g.px,11,dt);p.pz=damp(p.pz,g.pz,11,dt);p.prx=adamp(p.prx,g.prx,10,dt);
    p.root.position.set(p.x,0,p.z);p.root.rotation.y=p.ry;p.body.position.y=p.y+LEG_LIFT;p.body.rotation.set(p.rx,0,p.rz);
-   // The hips follow the torso; knees fold during prayer and alternate during a run.
-   const kneel=sat(-g.y/.12);
-   const reach=clamp(p.y+LEG_LIFT+.15*Math.cos(p.rx)-.04,.045,THIGH+SHIN);
-   const foldHip=-Math.acos(clamp((THIGH*THIGH+reach*reach-SHIN*SHIN)/(2*THIGH*reach),-1,1));
-   const foldKnee=Math.acos(clamp((reach*reach-THIGH*THIGH-SHIN*SHIN)/(2*THIGH*SHIN),-1,1));
+   // 다리: 서면 곧게, 달리면 번갈아 내딛고, 꿇으면 무릎을 접어 정강이를 뒤로 눕힌다(발등이 바닥을 향한다)
    for(const [key,sign] of [['L',1],['R',-1]]){
     const leg=p.legs[key],stride=Math.sin(p.bob+sign*PI/2)*.65*p.run;
-    leg.hip.rotation.x=-p.rx+foldHip*kneel+stride;
-    leg.knee.rotation.x=foldKnee*kneel+Math.max(0,-stride)*1.2;
-    leg.ankle.rotation.x=-p.rx-leg.hip.rotation.x-leg.knee.rotation.x;
+    let hipX=-p.rx+stride,kneeX=Math.max(0,-stride)*1.2,ankX=-p.rx-hipX-kneeX;
+    if(kneel>0){hipX=lerp(hipX,-p.rx-.1+sign*.03,kneel);kneeX=lerp(kneeX,1.72,kneel);ankX=lerp(ankX,PI/2-.2,kneel);}
+    leg.hip.rotation.x=hipX;leg.knee.rotation.x=kneeX;leg.ankle.rotation.x=ankX;
    }
    p.paper.position.set(p.px,p.py,p.pz);p.paper.rotation.x=p.prx;
    const akey=p.run>.5&&!GRIP[g.arms]?'run':g.arms,A=ARMS[akey]||ARMS.down;
@@ -2814,7 +2818,7 @@ const CROWD=(()=>{
   grab.on=false;grab.w=0;grab.off=0;grab.shaken=false;
   rev.on=false;rev.gather=false;rev.impact=false;if(rev.wisps){rev.wisps.visible=false;rev.glow.visible=false;rev.core.visible=false;rev.light.intensity=0;rev.glow.material.opacity=1;}
   for(const p of [...people,...grabbers]){p.root.visible=false;p.hidden=true;p.root.scale.setScalar(p.s);p.x=p.z=0;p.y=.015;p.ry=p.rx=p.rz=0;p.run=0;p.bob=0;p.stampT=-1;p.shakeT=-1;p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;p.ink.visible=false;
-   Object.assign(p.goal,{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'hold',speed:9});mood(p,'normal');
+   Object.assign(p.goal,{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'hold',speed:9,kneel:false});p.kneelF=0;mood(p,'normal');
    for(const k of ['L','R']){const a=p.arms[k],v=ARMS.hold,s=k==='L'?-1:1;a.z=v[0];a.x=v[1];a.ez=v[2];a.sh.rotation.set(-a.x,0,s*a.z);a.el.rotation.set(-a.ez,0,0);a.ikw=1;a.finger.visible=false;}
    for(const leg of Object.values(p.legs)){leg.hip.rotation.set(0,0,0);leg.knee.rotation.set(0,0,0);leg.ankle.rotation.set(0,0,0);}
    p.paper.visible=true;p.paper.position.set(0,.31,.108);p.paper.rotation.set(0,0,0);p.head.rotation.set(0,0,0);p.body.position.y=.015+LEG_LIFT;p.body.rotation.set(0,0,0);p.root.position.set(0,0,0);p.root.rotation.set(0,0,0);}
@@ -4209,6 +4213,23 @@ const BODYGEO=(()=>{
  }
  return {belly,chest,onSurf,build};
 })();
+/* 신발(흑화) 한 켤레 분 지오메트리: 발목 좌표(발끝 +z, 발목 뼈가 원점). 몸통은 SDF로 빚고, 밑창은 발바닥 모양을 두껍게 뽑는다 */
+const BOOTGEO=(()=>{let G=null;return()=>G||(G=(()=>{
+ const {ell,cap,smin,smax}=SCULPT;
+ const sdf=(x,y,z)=>{
+  let d=cap(x,y,z,0,.03,-.02,0,-.01,.085,.058,.055);            // 발등
+  d=smin(d,ell(x,y,z,0,-.008,.122,.06,.046,.07),.03);           // 앞코(살짝 들림)
+  d=smin(d,ell(x,y,z,0,.0,-.038,.064,.058,.056),.03);           // 뒤축
+  d=smin(d,cap(x,y,z,0,.115,-.012,0,.02,-.012,.074,.07),.02);   // 발목 통(정강이 밑으로 이어진다)
+  d=smax(d,-(y+.046),.006);                                      // 바닥은 평평하게
+  return d;};
+ const body=SCULPT.star(sdf,V3(0,.0,.035),48,34,.3,{smooth:2});
+ // 발바닥 모양: 뒤축 반원 → 넓은 앞볼 → 둥근 앞코
+ const sh=new THREE.Shape();
+ sh.absarc(0,-.055,.058,PI,TAU,false);sh.lineTo(.07,.06);sh.quadraticCurveTo(.08,.17,.0,.198);sh.quadraticCurveTo(-.08,.17,-.07,.06);sh.lineTo(-.058,-.055);
+ const sole=new THREE.ExtrudeGeometry(sh,{depth:.024,bevelEnabled:true,bevelSize:.005,bevelThickness:.004,bevelSegments:3,curveSegments:10});
+ sole.rotateX(PI/2);sole.translate(0,-.046,0);sole.computeVertexNormals();
+ return {body,sole};})());})();
 
 class Emperor{
  constructor(result){
@@ -4243,7 +4264,7 @@ class Emperor{
    lacquer:S('#171418',{roughness:.42,envMapIntensity:.35}),lacRed:S('#a51f18',{roughness:.45}),hair:S('#1f1919',{roughness:.6}),hairG:S('#77706b',{roughness:.6}),
    eyeW:S('#fbf7ee',{roughness:.16}),iris:S('#5b3520',{roughness:.22}),pupil:S('#090606',{roughness:.2}),lash:S('#181212',{roughness:.6}),hl:S('#ffffff',{emissive:col('#ffffff'),emissiveIntensity:.6,roughness:.1}),
    teeth:S('#f6efdc',{roughness:.28}),gum:S('#c25660',{roughness:.45}),mouth:S('#3a0a10',{roughness:.7,side:THREE.DoubleSide}),tongue:S('#cc5f66',{roughness:.42}),
-   boot:S('#1b1718',{roughness:.36}),sole:S('#3a2a20',{roughness:.6}),trouser:S('#ffffff',{map:TROUSER_TEX,roughness:.62}),lining:S('#6a4cc0',{roughness:.7,side:THREE.BackSide}),
+   boot:S('#1b1718',{roughness:.36}),sole:S('#ece3cf',{roughness:.78}),trouser:S('#ffffff',{map:TROUSER_TEX,roughness:.62}),lining:S('#6a4cc0',{roughness:.7,side:THREE.BackSide}),
    beadJ:S('#5fc59a',{roughness:.2}),beadR:S('#d2402f',{roughness:.25}),beadW:S('#f6f0e2',{roughness:.25}),cord:S('#cf2f24',{roughness:.6}),
    tablet:S('#ffffff',{roughness:.22}),
    // 사람 가죽 밑: 도마뱀 살(비늘)·발톱·파란 속
@@ -4428,11 +4449,12 @@ class Emperor{
    const sm=this.bone('shinMid'+nm,knee,[0,-.128,0]);
    this.addFlesh(BG.shin.clone(),M.trouser,sm,Object.assign({part:'shin'+nm,maxFrac:.42,maxAbs:.06},ax(.01,-.132)));
    // 대님(발목 끈)
-   mk(new THREE.TorusGeometry(.084,.013,8,26),M.red,sm,{p:[0,-.108,0],r:[PI/2,0,0],part:'shin'+nm,cast:false});
+   mk(new THREE.TorusGeometry(.086,.0085,8,26),M.red,sm,{p:[0,-.114,0],r:[PI/2,0,0],part:'shin'+nm,cast:false});
    const ank=this.bone('ankle'+nm,sm,[0,-.127,0]);
-   mk(sphereGeo(22),M.boot,ank,{p:[0,-.005,.045],s:[.078,.058,.14],part:'foot'+nm});
-   mk(sphereGeo(16),M.boot,ank,{p:[0,.012,.165],s:[.03,.04,.035],part:'foot'+nm});
-   mk(new THREE.BoxGeometry(.15,.022,.27),M.sole,ank,{p:[0,-.05,.045],part:'foot'+nm});
+   // 신발(흑화): 발목 통·발등·코가 한 덩어리인 검은 가죽 신에 두꺼운 상아색 밑창(앞코가 살짝 들린다)
+   const BT=BOOTGEO();
+   mk(BT.body.clone(),M.boot,ank,{part:'foot'+nm});
+   mk(BT.sole.clone(),M.sole,ank,{part:'foot'+nm});
    this.legs.push({s,nm,hip,tm,knee,sm,ank});
   }
  }
@@ -4755,9 +4777,10 @@ const POSES={
  // 무릎 꿇고 빈다
  kneel:P({tz:.06,py:-.27,pF:.05,sF:.1,cF:.08,nF:.05,hF:-.08,LsA:.2,RsA:.2,LsF:.9,RsF:.9,LeB:1.5,ReB:1.5,Lcurl:.1,Rcurl:.1,LhF:.05,RhF:.05,LhA:.1,RhA:.1,LkB:1.5,RkB:1.5,LaF:-.8,RaF:-.8}),
  // 엉덩방아: 바닥에 주저앉아 뒤로 손 짚음
- floor:P({tz:-.18,py:-.5,pF:-.2,sF:-.32,cF:-.06,nF:.3,hF:.2,hR:-.18,LsA:.55,RsA:.55,LsF:-.8,RsF:-.8,LeB:.15,ReB:.15,Lcurl:.15,Rcurl:.15,LhF:1.35,RhF:1.28,LhA:.32,RhA:.38,LkB:.45,RkB:.3,LaF:.2,RaF:.25}),
+ floor:P({tz:-.18,py:-.5,pF:-.2,sF:-.32,cF:-.06,nF:.3,hF:.2,hR:-.18,LsA:.55,RsA:.55,LsF:-.8,RsF:-.8,LeB:.15,ReB:.15,LwF:-.6,RwF:-.6,Lcurl:.05,Rcurl:.05,LhF:1.35,RhF:1.28,LhA:.32,RhA:.38,LkB:.45,RkB:.3,LaF:.2,RaF:.25}),
  // 마지막: 옥좌 발판에 기대 주저앉아 늘어짐
- final:P({tz:-.2,py:-.5,pF:-.22,sF:-.2,cF:-.05,nF:.06,hF:.06,hR:.55,hT:.22,LsA:.62,RsA:.7,LsF:.05,RsF:-.05,LeB:.25,ReB:.15,Lcurl:.1,Rcurl:.12,LhF:1.32,RhF:1.18,LhA:.42,RhA:.52,LkB:.38,RkB:.22,LaF:.3,RaF:.35}),
+ // 팔은 힘없이 바닥에 늘어지고 손바닥은 위를 보며 반쯤 말린다. 고개는 옆으로 떨군다
+ final:P({tz:-.2,py:-.5,pF:-.22,sF:-.2,cF:-.05,nF:.06,hF:.06,hR:.55,hT:.22,LsA:.78,RsA:.88,LsF:.05,RsF:-.05,LsT:-.25,RsT:.3,LeB:.3,ReB:.2,LwF:-.25,RwF:-.35,LwA:.2,RwA:.25,Lcurl:.45,Rcurl:.5,LhF:1.32,RhF:1.18,LhA:.42,RhA:.52,LkB:.38,RkB:.22,LaF:.3,RaF:.35}),
 };
 
 Object.assign(Emperor.prototype,{
@@ -4993,10 +5016,12 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(!this.reviveArm)this.reviveArm=this.armUsable('R')?'R':this.armUsable('L')?'L':null;
   const side=this.reviveArm;if(!side)return;
   const s=side==='R'?1:-1;
-  const T=_av8.set(-s*.24,1.32,.24);
-  if(r.toChest){r.c=Math.min(1,(r.c||0)+dt/.32);T.lerp(_av9.set(-s*.04,.92,.36),smooth(r.c));}
+  // 주저앉은 몸(허리 높이 .62-.5) 기준: 손바닥을 하늘로 펴서 얼굴 높이 앞에 든다(머리 위로 올리면 어깨가 빠진 것처럼 보였다)
+  const T=_av8.set(s*.2,1.0,.4);
+  if(r.toChest){r.c=Math.min(1,(r.c||0)+dt/.32);T.lerp(_av9.set(s*.04,.74,.3),smooth(r.c));}
   else if(r.k>=1)T.y+=Math.sin(this.breath*31)*.012;
-  this.setIK(side,{target:T,fd:_av10.set(-s*.35,.3,1),pd:UP,curl:.12,w:smooth(r.k),rate:3,space:'root'});
+  // 손끝은 앞·위, 손바닥(pd가 손등 방향이라 아래로 주면 손바닥이 하늘을 본다)
+  this.setIK(side,{target:T,fd:_av10.set(s*.15,.55,1),pd:_av2.set(0,-1,.2),curl:.1,w:smooth(r.k),rate:3,space:'root'});
  },
  updateMaterials(dt){
   // 맞을 때 하얗게 번쩍(두어 프레임) → 붉게 빠짐, 피를 잃으면 창백해짐
@@ -5072,7 +5097,7 @@ Object.assign(Emperor.prototype,{
    else if(d.type==='floor'){out.hR+=Math.sin(t*.9)*.15;out.hF+=Math.sin(t*1.7)*.06;out.sF+=Math.sin(this.breath)*.02;}
    else if(d.type==='final'){out.cF+=Math.sin(this.breath*.7)*.012;
     // 되살림: 고개를 들어 손바닥을 올려다본다
-    if(this.revive){const k=smooth(this.revive.k);out.hF-=.5*k;out.hR*=1-.85*k;out.hT=out.hT*(1-.6*k)-(this.reviveArm==='L'?-1:1)*.18*k;out.nF-=.12*k;out.cF-=.16*k;out.sF+=.08*k;}}
+    if(this.revive){const k=smooth(this.revive.k);out.hF+=.12*k;out.hR*=1-.85*k;out.hT=out.hT*(1-.6*k)+(this.reviveArm==='L'?-1:1)*.22*k;out.nF+=.05*k;out.cF-=.08*k;out.sF+=.08*k;}}
    // 다리가 잘려 있으면 새 다리가 다 자랄 때까지 못 일어난다
    if(st==='down'){d.stay-=dt;if(d.stay<=0&&!this.legsMissing())this.startRise();}
   }
@@ -5092,7 +5117,9 @@ Object.assign(Emperor.prototype,{
   for(let i=0;i<2;i++){const ah=this.armHurt[i];if(ah>0){const n=i?'R':'L';out[n+'sA']=lerp(out[n+'sA'],.2,ah);out[n+'sF']=lerp(out[n+'sF'],-.05,ah);out[n+'eB']=lerp(out[n+'eB'],.1,ah);out[n+'curl']=lerp(out[n+'curl'],.1,ah);}this.armHurt[i]=Math.max(0,ah-dt*.07);}
   if(this.laughing>0){const L=this.laughing;out.hF-=.2*L;out.sF-=.06*L;out.cF+=Math.sin(time*13)*.035*L;out.hF+=Math.sin(time*13)*.05*L;this.sp.belly.kick(0,Math.sin(time*13)*.25*L*dt*60*.02,0);}
   if(this.mood>.4){const tr=Math.sin(time*29)*.006*this.mood;out.hT+=tr;out.cR+=tr*.5;}
-  this.updateActions(out,dt,time);this.restHands(out,dt,time);
+  this.updateActions(out,dt,time);
+  // 비틀거리는 동안은 손을 배에서 떼고 허우적인다(쉬는 손 IK를 걸지 않는다)
+  if(!(this.combat&&this.combat.mode==='stagger'))this.restHands(out,dt,time);
  },
 
  /* ---- 행동(손을 쓰는 짧은 동작) ---- */
@@ -5112,14 +5139,16 @@ doAct(name,o={}){
   }
   // 홀을 들고 있으면 두 손으로 받친다
   if(this.tabletHeld){
-   const bob=Math.sin(time*1.4)*.006;
-   for(const s of [-1,1])this.setIK(s<0?'L':'R',{target:_bv1.set(s*.034,.93+bob,.47),fd:_bv2.set(0,.15,1),pd:_bv3.set(-s,0,0),curl:.62,rate:10});
+   // 옥좌에 앉아 있을 때는 무릎 위에, 서 있을 때는 가슴 앞에 든다
+   const bob=Math.sin(time*1.4)*.006,seated=!!(this.combat&&this.combat.mode==='seat');
+   for(const s of [-1,1])this.setIK(s<0?'L':'R',{target:_bv1.set(s*(seated?.05:.034),(seated?.83:.93)+bob,seated?.35:.47),fd:_bv2.set(0,seated?.35:.15,1),pd:_bv3.set(-s,0,0),curl:.62,rate:10});
   }
   // 막기: 주먹을 얼굴 앞으로
   this.guardCool=Math.max(0,this.guardCool-dt);this.guardHold=Math.max(0,this.guardHold-dt);
   const gGoal=this.guardHold>0&&this.state==='stand'&&!this.tabletHeld?1:0;this.guard=damp(this.guard,gGoal,gGoal?16:5,dt);
   if(this.guard>.02&&!(this.act&&this.act.prio>=2)){
-   for(const s of [-1,1]){const n=s<0?'L':'R';if(this.armHurt[s<0?0:1]>.5)continue;this.setIK(n,{w:this.guard,target:_bv1.set(s*.075,1.38-this.hunch*.08,.43),fd:_bv2.set(-s*.15,1,.25),pd:_bv3.set(s*.1,0,-1),curl:1.1,rate:30,pole:_bv4.set(s*.12,-.3,.05)});}
+   // 권투 가드: 두 주먹을 볼 옆·턱 앞에 세우고(눈을 가리지 않게 조금 낮고 앞에) 팔꿈치는 몸에 붙인다
+   for(const s of [-1,1]){const n=s<0?'L':'R';if(this.armHurt[s<0?0:1]>.5)continue;this.setIK(n,{w:this.guard,target:_bv1.set(s*.13,1.3-this.hunch*.08,.5),fd:_bv2.set(-s*.2,1,.3),pd:_bv3.set(s*.25,0,-1),curl:1.1,rate:30,pole:_bv4.set(s*.1,-.32,.08)});}
    out.hF+=.12*this.guard;out.nF+=.08*this.guard;out.sF+=.08*this.guard;
   }else if(!this.tabletHeld&&!this.act){if(this.ik.L.goal>0&&this.guard<.02)this.releaseIK('L');if(this.ik.R.goal>0&&this.guard<.02)this.releaseIK('R');}
   const a=this.act;if(!a)return;
@@ -5136,12 +5165,13 @@ doAct(name,o={}){
     out.sF+=.12*Math.sin(sat(u)*PI);out.hF+=.2*Math.sin(sat(u)*PI);
     if(a.both){const m=n==='L'?'R':'L';this.setIK(m,{target:_bv5.copy(tgt).add(_bv6.set(-s*.06,.04,.02)),fd:_bv3.set(s*.4,-.6,.4),pd:_bv4.copy(nrm).negate(),curl:.35,rate:12});}
     break;}
-   case 'face':{ // 얼굴을 감싼다
-    this.setIK(n,{target:_bv1.set(s*.04,1.44,.5),fd:_bv2.set(-s*.2,1,.2),pd:_bv3.set(0,0,-1),curl:.3,rate:14});
+   case 'face':{ // 얼굴을 감싼다: 손바닥을 눈·볼 위에 댄다(얼굴 좌표 기준이라 고개를 숙여도 손이 얼굴 속으로 들어가지 않는다)
+    const F=this.faceIK(_bv1.set(s*.06,.0,.235),_bv2.set(-s*.2,1,.05),_bv3.set(0,0,-1));
+    this.setIK(n,{target:F.t,fd:F.fd,pd:F.pd,curl:.25,rate:14,space:'world'});
     out.hF+=.35*Math.sin(sat(u)*PI);out.sF+=.12*Math.sin(sat(u)*PI);break;}
    case 'wipe':{ // 손등으로 코피를 닦고 손을 본다
-    const k=sat(u*2.2),x=lerp(-.12,.14,smooth(k))*s;
-    if(u<.5)this.setIK(n,{target:_bv1.set(x,1.42,.52),fd:_bv2.set(-s,.15,.1),pd:_bv3.set(0,0,1),curl:.55,rate:14});
+    const k=sat(u*2.2),x=lerp(-.1,.12,smooth(k))*s;
+    if(u<.5){const F=this.faceIK(_bv1.set(x,-.1,.26),_bv2.set(-s,.15,.1),_bv3.set(0,0,1));this.setIK(n,{target:F.t,fd:F.fd,pd:F.pd,curl:.55,rate:14,space:'world'});}
     else{this.setIK(n,{target:_bv1.set(s*.06,1.18,.48),fd:_bv2.set(0,.6,.8),pd:_bv3.set(0,1,0),curl:.2,rate:7});this.gazeTarget.copy(this.ik[n].target);this.root.localToWorld(this.gazeTarget);out.hF+=.25;if(!a.gasp){a.gasp=true;AUDIO.gasp();this.doFlinch('shock',.7);}}
     break;}
    case 'look':{ // 피 묻은 손을 들여다본다
@@ -5154,12 +5184,16 @@ doAct(name,o={}){
    case 'beg':{this.beg(false,u);break;}
    case 'shake':{ // 다친 손을 턴다
     this.setIK(n,{target:_bv1.set(s*.2,1.05+Math.sin(a.t*28)*.04,.35),fd:_bv2.set(0,-.4,1),pd:_bv3.set(-s,0,0),curl:.3,rate:20});break;}
-   case 'crown':{ // 삐뚤어진 면류관을 바로잡는다
-    this.setIK(n,{target:_bv1.set(s*.2,1.78,.05),fd:_bv2.set(-s,.2,0),pd:_bv3.set(0,-1,0),curl:.4,rate:9});
+   case 'crown':{ // 삐뚤어진 면류관을 바로잡는다(면류관 테 옆을 잡는다)
+    const F=this.faceIK(_bv1.set(s*.2,.2,.03),_bv2.set(-s,.25,0),_bv3.set(0,-1,0));
+    this.setIK(n,{target:F.t,fd:F.fd,pd:F.pd,curl:.4,rate:9,space:'world'});
     if(!a.done&&u>.5){a.done=true;if(this.crownOn)this.crownTilt=Math.max(0,this.crownTilt-.6);}break;}
   }
   if(a.t>=a.dur)this.endAct();
  },
+ // 얼굴 좌표(face 그룹)의 자리·손가락 방향·손바닥 방향을 월드로 옮긴다(얼굴에 손을 대는 동작용)
+ faceIK(lp,fd,pd){const F=this.face;F.updateWorldMatrix(true,false);const q=F.getWorldQuaternion(_rq1);
+  this._fik=this._fik||{t:V3(),fd:V3(),pd:V3()};const o=this._fik;o.t.copy(lp).applyMatrix4(F.matrixWorld);o.fd.copy(fd).applyQuaternion(q);o.pd.copy(pd).applyQuaternion(q);return o;},
  /* 쉬는 손: 두 손을 배 위쪽에 얹고 있다(배 뼈 기준이라 몸을 숙여도 따라간다). 가끔 한 손으로 배를 두드린다.
   * 다른 동작(막기·홀·움켜쥐기 등)이 손을 쓰는 동안에는 비켜 있다가, 끝나면 그 손 자리에서 부드럽게 돌아온다. */
  restHands(out,dt,time){
@@ -6395,6 +6429,8 @@ updateBits(dt){
   b.obj.rotation.x+=b.w.x*dt;
   b.obj.rotation.y+=b.w.y*dt;
   b.obj.rotation.z+=b.w.z*dt;
+  // 납작한 고리(후광)는 바닥에 닿은 뒤 동전처럼 눕는다(모서리로 선 채 멈추지 않게)
+  if(b.flat&&b.touched){if(b.flatYaw==null)b.flatYaw=rnd(0,TAU);_hq1.setFromEuler(_he.set(-PI/2,0,b.flatYaw));b.obj.quaternion.slerp(_hq1,1-Math.exp(-dt*7));b.w.multiplyScalar(Math.exp(-dt*6));}
 
   let floorHit=false;
 
@@ -6419,6 +6455,7 @@ updateBits(dt){
   }
 
   if(floorHit){
+   b.touched=true;
    if(Math.abs(b.v.y)>.8){
     if(b.sound==='tooth'){
      AUDIO.toothBounce();
@@ -6491,6 +6528,9 @@ Object.assign(Emperor.prototype,{
   h.root.position.set(0,.3,-.268);h.root.updateMatrixWorld(true);
   const zc=h.root.getWorldPosition(_hv1).z,zt=h.tilt.localToWorld(_hv2.set(0,HALO.RF,0)).z,need=Math.max(0,HALO_ZMIN-zc,HALO_ZMIN-zt);
   if(need>0){_hv3.set(0,0,1).transformDirection(hb.matrixWorld);if(_hv3.z>.15){h.root.position.z+=Math.min(.34,need/_hv3.z);h.root.updateMatrixWorld(true);}}
+  // 머리가 뒤로 젖혀져 후광이 눕다시피 하면(쓰러져 하늘을 볼 때) 목·가슴을 고리처럼 두르지 않게 머리 뒤쪽으로 더 물러난다
+  {_hv3.set(0,0,1).transformDirection(hb.matrixWorld);const up=_hv3.y;// 얼굴이 하늘을 보면 1
+   if(up>.35){const k=sat((up-.35)/.5);h.root.position.y+=.1*k;h.root.position.z-=.16*k;h.root.updateMatrixWorld(true);}}
   // 고리 돌기: 금이 간 뒤로는 가끔 멈칫했다가 툭 건너뛴다. 조각이 떨어져 나간 뒤로는 걸려서 못 돌고 덜컥거리기만 한다
   if(h.broken){h.stutT-=dt;if(h.stutT<=0){h.stutT=rnd(1.2,2.6);h.freeze=.38;}
    let j=0;if(h.freeze>0&&!h.goDark){h.freeze-=dt;const u=1-h.freeze/.38;j=.035*Math.sin(u*TAU*5)*(1-u);}
@@ -6581,7 +6621,7 @@ Object.assign(Emperor.prototype,{
   const corners=[];for(const r of [HALO.R0,HALO.RF*.92])for(const q of [a0,a,a1])corners.push(V3(Math.cos(q)*r,Math.sin(q)*r,0));
   piece.updateWorldMatrix(true,true);const dirW=V3(Math.cos(a),Math.sin(a),0).transformDirection(h.tilt.matrixWorld);
   scene.attach(piece);
-  this.bits=this.bits||[];this.bits.push({obj:piece,v:dirW.multiplyScalar(rnd(1,1.5)).add(V3(rnd(-.2,.2),rnd(.6,1),rnd(.3,.6))),w:V3(rnd(-6,6),rnd(-6,6),rnd(-8,8)),r:.05,corners,bounce:.3,sound:'halo'});
+  this.bits=this.bits||[];this.bits.push({obj:piece,v:dirW.multiplyScalar(rnd(1,1.5)).add(V3(rnd(-.2,.2),rnd(.6,1),rnd(.3,.6))),w:V3(rnd(-6,6),rnd(-6,6),rnd(-8,8)),r:.05,corners,bounce:.3,sound:'halo',flat:true});
   AUDIO.haloCrack(1.2);
  },
  // 꺼진 후광이 머리 위로 빠져 목에 걸린다: 머리 위로 들렸다가 수평으로 누워 뚝 떨어지고, 어깨에 쨍그랑 얹혀 덜렁거린다
@@ -6592,12 +6632,24 @@ Object.assign(Emperor.prototype,{
   r.quaternion.multiply(h.tilt.quaternion);h.tilt.quaternion.identity();h.tilt.rotation.set(0,0,0);
   // 앞쪽이 가슴에 얹혀 비스듬히 걸린다(수평으로 누우면 정면에서 목을 가로지르는 막대처럼 보였다)
   const q1=new THREE.Quaternion().setFromEuler(new THREE.Euler(.62,0,rnd(.1,.2)*(Math.random()<.5?-1:1))).multiply(new THREE.Quaternion().setFromAxisAngle(V3(1,0,0),-PI/2));
+  // 뒤로 나자빠져 있을 때(가슴이 하늘을 볼 때)는 목에 걸릴 수 없다: 머리 옆 바닥으로 미끄러져 내려가 눕는다(떨어진 조각과 같은 물리)
+  const upW=V3(0,0,1).transformDirection(chest.matrixWorld);
+  const slumping=this.state==='dead'||(this.down&&this.down.type==='final');
+  if(upW.y>.55||slumping){
+   r.updateWorldMatrix(true,true);scene.attach(r);h.falling={t:0,loose:true};
+   const side=Math.random()<.5?-1:1,corners=[];for(let i=0;i<8;i++){const q=i/8*TAU;corners.push(V3(Math.cos(q)*HALO.RF,Math.sin(q)*HALO.RF,0));}
+   // 머리 뒤에서 몸 옆으로 미끄러져 바닥에 눕는다(몸 위에 걸쳐지지 않게 옆으로 멀리). 이미 쓰러졌으면 목·몸 밖에서 시작하게 위로 조금 띄운다
+   r.position.y=Math.max(r.position.y,.9);
+   this.bits=this.bits||[];this.bits.push({obj:r,v:V3(side*rnd(1.4,1.8),.4,rnd(.2,.5)),w:V3(rnd(-1,1),rnd(-1,1),side*rnd(2,3.5)),r:.03,corners,bounce:.2,sound:'halo',flat:true});
+   return;
+  }
   h.falling={t:0,p0:r.position.clone(),q0:r.quaternion.clone(),pTop:V3(0,1.02,.03),p1:V3(0,.335,.02),q1,landed:false,wob:new Spring3(70,4.5),taps:0};
   AUDIO.haloCrack(.7);
  },
  haloFallUpdate(dt){
   const h=this.halo,f=h.falling,r=h.root;f.t+=dt;
   if(h.dark<1){h.dark=Math.min(1,h.dark+dt/.45);this.haloPaint(h.bright);}
+  if(f.loose)return;// 바닥에 떨어져 눕는 중: updateBits가 움직인다
   const T1=.3,T2=.62;
   if(f.t<T1){const u=smooth(f.t/T1);r.position.copy(f.p0).lerp(f.pTop,u);r.quaternion.copy(f.q0).slerp(f.q1,u);return;}
   if(f.t<T2){const u=easeIn((f.t-T1)/(T2-T1));r.position.copy(f.pTop).lerp(f.p1,u);r.quaternion.copy(f.q1);return;}
@@ -6701,23 +6753,62 @@ const VM=(()=>{
  let clipOn=false;
  function setClip(T,dir){clip.normal.copy(dir).negate();clip.constant=dir.dot(T);clipOn=true;}
 
- /* 맨주먹: +z가 손가락 마디, +y가 손등. 무기는 아래의 별도 파지를 사용한다. */
- function fist(parent,s){
-  const g=grp(parent);
-  mk(sphereGeo(24),M.skin,g,{p:[0,.004,-.016],s:[.054,.038,.058]});
-  for(let i=0;i<4;i++){const x=s*(-.036+i*.024);
-   mk(capsuleGeo(.017,.026,12),M.skin,g,{p:[x,.002,.036],r:[PI/2,0,0]});          // 첫마디(앞으로)
-   mk(sphereGeo(14),M.skinD,g,{p:[x,.018,.044],s:[.014,.01,.012],cast:false});    // 마디 혹
-   mk(capsuleGeo(.016,.024,10),M.skin,g,{p:[x,-.028,.022],r:[0,0,PI/2]});         // 둘째마디(아래로 말림)
-   mk(sphereGeo(10),M.nail,g,{p:[x,-.042,.016],s:[.008,.005,.009],cast:false});}
-  const th=grp(g,[-s*.05,-.022,-.004]);th.rotation.set(.2,s*.9,s*.35);
-  mk(capsuleGeo(.018,.04,10),M.skin,th,{p:[0,0,.022],r:[PI/2,0,0]});
-  mk(sphereGeo(10),M.nail,th,{p:[0,.01,.05],s:[.009,.006,.01],cast:false});
-  mk(cylGeo(.038,.04,.08,18),M.skin,g,{p:[0,-.002,-.085],r:[PI/2,0,0]});          // 손목
-  // 엄지 조각을 주먹 그룹으로 옮긴 뒤 재질별로 합친다
-  g.updateMatrixWorld(true);for(const m of [...th.children]){g.attach(m);}th.removeFromParent();mergeChildren(g);
+ /* ---- 내 손 만들기 ----
+  * 손 좌표(주먹 기준): +z 손가락 마디가 향하는 쪽(주먹이 나가는 쪽), +y 손등, 엄지는 -s·x 쪽(오른손 s=1이면 왼쪽).
+  * 손등(둥근 상자) + 마디 네 개 + 세 마디 손가락 네 개 + 두 마디 엄지 + 손목. 손가락은 마디(기준점)에서 시작해
+  * 주어진 각도만큼 안으로 꺾이며 이어지므로, 도구를 쥘 때는 각도만 바꿔 자루를 감싸게 한다.
+  * M을 주면 주먹 좌표를 그 행렬로 옮겨 그린다(칼·총은 자루 축에 맞춰 돌려 둔다). */
+ function roundedBox(w,h,d,r){
+  const sh=new THREE.Shape(),x=-w/2,y=-h/2;
+  sh.moveTo(x+r,y);sh.lineTo(x+w-r,y);sh.quadraticCurveTo(x+w,y,x+w,y+r);sh.lineTo(x+w,y+h-r);sh.quadraticCurveTo(x+w,y+h,x+w-r,y+h);sh.lineTo(x+r,y+h);sh.quadraticCurveTo(x,y+h,x,y+h-r);sh.lineTo(x,y+r);sh.quadraticCurveTo(x,y,x+r,y);
+  const g=new THREE.ExtrudeGeometry(sh,{depth:d-r*2,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:4,steps:1,curveSegments:5});g.translate(0,0,-(d-r*2)/2);return g;
+ }
+ const DEG=PI/180,_hq=new THREE.Quaternion(),_hv=V3();
+ function handSeg(parent,mat,a,b,r0,r1){const d=_hv.subVectors(b,a),len=d.length();if(len<1e-5)return;const m=mk(cylGeo(r1,r0,len,14,false),mat,parent,{p:[(a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2]});m.quaternion.setFromUnitVectors(UP,d.divideScalar(len));return m;}
+ function handBall(parent,mat,p,r){return mk(sphereGeo(16),mat,parent,{p:[p.x,p.y,p.z],s:r,cast:false});}
+ // 손톱: 끝마디 등쪽에 납작하게. d=끝마디 방향, n=그 등쪽 방향
+ function handNail(parent,tip,d,n,r){const p=tip.clone().addScaledVector(d,-r*.55).addScaledVector(n,r*.72);const m=mk(sphereGeo(10),M.nail,parent,{p:[p.x,p.y,p.z],s:[r*.62,r*.22,r*.82],cast:false});m.quaternion.setFromUnitVectors(UP,n.clone().normalize());return m;}
+ // 손바닥 덩어리(한 번 빚어 두고 복사): 납작한 둥근 상자에 엄지 두덩이·새끼 쪽 두덩이를 녹여 붙인다. 손목 쪽이 조금 좁다
+ const PALM_GEO=(s=>{const {ell,smin}=SCULPT;const box=(x,y,z,cx,cy,cz,bx,by,bz,r)=>{const qx=Math.abs(x-cx)-bx,qy=Math.abs(y-cy)-by,qz=Math.abs(z-cz)-bz;return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-r;};
+  const sdf=(x,y,z)=>{const taper=1-.1*Math.max(0,(-.012-z)/.03);let d=box(x/taper,y,z,0,-.002,-.012,.03,.0055,.017,.013);
+   d=smin(d,ell(x,y,z,-s*.031,-.012,-.008,.021,.017,.028),.02);d=smin(d,ell(x,y,z,s*.027,-.008,-.022,.015,.015,.03),.016);return d;};
+  return SCULPT.star(sdf,V3(0,-.003,-.012),44,32,.1,{smooth:1});});
+ const PALM_R=PALM_GEO(1),PALM_L=mirrorX(PALM_GEO(1).clone());
+ function buildHand(s,P,Mx){
+  const g=new THREE.Group();const T=p=>Mx?p.applyMatrix4(Mx):p;const Td=d=>Mx?d.transformDirection(Mx):d;
+  // 손등·손바닥 덩어리
+  {const pg=(s<0?PALM_L:PALM_R).clone();if(Mx)pg.applyMatrix4(Mx);mk(pg,M.skin,g);}
+  // 손목(도구를 쥘 때는 소매가 이어지는 자리를 따로 두므로 짧게)
+  {const a=T(V3(0,-.004,-.038)),b=T(V3(0,-.005,P.wristLen==null?-.125:-.038-P.wristLen));handSeg(g,M.skin,a,b,.029,.034);}
+  // 마디 네 개와 손가락
+  const KX=[-.033,-.011,.011,.033],KR=[.0152,.0158,.0146,.0126],KY=[.012,.013,.012,.01],KZ=[.025,.027,.025,.02];
+  for(let i=0;i<4;i++){
+   const F=P.fingers[i],B=V3(KX[i]*s,KY[i],KZ[i]);
+   handBall(g,M.skin,T(B.clone()),KR[i]*1.06);
+   const rads=[KR[i]*.95,KR[i]*.86,KR[i]*.78,KR[i]*.68];
+   let pts;
+   if(F.pts){pts=[T(B.clone()),...F.pts.map(p=>V3(p[0],p[1],p[2]))];}
+   else{pts=[B.clone()];let ang=0,p=B.clone();
+    for(let k=0;k<3;k++){ang+=F.a[k]*DEG;const d=V3(s*(F.side||0),-Math.sin(ang),Math.cos(ang)).normalize();p=p.clone().addScaledVector(d,F.L[k]);pts.push(p);}
+    pts=pts.map(p=>T(p));}
+   for(let k=0;k<3;k++){handSeg(g,M.skin,pts[k],pts[k+1],rads[k],rads[k+1]);handBall(g,M.skin,pts[k+1],rads[k+1]);}
+   if(F.nail!==false){const d=V3().subVectors(pts[3],pts[2]).normalize();let n;
+    if(F.pts){n=Td(V3(0,1,0));n.addScaledVector(d,-n.dot(d)).normalize();}
+    else{const ang=(F.a[0]+F.a[1]+F.a[2])*DEG;n=Td(V3(0,Math.cos(ang),Math.sin(ang)));}
+    handNail(g,pts[3],d,n,rads[3]);}
+  }
+  // 엄지: 두덩이에서 시작하는 세 점(뿌리·마디·끝). 주먹 좌표 또는 손 좌표(P.thumbHand)로 준다
+  {const pts=P.thumbHand?P.thumb.map(p=>V3(p[0],p[1],p[2])):P.thumb.map(p=>T(V3(p[0]*s,p[1],p[2])));const R=P.thumbR;
+   for(let k=0;k<pts.length-1;k++){handSeg(g,M.skin,pts[k],pts[k+1],R[k],R[k+1]);handBall(g,M.skin,pts[k+1],R[k+1]*(k===pts.length-2?1:1.02));}
+   const n=pts.length-1,d=V3().subVectors(pts[n],pts[n-1]).normalize(),nn=P.thumbNail?(P.thumbHand?V3(...P.thumbNail):Td(V3(P.thumbNail[0]*s,P.thumbNail[1],P.thumbNail[2]))):null;
+   if(nn){nn.addScaledVector(d,-nn.dot(d)).normalize();handNail(g,pts[n],d,nn,R[n]);}}
+  g.updateMatrixWorld(true);mergeChildren(g);
   return g;
  }
+ /* 맨주먹: 손가락을 꽉 말아 쥐고 엄지가 검지·중지 앞을 가로지른다 */
+ const FIST_POSE={fingers:[{a:[74,96,70],L:[.04,.027,.021]},{a:[75,98,72],L:[.042,.028,.022]},{a:[76,96,70],L:[.04,.027,.021]},{a:[72,90,66],L:[.032,.022,.018]}],
+  thumb:[[-.04,-.007,-.014],[-.051,-.022,.016],[-.036,-.037,.05],[-.008,-.035,.06]],thumbR:[.017,.0155,.0138,.0122],thumbNail:[0,-.5,1]};
+ function fist(parent,s){const g=buildHand(s,FIST_POSE);parent.add(g);return g;}
  /* 팔뚝+소매: +y 방향으로. 소매는 화면 밖 어깨 자리까지 이어진다(팔을 뻗어도 팔이 허공에서 끊기지 않게).
   * 길이는 매 프레임 손목~어깨 거리에 맞춰 늘인다. 천 주름은 결 무늬로 */
  const sleeveTex=canvasTex(64,256,(g,w,h)=>{
@@ -6770,36 +6861,29 @@ const VM=(()=>{
   g.userData.light=new THREE.PointLight(0xffb060,0,1.4,2);g.userData.light.position.set(0,.05,.16);g.add(g.userData.light);
   g.name='pistol';
  }
- // Each tool has its own grip. Fingers wrap around the handle; the weapon is not laid on a closed fist.
- function finger(parent,points,r){
-  for(let i=1;i<points.length;i++){
-   const a=V3(...points[i-1]),b=V3(...points[i]),d=b.clone().sub(a),len=d.length();
-   const m=mk(capsuleGeo(r,Math.max(.001,len-r*2),10),M.skin,parent,{p:a.clone().add(b).multiplyScalar(.5).toArray()});
-   m.quaternion.setFromUnitVectors(UP,d.normalize());
-  }
+ /* 도구를 쥔 손: 주먹과 같은 손이지만 손가락이 자루 둘레를 따라 덜 말리고, 엄지는 자루 위에 얹는다.
+  * gripFrame: 주먹 좌표를 손 좌표로 보내는 행렬. lat=새끼손가락 쪽(=자루 축) 방향, dorsal=손등이 향할 대략 방향,
+  * center=자루 가운데(손 좌표). 주먹 좌표에서 손가락이 감싸는 빈 자리의 가운데(0,-.03,.028)가 center에 오게 옮긴다 */
+ function gripFrame(lat,dorsal,center){
+  const x=lat.clone().normalize(),y=dorsal.clone().addScaledVector(x,-dorsal.dot(x)).normalize(),z=V3().crossVectors(x,y);
+  const m=new THREE.Matrix4().makeBasis(x,y,z);const c=V3(0,-.03,.028).applyMatrix4(m);m.setPosition(center.clone().sub(c));return m;
  }
- function toolWrist(g,y){mk(cylGeo(.029,.034,.078,20),M.skin,g,{p:[.008,y,-.096],r:[PI/2,0,0]});}
- const knifeGrip=grp(R.hand);knifeGrip.name='knife-grip';
- toolWrist(knifeGrip,-.004);
- mk(sphereGeo(24),M.skin,knifeGrip,{p:[.026,-.003,-.022],s:[.026,.035,.055]});
- for(let i=0;i<4;i++){
-  const z=.024-i*.023,r=.0105-i*.0005;
-  finger(knifeGrip,[[.027,-.018,z],[.007,-.027,z],[-.021,-.018,z],[-.022,.012,z],[-.008,.021,z]],r);
- }
- finger(knifeGrip,[[.035,.015,-.045],[.028,.034,-.015],[-.003,.033,.011]],.013);
- mk(sphereGeo(12),M.nail,knifeGrip,{p:[-.002,.043,.01],s:[.009,.0025,.011],cast:false});
- const gunGrip=grp(R.hand);gunGrip.name='pistol-grip';
- toolWrist(gunGrip,-.055);
- mk(sphereGeo(24),M.skin,gunGrip,{p:[.022,-.042,-.062],s:[.025,.043,.037],r:[-.18,0,0]});
- for(let i=0;i<3;i++){
-  const y=-.025-i*.019,z=-.032-i*.005;
-  finger(gunGrip,[[.028,y,-.067],[.027,y,z],[-.004,y,z+.012],[-.023,y,z-.003],[-.021,y,-.057]],.010-i*.0005);
- }
- // Index finger curves into the trigger guard; thumb lies along the frame below the slide.
- finger(gunGrip,[[.027,-.002,-.06],[.025,-.004,-.018],[.021,-.009,.017],[.002,-.008,.018]],.0085);
- finger(gunGrip,[[.028,-.027,-.083],[-.015,-.001,-.063],[-.022,.008,-.023]],.012);
- mk(sphereGeo(12),M.nail,gunGrip,{p:[-.027,.014,-.022],s:[.003,.008,.011],cast:false});
- for(const g of [knifeGrip,gunGrip]){g.updateMatrixWorld(true);mergeChildren(g);}
+ const GRIP_FINGERS=[{a:[50,52,56],L:[.043,.029,.022]},{a:[48,52,56],L:[.045,.03,.023]},{a:[50,54,56],L:[.043,.029,.022]},{a:[52,54,52],L:[.036,.025,.019]}];
+ // 식칼: 자루(z축)를 감싸 쥐고 엄지를 자루 등(칼등 쪽) 위에 얹어 칼날 쪽으로 뻗는다. 손등은 위·왼쪽(내 눈 쪽)을 본다
+ const KNIFE_M=gripFrame(V3(0,0,-1),V3(-.5,.866,0),V3(0,.004,-.012));
+ const knifeGrip=buildHand(1,{fingers:GRIP_FINGERS,wristLen:.03,
+  thumb:[[-.04,-.006,-.012],[-.058,-.009,.016],[-.074,-.007,.04]],thumbR:[.017,.015,.0125],thumbNail:[0,.87,.5]},KNIFE_M);
+ knifeGrip.name='knife-grip';knifeGrip.userData.wrist=V3(.02,-.008,-.045).applyMatrix4(KNIFE_M);R.hand.add(knifeGrip);
+ // 권총: 기울어진 손잡이를 감싸고, 검지는 방아쇠울 안으로 뻗고, 엄지는 몸체 왼쪽을 따라 앞으로 눕는다
+ const GUN_M=gripFrame(V3(0,-.86,-.51),V3(.8,.6,0),V3(0,-.035,-.04));
+ const gunGrip=buildHand(1,{fingers:[{pts:[[.03,-.003,-.003],[.017,-.004,.012],[.004,-.003,.02]]},GRIP_FINGERS[1],GRIP_FINGERS[2],GRIP_FINGERS[3]],wristLen:.03,
+  thumbHand:true,thumb:[[-.016,-.012,-.06],[-.021,-.004,-.034],[-.02,.0,-.006]],thumbR:[.016,.0145,.0125],thumbNail:[-.8,.6,0]},GUN_M);
+ gunGrip.name='pistol-grip';gunGrip.userData.wrist=V3(0,-.006,-.045).applyMatrix4(GUN_M);R.hand.add(gunGrip);
+ R.fist.userData.wrist=V3(0,0,-.1);L.fist.userData.wrist=V3(0,0,-.1);
+ // 멱살잡이 손(왼손): 손가락을 갈고리처럼 구부려 옷깃을 움켜쥔다. 평소엔 숨기고 잡는 동안 주먹 대신 보인다
+ const GRAB_POSE={fingers:[{a:[30,70,55],L:[.042,.028,.022]},{a:[28,72,58],L:[.044,.029,.023]},{a:[30,70,56],L:[.042,.028,.022]},{a:[32,66,52],L:[.034,.023,.019]}],
+  thumb:[[-.04,-.007,-.014],[-.06,-.012,.014],[-.056,-.026,.042],[-.04,-.03,.062]],thumbR:[.017,.0155,.0138,.0122],thumbNail:[-.6,.1,.8]};
+ const grabHand=buildHand(-1,GRAB_POSE);grabHand.visible=false;grabHand.userData.wrist=V3(0,0,-.1);L.hand.add(grabHand);
  const tools={hand:null,knife,gun};
  // 탄피
  const shells=[];for(let i=0;i<6;i++){const m=mk(cylGeo(.0045,.0045,.016,8),M.brass,root,{cast:false});m.visible=false;shells.push({m,v:V3(),w:V3(),life:0});}
@@ -6836,7 +6920,7 @@ const VM=(()=>{
   const pr=portrait(),dy=pr?dockY():-1;
   for(const k of ['R','L']){const s=k==='R'?1:-1;const r=rest[k];
    // 왼손은 칼·총을 들 때 안 보이지만, 붙잡힐 때는 주먹 자리에서 나온다
-   if(st.tool==='hand'||k==='L'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.3,.8,-1),V3(s*.85,.4,.2));}
+   if(st.tool==='hand'||k==='L'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.22,.62,-1),V3(s*.5,.72,.42));}
    else if(st.tool==='knife'){at(pr?KREST.x:.5,pr?dy+KREST.y:-.74,KREST.d,r.p);orient(r.q,KREST.dir,KN_UP);}
    else{at(pr?.6:.36,pr?dy+.16:-.62,.42,r.p);orient(r.q,V3(-.08,.05,-1),UP);}
   }
@@ -6907,7 +6991,9 @@ const VM=(()=>{
  function placeArm(side){
   const h=side==='R'?R:L,ar=h.arm;h.hand.updateMatrix();
   const k=h.hand.scale.x;
-  const wrist=tv.set(0,side==='R'&&st.tool==='gun'?-.055:0,-.1).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
+  // 소매가 이어지는 손목 자리: 들고 있는 도구의 손마다 다르다
+  const wp=side==='R'&&st.tool==='knife'?knifeGrip.userData.wrist:side==='R'&&st.tool==='gun'?gunGrip.userData.wrist:h.fist.userData.wrist;
+  const wrist=tv.copy(wp).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
   ar.g.position.copy(wrist);ar.g.quaternion.setFromUnitVectors(UP,d);ar.g.scale.setScalar(k);
   ar.sl.scale.set(1,Math.max(.05,(len-.08*k)/k),1);
  }
@@ -6997,7 +7083,9 @@ const VM=(()=>{
    if(GR.shake>=0){const u=GR.shake/.55,e=Math.sin(Math.min(1,u)*PI),h=H[k];h.p.x+=s*.17*e;h.p.y+=.21*e*(1-u*.4);h.p.z+=.03*e;tmpQ.setFromAxisAngle(tv2.set(0,0,1),-s*.8*e);h.q.premultiply(tmpQ);}}
   if(GR.shake>=0){GR.shake+=rdt;if(GR.shake>.55)GR.shake=-1;}
   for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*SC*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
-  if(gripPoint&&st.tool==='hand'){const h=H.L;h.p.copy(at(gripPoint.x-.06,gripPoint.y,.76));orient(h.q,V3(.15,.3,-1),UP);}
+  // 멱살잡이: 왼손이 상대 가슴 자리로 뻗어 옷깃을 움켜쥔다(손등이 위, 손가락이 상대 쪽). 손 모양은 갈고리 손으로 바꾼다
+  {const g=!!(gripPoint&&st.tool==='hand');if(grabHand.visible!==g){grabHand.visible=g;L.fist.visible=!g;}
+   if(g){const h=H.L;h.p.copy(at(gripPoint.x-.03,gripPoint.y+.03,.8));orient(h.q,V3(.15,-.55,-1),V3(.15,1,-.5));}}
   // 손 배치(칼·총을 들 때도 붙잡히면 왼팔이 보인다: 왼쪽 사람이 허공을 붙잡지 않게)
   {const showL=st.tool==='hand'||GR.L>.03||GR.goal.L>0;L.hand.visible=L.arm.g.visible=showL;}
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(H[k].scale,1,GR[k]));if(h.hand.visible)placeArm(k);}
@@ -7005,7 +7093,7 @@ const VM=(()=>{
  }
  function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
- return {root,st,grip,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,get busy(){return st.acts.length>0;}};
+ return {root,st,grip,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,at:(nx,ny,d)=>at(nx,ny,d),get busy(){return st.acts.length>0;}};
 })();
 onCamUnit=VM.setScale;VM.setScale(CAM.unit);
 const _fz=V3(0,0,1),_aimRest=V3(-.04,.12,-1).normalize();
@@ -7022,15 +7110,19 @@ const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,show
 const HINTS={hand:'터치: 주먹 / 밟기 · 밀기: 훅 · 꾹 잡고 끌기',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
 /* ===== Close combat: persistent position, interruptible balance, ground contact ===== */
 const COMBAT={pointer:null,foot:null,serial:-1,landKick:0,follow:0,grabGlow:0,storyAnchor:null};
+const PLAIN_TROUSERS=false;// true면 바지를 민무늬 원통으로 바꾼다(빚은 바지가 더 자연스러워 쓰지 않는다)
 const COMBAT_POSE={
+ // 나자빠짐: 두 팔은 바닥에 벌어져 늘어지고(한쪽은 조금 굽어), 손은 힘없이 반쯤 말린다. 무릎은 세워진다
  ground:P({rx:-1.48,py:-.05,pF:0,sF:-.05,cF:0,nF:-.1,hF:.15,
-  LsF:.9,RsF:.75,LsA:.5,RsA:.45,LeB:1.0,ReB:1.1,Lcurl:.4,Rcurl:.4,
-  LhF:.35,RhF:.5,LhA:.15,RhA:.2,LkB:.85,RkB:1.1}),
- brace:P({py:-.2,pF:.16,sF:.6,cF:.12,nF:-.4,hF:-.48,
-  LsF:1.25,RsF:1.3,LsA:.24,RsA:.24,LeB:.2,ReB:.2,Lcurl:.1,Rcurl:.1,
-  LhF:1.1,RhF:.5,LkB:1.4,RkB:1.4,LaF:-.4,RaF:-.6}),
+  LsF:.12,RsF:.3,LsA:1.2,RsA:1.0,LsT:.1,RsT:-.2,LeB:.45,ReB:.75,LwF:.25,RwF:.3,LwA:.15,RwA:.1,Lcurl:.6,Rcurl:.65,
+  LhF:.35,RhF:.5,LhA:.22,RhA:.28,LkB:.85,RkB:1.1,LaF:.2,RaF:.25}),
+ // 일어남 첫 단계: 웅크리고 두 주먹으로 바닥을 짚는다
+ brace:P({py:-.4,pF:.22,sF:.72,cF:.14,nF:-.42,hF:-.5,
+  LsF:1.4,RsF:1.45,LsA:.3,RsA:.3,LeB:.15,ReB:.15,LwF:.35,RwF:.35,Lcurl:.9,Rcurl:.9,
+  LhF:1.5,RhF:1.1,LhA:.15,RhA:.15,LkB:2.0,RkB:1.85,LaF:-.5,RaF:-.65}),
+ // 멱살 잡힘: 두 주먹을 가슴 앞에 쥐고 버틴다
  held:P({py:-.05,sF:.19,cF:.12,hF:-.2,LsF:1.05,RsF:1.1,LsA:.18,RsA:.2,
-  LeB:1.45,ReB:1.4,Lcurl:.7,Rcurl:.7,LhF:.12,RhF:-.08,LkB:.22,RkB:.34}),
+  LeB:1.45,ReB:1.4,LwF:.2,RwF:.2,Lcurl:.85,Rcurl:.85,LhF:.12,RhF:-.08,LkB:.22,RkB:.34}),
 };
 function combatInit(E,seated){
  if(!window.FateMotion)throw new Error('몸싸움 모듈을 불러오지 못했습니다. 새로고침해 주세요.');
@@ -7058,7 +7150,7 @@ function combatInit(E,seated){
  E.M.chest.map=canvasTex(768,384,(g,w,h)=>paintOpening(g,w,h,{source:cloth,shirt:'#788281',placket:'#8b9290',stole:'#292d2b',R:.27,Rm:.22,sw:.05,half:d=>.024+.026*clamp((d-40)/50,0,1),syms:[76],symShift:1}));
  E.disposables.push(E.M.belly.map,E.M.chest.map);
  E.M.trouser.map=null;E.M.trouser.color.copy(col('#343b3d'));E.M.trouser.roughness=.96;
- for(const m of E.parts){
+ if(PLAIN_TROUSERS)for(const m of E.parts){
   if(m.material!==E.M.trouser||!m.userData.flesh)continue;
   const seg=m.userData.seg;let geo;
   if(seg==='pelvis'){geo=new THREE.SphereGeometry(1,28,18);geo.scale(.18,.13,.23);geo.translate(0,-.035,0);}
@@ -7071,7 +7163,7 @@ function combatInit(E,seated){
   E.disposables.push(geo);E.releaseGeometry(old);
  }
 
- E.M.sole.color.copy(col('#171c1d'));E.M.boot.roughness=.7;
+ E.M.sole.color.copy(col('#d8cfbb'));E.M.boot.roughness=.62;
  E.M.red.color.copy(col('#775d3b'));E.M.robeIn.color.copy(col('#211b20'));E.M.lining.color.copy(col('#211b20'));
  E.M.gold.color.copy(col('#b99552'));E.M.goldD.color.copy(col('#765631'));
  E.M.amethyst.emissiveIntensity=.08;E.M.ruby.emissiveIntensity=.04;
@@ -7082,7 +7174,7 @@ function combatActive(E){return !!(E&&E.combat&&!E._combatScripted&&G.mode==='fi
 function combatStep(E,dt){
  const b=E.combat;b.canRise=!E.legsMissing();
  if(!G.inputLocked||COMBAT.storyAnchor)b.step(dt);
- E.state=b.mode==='ground'?'down':b.mode==='seat'?'stand':b.mode;
+ E.state=b.mode==='ground'?'down':b.mode==='seat'||b.mode==='stagger'?'stand':b.mode;
  if(E.state==='down')E.down=E.down||{type:'floor',stay:10};
  else if(E.state!=='fall'&&E.state!=='rise')E.down=null;
  // IK actions from the standing animation must not pin hands in space during a fall.
@@ -7107,18 +7199,38 @@ function combatPose(E,out,dt,time){
   E._combatFrom.tx=E._combatFrom.ty=E._combatFrom.tz=E._combatFrom.ry=0;
  }
  if(b.mode==='seat'){
-  poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.cF=-.12;T.RsF=.1;T.RsA=.7;T.LeB=.8;
+  // 옥좌에 거만하게 앉아 두 손으로 홀(운명판)을 받쳐 든다(손은 아래 updateActions의 IK가 홀 자리로 끌어다 놓는다)
+  poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.cF=-.12;T.RsF=.1;T.RsA=.7;T.LeB=.8;T.Lcurl=.5;T.Rcurl=.5;
+  E.updateActions(T,dt,time);
+  // 홀을 들고 있지 않으면(순응 화면에서 넘어온 경우) 두 손을 팔걸이 위에 얹는다
+  if(!E.tabletHeld&&!E.act)for(const s of [-1,1])E.setIK(s<0?'L':'R',{target:_bv1.set(s*.56,.8,-.1),fd:_bv2.set(0,-.1,1),pd:_bv3.set(0,-1,0),curl:.3,rate:8});
  }else if(b.mode==='stand'){
   E.standPose(T,dt,time);
   const speed=Math.hypot(b.vx,b.vz),a=Math.sin(b.stepDistance*22)*clamp(speed*.45,0,.34);
   T.LhF+=a;T.RhF-=a;T.LkB+=Math.max(0,a)*1.1;T.RkB+=Math.max(0,-a)*1.1;
-  T.sR-=b.vx*.11;T.sF-=b.vz*.1;T.py-=Math.max(0,1-b.balance)*.035;
+  // 균형이 깎일수록 무릎이 풀리고 몸이 흔들린다(넘어지기 전 조짐)
+  const tired=clamp(1-b.balance/Math.max(.2,b.poise),0,1),wob=tired*tired;
+  T.sR-=b.vx*.11;T.sF-=b.vz*.1;T.py-=tired*.045;T.LkB+=wob*.22;T.RkB+=wob*.22;
+  T.rz+=Math.sin(time*2.3)*.05*wob;T.sR+=Math.sin(time*2.3+.7)*.06*wob;T.hR+=Math.sin(time*1.9)*.08*wob;
+ }else if(b.mode==='stagger'){
+  // 비틀거림: 무릎이 꺾이고 맞은 쪽으로 몸이 기울며 팔을 허우적인다. 끝에서 넘어짐(fall)으로 이어진다
+  E.standPose(T,dt,time);
+  const u=b.lean,w=Math.sin(u*PI),sx=b.staggerDir.x,e=u*u;
+  // 무릎이 꺾이며 주저앉듯 내려가고, 골반은 뒤로 빠지고 윗몸은 앞으로 숙여진다
+  T.LkB+=1.0*e;T.RkB+=.8*e;T.py-=.2*e;T.LhF+=.45*e;T.RhF+=.3*e;T.LaF-=.3*e;T.RaF-=.2*e;T.LhA+=.12*u;T.RhA+=.1*u;
+  T.pF-=.1*u;T.sF+=.22*u;T.cF+=.1*u;T.rz-=sx*.22*u;T.sR+=sx*.16*u;T.hR-=sx*.3*u;T.pR+=sx*.1*u;T.sT+=sx*.2*u;
+  // 팔은 균형을 잡으려 옆·앞으로 허우적이고 손은 펴진다
+  T.LsA+=.55*w+.25*u;T.RsA+=.6*w+.3*u;T.LsF-=.4*w;T.RsF-=.25*w;T.LsT+=.3*w;T.RsT-=.2*w;T.LeB=lerp(T.LeB,.25,w);T.ReB=lerp(T.ReB,.3,w);
+  T.Lcurl=lerp(T.Lcurl,.12,w);T.Rcurl=lerp(T.Rcurl,.12,w);T.LwF-=.3*w;T.RwF-=.3*w;
+  T.hF-=.2*w;T.nF-=.1*w;
  }else if(b.mode==='grab'){
   poseLerp(COMBAT_POSE.ground,COMBAT_POSE.held,smooth(b.grab?b.grab.lift:1),T);
  }else if(b.mode==='rise'){
+  // 일어남: 몸을 굴려 웅크리고(주먹으로 바닥을 짚음) → 천천히 선다
   const t=b.age/window.FateMotion.TIMING.rise;
-  if(t<.48)poseLerp(E._combatFrom,COMBAT_POSE.brace,smooth(t/.48),T);
-  else poseLerp(COMBAT_POSE.brace,STAND,smooth((t-.48)/.52),T);
+  if(t<.42)poseLerp(E._combatFrom,COMBAT_POSE.brace,smooth(t/.42),T);
+  else if(t<.58)poseCopy(COMBAT_POSE.brace,T);
+  else poseLerp(COMBAT_POSE.brace,STAND,smooth((t-.58)/.42),T);
  }else{
   poseCopy(COMBAT_POSE.ground,T);T.rz=b.roll;T.hT=b.side*.22;
   T.LsF+=Math.sin(time*2.1)*.025;T.RsF-=Math.sin(time*1.7)*.03;
@@ -7129,7 +7241,7 @@ function combatPose(E,out,dt,time){
   }
  }
  T.tx=T.ty=T.tz=T.ry=0;
- const duration=b.mode==='fall'?.52:b.mode==='grab'?.16:b.mode==='stand'?.23:.16;
+ const duration=b.mode==='fall'?.52:b.mode==='grab'?.16:b.mode==='stand'?.23:b.mode==='stagger'?.1:.16;
  if(b.mode==='rise')poseCopy(T,out);else poseLerp(E._combatFrom,T,smooth(b.age/duration),out);
  out.ry=b.yaw;
  // Rotate around the pelvis, not the feet. The center follows the same trajectory through a fall.
@@ -7162,20 +7274,21 @@ function combatCamera(dt){
  const b=E.combat;if(!b)return false;
  if(COMBAT.storyAnchor){
   const a=COMBAT.storyAnchor;
-  CAM.fovBase=innerWidth<innerHeight?44:39;
-  const tan=Math.tan(CAM.fovBase*PI/360),distance=Math.max(3.6,1.55/(tan*innerWidth/innerHeight)+.9);
-  CAM.goalPos.set(a.x,1.65,a.z+distance);CAM.goalLook.set(a.x,.86,a.z+.15);
+  // 세로 화면에선 사람들이 화면 위쪽 작은 띠에 몰리지 않게 조금 덜 물러나고 낮게 본다
+  const pr=innerWidth<innerHeight;CAM.fovBase=pr?44:39;
+  const tan=Math.tan(CAM.fovBase*PI/360),distance=Math.max(3.6,(pr?1.1:1.55)/(tan*innerWidth/innerHeight)+.9);
+  CAM.goalPos.set(a.x,pr?1.5:1.65,a.z+distance);CAM.goalLook.set(a.x,pr?.95:.86,a.z+.15);
   CAM.unit=clamp(1/(2*distance*tan),.16,.53);if(onCamUnit)onCamUnit(CAM.unit);
   const k=1-Math.exp(-dt*5);CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);
   return true;
  }
  const down=clamp(Math.abs(E.pose.rx)/1.35,0,1),portrait=innerWidth<innerHeight;
  const aspect=innerWidth/innerHeight;
- const distance=portrait?Math.max(2.55,1.7/aspect):2.65;
+ const distance=portrait?Math.max(2.55,1.7/aspect):3.05;
  const x=E.root.position.x,z=b.z;
  // Track the pelvis rather than recentering the opponent. Dolly and pitch follow the body together.
- CAM.goalPos.set(b.x*.8+.12,lerp(1.55,2.5,down),z+lerp(distance,portrait?2.35:2.5,down));
- CAM.goalLook.set(b.x,lerp(1.03,.3,down),z-down*.22);
+ CAM.goalPos.set(b.x*.8+.12,lerp(1.58,2.5,down),z+lerp(distance,portrait?2.35:2.5,down));
+ CAM.goalLook.set(b.x,lerp(1.08,.3,down),z-down*.22);
  if(b.mode==='grab'){CAM.goalPos.z-=.18;CAM.goalLook.y+=.08;}
  const k=1-Math.exp(-dt*(b.mode==='fall'?7:5));
  CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);
@@ -7207,16 +7320,23 @@ function combatEffects(dt){
   if(!a.obj.parent||a.obj.userData.detached){COMBAT.foot=null;return;}
   const target=a.obj.localToWorld(a.local.clone());
   const boot=COMBAT_STAGE.boot;
-  const lift=a.t<.16?smooth(a.t/.16):a.t<.27?1-easeIn3((a.t-.16)/.11):a.t<.34?0:smooth((a.t-.34)/.23);
-  boot.position.copy(target);boot.position.y+=lift*.75;boot.position.z+=.03+lift*.22;
-  boot.rotation.set(-.04-lift*.7,.12,Math.sin(a.t*8)*.06);
+  /* 밟기는 1인칭 손과 같은 가까운 화면(vmScene)에 그린다. 발바닥이 상대를 향한 채 화면 아래에서 올라와(.16초, 크게·가깝게 든다)
+   * 표적이 있는 화면 자리로 내리꽂히고(.27초, 작아지며 멀어진다) 잠깐 머물렀다가 아래로 빠진다(.57초).
+   * 예전처럼 상대 몸 위 실제 자리에 사람 크기 발과 허벅지까지 그리면, 멀리서 내려다보는 카메라라 발은 콩알만 하고 다리는 화면을 가로지르는 기둥이 됐다 */
+  const scr=target.clone().project(camera),nx=clamp(scr.x,-.9,.9),ny=clamp(scr.y,-.9,.9),t=a.t;
+  const pr=innerWidth<innerHeight,S=VM.at(.3,-1.45,.6),C=VM.at(nx*.3+.1,-.3,pr?.6:.52),Tg=VM.at(nx,ny,pr?1.08:.92),P=boot.position;
+  if(t<.16)P.copy(S).lerp(C,smooth(t/.16));
+  else if(t<.27)P.copy(C).lerp(Tg,easeIn3((t-.16)/.11));
+  else if(t<.34)P.copy(Tg);
+  else P.copy(Tg).lerp(S,smooth((t-.34)/.23));
+  const down=t<.16?0:t<.27?(t-.16)/.11:1;
+  boot.rotation.set(PI/2+.35*(1-down)-.1,nx*.25,-.1+Math.sin(t*9)*.05);
   boot.updateMatrixWorld(true);
-  const ankle=V3(.002,.18,.073),hip=V3(.24,-.6,.1).applyQuaternion(camera.quaternion).add(camera.position);
-  boot.worldToLocal(hip);
-  const kneePos=ankle.clone().lerp(hip,.48);kneePos.y+=.14+lift*.12;
+  // 정강이: 발목(뒤꿈치 위)에서 화면 오른쪽 아래 바깥(내 무릎 자리)으로. 멀리서 보는 다리가 아니라 소매처럼 가까이서 들어온다
+  const ankle=V3(.002,.18,.073),hip=boot.worldToLocal(VM.at(.55,-1.5,.36));
   const segment=(mesh,from,to)=>{const d=to.clone().sub(from),len=d.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,d.divideScalar(len||1));mesh.scale.y=len;};
+  const kneePos=ankle.clone().lerp(hip,.55);
   segment(COMBAT_STAGE.shin,ankle,kneePos);segment(COMBAT_STAGE.thigh,kneePos,hip);COMBAT_STAGE.knee.position.copy(kneePos);
-
   if(!a.done&&a.t>=.27){
    a.done=true;
    resolveHit('hand','jab',{obj:a.obj,point:target,normal:UP.clone(),dir:V3(0,-1,-.12),part:a.part},'R',{powerMul:1.8,stomp:true});
@@ -7389,6 +7509,8 @@ function anchorCombatStory(E,recover){
  COMBAT.storyAnchor={x:b.x,z:b.z};
  CROWD.root.position.set(b.x,0,b.z);
  if(recover&&b.canRise&&(b.mode==='ground'||b.mode==='fall'))b.change('rise');
+ // 비틀거리던 중이면 장면 동안 넘어지지 않게 바로 서게 한다
+ if(b.mode==='stagger'){b.change('stand');b.balance=b.poise;}
 }
 function openOffer(){
  if(G.mode!=='fight'||G.ended||G.offerOpen||G.offerBreaking)return;
@@ -7499,6 +7621,8 @@ function damageBar(d,o={},fromStand=false){
  // 되살아난 뒤에는 다운 없이 남은 30%를 맞는다: 게이지가 줄어드는 만큼 화남 → 아픔 → 울며 빎 → 다 무너짐
  if(G.revived&&!E.taunt){const ph=nb<=7?4:nb<=15?3:nb<=23?2:1;if(E.phase<ph)E.setPhase(ph);}
  if(combatActive(E)){
+  // 맷집: 게이지가 남아 있을수록 많이 버티고(처음엔 잽 열세 대쯤), 바닥에 가까울수록 덜 버틴다(잽 일곱 대쯤)
+  const full=G.revived?30:100;E.combat.setPoise(lerp(.55,1,clamp(nb/full,0,1)));
   const stage=nb<=25?3:nb<=50?2:nb<=75?1:0;
   if(stage>G.kd){G.kd=stage;E.haloStage(stage);}
   if(!E.taunt)E.setPhase(Math.max(E.phase,nb<=12?4:nb<=35?3:nb<=65?2:1));
