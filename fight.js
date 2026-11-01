@@ -1906,16 +1906,26 @@ const COMBAT_STAGE=(()=>{
  for(const x of [-.95,.95])box(.026,3.7,.08,glow,wall,[x,2.5,.2]);
  const shadowTex=canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,5,64,64,64);r.addColorStop(0,'rgba(0,0,0,.8)');r.addColorStop(.48,'rgba(0,0,0,.4)');r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,0,w,h);});
  const contact=mk(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:.3}),root,{r:[-PI/2,0,0],p:[0,.006,0],cast:false});
- // A world-space shoe: contact stays on the moving body, including when the camera tracks it.
- const boot=grp(scene);boot.visible=false;
- const leather=STD('#202527',{roughness:.72,bumpMap:grain,bumpScale:.001});
- box(.19,.09,.38,leather,boot,[0,.055,.04]);
- box(.205,.04,.4,STD('#0e1010',{roughness:.92}),boot,[0,0,.04]);
+ // Right bare foot in world space: heel at +z, toes point away from the player (-z).
+ const boot=grp(scene);boot.name='player-bare-foot';boot.visible=false;
+ const footSkin=STD('#d99c7b',{roughness:.72});
+ const footSole=STD('#c48970',{roughness:.85});
+ const footNail=STD('#e5bea5',{roughness:.48});
+ mk(sphereGeo(24),footSkin,boot,{p:[0,.057,.075],s:[.065,.054,.073]}); // heel
+ mk(sphereGeo(24),footSkin,boot,{p:[.007,.065,-.025],s:[.068,.045,.126],r:[.1,0,0]}); // instep
+ mk(sphereGeo(24),footSkin,boot,{p:[-.008,.045,-.112],s:[.087,.037,.067]}); // ball
+ mk(sphereGeo(20),footSole,boot,{p:[.002,.022,-.026],s:[.066,.018,.14]});
+ mk(cylGeo(.046,.058,.12,20),footSkin,boot,{p:[.002,.126,.073]});
+ const toes=[[-.064,-.182,.024,.052],[-.021,-.192,.018,.047],[.013,-.184,.016,.041],[.044,-.169,.014,.035],[.069,-.151,.012,.029]];
+ for(let i=0;i<toes.length;i++){
+  const [x,z,r,len]=toes[i];
+  mk(sphereGeo(20),footSkin,boot,{p:[x,.039,z],s:[r,.026-i*.002,len]});
+  mk(sphereGeo(12),footNail,boot,{p:[x,.062-i*.002,z-len*.36],s:[r*.65,.0035,len*.27],r:[-.12,0,0],cast:false});
+ }
  const legMat=STD('#262d37',{roughness:.9,bumpMap:weave,bumpScale:.002});
- const shin=mk(cylGeo(.09,.075,1,16),legMat,boot);
- const thigh=mk(cylGeo(.13,.09,1,16),legMat,boot);
- const knee=mk(sphereGeo(16),legMat,boot,{s:.09});
- for(let i=0;i<4;i++)box(.12,.012,.016,STD('#555654',{roughness:.95}),boot,[0,.108,-.04+i*.034]);
+ const shin=mk(cylGeo(.066,.048,1,16),legMat,boot);
+ const thigh=mk(cylGeo(.105,.068,1,16),legMat,boot);
+ const knee=mk(sphereGeo(16),legMat,boot,{s:.069});
  const dust=new THREE.Group();root.add(dust);
  const dots=new Float32Array(180*3);for(let i=0;i<180;i++){dots[i*3]=rnd(-5,5);dots[i*3+1]=rnd(.3,5);dots[i*3+2]=rnd(-4,2);}
  const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dots,3));
@@ -2021,47 +2031,50 @@ function updateCamera(dt){
 const _cv=V3(),_cf=V3();
 
 /* ===== 4-1. 궁전 너머의 존재 =====
- * 지붕은 크기 기준으로 남고, 하늘을 덮은 몸의 일부만 보인다.
- * 배경 원화는 입장 시 미리 읽는다. 전체 윤곽이나 설명 문구를 보여 주지 않는다. */
+ * 쓰러진 설계자 → 궁전 위로 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
+ * 눈 양끝과 동공은 세로 화면에서도 온전히 남긴다. 벽·기둥이 크기의 기준이다. */
 const BEYOND=(()=>{
- const far=new THREE.Scene();far.background=col('#11181e');
+ const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
  let artReady=false,compiled=false;
- const fallback=canvasTex(16,16,(g,w,h)=>{const c=g.createLinearGradient(0,0,0,h);c.addColorStop(0,'#090d12');c.addColorStop(1,'#46505a');g.fillStyle=c;g.fillRect(0,0,w,h);});
+ const fallback=canvasTex(16,16,(g,w,h)=>{const c=g.createLinearGradient(0,0,0,h);c.addColorStop(0,'#090d12');c.addColorStop(1,'#141d25');g.fillStyle=c;g.fillRect(0,0,w,h);});
  const mat=new THREE.ShaderMaterial({
-  uniforms:{uMap:{value:fallback},uTime:{value:0}},
-  depthWrite:false,toneMapped:false,
+  uniforms:{uMap:{value:fallback},uTime:{value:0},uReveal:{value:0},uAspect:{value:1}},
+  depthTest:false,depthWrite:false,toneMapped:false,
   vertexShader:`varying vec2 vUv;
-void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-  fragmentShader:`uniform sampler2D uMap;uniform float uTime;varying vec2 vUv;
+void main(){vUv=uv;gl_Position=vec4(position.xy,.999,1.);}`,
+  fragmentShader:`uniform sampler2D uMap;uniform float uTime;uniform float uReveal;uniform float uAspect;varying vec2 vUv;
 void main(){
- vec2 q=vUv;vec2 c=vec2(.51,.73);
- float pulse=sin(uTime*.16)*.0018;
- q+=(q-c)*pulse;
- q.x+=sin(q.y*12.+uTime*.08)*.0006;
- vec3 color=pow(texture2D(uMap,clamp(q,.001,.999)).rgb,vec3(2.2));
- gl_FragColor=vec4(color,1.);
+ // Fit the eye's width. Extra space uses the dark edges of the art, never an enlarged center crop.
+ float sy=1./(1.06*uAspect*1.5);
+ float cy=mix(.5,.65,smoothstep(.7,1.4,uAspect));
+ vec2 q=vec2((vUv.x-.5)/1.06+.5,(vUv.y-.5)*sy+cy-(1.-uReveal)*1.25);
+ vec2 eye=(q-vec2(.5,.70))/vec2(.23,.115);
+ float eyeMask=1.-smoothstep(.55,1.,length(eye));
+ float focus=smoothstep(6.1,8.,uTime);
+ q.x+=(1.-focus)*.018*eyeMask;
+ q.x+=(q.x-.5)*focus*.045*eyeMask;
+ q+=sin(uTime*.32)*.0007*(q-vec2(.5,.7));
+ vec3 color=texture2D(uMap,clamp(q,.002,.998)).rgb;
+ float edge=smoothstep(-.15,.015,q.y)*(1.-smoothstep(.985,1.15,q.y));
+ color=mix(vec3(.026,.038,.048),color,edge);
+ color*=.92+.08*smoothstep(.1,.9,uReveal);
+ gl_FragColor=vec4(pow(color,vec3(2.2)),1.);
  #include <encodings_fragment>
 }`});
- const surface=new THREE.Mesh(new THREE.PlaneGeometry(13500,9000),mat);
- surface.position.set(0,2870,-4096);surface.lookAt(0,1.7,2.5);surface.frustumCulled=false;far.add(surface);
- new THREE.TextureLoader().load('assets/fate-beyond-v1.webp',tex=>{
+ const surface=new THREE.Mesh(new THREE.PlaneGeometry(2,2),mat);
+ surface.frustumCulled=false;far.add(surface);
+ new THREE.TextureLoader().load('assets/fate-beyond-v2.webp',tex=>{
   tex.encoding=THREE.LinearEncoding;tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
   mat.uniforms.uMap.value=tex;artReady=true;
  },undefined,()=>{artReady=false;});
- // A nearer, translucent cloud layer crosses the surface slowly and establishes depth.
- const haze=canvasTex(512,256,(g,w,h)=>{
-  for(let i=0;i<26;i++){const x=(i/25)*w,y=h*(.4+.18*Math.sin(i*1.8)),r=h*rnd(.12,.32),c=g.createRadialGradient(x,y,0,x,y,r);c.addColorStop(0,'rgba(120,134,145,.13)');c.addColorStop(1,'rgba(100,115,128,0)');g.fillStyle=c;g.fillRect(x-r,y-r,r*2,r*2);}
- });
- const veil=new THREE.Sprite(new THREE.SpriteMaterial({map:haze,transparent:true,depthWrite:false,fog:false,toneMapped:false,opacity:.38}));
- veil.position.set(0,1100,-2400);veil.scale.set(5200,1400,1);far.add(veil);
  function prepare(){
   if(!compiled){compiled=true;try{fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);renderer.compile(far,fcam);}catch(_){}}
   return true;
  }
  const _cp=V3();
  let active=false,t0=0,from=null,exposure=1.08;
- const DUR=6.4;
+ const TILT=6.4,DUR=8.2;
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 카메라가 앞에 있던 예전과 같은 그림이 되게, 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
  // 화면 위 끝이 같은 하늘 높이(top: 올려다본 각도, 라디안)까지 오도록 고개 각도와 시야를 정한다
@@ -2081,14 +2094,14 @@ void main(){
   if(active)return;prepare();active=true;t0=G.time;exposure=renderer.toneMappingExposure;
   const d=V3().subVectors(CAM.look,CAM.pos),len=d.length()||1;
   from={pos:CAM.pos.clone(),pitch:Math.asin(clamp(d.y/len,-1,1)),yaw:Math.atan2(d.x,-d.z),fov:CAM.fovBase};
-  CAM.frame='cut';
+  CAM.frame='cut';G.inputLocked=true;clearPointers();$('#dock').hidden=true;
   const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
   $('#hint').classList.add('off');
   AUDIO.beyond();
  }
  function update(dt){
   if(!active)return;
-  const k=G.time-t0,p=smoother(k/DUR);
+  const k=G.time-t0,p=smoother(k/TILT);
   const ev=endView(from.pos),pitch=lerp(from.pitch,ev.pitch,p),yaw=lerp(from.yaw,0,p);
   const pos=_cp.copy(from.pos);
   CAM.goalPos.copy(pos);CAM.pos.copy(pos);
@@ -2096,9 +2109,8 @@ void main(){
   CAM.fovBase=lerp(from.fov,ev.fov,p);
   // 손은 내려간다
   if(VM.root.visible){const h=clamp(k/1.1,0,1);VM.root.position.y=-.6*easeIn(h);if(h>=1)VM.root.visible=false;}
-  mat.uniforms.uTime.value=G.time;
-  renderer.toneMappingExposure=lerp(exposure,.42,p);
-  veil.position.x=Math.sin(G.time*.018)*150;
+  mat.uniforms.uTime.value=k;mat.uniforms.uReveal.value=p;mat.uniforms.uAspect.value=innerWidth/innerHeight;
+  renderer.toneMappingExposure=lerp(exposure,.55,p);
  }
  function draw(){
   fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);
@@ -2107,7 +2119,7 @@ void main(){
  }
  function reset(){
   if(active)renderer.toneMappingExposure=exposure;
-  active=false;t0=0;from=null;VM.root.position.y=0;
+  active=false;t0=0;from=null;VM.root.position.y=0;mat.uniforms.uTime.value=0;mat.uniforms.uReveal.value=0;
   const gauge=$('#fight .gauge');if(gauge){gauge.style.transition='';gauge.style.opacity='';}
  }
  return {prepare,begin,update,draw,reset,DUR,get active(){return active;},get scene(){return far;},get camera(){return fcam;},get ready(){return artReady;}};
@@ -6342,7 +6354,7 @@ const VM=(()=>{
  const M={skin:S('#e8ab86',{roughness:.5}),skinD:S('#cf8f6c',{roughness:.55}),nail:S('#f2c9b4',{roughness:.3}),cuff:S('#46557a',{roughness:.7}),
   steelD:S('#5f6670',{roughness:.4,metalness:.8}),blade:S('#d7dee4',{roughness:.16,metalness:.92}),edge:S('#f4f8fb',{roughness:.08,metalness:.95}),
   handle:S('#2b2522',{roughness:.45}),rivet:S('#d8c08a',{roughness:.3,metalness:.8}),gunD:S('#1b1c21',{roughness:.5,metalness:.4}),brass:S('#d9a84a',{roughness:.28,metalness:.88}),
-  tape:S('#e7ddc8',{roughness:.86}),blood:S('#1d4bc4',{roughness:.12})};
+  blood:S('#1d4bc4',{roughness:.12})};
  /* 식칼 날: 흰 판자처럼 보이지 않게 강철 결을 그린다. 날 모양 좌표(가로 0~.235, 세로 -.04~.04)를 그대로 텍스처 좌표로 쓴다.
   * 위(등)는 어둡고, 아래 날 쪽으로 갈수록 밝게 갈린 면(배)과 번쩍이는 날선 */
  const bladeTex=canvasTex(512,176,(g,w,h)=>{
@@ -6375,7 +6387,7 @@ const VM=(()=>{
  let clipOn=false;
  function setClip(T,dir){clip.normal.copy(dir).negate();clip.constant=dir.dot(T);clipOn=true;}
 
- /* 인간의 맨주먹(붕대 감은 큰 주먹): +z가 주먹 앞(손가락 마디), +y가 손등. 황동 없이 더 크고 묵직하게 */
+ /* 맨주먹: +z가 손가락 마디, +y가 손등. 무기는 아래의 별도 파지를 사용한다. */
  function fist(parent,s){
   const g=grp(parent);
   mk(sphereGeo(24),M.skin,g,{p:[0,.004,-.016],s:[.054,.038,.058]});
@@ -6388,9 +6400,6 @@ const VM=(()=>{
   mk(capsuleGeo(.018,.04,10),M.skin,th,{p:[0,0,.022],r:[PI/2,0,0]});
   mk(sphereGeo(10),M.nail,th,{p:[0,.01,.05],s:[.009,.006,.01],cast:false});
   mk(cylGeo(.038,.04,.08,18),M.skin,g,{p:[0,-.002,-.085],r:[PI/2,0,0]});          // 손목
-  // 손등·마디에 감은 천(붕대): 운명에 맞서는 각오
-  for(const z of [.03,-.006,-.04]){const m=mk(cylGeo(.057,.057,.018,18,true),M.tape,g,{p:[0,.002,z],r:[PI/2,0,0],cast:false});m.scale.set(1,.72,1);}
-  mk(new THREE.BoxGeometry(.028,.055,.02),M.tape,g,{p:[0,.006,-.004],r:[.1,0,0],cast:false});
   // 엄지 조각을 주먹 그룹으로 옮긴 뒤 재질별로 합친다
   g.updateMatrixWorld(true);for(const m of [...th.children]){g.attach(m);}th.removeFromParent();mergeChildren(g);
   return g;
@@ -6411,8 +6420,8 @@ const VM=(()=>{
  const R={hand:grp(root),arm:arm()},L={hand:grp(root),arm:arm()};
  R.fist=fist(R.hand,1);L.fist=fist(L.hand,-1);R.fist.scale.setScalar(1.02);L.fist.scale.setScalar(1.02);
  // 칼: 폭이 넓고 날선이 곧은 부엌 식도
- const knife=grp(R.hand);knife.scale.setScalar(1.25);
- const KREACH=.29*1.25;// 손에서 칼끝까지
+ const knife=grp(R.hand);knife.name='kitchen-knife';
+ const KREACH=.289;// 손에서 칼끝까지
  {const k=knife;const hd=grp(k,[0,.004,-.01]);mk(new THREE.BoxGeometry(.022,.026,.11),M.handle,hd,{p:[0,0,0]});for(const z of [-.035,0,.033])mk(cylGeo(.0042,.0042,.024,8),M.rivet,hd,{p:[0,0,z],r:[0,0,PI/2]});
   mk(new THREE.BoxGeometry(.034,.045,.012),M.steelD,k,{p:[0,.002,.05]});
   const sh=new THREE.Shape();sh.moveTo(0,-.04);sh.lineTo(.18,-.04);sh.quadraticCurveTo(.218,-.038,.235,-.009);sh.lineTo(.235,.004);sh.quadraticCurveTo(.19,.038,.025,.04);sh.lineTo(0,.032);sh.closePath();
@@ -6445,8 +6454,38 @@ const VM=(()=>{
   const flash=grp(g,[0,.047,.13]);mk(new THREE.PlaneGeometry(.15,.15),fl,flash,{cast:false});mk(new THREE.PlaneGeometry(.07,.24),fl,flash,{r:[PI/2,0,0],p:[0,0,.09],cast:false});mk(new THREE.PlaneGeometry(.24,.07),fl,flash,{r:[0,PI/2,0],p:[0,0,.09],cast:false});
   flash.visible=false;g.userData.flash=flash;
   g.userData.light=new THREE.PointLight(0xffb060,0,1.4,2);g.userData.light.position.set(0,.05,.16);g.add(g.userData.light);
-  g.position.set(0,.022,.055);g.scale.setScalar(1.08);
+  g.name='pistol';
  }
+ // Each tool has its own grip. Fingers wrap around the handle; the weapon is not laid on a closed fist.
+ function finger(parent,points,r){
+  for(let i=1;i<points.length;i++){
+   const a=V3(...points[i-1]),b=V3(...points[i]),d=b.clone().sub(a),len=d.length();
+   const m=mk(capsuleGeo(r,Math.max(.001,len-r*2),10),M.skin,parent,{p:a.clone().add(b).multiplyScalar(.5).toArray()});
+   m.quaternion.setFromUnitVectors(UP,d.normalize());
+  }
+ }
+ function toolWrist(g,y){mk(cylGeo(.029,.034,.078,20),M.skin,g,{p:[.008,y,-.096],r:[PI/2,0,0]});}
+ const knifeGrip=grp(R.hand);knifeGrip.name='knife-grip';
+ toolWrist(knifeGrip,-.004);
+ mk(sphereGeo(24),M.skin,knifeGrip,{p:[.026,-.003,-.022],s:[.026,.035,.055]});
+ for(let i=0;i<4;i++){
+  const z=.024-i*.023,r=.0105-i*.0005;
+  finger(knifeGrip,[[.027,-.018,z],[.007,-.027,z],[-.021,-.018,z],[-.022,.012,z],[-.008,.021,z]],r);
+ }
+ finger(knifeGrip,[[.035,.015,-.045],[.028,.034,-.015],[-.003,.033,.011]],.013);
+ mk(sphereGeo(12),M.nail,knifeGrip,{p:[-.002,.043,.01],s:[.009,.0025,.011],cast:false});
+ const gunGrip=grp(R.hand);gunGrip.name='pistol-grip';
+ toolWrist(gunGrip,-.055);
+ mk(sphereGeo(24),M.skin,gunGrip,{p:[.022,-.042,-.062],s:[.025,.043,.037],r:[-.18,0,0]});
+ for(let i=0;i<3;i++){
+  const y=-.025-i*.019,z=-.032-i*.005;
+  finger(gunGrip,[[.028,y,-.067],[.027,y,z],[-.004,y,z+.012],[-.023,y,z-.003],[-.021,y,-.057]],.010-i*.0005);
+ }
+ // Index finger curves into the trigger guard; thumb lies along the frame below the slide.
+ finger(gunGrip,[[.027,-.002,-.06],[.025,-.004,-.018],[.021,-.009,.017],[.002,-.008,.018]],.0085);
+ finger(gunGrip,[[.028,-.027,-.083],[-.015,-.001,-.063],[-.022,.008,-.023]],.012);
+ mk(sphereGeo(12),M.nail,gunGrip,{p:[-.027,.014,-.022],s:[.003,.008,.011],cast:false});
+ for(const g of [knifeGrip,gunGrip]){g.updateMatrixWorld(true);mergeChildren(g);}
  const tools={hand:null,knife,gun};
  // 탄피
  const shells=[];for(let i=0;i<6;i++){const m=mk(cylGeo(.0045,.0045,.016,8),M.brass,root,{cast:false});m.visible=false;shells.push({m,v:V3(),w:V3(),life:0});}
@@ -6472,14 +6511,12 @@ const VM=(()=>{
  const rest={R:{p:V3(),q:new THREE.Quaternion()},L:{p:V3(),q:new THREE.Quaternion()}};
  const KN_DIR=V3(-.5,.55,-1).normalize(),KN_UP=V3(.35,1,0);
  const BLADE=t=>t==='knife';
- const REACH={knife:KREACH};
- /* 1인칭 손·무기 크기: 카메라가 설계자를 담는 크기(1m가 화면 높이의 몇 배인지)에 맞춘다. 예전 서 있을 때 구도(0.49)일 때가 1.
-  * 카메라가 멀어진 만큼 주먹·칼·총도 작아져서, 칼이 설계자 몸에 비해 커 보이거나 작아 보이지 않는다. 붙잡힐 때는 원래 크기로 끌려온다.
-  * 주먹을 뻗고 거두는 폭·칼 튕김·총 반동·탄피도 같은 비율로 줄인다 */
+ /* 대기 중인 손은 구도에 맞춘 전경 크기. 칼 접촉 시에는 실제 표적 깊이와 1m 단위를 쓴다.
+  * 카메라 갱신에서 손 스케일을 다시 덮어쓰지 않는다: 그 프레임의 찌르기·붙잡힘 크기를 보존한다. */
  let SC=1;
- function setScale(unit){SC=clamp(unit/.49,.45,1);REACH.knife=KREACH*SC;for(const k of ['R','L'])(k==='R'?R:L).hand.scale.setScalar(lerp(SC,1,GR[k]||0));}
+ function setScale(unit){SC=clamp(unit/.49,.45,1);}
  // 날붙이를 들고 있는 자리(화면 오른쪽 아래, 날이 화면 안쪽으로 눕게): 몸을 덜 가린다
- const KREST={x:.9,y:.1,d:.48,dir:V3(-.08,.6,-1).normalize()};
+ const KREST={x:.76,y:.1,d:.48,dir:V3(-.08,.6,-1).normalize()};
  function computeRest(){
   computeHeld();
   const pr=portrait(),dy=pr?dockY():-1;
@@ -6500,9 +6537,16 @@ const VM=(()=>{
  function handPos(side,out){return out.copy(H[side].p);}
  function anchorPos(side,out){return out.copy(H[side].anch);}
 
- function setTool(t){st.tool=t;st.acts.length=0;st.slash=null;st.swapT=0;for(const k in tools)if(tools[k])tools[k].visible=k===t;L.hand.visible=L.arm.g.visible=t==='hand';computeRest();}
+ function setTool(t){R.fist.visible=t==='hand';knifeGrip.visible=t==='knife';gunGrip.visible=t==='gun';st.tool=t;st.acts.length=0;st.slash=null;st.swapT=0;for(const k in tools)if(tools[k])tools[k].visible=k===t;L.hand.visible=L.arm.g.visible=t==='hand';computeRest();}
  function busy(side){return st.acts.some(a=>a.side===side&&a.t<a.contact+.03);}
  /* 공격 시작: 화면 좌표 sx,sy. kind: jab|hook|upper|stab */
+ function bladeTarget(sx,sy,info){
+  const [nx,ny]=ndc(sx,sy),hit=info||pickAt(sx,sy);
+  camera.updateMatrixWorld(true);
+  const point=hit?hit.point.clone().applyMatrix4(camera.matrixWorldInverse):V3(0,0,-2.6);
+  const depth=Math.max(.9,-point.z)*Math.tan(camera.fov*PI/360)/TAN;
+  return at(nx,ny,depth);
+ }
  function attack(kind,sx,sy,info){
   const tool=st.tool;if(tool==='gun')return fire(sx,sy,info);
   let side='R';
@@ -6510,7 +6554,7 @@ const VM=(()=>{
   else if(st.acts.some(a=>a.t<a.contact+.04))return false;
   if(st.acts.length>2)st.acts.shift();
   const [nx,ny]=ndc(sx,sy),s=side==='R'?1:-1,pr=portrait();
-  const target=at(nx,ny,tool==='hand'?.85:.72);
+  const target=tool==='hand'?at(nx,ny,.85):bladeTarget(sx,sy,info);
   const a={tool,kind,side,s,sx,sy,info,t:0,target,done:false,hit:null};
   const W=V3(),C=V3(),Q0=new THREE.Quaternion(),Q1=new THREE.Quaternion();
   if(tool==='hand'){
@@ -6519,9 +6563,9 @@ const VM=(()=>{
    else if(kind==='upper'){at(s*.25,-1.2,.7,W);C.set(target.x,lerp(W.y,target.y,.2),lerp(W.z,target.z,.7));orient(Q0,V3(-s*.1,1,-.3),V3(0,.2,1));orient(Q1,V3(0,.8,-.6),V3(0,.3,1));a.dur=[.07,.075,.05,.13];}
    else{W.copy(rest[side].p).add(V3(s*.02,-.04,.08).multiplyScalar(SC));C.copy(W).lerp(target,.5);C.y+=.03*SC;orient(Q0,V3(-s*.2,.4,-1),V3(s*.9,.4,.2));orient(Q1,fwd,V3(-s*.25,1,0));a.dur=[.04,.055,.045,.12];}
   }else if(BLADE(tool)){
-   const reach=REACH[tool];
+   const reach=KREACH;
    const H0=at(pr?.42:.4,-.74,.42);const dir=V3().subVectors(target,H0).normalize();a.dir1=dir;a.hand1=V3().copy(target).addScaledVector(dir,-reach);
-   a.hand0=V3().copy(rest.R.p).add(V3(.02,-.03,.09).multiplyScalar(SC));a.dir0=V3(-.15,.3,-1).normalize();a.pen=.12*SC;a.dur=[.05,.06,.17,.15];
+   a.hand0=V3().copy(rest.R.p).add(V3(.02,-.03,.09).multiplyScalar(SC));a.dir0=V3(-.15,.3,-1).normalize();a.pen=.09;a.dur=[.05,.06,.17,.15];
   }
   a.W=W;a.C=C;a.Q0=Q0;a.Q1=Q1;a.contact=a.dur[0]+a.dur[1];a.total=a.dur.reduce((x,y)=>x+y,0);
   st.acts.push(a);AUDIO.whoosh(tool==='hand'?(kind==='jab'?.6:.85):.5,kind);
@@ -6549,7 +6593,7 @@ const VM=(()=>{
  function placeArm(side){
   const h=side==='R'?R:L,ar=h.arm;h.hand.updateMatrix();
   const k=h.hand.scale.x;
-  const wrist=tv.set(0,0,-.1).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
+  const wrist=tv.set(0,side==='R'&&st.tool==='gun'?-.055:0,-.1).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
   ar.g.position.copy(wrist);ar.g.quaternion.setFromUnitVectors(UP,d);ar.g.scale.setScalar(k);
   ar.sl.scale.set(1,Math.max(.05,(len-.08*k)/k),1);
  }
@@ -6559,7 +6603,7 @@ const VM=(()=>{
   st.time+=dt;fireCool=Math.max(0,fireCool-rdt);st.swapT=Math.min(1,st.swapT+rdt*4);
   clipOn=false;
   const sway=Math.sin(st.time*1.6)*.004,sway2=Math.cos(st.time*1.1)*.003,dropIn=(1-easeOut3(st.swapT))*.25;
-  for(const k of ['R','L']){H[k].p.copy(rest[k].p);H[k].p.y+=sway*(k==='R'?1:-1)-dropIn;H[k].p.x+=sway2;H[k].q.copy(rest[k].q);H[k].anch.copy(ANCH[k]);}
+  for(const k of ['R','L']){H[k].scale=SC;H[k].p.copy(rest[k].p);H[k].p.y+=sway*(k==='R'?1:-1)-dropIn;H[k].p.x+=sway2;H[k].q.copy(rest[k].q);H[k].anch.copy(ANCH[k]);}
   // 진행 중인 공격
   for(let i=st.acts.length-1;i>=0;i--){const a=st.acts[i];if(!frozen)a.t+=dt;const t=a.t,[d0,d1,d2,d3]=a.dur,c=a.contact;
    if(!a.done&&t>=c){a.done=true;a.hit=st.onContact?st.onContact(a):null;if(a.hit&&a.hit.hit&&BLADE(a.tool))st.bloody[a.tool]=st.bloody[a.tool]||a.hit.blood;}
@@ -6584,7 +6628,16 @@ const VM=(()=>{
      tv3.copy(h.p);h.p.copy(tmpP).lerp(tv3,e);h.p.y-=Math.sin(e*PI)*.08*SC;h.p.x+=a.s*Math.sin(e*PI)*.05*SC;
      tmpQ.copy(a.Q1).slerp(h.q,e);h.q.copy(tmpQ);}
    }else if(BLADE(a.tool)){
-    const reach=REACH[a.tool],RDIR=KN_DIR,RUP=KN_UP;
+    const reach=KREACH,RDIR=KREST.dir,RUP=KN_UP;
+    // At contact the blade is measured in the same meters as the body; only the idle foreground pose is scaled.
+    const extension=t<d0?0:t<c?smooth((t-d0)/d1):t<c+d2?1:1-easeOut3((t-c-d2)/d3);
+    h.scale=lerp(SC,1,extension);
+    if(a.hit&&a.hit.bone&&t>=c){
+     a.hit.bone.updateWorldMatrix(true,false);
+     const pt=a.hit.bone.localToWorld(a.hit.lp.clone()),screen=pt.clone().project(camera);
+     const next=bladeTarget((screen.x*.5+.5)*innerWidth,(-screen.y*.5+.5)*innerHeight,{point:pt});
+     a.hand1.add(next.clone().sub(a.target));a.target.copy(next);
+    }
     let hand,dir;
     if(t<d0){const u=easeOut(t/d0);hand=tv.copy(h.p).lerp(a.hand0,u);dir=tv2.copy(RDIR).lerp(a.dir0,u).normalize();}
     else if(t<c){const u=easeIn((t-d0)/d1);hand=tv.copy(a.hand0).lerp(a.hand1,u);tmpQ.setFromUnitVectors(_fz,a.dir0);tmpQ2.setFromUnitVectors(_fz,a.dir1);tmpQ.slerp(tmpQ2,u);dir=tv2.copy(_fz).applyQuaternion(tmpQ);}
@@ -6606,8 +6659,8 @@ const VM=(()=>{
    if(a.t>=a.total)st.acts.splice(i,1);
   }
   // 날붙이로 긋기: 날이 화면 안쪽으로 꽂혀 보이지 않게 오른쪽 아래에서 비스듬히 눕혀 긋는다
-  if(BLADE(st.tool)&&st.slash){const reach=REACH[st.tool],RUP=KN_UP;
-   const s=st.slash,[nx,ny]=ndc(s.sx,s.sy),T=at(nx,ny,.74),H0=at(1.05,-1.05,.62);const dir=tv.subVectors(T,H0).normalize();
+  if(BLADE(st.tool)&&st.slash){const reach=KREACH,RUP=KN_UP;
+   const s=st.slash,T=bladeTarget(s.sx,s.sy),H0=at(1.05,-1.05,.62);H.R.scale=1;const dir=tv.subVectors(T,H0).normalize();
    const touching=s.touching||G.time<s.touchUntil;
    s.bite=damp(s.bite,touching?1:0,touching?30:16,rdt);
    H.R.p.copy(T).addScaledVector(dir,-reach+s.bite*.1*SC);if(s.bite>.02)setClip(T,dir);
@@ -6633,7 +6686,7 @@ const VM=(()=>{
   if(gripPoint&&st.tool==='hand'){const h=H.L;h.p.copy(at(gripPoint.x-.06,gripPoint.y,.76));orient(h.q,V3(.15,.3,-1),UP);}
   // 손 배치(칼·총을 들 때도 붙잡히면 왼팔이 보인다: 왼쪽 사람이 허공을 붙잡지 않게)
   {const showL=st.tool==='hand'||GR.L>.03||GR.goal.L>0;L.hand.visible=L.arm.g.visible=showL;}
-  for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(SC,1,GR[k]));if(h.hand.visible)placeArm(k);}
+  for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(H[k].scale,1,GR[k]));if(h.hand.visible)placeArm(k);}
   knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;
  }
  function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
@@ -6844,7 +6897,7 @@ function combatEffects(dt){
   boot.position.copy(target);boot.position.y+=.04+lift*.75;boot.position.z+=.03+lift*.22;
   boot.rotation.set(-.16-lift*.7,.12,Math.sin(a.t*8)*.06);
   boot.updateMatrixWorld(true);
-  const ankle=V3(0,.13,.13),hip=V3(.24,-.6,.1).applyQuaternion(camera.quaternion).add(camera.position);
+  const ankle=V3(.002,.18,.073),hip=V3(.24,-.6,.1).applyQuaternion(camera.quaternion).add(camera.position);
   boot.worldToLocal(hip);
   const kneePos=ankle.clone().lerp(hip,.48);kneePos.y+=.14+lift*.12;
   const segment=(mesh,from,to)=>{const d=to.clone().sub(from),len=d.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,d.divideScalar(len||1));mesh.scale.y=len;};
