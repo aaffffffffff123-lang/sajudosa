@@ -7,6 +7,7 @@
 })(typeof window!=='undefined'?window:globalThis,function(){
  'use strict';
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ const TIMING=Object.freeze({fall:.52,recoverAfter:1.25,rise:.8});
  class Body {
   constructor(seated=true){
    this.x=0;this.z=seated?-.62:.25;this.yaw=0;this.vx=0;this.vz=0;
@@ -96,15 +97,15 @@
     }
     this.stepDistance+=Math.hypot(this.x-px,this.z-pz);
    }
-   if(this.mode==='fall'&&this.age>=.52){
+   if(this.mode==='fall'&&this.age>=TIMING.fall){
     this.change('ground');this.events.push({type:'land',power:1});
    }else if(this.mode==='ground'){
-    if(this.idle>1.1)this.recovery=Math.min(1,this.recovery+dt*.5);
-    if(this.idle>3.2&&this.canRise){this.change('rise');this.events.push({type:'rise'});}
-   }else if(this.mode==='rise'&&this.age>1.45){this.change('stand');this.balance=.7;}
+    if(this.idle>.65)this.recovery=Math.min(1,this.recovery+dt*1.5);
+    if(this.idle>TIMING.recoverAfter&&this.canRise){this.change('rise');this.events.push({type:'rise'});}
+   }else if(this.mode==='rise'&&this.age>TIMING.rise){this.change('stand');this.balance=.7;}
    if(this.mode==='stand'&&this.idle>.65)this.balance=Math.min(1,this.balance+dt*.2);
   }
   drain(){const events=this.events;this.events=[];return events;}
  }
- return {Body};
+ return {Body,TIMING};
 });

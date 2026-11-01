@@ -21,7 +21,10 @@ test('directional hits accumulate balance loss, with a single floor contact per 
 test('ground attacks postpone recovery; a new hit interrupts getting up',()=>{
  const b=new Body(false);b.z=1;b.fall(1,0);step(b,1);
  for(let i=0;i<8;i++){b.hit({kind:'stomp'});step(b,.5);assert.equal(b.mode,'ground');}
- step(b,3.3);assert.equal(b.mode,'rise');b.hit({kind:'jab'});assert.equal(b.mode,'fall');
+ step(b,1);assert.equal(b.mode,'rise');b.hit({kind:'jab'});assert.equal(b.mode,'fall');
+});
+test('an uninterrupted knockdown returns to the feet within 2.2 seconds',()=>{
+ const b=new Body(false);b.z=1;b.fall();step(b,2.2);assert.equal(b.mode,'stand');
 });
 test('dragging lifts a grounded body; side release throws it',()=>{
  const b=new Body(false);b.z=1;b.fall();step(b,1);
