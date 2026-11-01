@@ -1285,7 +1285,7 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  bakeAll();loadBackVoice();loadOpeningVoice();
+  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();
  }
  function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
@@ -1358,10 +1358,35 @@ const AUDIO=(()=>{
  function ring(dest,t,fs,dur,peak){fs.forEach((f,i)=>osc(dest,t,{f0:f*R(.995,1.005),dur:dur*(1-i*.18),peak:peak*(1-i*.2),a:.0015}));}
 
  /* ===== 미리 구워 두는 소리 =====
-  * 타격음·총소리는 시작할 때 한 번 여러 벌 만들어 둔다(무거운 처리를 해도 되고, 연사할 때 휴대폰이 덜 버거워한다).
-  * 굽는 동안에는 ctx·bus·verb를 잠깐 오프라인 것으로 바꿔 끼운다. 다 구워지기 전에는 바로 만들어 낸다. */
+  * 94개 소리를 배포 전에 합성한 파일 하나로 읽는다. 플레이 중에는 오프라인 합성을 하지 않는다.
+  * bakeOne은 개발용 음원 추출에만 사용한다. */
  const SFX={},reactionNames=['grunt','oof','yelp','scream','groan','gasp','cough','reptile'];
- const reactionLengths=[.32,.46,.51,.9,1.05,.46,.65,.88];
+ // Start downloading during scene setup; decode once when the user unlocks audio.
+ const bankDownload=Promise.all([
+  fetch('assets/fight-sounds-v1.json').then(r=>{if(!r.ok)throw new Error('sound index');return r.json();}),
+  fetch('assets/fight-sounds-v1.mp3').then(r=>{if(!r.ok)throw new Error('sound bank');return r.arrayBuffer();})
+ ]).catch(()=>null);
+ let bankLoad=null,bankBuffer=null,fallbackVoice=null;
+ function makeFallbackVoice(){
+  // A short bounded fallback while the single download is pending or unavailable.
+  fallbackVoice=ctx.createBuffer(1,4800,24000);const d=fallbackVoice.getChannelData(0);
+  for(let i=0;i<d.length;i++){const t=i/24000,e=Math.min(1,t/.006)*Math.pow(1-i/d.length,2.4),p=TAU*(145*t-110*t*t);d[i]=e*(Math.sin(p)*.48+Math.sin(p*2)*.2+Math.sin(p*5)*.1+(Math.random()*2-1)*.05);}
+ }
+ function loadSoundBank(){
+  if(bankLoad||!ctx)return bankLoad;const ac=ctx;
+  bankLoad=bankDownload.then(async data=>{
+   if(!data)return false;const [index,bytes]=data,buffer=await ac.decodeAudioData(bytes);
+   const bank={};for(const [name,clips] of Object.entries(index.clips)){
+    bank[name]=clips.map(([start,length])=>({buffer,offset:start/index.sampleRate,duration:length/index.sampleRate,length}));
+    if(bank[name].some(c=>c.offset+c.duration>buffer.duration+.002))throw new Error('sound bank length');
+   }
+   Object.assign(SFX,bank);bankBuffer=buffer;return true;
+  }).catch(()=>false);return bankLoad;
+ }
+ function startClip(source,clip,when){
+  source.buffer=clip.buffer||clip;
+  if(clip.buffer)source.start(when,clip.offset,clip.duration);else source.start(when);
+ }
  const reactionLive=[],reactionBags={},reactionLast={};
  function bakeOne(fn,dur,raw,mono=false){
   const sr=mono?24000:ctx.sampleRate,oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(mono?1:2,Math.ceil(sr*dur),sr);
@@ -1382,25 +1407,11 @@ const AUDIO=(()=>{
    for(let c=0;c<b.numberOfChannels;c++){const d=b.getChannelData(c);for(let i=0;i<d.length;i++){d[i]*=k;}for(let i=0;i<fade;i++)d[d.length-1-i]*=i/fade;}
    return b;});
  }
- function bakeAll(){
-  if(!(window.OfflineAudioContext||window.webkitOfflineAudioContext))return;
-  // 처음 화면이 뜰 때 한꺼번에 굽지 않고 조금씩 나눠 굽는다(휴대폰에서 멈칫하지 않게)
-  const jobs=[['face',3,1,.45],['shot',4,1,1.1],['body',3,1,.55],['stab',3,1,.5],['flesh',3,1,.4],['faceH',3,1.5,.55],['bodyH',2,1.5,.6],['slash',3,1,.32],['pull',2,1,.45],['skull',2,1,.45],['block',2,1,.35]];
-  const queue=[];for(const [name,n,p,dur] of jobs){SFX[name]=[];for(let i=0;i<n;i++)queue.push([name,p,dur]);}
-  // First one of every voice, then fill each family to eight. 24 kHz mono, <4 MiB total.
-  const voices=[];for(let i=0;i<8;i++)reactionNames.forEach((name,k)=>{if(!i)SFX['v:'+name]=[];voices.push(['v:'+name,i,reactionLengths[k]]);});
-  queue.splice(2,0,...voices.splice(0,8));queue.push(...voices);
-  const next=()=>{const j=queue.shift();if(!j)return;const [name,p,dur]=j;
-   let pr;try{pr=name.startsWith('v:')?bakeOne(t=>reaction(t,name.slice(2),p),dur,false,true):bakeOne(t=>MAKE[name](out(0,name==='shot'?.38:.14),t,p),dur);}catch(_){pr=null;}
-   if(!pr){setTimeout(next,30);return;}
-   pr.then(b=>{if(b)SFX[name].push(b);},()=>{}).then(()=>setTimeout(next,16));};
-  next();
- }
  function play(name,gain=1,pan=0,rate=1){
   const list=SFX[name];if(!list||!list.length)return false;
-  const t=ctx.currentTime,s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=list[(Math.random()*list.length)|0];s.playbackRate.value=rate*R(.96,1.04);g.gain.value=gain;
+  const t=ctx.currentTime,s=ctx.createBufferSource(),g=ctx.createGain(),clip=list[(Math.random()*list.length)|0];s.playbackRate.value=rate*R(.96,1.04);g.gain.value=gain;
   let node=g;if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=clamp(pan,-1,1);g.connect(p);node=p;}
-  s.connect(g);node.connect(bus);s.start(t);track(s);return true;
+  s.connect(g);node.connect(bus);track(s);startClip(s,clip,t);return true;
  }
 
  /* ---- 소리 재료(굽거나 바로 낼 때 같이 쓴다) ---- */
@@ -1602,7 +1613,7 @@ const AUDIO=(()=>{
   }
  }
  function playReaction(name,k){
-  const list=SFX['v:'+name];if(!list||!list.length)return false;
+  const list=SFX['v:'+name]||(fallbackVoice?[fallbackVoice]:null);if(!list||!list.length)return false;
   let bag=reactionBags[name];
   if(!bag||!bag.length||bag.some(i=>i>=list.length)){
    bag=list.map((_,i)=>i);for(let i=bag.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[bag[i],bag[j]]=[bag[j],bag[i]];}
@@ -1610,12 +1621,12 @@ const AUDIO=(()=>{
    reactionBags[name]=bag;
   }
   const ix=bag.pop();reactionLast[name]=ix;
-  const t=ctx.currentTime,s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=list[ix];s.playbackRate.value=R(.94,1.045);
+  const t=ctx.currentTime,s=ctx.createBufferSource(),g=ctx.createGain(),clip=list[ix];s.playbackRate.value=R(.94,1.045);
   g.gain.value=clamp(k,.25,1.3)*.76;s.connect(g);g.connect(vbus);
   // Two voices maximum, with a short fade on the old one. Nothing queues behind hits.
   while(reactionLive.length>=2){const old=reactionLive.shift();old.g.gain.cancelScheduledValues(t);old.g.gain.setTargetAtTime(.0001,t,.009);try{old.s.stop(t+.035);}catch(_){}}
   const item={s,g};reactionLive.push(item);live.add(s);
-  s.onended=()=>{live.delete(s);const n=reactionLive.indexOf(item);if(n>=0)reactionLive.splice(n,1);s.disconnect();g.disconnect();};s.start(t+.012);return true;
+  s.onended=()=>{live.delete(s);const n=reactionLive.indexOf(item);if(n>=0)reactionLive.splice(n,1);s.disconnect();g.disconnect();};startClip(s,clip,t+.012);return true;
  }
  let lastV=-99;
  function say(name,k=1){
@@ -1623,8 +1634,7 @@ const AUDIO=(()=>{
   if(reactionNames.includes(name)&&!baking){
    const now=ctx.currentTime;if(now-lastV<.105)return;lastV=now;
    if(playReaction(name,k))return;
-   // Startup fallback is immediate and short; bank construction never blocks input.
-   reaction(now+.012,name,Math.random()*8|0);return;
+   return;
   }
   // Keep non-impact crowd/ending voices, but do not add idle laughter over the opening.
   if(G.mode==='fight'&&name==='laugh')return;
@@ -1756,7 +1766,7 @@ const AUDIO=(()=>{
  }
  return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,speak,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
-  get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
+  get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
   render(name,args,dur){if(!ctx)return Promise.resolve(null);const api=this;return bakeOne(()=>api[name](...(args||[])),dur||1,true);}};
 })();
@@ -3812,25 +3822,10 @@ function reptileMaterial(m,u,v,depth=.0022){
 // separate normals; the blue interior remains fictional and respects blood-off.
 const CUT_DETAIL=(()=>{
  const cache={};
- const tissue=canvasTex(512,512,(g,w,h)=>{
-  const gr=g.createRadialGradient(248,262,18,256,256,250);gr.addColorStop(0,'#142233');gr.addColorStop(.22,'#30484e');gr.addColorStop(.48,'#274b63');gr.addColorStop(.85,'#426b72');gr.addColorStop(1,'#9ea993');g.fillStyle=gr;g.fillRect(0,0,w,h);
-  // Irregular muscle compartments and fine connective tissue, not radial petals.
-  const seeds=[];for(let k=0;k<22;k++){const a=k*2.399963,r=40+Math.sqrt(k/22)*200;seeds.push([256+Math.cos(a)*r,256+Math.sin(a)*r,k]);}
-  const image=g.getImageData(0,0,w,h),data=image.data;
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-   const radial=Math.hypot(x-256,y-256);if(radial>230)continue;
-   let first=1e9,second=1e9,cell=0;
-   for(const [sx,sy,id] of seeds){const d=(x-sx)*(x-sx)+(y-sy)*(y-sy);if(d<first){second=first;first=d;cell=id;}else if(d<second)second=d;}
-   const gap=Math.sqrt(second)-Math.sqrt(first),edge=Math.exp(-gap*.55)*.7;
-   const hash=Math.imul(x+31,y+127)^Math.imul(x,374761393),grain=((hash>>>4)&31)-15;
-   const variation=(cell%5)*3+grain*.42,k=(y*w+x)*4;
-   data[k]=lerp(37+variation,130,edge);data[k+1]=lerp(62+variation,153,edge);data[k+2]=lerp(78+variation,151,edge);
-  }
-  g.putImageData(image,0,0);
-  for(let k=0;k<1100;k++){const x=(k*73.17)%512,y=(k*127.31)%512;g.strokeStyle=k%3?'rgba(132,161,158,.16)':'rgba(7,24,41,.26)';g.lineWidth=.6;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+2,y+2,x+4+(k%4),y+1);g.stroke();}
-  // Off-centre bone cross section and a dark marrow centre.
-  const b=g.createRadialGradient(265,274,4,267,272,44);b.addColorStop(0,'#596b69');b.addColorStop(.44,'#62736d');b.addColorStop(.52,'#c3c6a6');b.addColorStop(.78,'#d9d6b9');b.addColorStop(1,'#9ea990');g.fillStyle=b;g.beginPath();g.ellipse(267,272,40,48,-.3,0,TAU);g.fill();
- });
+ // The detailed tissue bitmap is authored once, not regenerated per page load.
+ const tissue=canvasTex(2,2,g=>{g.fillStyle='#304b59';g.fillRect(0,0,2,2);});
+ new THREE.TextureLoader().load('assets/cut-tissue-v1.webp',tex=>{tissue.image=tex.image;tissue.needsUpdate=true;tex.dispose();},undefined,()=>{});
+
  function geometry(part,variant=0){
   const key=part+variant;if(cache[key])return cache[key];const N=64,P=[],uv=[],idx=[];
   const rings=part==='rim'?[[.84,.075],[.92,.15],[1,.10],[1,-.08]]:[[0,.025],[.22,.038],[.48,.005],[.72,.05],[.85,.075]];
