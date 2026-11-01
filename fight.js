@@ -1289,12 +1289,27 @@ const AUDIO=(()=>{
  }
  function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
- function hold(on){try{if(!ctx)return;const p=on?ctx.suspend():ctx.resume();if(p&&p.catch)p.catch(()=>{});}catch(_){}}
+ function hold(on){try{if(tts){const s=window.speechSynthesis;if(on)s.pause();else s.resume();}if(!ctx)return;const p=on?ctx.suspend():ctx.resume();if(p&&p.catch)p.catch(()=>{});}catch(_){}}
  function ready(){return ctx&&on&&(baking||ctx.state==='running');}
- function setOn(v){on=!!v;if(master)master.gain.setTargetAtTime(on?.95:0,ctx.currentTime,.03);}
+ function setOn(v){on=!!v;if(!on&&tts)tts.stop();if(master)master.gain.setTargetAtTime(on?.95:0,ctx.currentTime,.03);}
+ let tts=null;
+ function speakTTS(text){
+  const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
+  if(!on||!synth||!Utterance)return null;
+  if(tts)tts.stop();
+  const u=new Utterance(text);u.lang='en-US';u.rate=.9;u.pitch=.75;u.volume=1;
+  const voices=synth.getVoices?synth.getVoices():[];
+  const v=voices.find(v=>/^en[-_]US$/i.test(v.lang))||voices.find(v=>/^en\b/i.test(v.lang));if(v)u.voice=v;
+  let busy=true,started=false;
+  const finish=()=>{busy=false;if(tts===handle)tts=null;};
+  const handle={get busy(){return busy;},get started(){return started;},stop(){if(!busy)return;finish();try{synth.cancel();}catch(_){}}};
+  u.onstart=()=>{started=true;};u.onend=u.onerror=finish;tts=handle;
+  try{if(synth.paused)synth.resume();synth.speak(u);}catch(_){finish();}
+  return handle;
+ }
  const live=new Set();
  function track(n){if(baking)return;live.add(n);n.onended=()=>live.delete(n);}
- function stop(){for(const n of live){try{n.stop();}catch(_){}}live.clear();}
+ function stop(){if(tts)tts.stop();for(const n of live){try{n.stop();}catch(_){}}live.clear();}
  function out(pan=0,wet=.2,voice=false){
   const g=ctx.createGain();let node=g;
   if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=clamp(pan,-1,1);g.connect(p);node=p;}
@@ -1654,7 +1669,7 @@ const AUDIO=(()=>{
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
  return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,speak,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
-  whiff(){},voice:say,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
+  whiff(){},voice:say,tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
   render(name,args,dur){if(!ctx)return Promise.resolve(null);const api=this;return bakeOne(()=>api[name](...(args||[])),dur||1,true);}};
@@ -2112,6 +2127,7 @@ const LINES={
  wail:[[0,'설계자님!\n눈 좀 떠 보세요!',1.2],[3,'제 팔자는\n어떡해요!',2.05]],
  pray:[[2,'제 것만은\n지켜 주세요!',3.3],[5,'지금 이대로면\n돼요!',4.3]],
  cheer:[[1,'살아나셨다!',0],[4,'설계자님 만세!',.45]],
+ back:'암백ㅋ', // 작가가 지정한 부활 대사. 화면 문구를 그대로 보존한다.
  // 운명에 순응하기: 설계자가 비웃는 말 [말, 떠 있는 최소 시간, 앞 말이 끝나고 기다릴 시간]
  submit:[['그래. 네 팔자대로만 살거라.',2.1,.25],['너 같은 사람이 제자리를 지켜줘야 이 사회가 안정되는 법이지.',3,.15],['윗자리는 대대손손 편하고.',2,.2],['븅~신ㅋㅋ',1.5,.3]],
 };
@@ -2183,7 +2199,7 @@ const BUB=(()=>{
  function say(anchor,text,dur,o={}){
   const V=o.voice||VOICE.crowd[0],ts=typeSteps(text,V.speed),n=Array.from(String(text).replace(/\s/g,'')).length,rd=o.read||[.9,.04];
   const need=Math.max(1.5,ts.total+rd[0]+rd[1]*n);
-  const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,size:o.size||1,voice:AUDIO.speak(text,V,{gain:o.gain})};
+  const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,size:o.size||1,voice:o.tts?AUDIO.tts(o.tts):AUDIO.speak(text,V,{gain:o.gain})};
   live.push(b);
   const sr=$('#talkLive');if(sr)sr.textContent=text;
   return b;
@@ -6867,7 +6883,7 @@ function combatGrab(p){
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
 
-/* ---- 순응 화면의 설계자 대사. 전투에서는 설계자의 말풍선을 띄우지 않는다. ---- */
+/* ---- 순응 화면의 대사와 작가가 지정한 부활 한마디. 일반 피격 추임새는 띄우지 않는다. ---- */
 const TALK={q:[],cur:null,gap:0};
 function clearTalk(){
  TALK.q.length=0;
@@ -6878,20 +6894,27 @@ function clearTalk(){
 // lines: [[누가('boss'), 말, 떠 있는 최소 시간(초, 0이면 글 길이로), 앞 대사가 끝나고 기다릴 시간, 글자 크기 배수], …]
 function queueTalk(lines,replace=false){
  if(replace)clearTalk();
- for(const x of lines)TALK.q.push({who:x[0],text:x[1],dur:x[2]||0,delay:x[3]||0,size:x[4]||1});
+ for(const x of lines)TALK.q.push({who:x[0],text:x[1],dur:x[2]||0,delay:x[3]||0,size:x[4]||1,tts:x[5]||null});
 }
 function talkBusy(){return !!(TALK.cur||TALK.q.length||TALK.gap>0);}
 // 설계자 말풍선 자리: 꼬리는 입을 가리키고, 아랫변은 면류관 위에. 위에 자리가 없으면 머리 옆에 띄운다
 function bossAnchor(E){return {obj:E.face,off:V3(0,-.06,.16),top:.46,r:.2,cam:'main'};}
 function updateTalk(dt){
- if(G.mode==='fight'){if(talkBusy())clearTalk();return;}
- if(TALK.cur){if(G.time<TALK.cur.b.until)return;TALK.cur=null;TALK.gap=.12;return;}
+ if(G.mode==='fight'&&!(G.revival&&G.revival.spoken)){if(talkBusy())clearTalk();return;}
+ if(TALK.cur){
+  const c=TALK.cur,b=c.b;
+  if(b.voice&&b.voice.busy){
+   if(G.time<c.voiceUntil){b.until=Math.max(b.until,G.time+.15);if(b.voice.started&&G.E)G.E.talkUntil=G.time+.1;return;}
+   b.voice.stop(); // A missing device voice must not leave the revival locked.
+  }
+  if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;return;
+ }
  if(TALK.gap>0){TALK.gap-=dt;return;}
  const n=TALK.q[0];if(!n)return;
  n.delay-=dt;if(n.delay>0)return;
  TALK.q.shift();
  const E=G.E;if(!E||E.headGone)return;
- TALK.cur={b:BUB.say(bossAnchor(E),n.text,n.dur,{voice:VOICE.boss,size:n.size,read:[.6,.03]})};
+ TALK.cur={b:BUB.say(bossAnchor(E),n.text,n.dur,{voice:VOICE.boss,size:n.size,read:[.6,.03],tts:n.tts}),voiceUntil:G.time+4};
  // 글자가 찍히는 동안 입이 움직인다
  E.talkUntil=G.time+typeTime(n.text,VOICE.boss.speed)+.08;
 }
@@ -7033,7 +7056,7 @@ function warnCrowd(){ // 10%: 넷이 설계자 앞을 막아선다
  * 3.0 설계자가 손을 든다 / 사람들이 손을 모은다
  * 3.5 소원의 불씨가 손바닥으로 모인다(2.3초)
  * 6.2 손을 가슴으로 → 6.55 박힘: 금빛 과노출, 그 안에서 몸을 갈아 끼운다(6.9)
- * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.65 다시 1인칭 */
+ * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.65 '암백ㅋ'와 TTS → 다시 1인칭 */
 function beginRevival(){
  const E=G.E;if(!E||G.revivalUsed||(!combatActive(E)&&E.state!=='stand'))return false;
  G.revivalUsed=true;G.revivalPending=false;G.inputLocked=true;G.crowdBeatUntil=0;clearPointers();$('#dock').hidden=true;VM.root.visible=false;
@@ -7087,7 +7110,8 @@ function updateStory(){
   if(t>=7.1&&!r.released){r.released=true;flashRelease(1.2);}
   if(t>=7.9&&!r.stamped){r.stamped=true;CROWD.restamp();}
   if(t>=8.5&&!r.cheered){r.cheered=true;CROWD.cheer();}
-  if(t>=9.65)finishRevival();
+  if(t>=9.65&&!r.spoken){r.spoken=true;queueTalk([['boss',LINES.back,1.7,0,1.45,"I'm back."]]);}
+  if(r.spoken&&!talkBusy())finishRevival();
  }
  // 설계자가 말없이 쓰러지고 잠깐 뒤, 뒤에 있던 것을 올려다본다. 다 올려다보고 나면 '다시 족치기'
  if(G.prepAt&&G.time>=G.prepAt){if(BEYOND.prepare(6))G.prepAt=0;}
