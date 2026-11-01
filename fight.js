@@ -1285,7 +1285,7 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  bakeAll();loadBackVoice();
+  bakeAll();loadBackVoice();loadOpeningVoice();
  }
  function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
@@ -1293,6 +1293,7 @@ const AUDIO=(()=>{
  function ready(){return ctx&&on&&(baking||ctx.state==='running');}
  function setOn(v){on=!!v;if(!on&&tts)tts.stop();if(master)master.gain.setTargetAtTime(on?.95:0,ctx.currentTime,.03);}
  let tts=null,backBuffer=null,backLoad=null;
+ let openingBuffer=null,openingLoad=null;
  function loadBackVoice(){
   if(!ctx)return Promise.resolve(null);
   if(!backLoad){const ac=ctx;
@@ -1300,6 +1301,11 @@ const AUDIO=(()=>{
     .then(data=>ac.decodeAudioData(data)).then(buffer=>backBuffer=buffer).catch(()=>null);
   }
   return backLoad;
+ }
+ function loadOpeningVoice(){
+  if(!ctx)return Promise.resolve(null);
+  if(!openingLoad){const ac=ctx;openingLoad=fetch('assets/why-here-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>openingBuffer=b).catch(()=>null);}
+  return openingLoad;
  }
  function speakTTS(text){
   if(!on)return null;
@@ -1326,12 +1332,12 @@ const AUDIO=(()=>{
    try{source=ctx.createBufferSource();source.buffer=buffer;source.connect(vbus);source.onended=finish;source.start();started=true;}catch(_){finish();}
   };
   tts=handle;
-  if(text==='암백'&&ctx){if(backBuffer)play(backBuffer);else loadBackVoice().then(play);}else fallback();
+  if(text==='암백'&&ctx){if(backBuffer)play(backBuffer);else loadBackVoice().then(play);}else if(text==='왜 왔니?'&&ctx){if(openingBuffer)play(openingBuffer);else loadOpeningVoice().then(play);}else fallback();
   return handle;
  }
  const live=new Set();
  function track(n){if(baking)return;live.add(n);n.onended=()=>live.delete(n);}
- function stop(){if(tts)tts.stop();for(const n of live){try{n.stop();}catch(_){}}live.clear();}
+ function stop(){if(tts)tts.stop();for(const n of live){try{n.stop();}catch(_){}}live.clear();reactionLive.length=0;lastV=-99;}
  function out(pan=0,wet=.2,voice=false){
   const g=ctx.createGain();let node=g;
   if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=clamp(pan,-1,1);g.connect(p);node=p;}
@@ -1354,12 +1360,16 @@ const AUDIO=(()=>{
  /* ===== 미리 구워 두는 소리 =====
   * 타격음·총소리는 시작할 때 한 번 여러 벌 만들어 둔다(무거운 처리를 해도 되고, 연사할 때 휴대폰이 덜 버거워한다).
   * 굽는 동안에는 ctx·bus·verb를 잠깐 오프라인 것으로 바꿔 끼운다. 다 구워지기 전에는 바로 만들어 낸다. */
- const SFX={};
- function bakeOne(fn,dur,raw){
-  const sr=ctx.sampleRate,oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(2,Math.ceil(sr*dur),sr);
+ const SFX={},reactionNames=['grunt','oof','yelp','scream','groan','gasp','cough','reptile'];
+ const reactionLengths=[.32,.46,.51,.9,1.05,.46,.65,.88];
+ const reactionLive=[],reactionBags={},reactionLast={};
+ function bakeOne(fn,dur,raw,mono=false){
+  const sr=mono?24000:ctx.sampleRate,oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(mono?1:2,Math.ceil(sr*dur),sr);
   const saved=[ctx,bus,vbus,verb];
   baking=true;
-  try{ctx=oc;bus=oc.createGain();bus.connect(oc.destination);vbus=bus;verb=oc.createConvolver();verb.buffer=irBuf;const vr=oc.createGain();vr.gain.value=.4;verb.connect(vr);vr.connect(oc.destination);fn(.004);}
+  try{ctx=oc;bus=oc.createGain();bus.connect(oc.destination);vbus=bus;
+   if(mono){verb=oc.createGain();}else{verb=oc.createConvolver();verb.buffer=irBuf;const vr=oc.createGain();vr.gain.value=.4;verb.connect(vr);vr.connect(oc.destination);}
+   fn(.004);}
   finally{baking=false;[ctx,bus,vbus,verb]=saved;}
   // 옛 사파리는 startRendering이 약속(Promise)을 돌려주지 않는다. 끝내 안 오면 3초 뒤 포기
   let pr=null;try{pr=oc.startRendering();}catch(_){pr=null;}
@@ -1377,8 +1387,11 @@ const AUDIO=(()=>{
   // 처음 화면이 뜰 때 한꺼번에 굽지 않고 조금씩 나눠 굽는다(휴대폰에서 멈칫하지 않게)
   const jobs=[['face',3,1,.45],['shot',4,1,1.1],['body',3,1,.55],['stab',3,1,.5],['flesh',3,1,.4],['faceH',3,1.5,.55],['bodyH',2,1.5,.6],['slash',3,1,.32],['pull',2,1,.45],['skull',2,1,.45],['block',2,1,.35]];
   const queue=[];for(const [name,n,p,dur] of jobs){SFX[name]=[];for(let i=0;i<n;i++)queue.push([name,p,dur]);}
+  // First one of every voice, then fill each family to eight. 24 kHz mono, <4 MiB total.
+  const voices=[];for(let i=0;i<8;i++)reactionNames.forEach((name,k)=>{if(!i)SFX['v:'+name]=[];voices.push(['v:'+name,i,reactionLengths[k]]);});
+  queue.splice(2,0,...voices.splice(0,8));queue.push(...voices);
   const next=()=>{const j=queue.shift();if(!j)return;const [name,p,dur]=j;
-   let pr;try{pr=bakeOne(t=>MAKE[name](out(0,name==='shot'?.38:.14),t,p),dur);}catch(_){pr=null;}
+   let pr;try{pr=name.startsWith('v:')?bakeOne(t=>reaction(t,name.slice(2),p),dur,false,true):bakeOne(t=>MAKE[name](out(0,name==='shot'?.38:.14),t,p),dur);}catch(_){pr=null;}
    if(!pr){setTimeout(next,30);return;}
    pr.then(b=>{if(b)SFX[name].push(b);},()=>{}).then(()=>setTimeout(next,16));};
   next();
@@ -1553,18 +1566,69 @@ const AUDIO=(()=>{
   const env_=ctx.createGain();
   for(let i=0;i<4;i++){const f=ctx.createBiquadFilter();f.type='bandpass';f.frequency.setValueAtTime(v1[i],t);f.frequency.linearRampToValueAtTime(v2[i],t+dur*.8);f.Q.value=v1[i]/BW[i];const g=ctx.createGain();g.gain.value=[1,.7,.32,.16][i]*3.4;mix.connect(f);f.connect(g);g.connect(env_);}
   const a=o.attack||.018,rel=o.release||.05;env_.gain.setValueAtTime(.0001,t);env_.gain.linearRampToValueAtTime(peak,t+a);
-  if(o.trem){const tr=ctx.createOscillator(),tg=ctx.createGain();tr.frequency.value=o.trem;tg.gain.value=peak*.35;tr.connect(tg);tg.connect(env_.gain);tr.start(t);tr.stop(t+dur+.1);track(tr);}
+  if(o.trem){const tr=ctx.createOscillator(),tg=ctx.createGain();tr.frequency.value=o.trem;tg.gain.setValueAtTime(peak*.24,t);tg.gain.setValueAtTime(peak*.24,t+Math.max(.02,dur-.12));tg.gain.linearRampToValueAtTime(0,t+dur);tr.connect(tg);tg.connect(env_.gain);tr.start(t);tr.stop(t+dur+.1);track(tr);}
   env_.gain.setValueAtTime(peak,t+Math.max(a,dur-rel));env_.gain.exponentialRampToValueAtTime(.0001,t+dur);
   env_.connect(dst);
   for(const n of [src,vib])n.start(t);jit.start(t,Math.random()*1.5);br.start(t,Math.random()*1.5);
   for(const n of [src,vib,jit,br]){n.stop(t+dur+.06);track(n);}
  }
  function breath(t,dur,peak,f0=900,f1=1600,pan=0){const o=out(pan,.15,true);nz(o,t,{dur,peak,a:dur*.3,f:f0,f1,q:.9,curve:'lin'});}
- let lastV=0;
+ // Eight distinct articulations per family: different vowels, pitch contours,
+ // glottal attacks, double catches, exhalations and lengths, not just pitch shifts.
+ function reaction(t,name,i){
+  const v=i%8,j=R(.96,1.04),base=[118,142,127,155,109,136,165,122][v]*j;
+  const pair=[['eu','eo'],['eo','u'],['a','eo'],['m','a'],['u','eu'],['e','a'],['eo','m'],['a','u']][v];
+  const common={f0:base,f1:base*.72,v1:pair[0],v2:pair[1],breath:.2+v*.035,rough:.045+v*.011,attack:.004,release:.035,wet:0,pan:0,vibHz:6+v*.6,bright:2800};
+  const emit=(at,o)=>voice(at,Object.assign({},common,o));
+  if(name==='grunt'){
+   const dur=.12+v*.018;emit(t,{dur,peak:.48,fm:v%3===0?base*1.24:base*.94,fmAt:.18});
+   if(v===3||v===6)emit(t+.12,{dur:.1,peak:.23,f0:base*.81,v1:'eo',v2:'m'});
+  }else if(name==='oof'){
+   breath(t,.055,.22,450,1100);emit(t+.014,{dur:.19+v*.026,peak:.42,f0:base*.84,f1:67+v*3,breath:.5,bright:1800});
+  }else if(name==='yelp'){
+   emit(t,{dur:.23+v*.029,peak:.5,f0:base*1.35,fm:base*(1.6+v*.04),fmAt:.16,f1:base*.95,v1:v%2?'a':'e',v2:v%3?'eo':'a',rough:.09,bright:3900});
+  }else if(name==='scream'){
+   emit(t,{dur:.48+v*.047,peak:.47,f0:base*1.15,fm:base*1.8,fmAt:.2,f1:base*.9,v1:v%2?'eu':'a',v2:'a',vib:.035,rough:.11,bright:4000,release:.16});
+   if(v%3===1)breath(t+.37,.2,.13,700,1800);
+  }else if(name==='groan'){
+   emit(t,{dur:.58+v*.056,peak:.34,f0:base*.72,f1:base*.53,v1:v%2?'eu':'m',v2:pair[1],trem:4+v*.45,vib:.027,bright:1500,attack:.04,release:.22});
+  }else if(name==='gasp'){
+   breath(t,.09+v*.01,.28,800+v*80,2600);emit(t+.06,{dur:.14+v*.023,peak:.33,f0:base*1.25,f1:base,v1:'eo',v2:'a',breath:.65,bright:2600});
+  }else if(name==='cough'){
+   for(let k=0;k<(v%2?3:2);k++){const at=t+k*.17;breath(at,.065,.3,950,550);emit(at+.016,{dur:.075,peak:.3,f0:base*(1-k*.12),v1:'eo',v2:'m',breath:.7,release:.02});}
+  }else if(name==='reptile'){
+   emit(t,{dur:.34+v*.06,peak:.44,f0:base*.56,fm:base*.74,f1:base*.39,v1:'o',v2:v%2?'a':'eu',rough:.2,trem:17+v*2,bright:1900,release:.12});
+   breath(t+.025,.23+v*.045,.18,1700+v*140,800);
+  }
+ }
+ function playReaction(name,k){
+  const list=SFX['v:'+name];if(!list||!list.length)return false;
+  let bag=reactionBags[name];
+  if(!bag||!bag.length||bag.some(i=>i>=list.length)){
+   bag=list.map((_,i)=>i);for(let i=bag.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[bag[i],bag[j]]=[bag[j],bag[i]];}
+   if(bag.length>1&&bag[bag.length-1]===reactionLast[name])[bag[0],bag[bag.length-1]]=[bag[bag.length-1],bag[0]];
+   reactionBags[name]=bag;
+  }
+  const ix=bag.pop();reactionLast[name]=ix;
+  const t=ctx.currentTime,s=ctx.createBufferSource(),g=ctx.createGain();s.buffer=list[ix];s.playbackRate.value=R(.94,1.045);
+  g.gain.value=clamp(k,.25,1.3)*.76;s.connect(g);g.connect(vbus);
+  // Two voices maximum, with a short fade on the old one. Nothing queues behind hits.
+  while(reactionLive.length>=2){const old=reactionLive.shift();old.g.gain.cancelScheduledValues(t);old.g.gain.setTargetAtTime(.0001,t,.009);try{old.s.stop(t+.035);}catch(_){}}
+  const item={s,g};reactionLive.push(item);live.add(s);
+  s.onended=()=>{live.delete(s);const n=reactionLive.indexOf(item);if(n>=0)reactionLive.splice(n,1);s.disconnect();g.disconnect();};s.start(t+.012);return true;
+ }
+ let lastV=-99;
  function say(name,k=1){
-  // Fight impacts carry the feedback; repeated synthesized reactions stay silent.
-  if(G.mode==='fight')return;
-  if(!ready())return;const t=Math.max(ctx.currentTime+.01,duckUntil),P=R(.94,1.06);
+  if(!ready())return;
+  if(reactionNames.includes(name)&&!baking){
+   const now=ctx.currentTime;if(now-lastV<.105)return;lastV=now;
+   if(playReaction(name,k))return;
+   // Startup fallback is immediate and short; bank construction never blocks input.
+   reaction(now+.012,name,Math.random()*8|0);return;
+  }
+  // Keep non-impact crowd/ending voices, but do not add idle laughter over the opening.
+  if(G.mode==='fight'&&name==='laugh')return;
+  const t=Math.max(ctx.currentTime+.01,duckUntil),P=R(.94,1.06);
   switch(name){
    case 'grunt':voice(t,{dur:R(.11,.16),f0:155*P,f1:112*P,v1:'eu',v2:'eo',breath:.25,peak:.42*k,release:.015,rough:.05});break;
    case 'oof':breath(t,.06,.3*k,600,1400);voice(t+.02,{dur:.17,f0:128*P,f1:88*P,v1:'eo',v2:'u',breath:.55,peak:.42*k,release:.03,rough:.06,bright:2200});break;
@@ -1692,7 +1756,7 @@ const AUDIO=(()=>{
  }
  return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,speak,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
-  get ctx(){return ctx;},get baked(){return SFX;},
+  get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
   render(name,args,dur){if(!ctx)return Promise.resolve(null);const api=this;return bakeOne(()=>api[name](...(args||[])),dur||1,true);}};
 })();
@@ -2156,6 +2220,7 @@ void main(){
 /* 대사: 여기서 고치면 된다. [몇 번 사람(0~5), 말(\n은 말풍선 안 줄바꿈), 장면이 시작되고 몇 초 뒤에 말하는지]
  * 0번 평생 재물운 · 1번 집안복 대길 · 2번 자녀운 상승 · 3번 小吉 큰 탈은 없음 · 4번 윗자리 대길 · 5번 平 지금 이대로 (팔 붙잡기는 0·1번) */
 const LINES={
+ opening:'왜 왔니?',
  grab:[[0,'잠깐만요!\n제 재물운은요?',.25],[1,'우리 애 대학은\n어떡해요!',.85]],
  wall:[[2,'억울하면\n노력을 했어야죠!',.75],[4,'남의 복까지\n건드리지 마요!',1.55],[5,'그냥 순응하고\n사세요!',2.35]],
  wail:[[0,'설계자님!\n눈 좀 떠 보세요!',1.2],[3,'제 팔자는\n어떡해요!',2.05]],
@@ -2187,7 +2252,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.back+LINES.submit.map(x=>x[0]).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.opening+LINES.back+LINES.submit.map(x=>x[0]).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -3674,15 +3739,107 @@ const TIE_TEX=canvasTex(128,512,(g,w,h)=>{
 /* 금관 정면 문양: 빛살 + 삼각형 속 눈 */
 const CROWN_EYE_TEX=canvasTex(128,128,(g,w,h)=>{drawEyeTri(g,64,70,78,{fill:'#f3c24c',edge:'#5a3a08',gold:'#fff0a8',iris:'#5b3ea6',rays:'#ffd86a'});});
 /* 파충류 눈(금빛 홍채 + 세로로 찢어진 동공): 결과 화면 도사와 같은 색 */
-const REP_IRIS_TEX=canvasTex(128,128,(g,w,h)=>{
- const r=g.createRadialGradient(52,46,4,64,64,62);r.addColorStop(0,'#fff7a8');r.addColorStop(.4,'#ffd21c');r.addColorStop(.85,'#e08a00');r.addColorStop(1,'#a85600');
- g.fillStyle=r;g.beginPath();g.arc(64,64,62,0,TAU);g.fill();g.lineWidth=5;g.strokeStyle='#7a3e00';g.stroke();
- g.fillStyle='#120c1a';g.beginPath();g.moveTo(64,8);g.bezierCurveTo(79,40,79,88,64,120);g.bezierCurveTo(49,88,49,40,64,8);g.fill();
- g.fillStyle='rgba(255,255,255,.92)';g.beginPath();g.arc(86,38,9,0,TAU);g.fill();
+const REP_IRIS_TEX=canvasTex(256,256,(g,w,h)=>{
+ const r=g.createRadialGradient(128,128,12,128,128,124);r.addColorStop(0,'#654715');r.addColorStop(.37,'#b18735');r.addColorStop(.7,'#a56d1a');r.addColorStop(.91,'#5e471b');r.addColorStop(1,'#252415');g.fillStyle=r;g.fillRect(0,0,w,h);
+ for(let i=0;i<240;i++){const a=i/240*TAU,j=.5+.5*Math.sin(i*87.43),r0=22+j*24,r1=100+j*22;g.strokeStyle=i%3?'rgba(229,194,95,.36)':'rgba(42,29,8,.65)';g.lineWidth=.6+j;g.beginPath();g.moveTo(128+Math.cos(a)*r0,128+Math.sin(a)*r0);g.quadraticCurveTo(128+Math.cos(a+.015)*72,128+Math.sin(a+.015)*72,128+Math.cos(a)*r1,128+Math.sin(a)*r1);g.stroke();}
+ g.fillStyle='#080b09';g.beginPath();g.moveTo(128,10);g.bezierCurveTo(148,85,148,176,128,246);g.bezierCurveTo(108,176,108,85,128,10);g.fill();
 });
 /* 도마뱀 살갗(이어 붙는 비늘). 쓰는 곳마다 비늘 크기가 맞게 반복 횟수만 다른 복사본을 쓴다 */
-const LIZ_SRC=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#31501a';g.fillRect(0,0,w,h);drawScales(g,w,h,25.6,256/14,['#3c6418','#6f9e2c','#b6d65a','#86ad38','#24400f']);});
-const LIZ_TEX=(()=>{const cache={};return (u,v)=>{const k=u+'x'+v;if(cache[k])return cache[k];const t=LIZ_SRC.clone();t.needsUpdate=true;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(u,v);return cache[k]=t;};})();
+const REPTILE_MAPS=(()=>{
+ const maps={},size=512,cols=12,rows=16,cw=size/cols,ch=size/rows;
+ const hash=(a,b)=>{const x=Math.sin(a*127.1+b*311.7+31.9)*43758.5453;return x-Math.floor(x);};
+ for(const kind of ['color','height','rough'])maps[kind]=canvasTex(size,size,(g,w,h)=>{
+  g.fillStyle=kind==='color'?'#182621':kind==='height'?'#202020':'#dddddd';g.fillRect(0,0,w,h);
+  for(let row=-1;row<=rows;row++)for(let col=-1;col<=cols;col++){
+   const id=((col%cols)+cols)%cols,j=((row%rows)+rows)%rows,r=hash(id,j),x=(col+(row%2)*.5)*cw,y=row*ch;
+   const broad=.86+r*.12,points=[[-.46,-.3],[-.19,-.49],[.22,-.44],[.47,-.21],[.4,.2],[.05,.52],[-.37,.27]];
+   g.save();g.translate(x,y);g.scale(broad,1);
+   g.beginPath();points.forEach(([px,py],i)=>{i?g.lineTo(px*cw,py*ch):g.moveTo(px*cw,py*ch)});g.closePath();
+   const gr=g.createLinearGradient(0,-ch*.45,0,ch*.5);
+   if(kind==='color'){
+    const hue=77+Math.round(r*29),light=24+r*13;
+    gr.addColorStop(0,`hsl(${hue},24%,${light+12}%)`);gr.addColorStop(.28,`hsl(${hue},27%,${light+3}%)`);gr.addColorStop(.74,`hsl(${hue},26%,${light}%)`);gr.addColorStop(1,`hsl(${hue},25%,${light-8}%)`);
+   }else if(kind==='height'){gr.addColorStop(0,'#535353');gr.addColorStop(.2,'#d0d0d0');gr.addColorStop(.68,'#a0a0a0');gr.addColorStop(1,'#363636');}
+   else{gr.addColorStop(0,'#d0d0d0');gr.addColorStop(.4,`rgb(${132+r*50|0},${132+r*50|0},${132+r*50|0})`);gr.addColorStop(1,'#b0b0b0');}
+   g.fillStyle=gr;g.fill();g.strokeStyle=kind==='color'?'#14251c':kind==='height'?'#292929':'#ededed';g.lineWidth=1.45;g.stroke();g.clip();
+   for(let n=0;n<8;n++){
+    const px=(hash(id+n*31,j)-.5)*cw,py=(hash(id,j+n*17)-.5)*ch;
+    g.fillStyle=kind==='color'?'rgba(9,26,18,.22)':kind==='height'?'rgba(25,25,25,.27)':'rgba(240,240,240,.2)';g.fillRect(px,py,.8,1.5);
+   }
+   // Worn keel on each scale, aligned with the body instead of random dots.
+   g.beginPath();g.moveTo(-cw*.04,-ch*.24);g.quadraticCurveTo(cw*.08,0,0,ch*.3);
+   g.strokeStyle=kind==='color'?'rgba(181,189,124,.27)':kind==='height'?'#dadada':'#9b9b9b';g.lineWidth=1;g.stroke();g.restore();
+  }
+ });
+ const cache={};
+ new THREE.TextureLoader().load('assets/reptile-skin-v2.webp',tex=>{
+  // Height stays at 512 px, avoiding a second full-size GPU copy per material.
+  const height=document.createElement('canvas');height.width=height.height=512;
+  const hg=height.getContext('2d');hg.filter='blur(1px)';hg.drawImage(tex.image,0,0,512,512);
+  maps.color.image=tex.image;maps.height.image=height;maps.color.needsUpdate=maps.height.needsUpdate=true;
+  for(const key in cache)if(key.startsWith('color')||key.startsWith('height')){cache[key].image=key.startsWith('color')?tex.image:height;cache[key].needsUpdate=true;}
+  tex.dispose();
+ },undefined,()=>{});
+ return (kind,u=1,v=1)=>{const key=kind+u+'x'+v;if(cache[key])return cache[key];const t=maps[kind].clone();t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(u,v);t.anisotropy=4;t.needsUpdate=true;if(kind!=='color')t.encoding=THREE.LinearEncoding;return cache[key]=t;};
+})();
+const LIZ_TEX=(u,v)=>REPTILE_MAPS('color',u,v);
+function reptileProjection(mat,density=3.2){
+ const damage=mat.onBeforeCompile,cacheKey=mat.customProgramCacheKey();
+ mat.onBeforeCompile=sh=>{
+  damage(sh);
+  sh.vertexShader='varying vec3 vRepP;varying vec3 vRepN;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvRepP=position;vRepN=normal;');
+  sh.fragmentShader='varying vec3 vRepP;varying vec3 vRepN;\n'+sh.fragmentShader;
+  sh.fragmentShader=sh.fragmentShader.replace('#include <map_fragment>',`
+   vec3 repW=pow(abs(normalize(vRepN)),vec3(5.));repW/=max(dot(repW,vec3(1.)),.0001);
+   vec3 repP=vRepP*${density.toFixed(2)};
+   vec4 repC=texture2D(map,repP.yz)*repW.x+texture2D(map,repP.xz)*repW.y+texture2D(map,repP.xy)*repW.z;
+   diffuseColor*=mapTexelToLinear(repC);
+  `).replace('#include <normal_fragment_maps>',`
+   #ifdef USE_BUMPMAP
+    float repH=texture2D(bumpMap,repP.yz).r*repW.x+texture2D(bumpMap,repP.xz).r*repW.y+texture2D(bumpMap,repP.xy).r*repW.z;
+    normal=perturbNormalArb(-vViewPosition,normal,bumpScale*vec2(dFdx(repH),dFdy(repH)),faceDirection);
+   #endif
+  `);
+ };
+ mat.customProgramCacheKey=()=>cacheKey+'-reptile-triplanar-'+density;
+ mat.roughnessMap=null;mat.roughness=.77;mat.needsUpdate=true;
+}
+function reptileMaterial(m,u,v,depth=.0022){
+ m.map=LIZ_TEX(u,v);m.bumpMap=REPTILE_MAPS('height',u,v);m.bumpScale=depth;
+ m.roughnessMap=REPTILE_MAPS('rough',u,v);m.roughness=.94;m.metalness=0;m.envMapIntensity=.48;m.needsUpdate=true;
+}
+// Shared curved cut surfaces. The rim and recessed interior have thickness and
+// separate normals; the blue interior remains fictional and respects blood-off.
+const CUT_DETAIL=(()=>{
+ const cache={};
+ const tissue=canvasTex(512,512,(g,w,h)=>{
+  const gr=g.createRadialGradient(248,262,18,256,256,250);gr.addColorStop(0,'#142233');gr.addColorStop(.22,'#30484e');gr.addColorStop(.48,'#274b63');gr.addColorStop(.85,'#426b72');gr.addColorStop(1,'#9ea993');g.fillStyle=gr;g.fillRect(0,0,w,h);
+  // Irregular muscle compartments and fine connective tissue, not radial petals.
+  const seeds=[];for(let k=0;k<22;k++){const a=k*2.399963,r=40+Math.sqrt(k/22)*200;seeds.push([256+Math.cos(a)*r,256+Math.sin(a)*r,k]);}
+  const image=g.getImageData(0,0,w,h),data=image.data;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const radial=Math.hypot(x-256,y-256);if(radial>230)continue;
+   let first=1e9,second=1e9,cell=0;
+   for(const [sx,sy,id] of seeds){const d=(x-sx)*(x-sx)+(y-sy)*(y-sy);if(d<first){second=first;first=d;cell=id;}else if(d<second)second=d;}
+   const gap=Math.sqrt(second)-Math.sqrt(first),edge=Math.exp(-gap*.55)*.7;
+   const hash=Math.imul(x+31,y+127)^Math.imul(x,374761393),grain=((hash>>>4)&31)-15;
+   const variation=(cell%5)*3+grain*.42,k=(y*w+x)*4;
+   data[k]=lerp(37+variation,130,edge);data[k+1]=lerp(62+variation,153,edge);data[k+2]=lerp(78+variation,151,edge);
+  }
+  g.putImageData(image,0,0);
+  for(let k=0;k<1100;k++){const x=(k*73.17)%512,y=(k*127.31)%512;g.strokeStyle=k%3?'rgba(132,161,158,.16)':'rgba(7,24,41,.26)';g.lineWidth=.6;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+2,y+2,x+4+(k%4),y+1);g.stroke();}
+  // Off-centre bone cross section and a dark marrow centre.
+  const b=g.createRadialGradient(265,274,4,267,272,44);b.addColorStop(0,'#596b69');b.addColorStop(.44,'#62736d');b.addColorStop(.52,'#c3c6a6');b.addColorStop(.78,'#d9d6b9');b.addColorStop(1,'#9ea990');g.fillStyle=b;g.beginPath();g.ellipse(267,272,40,48,-.3,0,TAU);g.fill();
+ });
+ function geometry(part,variant=0){
+  const key=part+variant;if(cache[key])return cache[key];const N=64,P=[],uv=[],idx=[];
+  const rings=part==='rim'?[[.84,.075],[.92,.15],[1,.10],[1,-.08]]:[[0,.025],[.22,.038],[.48,.005],[.72,.05],[.85,.075]];
+  rings.forEach(([radius,z],row)=>{for(let i=0;i<=N;i++){const a=i/N*TAU,wobble=1+.026*Math.sin(a*7+variant)+.012*Math.sin(a*13),rr=radius*wobble;P.push(Math.cos(a)*rr,Math.sin(a)*rr,z+(radius?Math.sin(a*9+variant)*.015:0)+(part==='inside'?.045*Math.sin(radius/.85*PI)*(1+Math.cos(a*13))*.5:0));if(part==='rim')uv.push(i/N,row*.06);else uv.push(.5+Math.cos(a)*radius*.5,.5+Math.sin(a)*radius*.5);}});
+  for(let r=0;r<rings.length-1;r++)for(let i=0;i<N;i++){const a=r*(N+1)+i,b=a+N+1;idx.push(a,b,a+1,a+1,b,b+1);}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();g.computeBoundingSphere();GEO['cutDetail:'+key]=g;return cache[key]=g;
+ }
+ return {geometry,tissue};
+})();
 /* 바지: 상아색 비단 + 바깥·안쪽 솔기를 따라 보라 줄(금테) */
 const TROUSER_TEX=canvasTex(256,256,(g,w,h)=>{
  const gr=g.createLinearGradient(0,0,w,0);gr.addColorStop(0,'#f4ecdb');gr.addColorStop(.5,'#efe5d0');gr.addColorStop(1,'#f4ecdb');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -3868,38 +4025,40 @@ const HEADGEO=(()=>{
  /* 도마뱀 머리(다시 자라는 머리): 납작하고 뒤가 넓은 두개골, 길게 튀어나온 주둥이, 불거진 눈두덩, 볼 비늘판, 콧구멍 틈, 입 선 */
  function rep(x,y,z){
   const ax=Math.abs(x);
-  // 뒤가 넓고 납작한 두개골 + 길고 각진 주둥이
-  let d=ell(x,y,z,0,.07,-.035,.158,.155,.188);
-  d=smin(d,cap(x,y,z,0,.012,.05,0,-.03,.266,.104,.043),.018);
-  d=smin(d,ell(x,y,z,0,.03,.14,.108,.071,.104),.022);
-  // 바깥으로 뻗은 안와 융기와 덜 둥근 볼판
-  d=smin(d,cap(ax,y,z,.018,.112,.16,.132,.084,.105,.034,.014),.006);
-  d=smin(d,ell(ax,y,z,.102,-.036,.05,.078,.068,.092),.022);
-  // 깊고 경계가 분명한 눈구멍 + 이마에서 콧등으로 이어지는 능선
-  d=smax(d,-ell(ax,y,z,.091,.049,.153,.049,.04,.039),.005);
-  d=smin(d,cap(x,y,z,0,.084,.11,0,.028,.274,.024,.013),.006);
-  d=smax(d,-ell(ax,y,z,.021,-.016,.272,.008,.0055,.013),.005);
-  d=smax(d,-cap(ax,y,z,0,-.062,.262,.112,-.058,.04,.0055,.006),.008);
-  d=smin(d,ell(x,y,z,0,-.125,-.025,.13,.1,.13),.035);
+  const box=(cx,cy,cz,bx,by,bz,r)=>{const qx=Math.abs(x-cx)-bx,qy=Math.abs(y-cy)-by,qz=Math.abs(z-cz)-bz;return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-r;};
+  let d=ell(x,y,z,0,.057,-.038,.149,.138,.171);
+  // Flat maxilla and long nasal shelf: no spherical muzzle or inflated cheeks.
+  d=smin(d,box(0,-.019,.174,.071,.027,.093,.024),.018);
+  d=smin(d,ell(ax,y,z,.112,-.032,.015,.055,.061,.089),.013);
+  d=smin(d,cap(ax,y,z,.026,.105,.167,.137,.077,.084,.03,.017),.005);
+  d=smax(d,-ell(ax,y,z,.091,.049,.153,.048,.034,.042),.004);
+  d=smin(d,cap(x,y,z,0,.106,.012,0,.028,.276,.024,.015),.008);
+  // Cranial ridges and paired plate edges are part of the deformable skull.
+  d=smin(d,cap(ax,y,z,.051,.18,-.105,.119,.13,.058,.023,.014),.005);
+  d=smin(d,cap(ax,y,z,.146,.027,-.07,.112,-.061,.112,.017,.012),.006);
+  d=smax(d,-ell(ax,y,z,.028,-.004,.282,.012,.006,.018),.003);
+  d=smax(d,-cap(ax,y,z,0,-.065,.283,.103,-.065,.043,.004,.005),.004);
+  d=smin(d,ell(x,y,z,0,-.107,-.032,.106,.089,.111),.025);
   return d;
  }
  // 도마뱀 아래턱(턱뼈 자리 (0,-.07,-.03)를 빼서 붙인다)
  function repJaw(x,y,z){
-  let d=cap(x,y,z,0,-.075,.02,0,-.07,.235,.068,.034);
-  d=smin(d,ell(x,y,z,0,-.1,.06,.085,.04,.1),.04);
+  let d=ell(x,y,z,0,-.082,.12,.078,.024,.133);
+  d=smin(d,ell(x,y,z,0,-.097,.022,.078,.035,.08),.018);
+  d=smin(d,cap(Math.abs(x),y,z,.062,-.076,.02,.056,-.081,.215,.019,.012),.006);
   return d;
  }
  function tintRep(x,y,z,c){
   // 비늘맵의 색을 살리고 정수리·턱밑·안와에만 약한 색 차이를 준다.
   const top=smooth((y+.02)/.12),belly=smooth((-.05-y)/.06)*smooth((z+.05)/.1);
   const brow=Math.exp(-(((Math.abs(x)-.09)**2)/(2*.032*.032)+((y-.095)**2)/(2*.018*.018)));
-  c.setRGB(.93-.06*top+.05*belly+.09*brow,.99-.03*top+.02*belly+.05*brow,.90-.08*top+.05*belly-.08*brow);
+  c.setRGB(.82-.22*top+.23*belly+.13*brow,.94-.17*top+.12*belly+.08*brow,.76-.2*top+.12*belly-.08*brow);
  }
  function build(){
   if(G.head)return G;
   G.head=SCULPT.star(human,V3(0,-.012,.004),136,104,.33,{tint:tintHuman});
   G.rep=SCULPT.star(rep,V3(0,.0,.02),136,104,.34,{tint:tintRep,smooth:0});
-  G.repJaw=SCULPT.star(repJaw,V3(0,-.075,.12),72,48,.2,{tint:(x,y,z,c)=>{c.setRGB(1.02,1.0,.56);}});
+  G.repJaw=SCULPT.star(repJaw,V3(0,-.075,.12),72,48,.2,{tint:(x,y,z,c)=>{c.setRGB(1.15,1.06,.78);}});
   G.repJaw.translate(0,.07,.03);
   G.chin=SCULPT.star(chin,V3(0,-.16,.115),72,54,.16,{tint:(x,y,z,c)=>{const l=Math.exp(-((x*.7)**2+(y+.122)**2+(z-.17)**2)/(2*.028*.028));c.setRGB(1,1-.08*l,1-.07*l);}});
   G.chin.translate(0,.03,.02);
@@ -4006,11 +4165,17 @@ class Emperor{
   // 빚은 살(꼭짓점 색으로 코끝·볼·눈가 혈색)과 뒷머리
   const M=this.M;
   M.flesh=S('#eda882',{roughness:.48,vertexColors:true});M.hairF=S('#231b1b',{roughness:.62});
-  M.lizHead=S('#ffffff',{map:LIZ_TEX(4,3),roughness:.68,vertexColors:true});
+  M.lizHead=S('#ffffff',{vertexColors:true});
+  reptileMaterial(M.liz,1.6,1.1);reptileMaterial(M.lizHand,.8,.85,.0014);reptileMaterial(M.lizHead,2.2,1.7,.0028);
+  M.lizIn.color.set('#7c8970');M.claw.color.set('#bcb395');M.lizEye.emissiveIntensity=.025;M.lizEyeBall.color.set('#292e16');
+  M.cutTissue=S('#ffffff',{map:CUT_DETAIL.tissue,bumpMap:CUT_DETAIL.tissue,bumpScale:.0011,roughness:.43,side:THREE.DoubleSide});
+  M.cutSafe=S('#465847',{roughness:.9,side:THREE.DoubleSide});
+  M.cutBone=S('#c3c2a4',{roughness:.62});M.cutMarrow=S('#1c3347',{roughness:.42});M.cutVessel=S('#27466a',{roughness:.28});
   // 찌그러지고 파이는 살 셰이더: 살·옷·바지·도마뱀
   for(const k of ['flesh','skin'])FLESH.patch(M[k],'skin',{sss:1});
   for(const k of ['robe','hem','belly','chest','hairF'])FLESH.patch(M[k],'cloth');
-  FLESH.patch(M.trouser,'trouser');for(const k of ['liz','lizHand','lizHead'])FLESH.patch(M[k],'liz',{meatScale:60,sss:.5});
+  FLESH.patch(M.trouser,'trouser');for(const k of ['liz','lizHand','lizHead'])FLESH.patch(M[k],'liz',{meatScale:60,sss:.12});
+  reptileProjection(M.lizHead,2.8);M.lizHead.bumpScale=.0055;
   // 맞을 때 번쩍이는 재질
   this.flashMats=[M.flesh,M.skin,M.skinD,M.blush,M.robe,M.lip,M.hem,M.belly,M.chest,M.lizHead];
  }
@@ -5150,6 +5315,8 @@ Object.assign(Emperor.prototype,{
    const old=this.severedHeads.shift(),bi=this.bits.findIndex(b=>b.obj===old);
    if(bi>=0)this.bits.splice(bi,1);BLOOD.forgetTree(old);old.removeFromParent();this.releaseLoose(old);
   }
+  // Detached side also has a closed, dimensional neck surface.
+  this.makeCutCap(head,V3(0,.02,0),new THREE.Quaternion(),.103,true,this.headKind==='rep'?this.M.liz:this.M.skin,this.headKind==='rep');
   // 조각조각: 떨어진 머리에서 살점 왕창
   if(PREF.blood)CHUNKS.burst(jointW.clone().addScaledVector(upW,.05),8+(Math.random()*5|0),upW,.04,this.chunkKind({obj:(this.headKind==='rep'?this.repSkull:this.skull),part:'head'}),{speed:1.5});
   // 목 그루터기 막기 + 피
@@ -5175,9 +5342,7 @@ Object.assign(Emperor.prototype,{
   const q=new THREE.Quaternion().setFromUnitVectors(V3(0,1,0),upW);
   const g=grp(neck);g.position.copy(neck.worldToLocal(jointW.clone())).add(V3(0,-.012,0));
   g.quaternion.copy(neck.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(q));
-  const disc=GEO.capDisc||(GEO.capDisc=new THREE.CircleGeometry(1,28));
-  const add=(r,mat,d,gore)=>{const mm=mk(disc,mat,g,{p:[0,d,0],r:[-PI/2,0,0],s:r,cast:false});mm.userData.noHit=true;if(gore){mm.userData.gore=true;mm.visible=PREF.blood;this.goreMeshes.push(mm);}return mm;};
-  add(.108,this.M.skin,.001);add(.086,this.M.liz,.002);add(.042,this.M.blueCore,.003,true);
+  this.detailCutCap(g,.108,this.headKind==='rep'?this.M.liz:this.M.skin,-PI/2,1);
   this.neckCap=g;
  },
  updateHeadRegrow(dt){
@@ -5205,6 +5370,7 @@ Object.assign(Emperor.prototype,{
  // 파충류 머리를 목 위에 새로 올린다
  buildRepHead(){
   const M=this.M,G=HEADGEO.build();
+if(this.neckMesh){this.neckMesh.material=M.liz;this.neckMesh.userData.flesh.o.kind='liz';}
 const head=this.bone('head',this.bones.neck,[0,.06,.03]);
 
 // 목 절단면을 재생 중심으로 사용한다.
@@ -5225,11 +5391,11 @@ const rg=grp(grow,[0,.15,.02]);
    const side=s<0?'L':'R',pos=[s*.094,.052,.11];
    const socket=grp(rg,pos);socket.rotation.y=s*.18;
    const cavity=mk(GEO.repSocket||(GEO.repSocket=eyeCapGeo(.0445,1.12,false)),M.mouth,socket,{p:[0,0,-.012],s:[1,.84,.28],cast:false});cavity.userData.noHit=true;
-   const rim=mk(GEO.repSocketRim||(GEO.repSocketRim=new THREE.TorusGeometry(.0415,.0048,6,28)),M.lizIn,socket,{p:[0,0,-.001],s:[1,.82,1],cast:false});rim.userData.noHit=true;
+   const rim=mk(GEO.repSocketRim||(GEO.repSocketRim=new THREE.TorusGeometry(.0415,.0048,6,28)),M.liz,socket,{p:[0,0,-.001],s:[1,.82,1],cast:false});rim.userData.noHit=true;
    const eg=grp(rg,pos);eg.rotation.y=s*.18;const root=grp(eg);
-   const ball=mk(sphereGeo(22),M.lizEyeBall,root,{s:[.043,.033,.035],part:'repEye'+side,cast:false});
-   const iris=mk(GEO.repEyeIris||(GEO.repEyeIris=eyeCapGeo(.0404,1.0,false)),M.lizEye,root,{s:[1.065,.82,.87],cast:false,part:'repEye'+side});
-   const hl=mk(sphereGeo(10),M.hl,root,{p:[-.012,.011,.037],s:.0054,cast:false});hl.userData.noHit=true;
+   const ball=mk(sphereGeo(22),M.lizEyeBall,root,{s:[.039,.029,.029],part:'repEye'+side,cast:false});
+   const iris=mk(GEO.repEyeIris||(GEO.repEyeIris=eyeCapGeo(.0365,1.0,false)),M.lizEye,root,{s:[1.065,.82,.87],cast:false,part:'repEye'+side});
+   const hl=mk(sphereGeo(10),M.hl,root,{p:[-.009,.009,.032],s:.0025,cast:false});hl.userData.noHit=true;
    this.repEyes.push({s,eg,root,ball,iris,hl,socket,ejected:false});
   }
   // 윗니(뾰족한 원뿔) + 아랫니
@@ -5301,7 +5467,7 @@ Object.assign(Emperor.prototype,{
   const down=this.state!=='stand';
   const out={dmg:0,heavy:false,blocked:false,first:false,big:false,part,isHead};
   // 첫 대: 홀을 떨어뜨리고 놀란다
-  if(this.taunt){this.taunt=false;out.first=true;if(this.tabletHeld)this.dropTablet(V3(dir.x*1.5+rnd(-.4,.4),1.1,dir.z*.6+1.2));this.setPhase(1);this.setEmotion('shock');this.shockT=.7;AUDIO.gasp(1.2);}
+  if(this.taunt){if(G.opening){G.opening=false;clearTalk();}this.taunt=false;out.first=true;if(this.tabletHeld)this.dropTablet(V3(dir.x*1.5+rnd(-.4,.4),1.1,dir.z*.6+1.2));this.setPhase(1);this.setEmotion('shock');this.shockT=.7;AUDIO.gasp(1.2);}
   if(part==='tablet'){if(this.tabletHeld)this.dropTablet(V3(dir.x*3,1.4,1.5));out.dmg=.05;return out;}
   // 후광: 깡 하고 흔들리며 금이 간다(몸은 거의 안 다친다)
   if(part==='halo'){const counted=this.haloHit(h);if(counted&&!down){this.doFlinch('shock',.8);this.sp.head.kick(-1.2,dir.x*2,0);}out.halo=true;out.dmg=counted?.04:0;out.vis=counted?.6:0;return out;}
@@ -5366,13 +5532,19 @@ Object.assign(Emperor.prototype,{
  const l=this.root.worldToLocal(pt.clone());let side=l.x<0?'L':'R',other=side==='L'?'R':'L';if(!this.armUsable(side)||(this.armHurt[side==='L'?0:1]>.5&&this.armUsable(other)))side=other;return side;
 },
  voiceHit(tool,part,P,cut){
-  if(this.headKind==='rep'){const now=G.time;if(now<(this.voiceCool||0))return;this.voiceCool=now+.6;if(Math.random()<.55){if(this.repFork&&this.repFork.k<0)this.repFork.k=0;AUDIO.hiss(.85);}return;}
-  if(this.headDestroyed)return;
   const now=G.time;if(now<(this.voiceCool||0))return;
-  if(this.state==='dead'){if(Math.random()<.35){if(this.repFull&&Math.random()<.65)this.flickTongue();else AUDIO.voice('groan',.4);this.voiceCool=now+1;}return;}
-  if(part==='belly'&&tool==='hand'){AUDIO.voice('oof',clamp(P*.6,.4,1.2));this.voiceCool=now+.32;return;}
-  if(cut||P>1.6){AUDIO.voice(Math.random()<.5?'yelp':'scream',clamp(P*.55,.5,1.2));this.voiceCool=now+.42;return;}
-  if(Math.random()<.8){AUDIO.voice('grunt',clamp(P*.75,.45,1.1));this.voiceCool=now+.22;}
+  if(this.headKind==='rep'){
+   AUDIO.voice('reptile',clamp(P*.65,.5,1.1));this.voiceCool=now+.25;
+   if(this.repFork&&this.repFork.k<0&&Math.random()<.3)this.repFork.k=0;return;
+  }
+  if(this.headDestroyed)return;
+  if(this.state==='dead'){if(Math.random()<.35){AUDIO.voice('groan',.45);this.voiceCool=now+.9;}return;}
+  let name;
+  if(part==='belly')name=Math.random()<.78?'oof':'cough';
+  else if(part==='neck'||part==='chest')name=Math.random()<.55?'gasp':'oof';
+  else if(cut||P>1.6)name=Math.random()<.72?'yelp':'scream';
+  else name=Math.random()<.82?'grunt':'yelp';
+  AUDIO.voice(name,clamp(P*.67,.5,1.2));this.voiceCool=now+(name==='scream'?.35:name==='cough'?.33:.19);
  },
  // 날아간 살점의 겉 색: 살·옷·배·바지·도마뱀
  chunkKind(h){
@@ -5676,10 +5848,23 @@ cutJointAt(seg,pW){
 // 잘린 면: 바깥은 옷(살), 안은 비늘, 가운데는 파란 속
 makeCutCap(parent,pos,q,r,distal,outer,lizard,offset=0){
  const g=grp(parent);g.position.copy(pos);g.quaternion.copy(q);g.translateY((distal?1:-1)*offset);
- const s=distal?1:-1,rx=distal?-PI/2:PI/2,disc=GEO.capDisc||(GEO.capDisc=new THREE.CircleGeometry(1,28));
- const add=(rr,mat,d,gore)=>{const m=mk(disc,mat,g,{p:[0,s*d,0],r:[rx,0,0],s:rr,cast:false});m.userData.noHit=true;if(gore){m.userData.gore=true;m.visible=PREF.blood;this.goreMeshes.push(m);}return m;};
- add(r,outer,.001);add(r*.8,lizard?this.M.lizIn:this.M.liz,.002);add(r*.36,this.M.blueCore,.003,true);
+ const s=distal?1:-1,rx=distal?-PI/2:PI/2;
+ this.detailCutCap(g,r,outer,rx,s);
  g.userData.cap={r,outer,rx,s};
+ return g;
+},
+detailCutCap(g,r,outer,rx,s){
+ const v=Math.round(r*100)%3;
+ const rim=mk(CUT_DETAIL.geometry('rim',v),outer,g,{r:[rx,0,0],s:r,cast:false});rim.userData.noHit=true;
+ const inside=mk(CUT_DETAIL.geometry('inside',v),this.M.cutTissue,g,{r:[rx,0,0],s:r,cast:false});inside.userData.noHit=true;inside.userData.gore=true;inside.visible=PREF.blood;this.goreMeshes.push(inside);
+ const detail=grp(g);detail.rotation.x=rx;detail.scale.setScalar(r);detail.userData.gore=true;detail.visible=PREF.blood;this.goreMeshes.push(detail);
+ const boneGeo=GEO.cutBone||(GEO.cutBone=new THREE.TorusGeometry(.145,.042,8,24));
+ mk(boneGeo,this.M.cutBone,detail,{p:[.043,-.06,.10],s:[.82,1,.72],cast:false}).userData.noHit=true;
+ mk(GEO.cutMarrow||(GEO.cutMarrow=new THREE.CircleGeometry(.118,20)),this.M.cutMarrow,detail,{p:[.043,-.06,.083],s:[.82,1,1],cast:false}).userData.noHit=true;
+ const vessels=GEO.cutVessel||(GEO.cutVessel=new THREE.TorusGeometry(.029,.014,6,12));
+ for(const [x,y] of [[-.35,.18],[.3,-.38],[-.14,-.49]])mk(vessels,this.M.cutVessel,detail,{p:[x,y,.073],s:[1,.78,1],cast:false}).userData.noHit=true;
+ mergeChildren(detail);detail.traverse(o=>{if(o.isMesh)o.userData.gore=true;});
+ const safe=mk(CUT_DETAIL.geometry('inside',v),this.M.cutSafe,g,{r:[rx,0,0],s:r,cast:false});safe.userData.noHit=true;safe.userData.cutSafe=true;safe.visible=!PREF.blood;
  return g;
 },
 limbCorners(root){
@@ -5815,7 +6000,13 @@ lizSeg(name,b,s,nm){
  const ap='arm'+nm,lp=name==='hip'||name==='thighMid'||name==='knee'?'thigh'+nm:'shin'+nm;
  const part=ARM_BASES.has(name)?ap:lp;
  if(R.ball)mk(sphereGeo(20),M.liz,b,F({s:R.ball,part:name==='knee'?'thigh'+nm:part}));
- if(R.len)mk(cylGeo(R.r0,R.r1,R.len,16),M.liz,b,F({p:[0,R.c,0],part:name==='knee'?'shin'+nm:part}));
+ if(R.len){
+  const key='lizAnatomy:'+name;
+  const geo=GEO[key]||(GEO[key]=SCULPT.tube(V3(0,R.c+R.len*.5,0),V3(0,R.c-R.len*.5,0),(t,a)=>lerp(R.r0,R.r1,t)*(1+.12*Math.sin(PI*t)-.045*Math.cos(a*3)*Math.sin(PI*t)+.045*Math.cos(a*7)*Math.sin(PI*t)),24,10,{cap:2,capScale:.22}));
+  mk(geo,M.liz,b,F({part:name==='knee'?'shin'+nm:part}));
+  // Three broad overlapping scutes along the outer tendon, batched per bone.
+  for(let j=0;j<3;j++){const rr=lerp(R.r0,R.r1,(j+.5)/3);mk(sphereGeo(10),M.lizHand,b,{p:[s*rr*.77,R.c+R.len*(.31-j*.29),rr*.32],s:[rr*.29,R.len*.19,rr*.6],part,cast:false});}
+ }
  // 바깥쪽 등에 작은 뿔 돌기
  if(R.spikes)for(let k=0;k<R.spikes;k++){const y=R.c+R.len*(.3-k*.35),m=mk(GEO.spike||(GEO.spike=new THREE.ConeGeometry(1,1,6)),M.claw,b,{p:[s*R.r0*.86,y,-R.r0*.42],s:[.011,.032,.011],r:[0,0,-s*1.1],cast:false,part});m.userData.noHit=true;}
  if(name==='wrist')b.userData.hand=this._lizHand(b,s,'hand'+nm);
@@ -5955,8 +6146,9 @@ unmaskHead(pt,n,dir){
  this.nostrils=[];this.noseBleeding=false;
  // 드러난 살갗은 비늘(얼굴·목·손 모두)
  const M=this.M;
- M.skin.map=LIZ_TEX(6,3);M.skin.color.set('#ffffff');M.skin.needsUpdate=true;
- M.skinD.map=LIZ_TEX(6,3);M.skinD.color.copy(col('#b8d090'));M.skinD.needsUpdate=true;
+ reptileMaterial(M.skin,2.2,1.7);M.skin.color.set('#ffffff');
+ reptileMaterial(M.skinD,2.2,1.7);M.skinD.color.set('#a3b08e');
+ this.skull.material=M.lizHead;this.chin.material=M.lizHead;
  M.lip.color.copy(col('#3d5a1c'));M.blush.color.copy(col('#5f8a2c'));M.tongue.color.copy(col('#b8324f'));
  // 도마뱀 콧구멍
  for(const s of [-1,1]){const m=mk(sphereGeo(10),M.mouth,F,{p:[s*.03,-.03,.2],s:[.012,.007,.008],cast:false});m.userData.noHit=true;}
@@ -6062,7 +6254,7 @@ releaseLoose(root,ownedMats){
 // 바닥에 누운 팔다리 조각: 재질이 같은 메시를 하나로 합치고 그림자를 끈다
 bakePiece(root){
  root.updateMatrixWorld(true);const inv=root.matrixWorld.clone().invert(),groups=new Map();
- root.traverse(o=>{if(!o.isMesh||!o.visible||Array.isArray(o.material)||!o.geometry||!o.geometry.attributes.position||o.userData.gore||o.userData.decal||o.renderOrder)return;for(let n=o;n&&n!==root;n=n.parent)if(!n.visible)return;const k=o.material.uuid;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(o);});
+ root.traverse(o=>{if(!o.isMesh||!o.visible||Array.isArray(o.material)||!o.geometry||!o.geometry.attributes.position||o.userData.gore||o.userData.cutSafe||o.userData.decal||o.renderOrder)return;for(let n=o;n&&n!==root;n=n.parent)if(!n.visible)return;const k=o.material.uuid;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(o);});
  for(const list of groups.values()){const g=mergeMeshes(list,inv);if(isFleshMat(list[0].material))ensureDmg(g);const m=new THREE.Mesh(g,list[0].material);m.castShadow=false;m.receiveShadow=true;m.userData.noHit=true;m.userData.detached=true;
   for(const o of list){o.removeFromParent();this.releaseGeometry(o.geometry);}root.add(m);}
 },
@@ -6975,14 +7167,14 @@ function talkBusy(){return !!(TALK.cur||TALK.q.length||TALK.gap>0);}
 // 설계자 말풍선 자리: 꼬리는 입을 가리키고, 아랫변은 면류관 위에. 위에 자리가 없으면 머리 옆에 띄운다
 function bossAnchor(E){return {obj:E.face,off:V3(0,-.06,.16),top:.46,r:.2,cam:'main'};}
 function updateTalk(dt){
- if(G.mode==='fight'&&!(G.revival&&G.revival.spoken)){if(talkBusy())clearTalk();return;}
+ if(G.mode==='fight'&&!G.opening&&!(G.revival&&G.revival.spoken)){if(talkBusy())clearTalk();return;}
  if(TALK.cur){
   const c=TALK.cur,b=c.b;
   if(b.voice&&b.voice.busy){
    if(G.time<c.voiceUntil){b.until=Math.max(b.until,G.time+.15);if(b.voice.started&&G.E)G.E.talkUntil=G.time+.1;return;}
    b.voice.stop(); // A missing device voice must not leave the revival locked.
   }
-  if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;return;
+  if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;if(G.opening)G.opening=false;return;
  }
  if(TALK.gap>0){TALK.gap-=dt;return;}
  const n=TALK.q[0];if(!n)return;
@@ -7475,7 +7667,10 @@ $$('#tools .tool').forEach(b=>b.addEventListener('click',()=>{AUDIO.unlock();set
 
 /* ---- 설정 ---- */
 function savePrefs(){try{localStorage.setItem('palja.prefs',JSON.stringify(PREF));}catch(_){}}
-function syncPrefs(){for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.setAttribute('aria-checked',String(PREF[k]));}$('#soundBtn').setAttribute('aria-pressed',String(!PREF.sound));AUDIO.setOn(PREF.sound);}
+function syncPrefs(){
+ if(G.E)for(const m of G.E.goreMeshes)m.visible=PREF.blood;
+ if(G.E)G.E.root.traverse(o=>{if(o.userData.cutSafe)o.visible=!PREF.blood;});
+ if(G.E&&G.E.bits)for(const b of G.E.bits)b.obj.traverse(o=>{if(o.userData.cutSafe)o.visible=!PREF.blood;});for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.setAttribute('aria-checked',String(PREF[k]));}$('#soundBtn').setAttribute('aria-pressed',String(!PREF.sound));AUDIO.setOn(PREF.sound);}
 function toggle(k){PREF[k]=!PREF[k];savePrefs();syncPrefs();}
 for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.addEventListener('click',()=>{AUDIO.unlock();toggle(k);});}
 $('#soundBtn').addEventListener('click',()=>{AUDIO.unlock();toggle('sound');});
@@ -7605,7 +7800,10 @@ $('#submitShare').textContent='처리 내역 공유하기';
  fitView();setFrame('stand',true);
 
 
+G.opening=mode==='fight';
 if(mode==='fight'){
+ queueTalk([['boss',LINES.opening,2.4,.2,1.2,LINES.opening]],true);
+ E.idleT=3.8;
  hint(HINTS.hand,5);
 }else{
  $('#hint').classList.add('off');

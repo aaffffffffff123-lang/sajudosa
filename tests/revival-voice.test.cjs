@@ -33,3 +33,13 @@ test('a missing clip falls back to Korean text with an available male Korean voi
 test('muted speech creates no playback',()=>{
  const h=setup();h.scope.on=false;assert.equal(h.scope.speak('암백'),null);assert.equal(h.played.length,0);assert.equal(h.spoken.length,0);
 });
+
+test('opening line uses the fixed Korean voice clip',async()=>{
+ const h=setup();const voice=h.scope.speak('왜 왔니?');h.release();await flush();
+ assert.equal(h.played.length,1);assert.equal(h.spoken.length,0);assert.equal(voice.started,true);
+ h.played[0].onended();assert.equal(voice.busy,false);
+});
+test('interrupting the opening cannot play its clip after the first hit',async()=>{
+ const h=setup(),voice=h.scope.speak('왜 왔니?');voice.stop();h.release();await flush();
+ assert.equal(h.played.length,0);assert.equal(voice.busy,false);
+});
