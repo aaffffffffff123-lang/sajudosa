@@ -6894,8 +6894,8 @@ function combatEffects(dt){
   const target=a.obj.localToWorld(a.local.clone());
   const boot=COMBAT_STAGE.boot;
   const lift=a.t<.16?smooth(a.t/.16):a.t<.27?1-easeIn3((a.t-.16)/.11):a.t<.34?0:smooth((a.t-.34)/.23);
-  boot.position.copy(target);boot.position.y+=.04+lift*.75;boot.position.z+=.03+lift*.22;
-  boot.rotation.set(-.16-lift*.7,.12,Math.sin(a.t*8)*.06);
+  boot.position.copy(target);boot.position.y+=lift*.75;boot.position.z+=.03+lift*.22;
+  boot.rotation.set(-.04-lift*.7,.12,Math.sin(a.t*8)*.06);
   boot.updateMatrixWorld(true);
   const ankle=V3(.002,.18,.073),hip=V3(.24,-.6,.1).applyQuaternion(camera.quaternion).add(camera.position);
   boot.worldToLocal(hip);
