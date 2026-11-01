@@ -2956,7 +2956,10 @@ function preloadFight(){
  const bust=/^https?:/.test(location.protocol)?'?t='+Math.floor(Date.now()/60000):'';
  loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
   if(!ok){FIGHT.state='failed';fightFailed();return;}
+  loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{
+   if(!motionOk){FIGHT.state='failed';fightFailed();return;}
   loadOne(['fight.js'+bust],()=>!!window.PaljaBoot,ok2=>{FIGHT.state=ok2?'ready':'failed';if(!ok2)fightFailed();else if(FIGHT.want){const m=FIGHT.want;FIGHT.want=null;openFight(m);}});
+  });
  });
 }
 function fightFailed(){if(!FIGHT.want)return;$('fightWaitTitle').textContent='족치기 화면을 불러오지 못했습니다.';$('fightWaitDetail').textContent='인터넷 연결을 확인하고 다시 눌러 주세요.';$('fightWaitBtn').hidden=false;}
@@ -2979,3 +2982,4 @@ window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wall
 </script>
 </body>
 </html>
+

@@ -209,10 +209,38 @@ const FIGHT_CSS = `
  #fight #submitDock .submit-workflow,#fight #submitDock .submit-result{padding:10px}
 }
 @media (prefers-reduced-motion:reduce){#fight #again{transition:none}#fight .gauge.hit{animation:none}#fight .chorus{transition:none!important}#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .revival-seal,#fight #goldShell,#fight .submit-workflow.stamped .next-fate{animation-duration:.01s!important;animation-delay:0s!important}#fight #offerScene.breaking .other-fate{animation:none!important;transform:rotate(-1deg) translateY(-150px) scale(1.12);opacity:1}#fight .offer-stack .scrap{display:none}}
+
+/* Close combat: dark brass controls, with room for the opponent's feet and face. */
+#fight.close-combat{background:#151d1e;--ink:#e8dfce;--muted:#aaa797}
+#fight.close-combat::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at 50% 42%,transparent 32%,rgba(4,10,11,.33) 100%)}
+#fight.close-combat .pill{background:rgba(17,24,25,.88);border:1px solid #6c624b;border-radius:5px;color:#e6d7b7;box-shadow:none}
+#fight.close-combat .gauge{background:rgba(17,24,25,.78);border:1px solid #605744;border-radius:4px;box-shadow:none;max-width:380px;gap:7px;padding:9px 12px}
+#fight.close-combat .gname{font-weight:500;letter-spacing:2px;font-size:11px;color:#cfc3a8}
+#fight.close-combat .gauge small,#fight.close-combat .kd,#fight.close-combat .bar s{display:none}
+#fight.close-combat .gauge .bar{height:3px;background:#303432;border-radius:0}
+#fight.close-combat .gauge .bar i{background:#b98d4b}
+#fight.close-combat .gauge .bar b{background:#f1dbad}
+#fight.close-combat .dock{width:auto;max-width:100%;padding-bottom:calc(14px + var(--safe-b))}
+#fight.close-combat .hint{font-size:11px;white-space:nowrap;background:rgba(12,20,21,.82);border:1px solid #655942;border-radius:3px;color:#ded5bd;padding:7px 10px}
+#fight.close-combat .tools{gap:6px;align-items:center}
+#fight.close-combat .tool{width:66px;height:54px;margin:0;transform:none;filter:none;transition:background .16s}
+#fight.close-combat .tool .card{border:1px solid #635a49;border-radius:4px;background:rgba(20,27,28,.92);padding:4px;box-shadow:none}
+#fight.close-combat .tool .art{width:26px;height:26px;opacity:.8;filter:sepia(.6)}
+#fight.close-combat .tool .nm{font-size:10px;font-weight:500;color:#b6b3a6}
+#fight.close-combat .tool.on .card{border-color:#d3ad69;background:rgba(69,57,37,.94);box-shadow:inset 0 -2px #d3ad69}
+#fight.close-combat .tool.on .nm{color:#f5dfaf}
+#fight.close-combat .tool:active{transform:translateY(2px)}
+#fight.close-combat .msheet{background:#1d2728;color:#e6ddc9;border:1px solid #7b6c50;border-radius:8px}
+#fight.close-combat .msheet .close{background:#303b3b}
+#fight.close-combat .row{border-color:#394444}
+#fight.close-combat #world{cursor:crosshair}
+#fight.close-combat #world.grabbing{cursor:grabbing}
+#fight.close-combat .btn{border-radius:5px;box-shadow:none}
+@media(max-width:480px){#fight.close-combat .ftop{padding-right:48px;gap:5px}#fight.close-combat .pill{width:35px;min-width:35px}#fight.close-combat .hint{font-size:10px}#fight.close-combat .gname{letter-spacing:1px}}
 `;
 
 const FIGHT_HTML = `<section id="fight" hidden>
- <canvas id="world" tabindex="-1" aria-label="운명 설계자가 서 있는 화면. 누르면 때리고, 밀면 휘두르거나 벱니다."></canvas>
+ <canvas id="world" tabindex="-1" aria-label="운명 설계자. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다."></canvas>
  <canvas id="sblood"></canvas>
  <div id="flash"></div>
  <div id="fxtext" aria-hidden="true"></div>
@@ -1775,7 +1803,117 @@ const WORLD={};
  metalEnv(root);
 })();
 
-/* ---- 카메라: 한 자리에 고정 ----
+/* A worn ceremonial hall. Geometry, texture, and contact shadows share one scale. */
+const COMBAT_STAGE=(()=>{
+ const root=new THREE.Group();root.visible=false;scene.add(root);
+ const grain=canvasTex(256,256,(g,w,h)=>{
+  g.fillStyle='#858585';g.fillRect(0,0,w,h);
+  for(let i=0;i<16000;i++){const n=85+Math.random()*85|0;g.fillStyle=`rgb(${n},${n},${n})`;g.fillRect(Math.random()*w,Math.random()*h,1,1);}
+ },{repeat:[3,3]});
+ const weave=canvasTex(128,128,(g,w,h)=>{
+  g.fillStyle='#777';g.fillRect(0,0,w,h);
+  for(let i=0;i<w;i+=4){g.fillStyle=i%8?'#999':'#555';g.fillRect(i,0,1,h);g.fillStyle='#8b8b8b';g.fillRect(0,i,w,1);}
+ },{repeat:[5,5]});
+ const robe=canvasTex(1024,1024,(g,w,h)=>{
+  const gr=g.createLinearGradient(0,0,w,0);gr.addColorStop(0,'#38191f');gr.addColorStop(.45,'#78313a');gr.addColorStop(1,'#411c24');g.fillStyle=gr;g.fillRect(0,0,w,h);
+  for(let y=0;y<h;y+=3){g.fillStyle=y%6?'rgba(17,7,10,.15)':'rgba(201,151,125,.07)';g.fillRect(0,y,w,1);}
+  for(let row=0;row<3;row++)for(let c=0;c<3;c++)drawCloud(g,(c+.25+(row%2)*.5)*w/3,(row+.5)*h/3,2.4,'#876946','#ba9b65');
+ });
+ const stoneTex=canvasTex(1024,1024,(g,w,h)=>{
+  g.fillStyle='#363735';g.fillRect(0,0,w,h);
+  for(let i=0;i<48000;i++){const n=25+Math.random()*45|0;g.fillStyle=`rgba(${n},${n+1},${n},.2)`;g.fillRect(Math.random()*w,Math.random()*h,2,2);}
+  g.lineCap='round';
+  for(let j=0;j<4;j++)for(let i=0;i<4;i++){
+   const x=i*256,y=j*256;g.fillStyle=`rgba(0,0,0,${Math.random()*.12})`;g.fillRect(x,y,256,256);
+   g.strokeStyle='#1a1e1d';g.lineWidth=4;g.strokeRect(x+2,y+2,252,252);
+   g.strokeStyle='rgba(177,170,148,.25)';g.lineWidth=1;g.strokeRect(x+5,y+5,246,246);
+  }
+  for(let i=0;i<40;i++){let x=Math.random()*w,y=Math.random()*h;g.strokeStyle='rgba(12,17,17,.4)';g.lineWidth=.7;g.beginPath();g.moveTo(x,y);for(let j=0;j<5;j++){x+=rnd(-55,55);y+=rnd(-30,40);g.lineTo(x,y);}g.stroke();}
+ },{repeat:[3,3]});
+ const stone=STD('#ffffff',{map:stoneTex,roughness:.78,bumpMap:grain,bumpScale:.004});
+ mk(new THREE.PlaneGeometry(15,15),stone,root,{r:[-PI/2,0,0],cast:false});
+ const brass=STD('#a58b53',{metalness:.75,roughness:.42,bumpMap:grain,bumpScale:.001,envMapIntensity:.55});
+ const black=STD('#202725',{roughness:.7,bumpMap:grain,bumpScale:.003});
+ const lacquer=STD('#4f1517',{roughness:.38,bumpMap:grain,bumpScale:.0008});
+ const bevel=(w,h,d,r=.025)=>{
+  const s=new THREE.Shape(),x=-w/2,y=-h/2;
+  s.moveTo(x+r,y);s.lineTo(x+w-r,y);s.quadraticCurveTo(x+w,y,x+w,y+r);
+  s.lineTo(x+w,y+h-r);s.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  s.lineTo(x+r,y+h);s.quadraticCurveTo(x,y+h,x,y+h-r);s.lineTo(x,y+r);s.quadraticCurveTo(x,y,x+r,y);
+  const geo=new THREE.ExtrudeGeometry(s,{depth:d-r*2,bevelEnabled:true,bevelSize:r,bevelThickness:r,bevelSegments:2,steps:1,curveSegments:3});geo.translate(0,0,-d/2+r);return geo;
+ };
+ const box=(w,h,d,mat,parent,p)=>mk(bevel(w,h,d,Math.min(.025,d*.2,h*.2)),mat,parent,{p});
+ // An inlaid circular calendar sits under the fight instead of a floating UI ring.
+ const inlay=canvasTex(1024,1024,(g,w,h)=>{
+  g.translate(w/2,h/2);g.strokeStyle='rgba(174,141,75,.65)';
+  for(const r of [320,328,410,420]){g.lineWidth=r===320?2:1;g.beginPath();g.arc(0,0,r,0,TAU);g.stroke();}
+  for(let i=0;i<64;i++){g.save();g.rotate(i*TAU/64);g.lineWidth=i%8?1:3;g.beginPath();g.moveTo(0,-(i%8?392:370));g.lineTo(0,-410);g.stroke();g.restore();}
+  g.font='28px serif';g.textAlign='center';g.textBaseline='middle';g.fillStyle='rgba(198,167,102,.55)';
+  const z='子丑寅卯辰巳午未申酉戌亥';for(let i=0;i<12;i++){g.save();g.rotate(i*TAU/12);g.fillText(z[i],0,-355);g.restore();}
+ });
+ mk(new THREE.PlaneGeometry(4.8,4.8),new THREE.MeshBasicMaterial({map:inlay,transparent:true,depthWrite:false,opacity:.6}),root,{r:[-PI/2,0,0],p:[0,.002,.55],cast:false});
+ const throne=grp(root,[0,0,-.86]);
+ box(1.46,.12,.9,black,throne,[0,.06,-.02]);
+ box(1.3,.32,.68,lacquer,throne,[0,.25,0]);
+ box(1.34,.028,.72,brass,throne,[0,.4,0]);
+ box(1.12,.08,.6,STD('#561f29',{roughness:.93,bumpMap:weave,bumpScale:.003}),throne,[0,.46,.02]);
+ box(1.42,1.46,.13,brass,throne,[0,1.18,-.31]);
+ box(1.29,1.34,.15,STD('#172d28',{roughness:.63,bumpMap:grain,bumpScale:.002}),throne,[0,1.18,-.29]);
+ for(const s of [-1,1]){
+  box(.09,.33,.65,lacquer,throne,[s*.62,.59,.01]);box(.13,.045,.7,brass,throne,[s*.62,.78,.01]);
+  mk(new THREE.TorusGeometry(.15,.02,8,32,PI*1.6),brass,throne,{p:[s*.55,1.96,-.28],r:[0,0,s*.4]});
+ }
+ for(const x of [-2.05,2.05])for(const z of [-1.5,-4.5]){
+  const p=grp(root,[x,0,z]);
+  box(.65,.16,.65,black,p,[0,.08,0]);box(.47,.11,.47,brass,p,[0,.21,0]);
+  mk(cylGeo(.19,.23,5.5,32),lacquer,p,{p:[0,2.98,0]});
+  for(const y of [.35,.48,4.95,5.1])mk(cylGeo(.235,.235,.05,24),brass,p,{p:[0,y,0]});
+ }
+ const wall=grp(root,[0,0,-4.8]);
+ box(14,7,.25,black,wall,[0,3.5,0]);
+ const glow=STD('#d0a66c',{emissive:col('#e0a45f'),emissiveIntensity:.65,roughness:1});
+ for(const x of [-4.2,-2.8,2.8,4.2]){
+  box(.72,4.4,.08,glow,wall,[x,2.65,.18]);
+  for(let j=0;j<13;j++)box(.78,.035,.12,black,wall,[x,.55+j*.34,.24]);
+  for(const s of [-1,1])box(.035,4.5,.12,brass,wall,[x+s*.39,2.65,.24]);
+ }
+ box(12,.3,.3,lacquer,wall,[0,5.05,.2]);box(12,.035,.32,brass,wall,[0,4.88,.2]);
+ // Long light strips and incised wall panels establish depth behind the silhouette.
+ for(const x of [-.95,.95])box(.026,3.7,.08,glow,wall,[x,2.5,.2]);
+ const shadowTex=canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,5,64,64,64);r.addColorStop(0,'rgba(0,0,0,.8)');r.addColorStop(.48,'rgba(0,0,0,.4)');r.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=r;g.fillRect(0,0,w,h);});
+ const contact=mk(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:shadowTex,transparent:true,depthWrite:false,opacity:.3}),root,{r:[-PI/2,0,0],p:[0,.006,0],cast:false});
+ // A world-space shoe: contact stays on the moving body, including when the camera tracks it.
+ const boot=grp(scene);boot.visible=false;
+ const leather=STD('#202527',{roughness:.72,bumpMap:grain,bumpScale:.001});
+ box(.19,.09,.38,leather,boot,[0,.055,.04]);
+ box(.205,.04,.4,STD('#0e1010',{roughness:.92}),boot,[0,0,.04]);
+ const legMat=STD('#262d37',{roughness:.9,bumpMap:weave,bumpScale:.002});
+ const shin=mk(cylGeo(.09,.075,1,16),legMat,boot);
+ const thigh=mk(cylGeo(.13,.09,1,16),legMat,boot);
+ const knee=mk(sphereGeo(16),legMat,boot,{s:.09});
+ for(let i=0;i<4;i++)box(.12,.012,.016,STD('#555654',{roughness:.95}),boot,[0,.108,-.04+i*.034]);
+ const dust=new THREE.Group();root.add(dust);
+ const dots=new Float32Array(180*3);for(let i=0;i<180;i++){dots[i*3]=rnd(-5,5);dots[i*3+1]=rnd(.3,5);dots[i*3+2]=rnd(-4,2);}
+ const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dots,3));
+ dust.add(new THREE.Points(dg,new THREE.PointsMaterial({color:col('#cfb27c'),size:.012,transparent:true,opacity:.25,depthWrite:false})));
+ root.updateMatrixWorld(true);
+ const groups=new Map();root.traverse(o=>{if(o.isMesh&&o!==contact){const k=o.material.uuid;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(o);}});
+ for(const list of groups.values()){if(list.length<2)continue;const geo=mergeMeshes(list,new THREE.Matrix4());const m=new THREE.Mesh(geo,list[0].material);m.castShadow=true;m.receiveShadow=true;list.forEach(o=>o.removeFromParent());root.add(m);}
+ metalEnv(root);return {root,boot,shin,thigh,knee,contact,dust,grain,weave,robe};
+})();
+function setCombatStage(active){
+ WORLD.root.visible=!active;COMBAT_STAGE.root.visible=active;COMBAT_STAGE.boot.visible=false;
+ $('#fight').classList.toggle('close-combat',active);
+ scene.background=active?col('#151d1e'):SKY;
+ scene.fog=new THREE.Fog(col(active?'#202725':'#e6f0f6'),active?7:9,active?18:22);
+ hemi.intensity=active?.55:.4;hemi.color.copy(col(active?'#b9cbd1':'#eef5ff'));hemi.groundColor.copy(col(active?'#3e3530':'#a88458'));
+ key.intensity=active?2.5:2.05;key.position.set(active?-2.5:-1.7,3.4,2.8);
+ fill.intensity=active?.48:.3;rim.intensity=active?1.7:.95;
+ key.shadow.camera.left=-2.5;key.shadow.camera.right=2.5;key.shadow.camera.updateProjectionMatrix();
+ renderer.toneMappingExposure=active?1.08:1.04;
+}
+
+/* ---- 순응 장면의 카메라 ----
  * 족치는 동안 카메라는 움직이지 않는다. 쓰러지거나 일어나거나 맞혀도 다가가거나 물러서지 않는다(무기와 설계자 몸의 크기 비율이 늘 같다).
  * 서 있을 때·옥좌에 앉았을 때·무릎 꿇었을 때·주저앉았을 때 어느 자세든 팔다리 끝까지 위쪽 막대 밑·도구칸 위에 들어오게
  * 끝자리 점들(FIXPTS)을 정해 두고, 화면 크기가 바뀔 때만 그 점들에 맞춰 다시 잡는다. 맞을 때는 짧게 떨리기만 한다.
@@ -1842,7 +1980,8 @@ function camHit(o){
 }
 function camShake(a){camHit({shake:a});}
 function updateCamera(dt){
- if(CAM.frame==='cut'||CAM.frame==='debug'){const k=1-Math.exp(-dt*3);CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);}
+ if(combatCamera(dt)){}
+ else if(CAM.frame==='cut'||CAM.frame==='debug'){const k=1-Math.exp(-dt*3);CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);}
  else{CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);}
  // 떨림: 프레임마다 새로 뽑은 방향으로 튄다(사인파보다 또렷하다). 빠르게 줄어든다
  CAM.shake*=Math.exp(-dt*13);if(CAM.shake<.0004)CAM.shake=0;
@@ -3583,7 +3722,7 @@ function drawOhaeng(g,x,y,r,o={}){
 /* 배·가슴: 예복 앞섶이 벌어져 속에 입은 하늘색 와이셔츠(배에서는 단추가 당겨짐)가 보이고, 섶 가장자리로 보라 영대(눈·오행 문양)가 내려온다.
  * 공에 감기는 그림이라 위도마다 가로로 늘여 그린다(가운데 세로줄 = 정면). R: 가로 둘레 반지름, Rm: 세로 둘레 반지름, half: 위도(도)별 셔츠 반폭(m) */
 function paintOpening(g,w,h,o){
- const src=ROBE_TEX.userData.canvas;
+ const src=o.source||ROBE_TEX.userData.canvas;
  for(let i=0;i<2;i++)for(let j=0;j<2;j++)g.drawImage(src,i*w/2,j*h/2,w/2,h/2);
  const PX=w/(TAU*o.R),PY=h/(PI*o.Rm),cx=w*.25;
  const th=y=>y/h*PI,sn=y=>Math.max(.16,Math.sin(th(y)));
@@ -3592,9 +3731,9 @@ function paintOpening(g,w,h,o){
  const band=(m0,m1,fill)=>{g.beginPath();ys.forEach((y,i)=>{const x=X(y,m0(y));i?g.lineTo(x,y):g.moveTo(x,y);});for(let i=ys.length-1;i>=0;i--)g.lineTo(X(ys[i],m1(ys[i])),ys[i]);g.closePath();g.fillStyle=fill;g.fill();};
  const line=(m,col_,lw)=>{g.beginPath();ys.forEach((y,i)=>{const x=X(y,m(y));i?g.lineTo(x,y):g.moveTo(x,y);});g.strokeStyle=col_;g.lineWidth=lw;g.stroke();};
  // 셔츠: 하늘색 + 가는 세로 줄무늬 + 가운데 단춧단
- band(y=>-half(y)-.004,y=>half(y)+.004,'#cfe1f5');
+ band(y=>-half(y)-.004,y=>half(y)+.004,o.shirt||'#cfe1f5');
  for(let m=-.1;m<=.1;m+=.0105)line(y=>clamp(m,-half(y),half(y)),'rgba(112,146,202,.45)',1.6);
- band(y=>-.012,y=>.012,'#d9e8f8');line(()=>-.012,'rgba(96,128,182,.6)',2);line(()=>.012,'rgba(96,128,182,.6)',2);
+ band(y=>-.012,y=>.012,o.placket||'#d9e8f8');line(()=>-.012,'rgba(96,128,182,.6)',2);line(()=>.012,'rgba(96,128,182,.6)',2);
  // 단추: 배에 당겨져 단추 사이가 벌어지려 한다
  for(const deg of o.buttons||[]){
   const y=deg/180*h,s=sn(y),bx=X(y,0),k=PX/s;
@@ -3607,7 +3746,7 @@ function paintOpening(g,w,h,o){
  // 앞섶 그림자 + 보라 영대(금테) + 문양(눈과 오행이 번갈아)
  for(const sd of [-1,1]){
   band(y=>sd*(half(y)+SW),y=>sd*(half(y)+SW+.012),'rgba(90,60,20,.16)');
-  band(y=>sd*half(y),y=>sd*(half(y)+SW),'#4f3399');
+  band(y=>sd*half(y),y=>sd*(half(y)+SW),o.stole||'#4f3399');
   line(y=>sd*(half(y)+.0035),'#f2c34c',5);line(y=>sd*(half(y)+SW-.0035),'#f2c34c',5);
   line(y=>sd*(half(y)+.008),'rgba(255,236,170,.5)',1.5);line(y=>sd*(half(y)+SW-.008),'rgba(255,236,170,.5)',1.5);
   (o.syms||[]).forEach((deg,i)=>{const y=deg/180*h,s=sn(y),mx=sd*(half(y)+SW/2);
@@ -4631,6 +4770,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
 
  /* ---- 매 프레임 ---- */
  update(dt,time){
+  if(combatActive(this))combatStep(this,dt);
   this.stateT+=dt;this.sinceHit+=dt;this.breath+=dt*(1.6+this.mood*1.4);this._ikFrame++;
   this.talk=damp(this.talk||0,G.time<(this.talkUntil||0)?1:0,14,dt);
   const p=this.poseTmp;this.basePose(p,dt,time);
@@ -4638,6 +4778,8 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(this.state==='stand')this.updateIdle(dt,time);
   // 스프링·뿌리 이동
   for(const k in this.sp)this.sp[k].step(dt);
+  if(combatActive(this)){this.rootPos.set(0,0,0);this.rootVel.set(0,0,0);}
+  else {
   if(this.state!=='stand')this.rootVel.set(0,0,0);
   this.rootPos.addScaledVector(this.rootVel,dt);this.rootVel.multiplyScalar(Math.exp(-dt*4.2));
   const home=this.state==='stand'?1:0;this.rootPos.x=damp(this.rootPos.x,0,1.4*home,dt);this.rootPos.z=damp(this.rootPos.z,0,1.25*home,dt);
@@ -4645,7 +4787,9 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   // 걸음: 뿌리가 움직이면 발을 번갈아 뗀다
   const sp=this.rootVel.length()+Math.abs(this.rootPos.z)*.5*(this.state==='stand'?1:0);this.stepAmt=damp(this.stepAmt,clamp(sp*2.2,0,1),8,dt);this.stepPhase+=dt*(5+sp*8);
   if(this.state==='stand'&&this.stepAmt>.02){const a=Math.sin(this.stepPhase)*.38*this.stepAmt;p.LhF+=a;p.RhF-=a;p.LkB+=Math.max(0,a)*1.3;p.RkB+=Math.max(0,-a)*1.3;p.py-=this.stepAmt*.025;}
+  }
   poseCopy(p,this.pose);this.applyPose(this.pose);
+  combatFloor(this);
   // 팔 IK
   this.root.updateMatrixWorld(true);
   this.updateRevive(dt);
@@ -4745,6 +4889,7 @@ Object.assign(Emperor.prototype,{
  },
 
  basePose(out,dt,time){
+  if(combatActive(this)){combatPose(this,out,dt,time);return;}
   const st=this.state;
   if(st!=='stand'){this.rest.L.on=false;this.rest.R.on=false;this.pat=null;}
   if(st==='stand')this.standPose(out,dt,time);
@@ -4929,6 +5074,8 @@ doAct(name,o={}){
 
  /* ---- 다운 ---- */
  startFall(type){
+  if(combatActive(this)&&type!=='final'){this.combat.fall(0,.3,1);this.down={type:'floor',stay:3};return;}
+  if(combatActive(this)&&type==='final'){this.combat.locked=true;this._combatScripted=true;}
   const from=P();poseCopy(this.pose,from);from.tx=this.root.position.x;from.tz=this.root.position.z;this.rootPos.set(0,0,0);this.rootVel.set(0,0,0);
   this.endAct();this.guardHold=0;this.releaseIK('L',10);this.releaseIK('R',10);this.taunt=false;
   const K=KD_POSE,ev=[];let seq;
@@ -4936,11 +5083,13 @@ doAct(name,o={}){
   else if(type==='kneel'){seq=[{t:0,pose:from},{t:.26,pose:K.buckle,ease:'in'},{t:.52,pose:K.allFours,ease:'in'},{t:1.5,pose:K.allFours},{t:2.1,pose:POSES.kneel}];ev.push({t:.5,fn:()=>{if(this.onImpact)this.onImpact('knees');}},{t:1.2,fn:()=>{if(this.onCough)this.onCough();}});}
   else if(type==='floor'){seq=[{t:0,pose:from},{t:.3,pose:poseLerp(K.flail,K.buckle,.4,P()),ease:'out'},{t:.68,pose:poseLerp(K.buckle,POSES.floor,.7,P()),ease:'in'},{t:1.05,pose:POSES.floor,ease:'back'}];ev.push({t:.68,fn:()=>{if(this.onImpact)this.onImpact('floor');}});}
   else{seq=[{t:0,pose:from},{t:.5,pose:K.buckle,ease:'out'},{t:1.05,pose:K.slump,ease:'in'},{t:1.8,pose:POSES.final,ease:'in'},{t:2.4,pose:POSES.final}];ev.push({t:1.02,fn:()=>{if(this.onImpact)this.onImpact('knees');}},{t:1.75,fn:()=>{if(this.onImpact)this.onImpact('final');}});}
+  if(this._combatScripted){for(let i=1;i<seq.length;i++){const q=P(seq[i].pose);q.tx+=from.tx;q.tz+=from.tz-POSES.final.tz;q.ry=from.ry;seq[i].pose=q;}}
   this.down={type,seq,events:ev,stay:type==='throne'?2.5:type==='kneel'?3.1:type==='floor'?2.9:1e9,hitsDown:0};
   this.state='fall';this.stateT=0;
   if(this.tabletHeld)this.dropTablet();
  },
  startRise(){
+  if(combatActive(this)){this.combat.change('rise');return;}
   const d=this.down,from=P();poseCopy(this.pose,from);const K=KD_POSE,stand=P();poseCopy(STAND,stand);stand.sF=.2;stand.cF=.1;stand.LkB=.2;stand.RkB=.2;stand.py=-.04;
   let seq;
   if(d.type==='throne')seq=[{t:0,pose:from},{t:.55,pose:K.pushThrone},{t:1.15,pose:K.hunchStand},{t:1.75,pose:stand}];
@@ -6439,6 +6588,8 @@ const VM=(()=>{
  function dockY(){const el=$('#tools');if(!el||!el.offsetParent)return -1;return 1-2*el.getBoundingClientRect().top/innerHeight;}
 
  /* ---- 상태 ---- */
+ let gripPoint=null;
+ function grip(x,y){gripPoint=x==null?null:{x,y};}
  const st={tool:'hand',acts:[],nextHand:'R',time:0,ammo:8,reload:0,recoil:0,slide:0,flash:0,aim:V3(0,0,-1),aimGoal:V3(0,0,-1),lastShot:-9,slash:null,bloody:{},swapT:1};
  const rest={R:{p:V3(),q:new THREE.Quaternion()},L:{p:V3(),q:new THREE.Quaternion()}};
  const KN_DIR=V3(-.5,.55,-1).normalize(),KN_UP=V3(.35,1,0);
@@ -6601,6 +6752,7 @@ const VM=(()=>{
    if(GR.shake>=0){const u=GR.shake/.55,e=Math.sin(Math.min(1,u)*PI),h=H[k];h.p.x+=s*.17*e;h.p.y+=.21*e*(1-u*.4);h.p.z+=.03*e;tmpQ.setFromAxisAngle(tv2.set(0,0,1),-s*.8*e);h.q.premultiply(tmpQ);}}
   if(GR.shake>=0){GR.shake+=rdt;if(GR.shake>.55)GR.shake=-1;}
   for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*SC*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
+  if(gripPoint&&st.tool==='hand'){const h=H.L;h.p.copy(at(gripPoint.x-.06,gripPoint.y,.76));orient(h.q,V3(.15,.3,-1),UP);}
   // 손 배치(칼·총을 들 때도 붙잡히면 왼팔이 보인다: 왼쪽 사람이 허공을 붙잡지 않게)
   {const showL=st.tool==='hand'||GR.L>.03||GR.goal.L>0;L.hand.visible=L.arm.g.visible=showL;}
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(SC,1,GR[k]));if(h.hand.visible)placeArm(k);}
@@ -6608,20 +6760,238 @@ const VM=(()=>{
  }
  function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
- return {root,st,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,get busy(){return st.acts.length>0;}};
+ return {root,st,grip,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,get busy(){return st.acts.length>0;}};
 })();
 onCamUnit=VM.setScale;VM.setScale(CAM.unit);
 const _fz=V3(0,0,1),_aimRest=V3(-.04,.12,-1).normalize();
 /* ===== 8. 진행과 입력 =====
  * 실제로 맞힌 피해만큼 버팀 게이지가 줄어든다.
- * 100 → 75(옥좌) → 50(무릎) → 25(엉덩방아) → 15(팔 붙잡기) → 10(막아서기) → 5(되살아남, 30으로) → 0(마지막 다운).
+ * 몸싸움의 다운은 균형과 타격으로 결정한다. 게이지는 이야기 진행만 맡는다.
+ * 75/50/25: 표정과 후광 변화 → 15(팔 붙잡기) → 10(막아서기) → 5(되살아남, 30으로) → 0(마지막 다운).
  * 한 대에 깎이는 양은 DMG_MUL배: 1분 반쯤이면 끝난다(초당 네 대쯤 칠 때 약 1분 25초. 예전에는 3분). */
 const PREF={sound:true,blood:true,vibe:true,shake:true,deform:true};
 metalEnv(VM.root);
 try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof p[k]==='boolean')PREF[k]=p[k];}catch(_){}
 const KD_AT=[75,50,25,0],KD_TYPE=['throne','kneel','floor','final'],DMG_MUL=3.1;
 const G={time:0,running:false,raf:0,E:null,mode:'fight',tool:'hand',bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:0,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,result:null,round:0,retired:[],offerPending:false,offerOpen:false,offerBreaking:false,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false};
-const HINTS={hand:'누르면 맨주먹 잽 · 옆으로 밀면 훅 · 위로 밀면 어퍼컷',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
+const HINTS={hand:'터치: 주먹 / 밟기 · 밀기: 훅 · 꾹 잡고 끌기',knife:'누르면 찌르기 · 그으면 베기 · 팔다리는 세 번 그으면 잘림',gun:'누르면 쏘기 · 꾹 누르면 연사'};
+/* ===== Close combat: persistent position, interruptible balance, ground contact ===== */
+const COMBAT={pointer:null,foot:null,serial:-1,landKick:0,follow:0,grabGlow:0};
+const COMBAT_POSE={
+ ground:P({rx:-1.48,py:-.05,pF:0,sF:-.05,cF:0,nF:-.1,hF:.15,
+  LsF:.9,RsF:.75,LsA:.5,RsA:.45,LeB:1.0,ReB:1.1,Lcurl:.4,Rcurl:.4,
+  LhF:.35,RhF:.5,LhA:.15,RhA:.2,LkB:.85,RkB:1.1}),
+ brace:P({py:-.2,pF:.16,sF:.6,cF:.12,nF:-.4,hF:-.48,
+  LsF:1.25,RsF:1.3,LsA:.24,RsA:.24,LeB:.2,ReB:.2,Lcurl:.1,Rcurl:.1,
+  LhF:1.1,RhF:.5,LkB:1.4,RkB:1.4,LaF:-.4,RaF:-.6}),
+ held:P({py:-.05,sF:.19,cF:.12,hF:-.2,LsF:1.05,RsF:1.1,LsA:.18,RsA:.2,
+  LeB:1.45,ReB:1.4,Lcurl:.7,Rcurl:.7,LhF:.12,RhF:-.08,LkB:.22,RkB:.34}),
+};
+function combatInit(E,seated){
+ if(!window.FateMotion)throw new Error('몸싸움 모듈을 불러오지 못했습니다. 새로고침해 주세요.');
+ E.combat=new window.FateMotion.Body(seated);E._combatScripted=false;
+ E._combatPoseSerial=-1;E._combatFrom=P();E._combatTarget=P();
+ E.rootPos.set(0,0,0);E.rootVel.set(0,0,0);E.down=null;
+ E.rest.L.on=E.rest.R.on=false;
+ for(const name of ['robe','hem','chest','belly','trouser','shirt']){
+  const m=E.M[name];if(!m)continue;m.roughness=.88;m.bumpMap=COMBAT_STAGE.weave;m.bumpScale=.0015;
+  m.envMapIntensity=.22;
+  if(m.map&&m.map.image){
+   const source=m.map.image;
+   const tex=canvasTex(source.width,source.height,(g,w,h)=>{
+    g.drawImage(source,0,0);g.globalCompositeOperation='saturation';g.fillStyle='rgba(110,110,110,.72)';g.fillRect(0,0,w,h);
+    g.globalCompositeOperation='multiply';g.fillStyle='#cec7b5';g.fillRect(0,0,w,h);g.globalCompositeOperation='source-over';
+   });
+   m.map=tex;E.disposables.push(tex);
+  }
+ }
+ for(const name of ['skin','flesh','skinD']){const m=E.M[name];if(!m)continue;m.roughness=.65;m.bumpMap=COMBAT_STAGE.grain;m.bumpScale=.00065;}
+ for(const name of ['gold','goldD']){const m=E.M[name];m.roughness=.44;m.envMapIntensity=.65;m.bumpMap=COMBAT_STAGE.grain;m.bumpScale=.001;}
+ for(const name of ['robe','hem'])E.M[name].map=COMBAT_STAGE.robe;
+ const cloth=COMBAT_STAGE.robe.userData.canvas;
+ E.M.belly.map=canvasTex(1024,512,(g,w,h)=>paintOpening(g,w,h,{source:cloth,shirt:'#788281',placket:'#8b9290',stole:'#292d2b',R:.335,Rm:.31,sw:.052,half:d=>.05+.045*clamp((d-18)/92,0,1),buttons:[44,61,78,95,111],syms:[34,78]}));
+ E.M.chest.map=canvasTex(768,384,(g,w,h)=>paintOpening(g,w,h,{source:cloth,shirt:'#788281',placket:'#8b9290',stole:'#292d2b',R:.27,Rm:.22,sw:.05,half:d=>.024+.026*clamp((d-40)/50,0,1),syms:[76],symShift:1}));
+ E.disposables.push(E.M.belly.map,E.M.chest.map);
+ E.M.trouser.map=null;E.M.trouser.color.copy(col('#343b3d'));E.M.trouser.roughness=.96;
+ for(const m of E.parts){
+  if(m.material!==E.M.trouser||!m.userData.flesh)continue;
+  const seg=m.userData.seg;let geo;
+  if(seg==='pelvis'){geo=new THREE.SphereGeometry(1,28,18);geo.scale(.18,.13,.23);geo.translate(0,-.035,0);}
+  else if(/^hip/.test(seg)){geo=new THREE.SphereGeometry(1,28,18);geo.scale(.125,.13,.125);geo.translate(0,-.035,0);}
+  else if(/^thighMid/.test(seg)){geo=new THREE.CylinderGeometry(.12,.105,.19,28,10);geo.translate(0,-.07,0);}
+  else if(/^knee/.test(seg)){geo=new THREE.SphereGeometry(1,28,18);geo.scale(.108,.12,.108);geo.translate(0,-.025,0);}
+  else if(/^shinMid/.test(seg)){geo=new THREE.CylinderGeometry(.096,.077,.19,28,10);geo.translate(0,-.065,0);}
+  if(!geo)continue;
+  const old=m.geometry;m.geometry=geo;m.userData.flesh.o.keepNormals=true;m.userData.flesh.setGeometry(geo);
+  E.disposables.push(geo);E.releaseGeometry(old);
+ }
+
+ E.M.sole.color.copy(col('#171c1d'));E.M.boot.roughness=.7;
+ E.M.red.color.copy(col('#775d3b'));E.M.robeIn.color.copy(col('#211b20'));E.M.lining.color.copy(col('#211b20'));
+ E.M.gold.color.copy(col('#b99552'));E.M.goldD.color.copy(col('#765631'));
+ E.M.amethyst.emissiveIntensity=.08;E.M.ruby.emissiveIntensity=.04;
+ E.root.traverse(o=>{if(o.material)for(const m of (Array.isArray(o.material)?o.material:[o.material]))m.needsUpdate=true;});
+ COMBAT_STAGE.contact.visible=true;
+}
+function combatActive(E){return !!(E&&E.combat&&!E._combatScripted&&G.mode==='fight');}
+function combatStep(E,dt){
+ const b=E.combat;b.canRise=!E.legsMissing();
+ if(!G.inputLocked)b.step(dt);
+ E.state=b.mode==='ground'?'down':b.mode==='seat'?'stand':b.mode;
+ if(E.state==='down')E.down=E.down||{type:'floor',stay:10};
+ else if(E.state!=='fall'&&E.state!=='rise')E.down=null;
+ // IK actions from the standing animation must not pin hands in space during a fall.
+ if(b.mode!=='stand'&&b.mode!=='seat'){E.endAct();E.guardHold=0;E.guard=0;E.releaseIK('L',18);E.releaseIK('R',18);}
+ for(const event of b.drain()){
+  if(event.type==='land'){
+   AUDIO.fall('floor');AUDIO.slap(.55,.3);COMBAT.landKick=.9;
+   camHit({shake:.04});G.hitstop=Math.max(G.hitstop,.055);
+   const pos=V3(b.x,.04,b.z);BLOOD.spray(pos,UP,12,{kind:'dust',max:1.3});
+   hint('누르면 밟기 · 몸을 꾹 잡고 위로 끌어올리기',2.6);
+  }else if(event.type==='boundary'){AUDIO.fall('throne');camHit({shake:.018});}
+  else if(event.type==='throw'){
+   AUDIO.whoosh(.95,'hook');damageBar(.65,{},true);
+  }
+ }
+}
+function combatPose(E,out,dt,time){
+ const b=E.combat,T=E._combatTarget;
+ if(E._combatPoseSerial!==b.serial){
+  poseCopy(E.pose,E._combatFrom);E._combatPoseSerial=b.serial;
+  // Poses interpolate locally; the persistent body position is owned by the simulation.
+  E._combatFrom.tx=E._combatFrom.ty=E._combatFrom.tz=E._combatFrom.ry=0;
+ }
+ if(b.mode==='seat'){
+  poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.cF=-.12;T.RsF=.1;T.RsA=.7;T.LeB=.8;
+ }else if(b.mode==='stand'){
+  E.standPose(T,dt,time);
+  const speed=Math.hypot(b.vx,b.vz),a=Math.sin(b.stepDistance*22)*clamp(speed*.45,0,.34);
+  T.LhF+=a;T.RhF-=a;T.LkB+=Math.max(0,a)*1.1;T.RkB+=Math.max(0,-a)*1.1;
+  T.sR-=b.vx*.11;T.sF-=b.vz*.1;T.py-=Math.max(0,1-b.balance)*.035;
+ }else if(b.mode==='grab'){
+  poseLerp(COMBAT_POSE.ground,COMBAT_POSE.held,smooth(b.grab?b.grab.lift:1),T);
+ }else if(b.mode==='rise'){
+  const t=b.age/1.45;
+  if(t<.48)poseLerp(COMBAT_POSE.ground,COMBAT_POSE.brace,smooth(t/.48),T);
+  else poseLerp(COMBAT_POSE.brace,STAND,smooth((t-.48)/.52),T);
+ }else{
+  poseCopy(COMBAT_POSE.ground,T);T.rz=b.roll;T.hT=b.side*.22;
+  T.LsF+=Math.sin(time*2.1)*.025;T.RsF-=Math.sin(time*1.7)*.03;
+  if(b.mode==='ground'){
+   const struggle=Math.sin(time*3.6)*.045*b.recovery;
+   T.sF+=struggle;T.LkB+=Math.sin(time*2.5)*.09*b.recovery;
+   T.hF-=.12*b.recovery;
+  }
+ }
+ T.tx=T.ty=T.tz=T.ry=0;
+ const duration=b.mode==='fall'?.52:b.mode==='grab'?.16:b.mode==='stand'?.23:.16;
+ if(b.mode==='rise')poseCopy(T,out);else poseLerp(E._combatFrom,T,smooth(b.age/duration),out);
+ out.ry=b.yaw;
+ // Rotate around the pelvis, not the feet. The center follows the same trajectory through a fall.
+ const pivot=V3(0,.62+out.py,0).applyEuler(new THREE.Euler(out.rx,out.ry,-out.rz,'YXZ'));
+ const lying=clamp(Math.abs(out.rx)/1.35,0,1);
+ out.tx=b.x-pivot.x;out.tz=b.z-pivot.z;
+ out.ty=lerp(.62+out.py,.29,lying)-pivot.y-b.compression*.2;
+ out.cF+=Math.sin(E.breath)*.008;
+}
+function combatFloor(E){
+ if(!combatActive(E)||E.combat.mode==='seat')return;
+ // Contact samples use anatomical surfaces, excluding the floating crown and halo.
+ E.root.updateMatrixWorld(true);
+ let min=Infinity;const v=_combatV;
+ for(const l of E.legs){if(!l.ank.userData.detached&&l.ank.parent){l.ank.getWorldPosition(v);min=Math.min(min,v.y-.063);}}
+ for(const a of E.arms){if(!a.wr.userData.detached&&a.wr.parent){a.wr.getWorldPosition(v);min=Math.min(min,v.y-.06);}}
+ for(const [name,radius] of [['pelvis',.15],['chest',.21],['head',.13]]){
+  const bone=E.bones[name];if(bone&&!bone.userData.detached){bone.getWorldPosition(v);min=Math.min(min,v.y-radius);}
+ }
+ if(min<.018)E.root.position.y+=.018-min;
+ const b=E.combat,down=b.mode==='ground'||b.mode==='fall';
+ COMBAT_STAGE.contact.position.set(b.x,.006,b.z);
+ COMBAT_STAGE.contact.scale.set(down?.68:.47,down?1:.38,1);
+ COMBAT_STAGE.contact.material.opacity=down?.38:.29;
+}
+const _combatV=V3();
+function combatCamera(dt){
+ const E=G.E;if(G.mode!=='fight'||!E||CAM.frame==='cut'||CAM.frame==='debug')return false;
+ const b=E.combat;if(!b)return false;
+ const down=clamp(Math.abs(E.pose.rx)/1.35,0,1),portrait=innerWidth<innerHeight;
+ const aspect=innerWidth/innerHeight;
+ const distance=portrait?Math.max(2.55,1.7/aspect):2.65;
+ const x=E.root.position.x,z=b.z;
+ // Track the pelvis rather than recentering the opponent. Dolly and pitch follow the body together.
+ CAM.goalPos.set(b.x*.8+.12,lerp(1.55,2.5,down),z+lerp(distance,portrait?2.35:2.5,down));
+ CAM.goalLook.set(b.x,lerp(1.03,.3,down),z-down*.22);
+ if(b.mode==='grab'){CAM.goalPos.z-=.18;CAM.goalLook.y+=.08;}
+ const k=1-Math.exp(-dt*(b.mode==='fall'?7:5));
+ CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);
+ COMBAT.landKick*=Math.exp(-dt*14);
+ CAM.pos.y-=COMBAT.landKick*.012;
+ CAM.fovBase=portrait?44:39;CAM.unit=clamp(1/(2*distance*Math.tan(CAM.fovBase*PI/360)),.3,.53);
+ if(onCamUnit)onCamUnit(CAM.unit);
+ return true;
+}
+function combatAttack(x,y,kind='jab'){
+ const E=G.E;if(!combatActive(E)||G.inputLocked||G.paused)return false;
+ const b=E.combat;
+ if(G.tool==='hand'&&(b.mode==='ground'||b.mode==='fall'))return startStomp(x,y);
+ return VM.attack(kind,x,y);
+}
+function startStomp(x,y){
+ if(COMBAT.foot||VM.busy)return false;
+ const info=pickAt(x,y);if(!info||!info.obj||!G.E.parts.includes(info.obj))return false;
+ const local=info.obj.worldToLocal(info.point.clone());
+ COMBAT.foot={t:0,obj:info.obj,local,part:info.part,done:false};
+ VM.st.acts.length=0;AUDIO.whoosh(.75,'hook');return true;
+}
+function combatEffects(dt){
+ const a=COMBAT.foot,E=G.E;
+ COMBAT_STAGE.boot.visible=!!a&&G.mode==='fight'&&!G.inputLocked;
+ if(a){
+  if(!E||G.inputLocked||G.tool!=='hand'){COMBAT.foot=null;COMBAT_STAGE.boot.visible=false;return;}
+  a.t+=dt;
+  if(!a.obj.parent||a.obj.userData.detached){COMBAT.foot=null;return;}
+  const target=a.obj.localToWorld(a.local.clone());
+  const boot=COMBAT_STAGE.boot;
+  const lift=a.t<.16?smooth(a.t/.16):a.t<.27?1-easeIn3((a.t-.16)/.11):a.t<.34?0:smooth((a.t-.34)/.23);
+  boot.position.copy(target);boot.position.y+=.04+lift*.75;boot.position.z+=.03+lift*.22;
+  boot.rotation.set(-.16-lift*.7,.12,Math.sin(a.t*8)*.06);
+  boot.updateMatrixWorld(true);
+  const ankle=V3(0,.13,.13),hip=V3(.24,-.6,.1).applyQuaternion(camera.quaternion).add(camera.position);
+  boot.worldToLocal(hip);
+  const kneePos=ankle.clone().lerp(hip,.48);kneePos.y+=.14+lift*.12;
+  const segment=(mesh,from,to)=>{const d=to.clone().sub(from),len=d.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,d.divideScalar(len||1));mesh.scale.y=len;};
+  segment(COMBAT_STAGE.shin,ankle,kneePos);segment(COMBAT_STAGE.thigh,kneePos,hip);COMBAT_STAGE.knee.position.copy(kneePos);
+
+  if(!a.done&&a.t>=.27){
+   a.done=true;
+   resolveHit('hand','jab',{obj:a.obj,point:target,normal:UP.clone(),dir:V3(0,-1,-.12),part:a.part},'R',{powerMul:1.8,stomp:true});
+   AUDIO.fall('floor');COMBAT.landKick=1.6;camHit({shake:.045});
+   G.hitstop=Math.max(G.hitstop,.055);
+  }
+  if(a.t>.57){COMBAT.foot=null;boot.visible=false;}
+ }
+ const grip=E&&combatActive(E)&&E.combat.grab;
+ if(grip){
+  const chest=E.bones.chest.getWorldPosition(_combatV).project(camera);
+  VM.grip(chest.x,chest.y);
+ }else VM.grip(null,null);
+ COMBAT_STAGE.dust.rotation.y+=dt*.004;
+}
+function combatCancel(){
+ const E=G.E;if(E&&E.combat)E.combat.release(true);
+ COMBAT.pointer=null;COMBAT.foot=null;COMBAT_STAGE.boot.visible=false;VM.grip(null,null);
+ canvas.classList.remove('grabbing');
+}
+function combatGrab(p){
+ const E=G.E;if(!combatActive(E)||!p.grabbable||COMBAT.foot)return false;
+ if(!E.combat.beginGrab())return false;
+ E.endAct();E.taunt=false;if(E.tabletHeld)E.dropTablet();
+ p.grabbing=true;p.decided=true;COMBAT.pointer=p.id;
+ VM.st.acts.length=0;canvas.classList.add('grabbing');AUDIO.pull(.6);
+ hint('위로 끌어 세우기 · 옆이나 아래로 던지기',2.4);
+ return true;
+}
+
 let hintUntil=0;
 function hint(text,dur=3.6){const el=$('#hint');el.textContent=text;el.classList.remove('off');hintUntil=G.time+dur;}
 
@@ -6674,13 +7044,13 @@ function pickAll(x,y,list){
  return out;
 }
 function pickAt(x,y,list){return pickAll(x,y,list)[0]||null;}
-const POWER={hand:{jab:1.15,hook:1.5,upper:1.65},knife:{stab:.95,slash:.45},gun:{shot:1.8}};
+const POWER={hand:{jab:1.15,hook:1.5,upper:1.65,shove:1.2},knife:{stab:.95,slash:.45},gun:{shot:1.8}};
 // 멈춤(히트스톱) 길이: 이 동안 맞은 모습 그대로 멈춰 있다
-const STOP={hand:{jab:.036,hook:.05,upper:.058},knife:{stab:.045,slash:.014},gun:{shot:.018}};
+const STOP={hand:{jab:.036,hook:.05,upper:.058,shove:.05},knife:{stab:.045,slash:.014},gun:{shot:.018}};
 const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!']};
 function resolveHit(tool,kind,info,side,extra={}){
  const E=G.E;if(!E||!info||G.inputLocked)return {hit:false};
- const gaugeEligible=E.state==='stand';
+ const gaugeEligible=combatActive(E)||E.state==='stand';
  const dir=info.dir.clone();const s=side==='L'?-1:1;
  if(kind==='hook')dir.add(V3(-s*1.15,0,0));else if(kind==='upper')dir.add(V3(0,1.3,0));
  dir.normalize();
@@ -6689,6 +7059,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  G.lastHit=G.time;
  if(!extra.through&&!extra.quiet)AUDIO.duck();
  const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,strokeId:extra.strokeId,through:extra.through});
+ if(combatActive(E)&&!r.halo){E.combat.hit({kind:extra.stomp?'stomp':kind,dx:dir.x,dz:extra.stomp?0:dir.z,power,blocked:r.blocked});}
  G.hits++;
  const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
  G.hitstop=Math.max(G.hitstop,extra.through?0:stop);
@@ -6717,9 +7088,9 @@ function impactFX(tool,kind,info,r,dir,s,extra){
   FX.add('star',FX.lift(pt,n,.05),{size:big?.17:.12,life:big?.12:.1});
   FX.add('glint',FX.lift(pt,n,.07),{size:.07,life:.09,start:.4,grow:1.2});
   if(kind==='upper'||r.heavy)FX.add('ring',FX.lift(pt,n,.04),{size:.17,life:.16,start:.4,grow:1.6,fade:1});
-  const list=head?WORDS[kind]:WORDS.body;
+  const list=head?(WORDS[kind]||WORDS.jab):WORDS.body;
   // 글자는 얼굴을 덮지 않게 주먹이 날아온 반대쪽 옆에 띄운다
-  FX.word(pick(list),pt,{size:kind==='jab'?46:kind==='hook'?56:62,color:kind==='upper'?'#ff5640':kind==='hook'?'#ffa23a':'#ffd84a',rot:kind==='hook'?s*-12:undefined,dx:-s*rnd(70,110),dy:-20});
+  if(!combatActive(G.E))FX.word(pick(list),pt,{size:kind==='jab'?46:kind==='hook'?56:62,color:kind==='upper'?'#ff5640':kind==='hook'?'#ffa23a':'#ffd84a',rot:kind==='hook'?s*-12:undefined,dx:-s*rnd(70,110),dy:-20});
   camHit({shake:kind==='jab'?.016:kind==='hook'?.02:.022});
  }else if(tool==='knife'){
   if(kind==='stab'){
@@ -6781,7 +7152,7 @@ function warnCrowd(){ // 10%: 넷이 설계자 앞을 막아선다
  * 6.2 손을 가슴으로 → 6.55 박힘: 금빛 과노출, 그 안에서 몸을 갈아 끼운다(6.9)
  * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.65 '암백ㅋ' → 끝나면 다시 1인칭 */
 function beginRevival(){
- const E=G.E;if(!E||G.revivalUsed||E.state!=='stand')return false;
+ const E=G.E;if(!E||G.revivalUsed||(!combatActive(E)&&E.state!=='stand'))return false;
  G.revivalUsed=true;G.revivalPending=false;G.inputLocked=true;G.crowdBeatUntil=0;clearPointers();$('#dock').hidden=true;VM.root.visible=false;
  $('#fight .gauge').style.visibility='hidden';clearTalk();
  if(E.tabletHeld)E.dropTablet(V3(-2.4,.45,.7));
@@ -6799,6 +7170,7 @@ function replaceEmperorForRevival(){
  const E=new Emperor(G.result);E.bloodRawBase=BLOOD.rawLost;E.taunt=true;E.setPhase(0);
  E.idleT=1e9;E.sobT=1e9;E.lookedHand=true;E.reviveGlow=1.7;
  wireEmperor(E);G.E=E;
+ combatInit(E,false);if(old.combat){E.combat.x=old.combat.x;E.combat.z=old.combat.z;}
  BLOOD.rebindKeepStage(E);if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
  // 옛 운명판은 무대에 이미 떨어져 있다. 새 몸이 같은 판을 하나 더 만들지 않게 숨겨 둔다.
  if(E.tabletHeld){E.tabletHeld=false;E.tabletMesh.visible=false;E.tablet.removeFromParent();}
@@ -6840,7 +7212,7 @@ function updateStory(){
 }
 function damageBar(d,o={},fromStand=false){
  if(G.mode!=='fight'||G.ended||!G.E)return;
- const E=G.E;if(!fromStand&&E.state!=='stand')return;const next=KD_AT[G.kd]??0;
+ const E=G.E;if(!combatActive(E)&&!fromStand&&E.state!=='stand')return;const next=KD_AT[G.kd]??0;
  const amount=Math.max(0,Number(d)||0)*DMG_MUL;if(amount<=0)return;
  let nb=Math.max(0,G.bar-amount);
  if(G.kd===3&&!G.revivalUsed){
@@ -6851,7 +7223,12 @@ function damageBar(d,o={},fromStand=false){
  G.bar=nb;G.shown=nb;gaugeHit();
  // 되살아난 뒤에는 다운 없이 남은 30%를 맞는다: 게이지가 줄어드는 만큼 화남 → 아픔 → 울며 빎 → 다 무너짐
  if(G.revived&&!E.taunt){const ph=nb<=7?4:nb<=15?3:nb<=23?2:1;if(E.phase<ph)E.setPhase(ph);}
- if(G.kd<4&&G.bar<=next+1e-6){G.bar=next;G.shown=next;knockdown();}
+ if(combatActive(E)){
+  const stage=nb<=25?3:nb<=50?2:nb<=75?1:0;
+  if(stage>G.kd){G.kd=stage;E.haloStage(stage);}
+  if(!E.taunt)E.setPhase(Math.max(E.phase,nb<=12?4:nb<=35?3:nb<=65?2:1));
+  if(nb<=0){G.kd=4;E.startFall('final');E.haloStage(4);}
+ }else if(G.kd<4&&G.bar<=next+1e-6){G.bar=next;G.shown=next;knockdown();}
  updateGauge();
 }
 let gaugeHitT=0;
@@ -7041,7 +7418,7 @@ function finishLimb(p){
 }
 /* ---- 입력 ---- */
 const ptrs=new Map();let bladePointer=null;
-function clearPointers(){for(const p of ptrs.values()){if(p.slashing)VM.slashEnd();try{if(canvas.hasPointerCapture&&canvas.hasPointerCapture(p.id))canvas.releasePointerCapture(p.id);}catch(_){}}ptrs.clear();bladePointer=null;}
+function clearPointers(){combatCancel();for(const p of ptrs.values()){if(p.slashing)VM.slashEnd();try{if(canvas.hasPointerCapture&&canvas.hasPointerCapture(p.id))canvas.releasePointerCapture(p.id);}catch(_){}}ptrs.clear();bladePointer=null;}
 canvas.addEventListener('pointerdown',e=>{
  if(G.paused||G.inputLocked||(e.pointerType==='mouse'&&e.button!==0))return;AUDIO.unlock();
  if(G.mode!=='fight')return;
@@ -7051,7 +7428,10 @@ canvas.addEventListener('pointerdown',e=>{
  ptrs.set(e.pointerId,p);
  if(tool==='knife')bladePointer=e.pointerId;
  if(tool==='gun'){VM.fire(p.x,p.y);p.auto=G.time+.19;}
- else if(tool==='hand')p.jabAt=G.time+.38;
+ else if(tool==='hand'){
+  const info=pickAt(p.x,p.y);p.grabbable=!!(info&&info.obj&&G.E.parts.includes(info.obj)&&!['halo','crown','tablet'].includes(info.part));
+  p.grabAt=G.time+.24;
+ }
  e.preventDefault();
 });
 canvas.addEventListener('pointermove',e=>{
@@ -7067,11 +7447,13 @@ canvas.addEventListener('pointermove',e=>{
   if(path.length)slashPath(p,path);
   return;
  }
- p.x=e.clientX;p.y=e.clientY;const dx=p.x-p.x0,dy=p.y-p.y0,dist=Math.hypot(dx,dy);
+ p.x=e.clientX;p.y=e.clientY;
+ if(p.grabbing){G.E.combat.drag((p.x-p.x0)/innerWidth,(p.y-p.y0)/innerHeight);return;}
+ const dx=p.x-p.x0,dy=p.y-p.y0,dist=Math.hypot(dx,dy);
  if(tool==='gun')return;
  if(!p.decided&&!p.swiped&&dist>30&&G.time-p.t0<.38){
   p.swiped=true;p.decided=true;p.jabAt=0;const horiz=Math.abs(dx)>Math.abs(dy)*1.05;
-  VM.attack(horiz?'hook':dy<0?'upper':'jab',p.x0,p.y0);
+  combatAttack(p.x0,p.y0,horiz?'hook':dy<0?'upper':'shove');
  }
 });
 function ptrEnd(e){
@@ -7080,6 +7462,7 @@ function ptrEnd(e){
  if(bladePointer===e.pointerId)bladePointer=null;
  if(G.mode!=='fight'||G.inputLocked){if(p.slashing)VM.slashEnd();return;}
  const tool=G.tool;
+ if(p.grabbing){if(G.E&&G.E.combat)G.E.combat.release(e.type!=='pointerup');COMBAT.pointer=null;canvas.classList.remove('grabbing');VM.grip(null,null);return;}
  if(tool==='knife'){
   if(p.slashing){
    if(e.type==='pointerup'&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))slashPath(p,[[e.clientX,e.clientY]]);
@@ -7087,14 +7470,14 @@ function ptrEnd(e){
    VM.slashEnd();
   }else if(e.type==='pointerup')VM.attack('stab',p.x0,p.y0);
  }
- else if(tool==='hand'&&e.type==='pointerup'&&!p.decided){p.decided=true;VM.attack('jab',p.x0,p.y0);}
+ else if(tool==='hand'&&e.type==='pointerup'&&!p.decided){p.decided=true;combatAttack(p.x0,p.y0);}
 }
 canvas.addEventListener('pointerup',ptrEnd);canvas.addEventListener('pointercancel',ptrEnd);canvas.addEventListener('lostpointercapture',ptrEnd);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 function pollPointers(){
  for(const p of ptrs.values()){
   if(G.tool==='gun'&&p.auto&&G.time>=p.auto){p.auto=G.time+.19;VM.fire(p.x,p.y);}
-  else if(G.tool==='hand'&&!p.decided&&p.jabAt&&G.time>=p.jabAt){p.decided=true;p.jabAt=0;VM.attack('jab',p.x0,p.y0);}
+  else if(G.tool==='hand'&&!p.decided&&p.grabAt&&G.time>=p.grabAt&&COMBAT.pointer==null){p.grabAt=0;combatGrab(p);}
  }
 }
 // 키보드(PC): 1~3 도구
@@ -7143,7 +7526,8 @@ function startFightFromSubmit(){
  setFrame('stand');
  hint(HINTS[G.tool],4.5);
 
- if(G.E)G.E.endAct();
+ if(G.E){G.E.endAct();combatInit(G.E,true);}
+ setCombatStage(true);
  focusCanvas();
 }
 function resetSubmitWorkflow(){
@@ -7223,6 +7607,7 @@ function startRound(mode){
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
 Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,prepAt:0,laughAt:0,submitWaiting:mode==='submit',againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,sealAt:0});
+ setCombatStage(mode==='fight');if(mode==='fight')combatInit(E,true);
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
  CAM.shake=0;CAM.jit.set(0,0,0);gunLT=0;
@@ -7271,6 +7656,7 @@ function step(dt){
   }
  }
  BLOOD.update(sim);COINS.update(sim);CHUNKS.update(sim);VM.update(sim,G.hitstop>0,dt);
+combatEffects(sim);
 FX.update(dt);
 updateTalk(dt);BUB.step();
 BEYOND.update(dt);
@@ -7288,7 +7674,7 @@ function render(){
  const far=BEYOND.active;
  if(far){BEYOND.draw();renderer.clearDepth();scene.background=null;}
  renderer.render(scene,camera);
- if(far)scene.background=SKY;
+ if(far)scene.background=G.mode==='fight'?col('#151d1e'):SKY;
  renderer.clearDepth();renderer.render(vmScene,vmCam);renderer.clearDepth();renderer.render(FX.scene,camera);BUB.draw();
 }
 function frame(now){
@@ -7320,13 +7706,14 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPoint
 window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
  tick(dt=1/60,draw=true){step(dt);if(draw)render();},
  pick:pickAt,setTool,
- hitAt(x,y,kind){if(G.tool==='gun')return VM.fire(x,y);return VM.attack(kind||(G.tool==='hand'?'jab':'stab'),x,y);},
+ hitAt(x,y,kind){if(G.tool==='gun')return VM.fire(x,y);if(G.tool==='hand')return combatAttack(x,y,kind||'jab');return VM.attack(kind||'stab',x,y);},
  slash(points){VM.slashStart(points[0][0],points[0][1]);const p={lastCut:null};for(const [x,y] of points){VM.slashMove(x,y);slashContact(p,x,y);}finishLimb(p);finishBody(p);VM.slashEnd();},
  screenPart(name){const E=G.E;if(!E)return null;const m=E.parts.find(o=>o.userData.part===name&&o.visible);if(!m)return null;const p=m.getWorldPosition(V3()).project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  project(v){const p=v.clone().project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
- get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD};},
- debug:{audio:AUDIO,crowd:CROWD,round(m){startRound(m||"fight");},
+ get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD,COMBAT,COMBAT_STAGE};},
+ debug:{audio:AUDIO,crowd:CROWD,combatHit:o=>G.E.combat.hit(o),grab:()=>G.E.combat.beginGrab(),drag:(x,y)=>G.E.combat.drag(x,y),release:()=>G.E.combat.release(),round(m){startRound(m||"fight");},
   cam(p,l,fov){CAM.frame='debug';CAM.goalPos.set(p[0],p[1],p[2]);CAM.goalLook.set(l[0],l[1],l[2]);CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);if(fov){CAM.fovBase=fov;CAM.fov=fov;}},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
+
