@@ -2297,7 +2297,7 @@ const BUB=(()=>{
   const wv=Math.abs(Math.sin(dir))>Math.abs(Math.cos(dir)),dw=clamp(Math.pow(px*.42/(wv?rx:ry),SQ/2),.03,.22);
   const a1=dir-dw,a2=dir+dw,[x1,y1]=sePoint(cx,cy,rx,ry,a1),[x2,y2]=sePoint(cx,cy,rx,ry,a2);
   const bx=(x1+x2)/2,by=(y1+y2)/2;let vx=b.tx-bx,vy=b.ty-by;const d=Math.hypot(vx,vy)||1;vx/=d;vy/=d;
-  const L=clamp(d-px*.6,px*.45,px*1.15),tx=bx+vx*L,ty=by+vy*L;
+  const L=b.anchor.toMouth?Math.max(0,d-px*.3):clamp(d-px*.6,px*.45,px*1.15),tx=bx+vx*L,ty=by+vy*L;
   g.save();g.globalAlpha=A;
   g.translate(cx,cy);g.scale(sc,sc);g.translate(-cx,-cy);
   // 타원(꼬리 자리만 비우고 한 바퀴) → 꼬리 끝 → 제자리: 한 붓으로 그려 칠하고 테두리를 한 번만 긋는다
@@ -2347,6 +2347,13 @@ const BUB=(()=>{
    let x=clamp(tx,B.l+m.rx,B.r-m.rx),y=hy-gap-m.ry;
    // 위에 자리가 모자라면 머리 옆 넓은 쪽으로(옆에도 자리가 없으면 위에 붙인 채 머리를 조금 가린다)
    if(y-m.ry<B.t&&hr){const rgt=B.r-(tx+hr),lft=(tx-hr)-B.l;if(Math.max(rgt,lft)>=2*m.rx+gap*.5){x=rgt>=lft?tx+hr+gap*.5+m.rx:tx-hr-gap*.5-m.rx;y=Math.max(B.t+m.ry,ty-m.ry*.7);}}
+   // 추임새는 입 옆에 붙인다. 좁은 화면에서는 대각선 위로 비켜 꼬리가 내 쪽으로 내려오지 않게 한다.
+   if(an.toMouth){
+    const side=(B.r-tx>=tx-B.l)?1:-1;
+    x=clamp(tx+side*(hr+gap+m.rx),B.l+m.rx,B.r-m.rx);
+    const beside=Math.abs(x-tx)>=m.rx+hr+gap*.5;
+    y=beside?ty:ty-m.ry-gap-Math.max(hr,px*.35);
+   }
    y=clamp(y,B.t+m.ry,Math.max(B.t+m.ry,B.b-m.ry));
    // 먼저 자리 잡은 말풍선과 겹치면 위로(자리가 없으면 아래로)
    for(let k=0;k<8;k++){
@@ -2355,7 +2362,7 @@ const BUB=(()=>{
     const up=hit.y-hit.ry-6-m.ry;y=up-m.ry>=B.t?up:Math.min(B.b-m.ry,hit.y+hit.ry+6+m.ry);
    }
    placed.push({x,y,rx:m.rx,ry:m.ry});
-   if(b.x==null){b.x=x;b.y=y;}else{const k=1-Math.exp(-dt*16);b.x+=(x-b.x)*k;b.y+=(y-b.y)*k;}
+   if(b.x==null||an.toMouth){b.x=x;b.y=y;}else{const k=1-Math.exp(-dt*16);b.x+=(x-b.x)*k;b.y+=(y-b.y)*k;}
    b.tx=tx;b.ty=ty;b.a=Math.min(1,b.a+dt/.16);
    const el=G.time-b.t0;let r=0;for(const s of b.steps){if(s.t>el)break;if(s.kind!=='space')r++;}b.reveal=r;
    drawOne(b,G.time>b.until?1-(G.time-b.until)/FADE:1);
@@ -7067,6 +7074,11 @@ const VM=(()=>{
   clipOn=false;
   const sway=Math.sin(st.time*1.6)*.004,sway2=Math.cos(st.time*1.1)*.003,dropIn=(1-easeOut3(st.swapT))*.25;
   for(const k of ['R','L']){H[k].scale=SC;H[k].p.copy(rest[k].p);H[k].p.y+=sway*(k==='R'?1:-1)-dropIn;H[k].p.x+=sway2;H[k].q.copy(rest[k].q);H[k].anch.copy(ANCH[k]);}
+  // 밟을 때 두 손은 조금 들어 균형을 잡고, 발이 팔 위로 치솟아 보이지 않게 한다.
+  if(COMBAT.foot&&st.tool==='hand'){
+   const t=COMBAT.foot.t+dt,w=smooth(t/.16)*(1-smooth((t-.34)/.23));
+   for(const k of ['R','L']){H[k].p.y+=TAN*.56*.24*w;H[k].p.x+=(k==='R'?1:-1)*TAN*vmCam.aspect*.56*.04*w;}
+  }
   // 진행 중인 공격
   for(let i=st.acts.length-1;i>=0;i--){const a=st.acts[i];if(!frozen)a.t+=dt;const t=a.t,[d0,d1,d2,d3]=a.dur,c=a.contact;
    if(!a.done&&t>=c){a.done=true;a.hit=st.onContact?st.onContact(a):null;if(a.hit&&a.hit.hit&&BLADE(a.tool))st.bloody[a.tool]=st.bloody[a.tool]||a.hit.blood;}
@@ -7383,20 +7395,21 @@ function combatEffects(dt){
   if(!a.obj.parent||a.obj.userData.detached){COMBAT.foot=null;return;}
   const target=a.obj.localToWorld(a.local.clone());
   const boot=COMBAT_STAGE.boot;
-  /* 밟기는 1인칭 손과 같은 가까운 화면(vmScene)에 그린다. 발바닥이 상대를 향한 채 화면 아래에서 올라와(.16초, 크게·가깝게 든다)
-   * 표적이 있는 화면 자리로 내리꽂히고(.27초, 작아지며 멀어진다) 잠깐 머물렀다가 아래로 빠진다(.57초).
-   * 예전처럼 상대 몸 위 실제 자리에 사람 크기 발과 허벅지까지 그리면, 멀리서 내려다보는 카메라라 발은 콩알만 하고 다리는 화면을 가로지르는 기둥이 됐다 */
+  /* 발은 주먹(.56m)보다 뒤에서 낮게 든다. 발끝을 세워 얼굴 높이까지 올리지 않고,
+   * 발바닥 앞부분을 표적에 맞춘다. 준비(.16)·접촉(.27)·회수(.57) 시간은 유지한다. */
   const scr=target.clone().project(camera),nx=clamp(scr.x,-.9,.9),ny=clamp(scr.y,-.9,.9),t=a.t;
-  const pr=innerWidth<innerHeight,S=VM.at(.3,-1.45,.6),C=VM.at(nx*.3+.1,-.3,pr?.6:.52),Tg=VM.at(nx,ny,pr?1.08:.92),P=boot.position;
+  const pr=innerWidth<innerHeight,S=VM.at(.3,-1.65,.94),C=VM.at(nx*.2+.1,pr?-.92:-1.02,.9),Tg=VM.at(nx,ny,pr?1.08:1.02),P=boot.position;
   if(t<.16)P.copy(S).lerp(C,smooth(t/.16));
   else if(t<.27)P.copy(C).lerp(Tg,easeIn3((t-.16)/.11));
   else if(t<.34)P.copy(Tg);
   else P.copy(Tg).lerp(S,smooth((t-.34)/.23));
-  const down=t<.16?0:t<.27?(t-.16)/.11:1;
-  boot.rotation.set(PI/2+.35*(1-down)-.1,nx*.25,-.1+Math.sin(t*9)*.05);
+  const down=t<.16?0:t<.27?easeIn3((t-.16)/.11):1-smooth((t-.34)/.23);
+  boot.rotation.set(lerp(.48,.72,down),nx*.16,-.06);
+  // 발목 대신 발바닥 접촉점을 맞춰 발끝이 표적 위로 튀어나오지 않게 한다.
+  P.sub(V3(-.008,.022,-.112).applyQuaternion(boot.quaternion));
   boot.updateMatrixWorld(true);
   // 정강이: 발목(뒤꿈치 위)에서 화면 오른쪽 아래 바깥(내 무릎 자리)으로. 멀리서 보는 다리가 아니라 소매처럼 가까이서 들어온다
-  const ankle=V3(.002,.18,.073),hip=boot.worldToLocal(VM.at(.55,-1.5,.36));
+  const ankle=V3(.002,.18,.073),hip=boot.worldToLocal(VM.at(.4,-1.8,.72));
   const segment=(mesh,from,to)=>{const d=to.clone().sub(from),len=d.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,d.divideScalar(len||1));mesh.scale.y=len;};
   const kneePos=ankle.clone().lerp(hip,.55);
   segment(COMBAT_STAGE.shin,ankle,kneePos);segment(COMBAT_STAGE.thigh,kneePos,hip);COMBAT_STAGE.knee.position.copy(kneePos);
@@ -7468,7 +7481,8 @@ function updateTalk(dt){
  n.delay-=dt;if(n.delay>0)return;
  TALK.q.shift();
  const E=G.E;if(!E||E.headGone)return;
- TALK.cur={b:BUB.say(bossAnchor(E),n.text,n.dur,{voice:VOICE.boss,size:n.size,read:[.6,.03],tts:n.tts}),voiceUntil:G.time+4,quip:n.quip};
+ const anchor=bossAnchor(E);if(n.quip)anchor.toMouth=true;
+ TALK.cur={b:BUB.say(anchor,n.text,n.dur,{voice:VOICE.boss,size:n.size,read:[.6,.03],tts:n.tts}),voiceUntil:G.time+4,quip:n.quip};
  // 글자가 찍히는 동안 입이 움직인다
  E.talkUntil=G.time+typeTime(n.text,VOICE.boss.speed)+.08;
  // 추임새는 아프다가도 그 순간만 비웃는 얼굴로 돌아와 말한다
