@@ -1261,7 +1261,7 @@ const SCULPT=(()=>{
  return {ell,cap,smin,smax,star,tube};
 })();
 /* ===== 3. 소리 =====
- * 녹음 파일 없이 전부 만들어 낸다. 타격음은 여러 겹(낮은 쿵 + 살 철썩 + 뼈 딱 + 공간 울림)으로 쌓고,
+ * 부활 대사만 고정 한국어 남성 음성 파일을 쓴다. 타격음은 여러 겹(낮은 쿵 + 살 철썩 + 뼈 딱 + 공간 울림)으로 쌓고,
  * 목소리는 성대 소리를 모음 울림통(포먼트)에 통과시켜 '윽·억·아악·으으·흐흐' 같은 소리를 낸다. */
 const AUDIO=(()=>{
  let ctx=null,master,comp,lim,bus,vbus,verb,noise,glot,irBuf,on=true,baking=false;
@@ -1285,26 +1285,48 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  bakeAll();
+  bakeAll();loadBackVoice();
  }
  function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
- function hold(on){try{if(tts){const s=window.speechSynthesis;if(on)s.pause();else s.resume();}if(!ctx)return;const p=on?ctx.suspend():ctx.resume();if(p&&p.catch)p.catch(()=>{});}catch(_){}}
+ function hold(on){try{if(tts){const s=window.speechSynthesis;if(s){if(on)s.pause();else s.resume();}}if(!ctx)return;const p=on?ctx.suspend():ctx.resume();if(p&&p.catch)p.catch(()=>{});}catch(_){}}
  function ready(){return ctx&&on&&(baking||ctx.state==='running');}
  function setOn(v){on=!!v;if(!on&&tts)tts.stop();if(master)master.gain.setTargetAtTime(on?.95:0,ctx.currentTime,.03);}
- let tts=null;
+ let tts=null,backBuffer=null,backLoad=null;
+ function loadBackVoice(){
+  if(!ctx)return Promise.resolve(null);
+  if(!backLoad){const ac=ctx;
+   backLoad=fetch('assets/amback-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();})
+    .then(data=>ac.decodeAudioData(data)).then(buffer=>backBuffer=buffer).catch(()=>null);
+  }
+  return backLoad;
+ }
  function speakTTS(text){
-  const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
-  if(!on||!synth||!Utterance)return null;
+  if(!on)return null;
   if(tts)tts.stop();
-  const u=new Utterance(text);u.lang='en-US';u.rate=.9;u.pitch=.75;u.volume=1;
-  const voices=synth.getVoices?synth.getVoices():[];
-  const v=voices.find(v=>/^en[-_]US$/i.test(v.lang))||voices.find(v=>/^en\b/i.test(v.lang));if(v)u.voice=v;
-  let busy=true,started=false;
-  const finish=()=>{busy=false;if(tts===handle)tts=null;};
-  const handle={get busy(){return busy;},get started(){return started;},stop(){if(!busy)return;finish();try{synth.cancel();}catch(_){}}};
-  u.onstart=()=>{started=true;};u.onend=u.onerror=finish;tts=handle;
-  try{if(synth.paused)synth.resume();synth.speak(u);}catch(_){finish();}
+  const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
+  let busy=true,started=false,source=null,native=false;
+  const finish=()=>{busy=false;if(source){source.disconnect();source=null;}if(tts===handle)tts=null;};
+  const handle={get busy(){return busy;},get started(){return started;},stop(){
+   if(!busy)return;try{if(source)source.stop();if(native&&synth)synth.cancel();}catch(_){}finish();
+  }};
+  // 파일을 읽지 못한 경우에도 영문 발음으로 돌아가지 않는다.
+  const fallback=()=>{
+   if(!busy||!on)return;
+   if(!synth||!Utterance){finish();return;}
+   const u=new Utterance(text);u.lang='ko-KR';u.rate=.9;u.pitch=.75;u.volume=1;
+   const voices=(synth.getVoices?synth.getVoices():[]).filter(v=>/^ko(?:[-_]|$)/i.test(v.lang));
+   const v=voices.find(v=>/남성|남자|\bmale\b|Minho|InJoon|BongJin|Hyunsu|Hyunwoo|Hyun-Woo/i.test(v.name))||voices[0];if(v)u.voice=v;
+   native=true;u.onstart=()=>{started=true;};u.onend=u.onerror=finish;
+   try{if(synth.paused)synth.resume();synth.speak(u);}catch(_){finish();}
+  };
+  const play=buffer=>{
+   if(!busy||!on)return;
+   if(!buffer){fallback();return;}
+   try{source=ctx.createBufferSource();source.buffer=buffer;source.connect(vbus);source.onended=finish;source.start();started=true;}catch(_){finish();}
+  };
+  tts=handle;
+  if(text==='암백'&&ctx){if(backBuffer)play(backBuffer);else loadBackVoice().then(play);}else fallback();
   return handle;
  }
  const live=new Set();
@@ -7163,7 +7185,7 @@ function updateStory(){
   if(t>=7.1&&!r.released){r.released=true;flashRelease(1.2);}
   if(t>=7.9&&!r.stamped){r.stamped=true;CROWD.restamp();}
   if(t>=8.5&&!r.cheered){r.cheered=true;CROWD.cheer();}
-  if(t>=9.65&&!r.spoken){r.spoken=true;queueTalk([['boss',LINES.back,1.7,0,1.45,"I'm back."]]);}
+  if(t>=9.65&&!r.spoken){r.spoken=true;queueTalk([['boss',LINES.back,1.7,0,1.45,'암백']]);}
   if(r.spoken&&!talkBusy())finishRevival();
  }
  // 설계자가 말없이 쓰러지고 잠깐 뒤, 뒤에 있던 것을 올려다본다. 다 올려다보고 나면 '다시 족치기'
