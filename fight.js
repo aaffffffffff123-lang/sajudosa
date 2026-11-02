@@ -2157,10 +2157,8 @@ const BEYOND=(()=>{
   vertexShader:`varying vec2 vNdc;
 void main(){vNdc=position.xy;gl_Position=vec4(position.xy,.999,1.);}`,
   fragmentShader:`uniform sampler2D uMap;uniform float uTime,uReveal,uAspect,uTanHalf,uPitch,uKx,uKy,uCy,uPupil,uGlow;uniform mat3 uCamRot;uniform vec2 uGaze;varying vec2 vNdc;
-/* 그림 안 눈의 자리(UV, 아래가 0): 홍채 원판의 중심·반지름, 그리고 눈꺼풀 사이(눈구멍)의 윗선·아랫선(그림을 재서 맞춘 값).
- * 시선은 홍채 원판을 통째로 옮겨서 낸다 — 그림을 늘리거나 당기지 않고, 홍채가 비켜난 자리는 바로 바깥 흰자 색으로 메우고,
- * 눈꺼풀 밖으로 나가는 부분은 눈꺼풀 뒤로 숨긴다. 동공은 그려진 대로 둔다(예전에 동공을 지우고 다시 그리던 것이 포토샵 잘못된 것처럼 보였다). */
-const vec2 IC=vec2(.493,.704),IR=vec2(.151,.101);
+/* 눈꺼풀 경계는 고정하고 안구 안쪽만 굴린다. 눈을 맞춘 좌표(시선 0)는 원화 그대로다. */
+const vec2 IC=vec2(.500,.704),IR=vec2(.165,.101);
 float ell(vec2 p,vec2 c,vec2 r){return length((p-c)/r);}
 float topV(float ux){float k=max(0.,1.-ux*ux);return .694+.1009*pow(k,1.3);}
 float botV(float ux){float k=max(0.,1.-ux*ux);return .6875-.0078*ux-.0781*pow(k,1.63);}
@@ -2180,15 +2178,23 @@ void main(){
  if(rp.z>-.02)q.y=-10.;
  // 2) 눈꺼풀은 그림 그대로
  vec3 lid=texture2D(uMap,clamp(q,.002,.998)).rgb;
- // 3) 눈구멍 안(흰자+홍채)을 통째로 시선만큼 옮긴다. 아래로 내려다볼 때 윗꺼풀 밑에 새로 드러나는 띠는 원래 그림에 없는 자리라서
- //    눈 속 맨 윗줄을 가져오되 눈꺼풀 그늘로 어둡게 깔아 둔다(실제 눈도 내려다보면 윗흰자가 꺼풀 그늘에 든다). 아래로 밀려난 부분은 아랫꺼풀 뒤로 숨는다
+ // 3) 위·아래 눈꺼풀에 닿을수록 이동량이 0이 되는 연속 변형. 복제한 윗줄/검은 띠가 미끄러져 나오지 않는다.
  float inOpen=opening(q);
- float ux=(q.x-.5078)/.3076,ty=topV(clamp(ux,-1.,1.))-.006;
- vec2 qs=q-uGaze;float di=ell(qs,IC,IR);
- float over=max(0.,qs.y-ty);
- vec2 ts=vec2(qs.x,min(qs.y,ty));
- vec3 inner=texture2D(uMap,clamp(ts,.002,.998)).rgb;
- inner=mix(inner,vec3(.055,.06,.065),.9*smoothstep(.004,.03,over));
+ float ux=(q.x-.5078)/.3076,ex=clamp(ux,-1.,1.);
+ float bottom=botV(ex),top=topV(ex),ey=clamp((q.y-bottom)/max(.01,top-bottom),0.,1.);
+ float roll=sin(ey*3.14159265)*(1.-smoothstep(.58,1.,abs(ux)));
+ vec2 gaze=vec2(uGaze.x,clamp(uGaze.y,-.28*(top-bottom),.28*(top-bottom)));
+ vec2 qs=q-gaze*roll;
+ float di=ell(qs,IC,IR);
+ // 세로로 긴 원래 동공을 보존하며 폭만 변화시킨다. 홍채 바깥 경계는 움직이지 않는다.
+ vec2 ip=(qs-IC)/IR;
+ float rim=sqrt(max(0.,1.-ip.y*ip.y));
+ if(rim>.02&&abs(ip.x)<rim){
+  float x=abs(ip.x)/rim,base=.18,dilated=base*uPupil;
+  float mapped=x<dilated?x/uPupil:base+(x-dilated)*(1.-base)/(1.-dilated);
+  qs.x=IC.x+sign(ip.x)*mapped*rim*IR.x;
+ }
+ vec3 inner=texture2D(uMap,clamp(qs,.002,.998)).rgb;
  vec3 color=mix(lid,inner,inOpen);
  // 4) 홍채가 안에서 빛난다
  color*=1.+uGlow*.32*pow(max(0.,1.-di),1.6)*inOpen;
@@ -2233,13 +2239,13 @@ void main(){
  const _cp=V3(),_m3=new THREE.Matrix3();
  let active=false,t0=0,from=null,exposure=1.08,lights=null;
  const TILT=6.4,DUR=9.4;
- // 눈의 박자(begin 뒤 초): 알아봄(동공이 나한테 꽂힘) → 이후 미세한 움직임
- const T_SEE=TILT+.45,T_DILATE=T_SEE+.16;
- const PUPIL_REST=.6,PUPIL_CONTACT=1.08;
- const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:PUPIL_REST,glow:0,seen:false,lock:0};
+ // 아래를 보다가 한 번 고개를 맞추고 정지. 그 다음 동공이 넓어진다.
+ const T_SEE=TILT+.45,T_SHIFT=.58,T_DILATE=T_SEE+T_SHIFT+.12;
+ const PUPIL_REST=.68,PUPIL_CONTACT=1.08;
+ const eye={gaze:new THREE.Vector2(),pupil:PUPIL_REST,glow:0,seen:false,lock:0};
  // 시선은 홍채 원판을 옮기는 양(그림 UV). 그림 그대로가 나와 눈이 마주친 각도이고, 처음엔 홍채를 반지름의 절반쯤 내려 쓰러진 설계자를 본다.
  // (예전 값 -.09는 홍채 반지름에 가까워 그림을 심하게 끌어 늘였다)
- const GAZE0=new THREE.Vector2(-.004,-.048);
+ const GAZE0=new THREE.Vector2(0,-.048);
  const GAZE_PLAYER=new THREE.Vector2(0,0);
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
@@ -2277,36 +2283,25 @@ void main(){
   CAM.frame='cut';G.inputLocked=true;clearPointers();$('#dock').hidden=true;
   const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
   $('#hint').classList.add('off');
-  eye.gaze.copy(GAZE0);eye.jumpAt=-1;eye.nextJump=T_SEE+.7;eye.pupil=PUPIL_REST;eye.glow=0;eye.seen=false;eye.lock=0;
+  eye.gaze.copy(GAZE0);eye.pupil=PUPIL_REST;eye.glow=0;eye.seen=false;eye.lock=0;
   AUDIO.beyond();
  }
  function updateEye(k,dt){
   const U=mat.uniforms;
   // 알아봄: 아래를 보던 시선이 먼저 나한테 꽂힌다. 시선 이동이 끝나면 동공이 커진다.
-  if(k>=T_SEE&&!eye.seen){eye.seen=true;eye.jumpFrom.copy(eye.gaze);eye.jumpTo.copy(GAZE_PLAYER);eye.jumpAt=k;AUDIO.gaze();}
-  if(eye.jumpAt>=0){
-   const u=clamp((k-eye.jumpAt)/.09,0,1),f=1-Math.pow(1-u,3);
-   eye.gaze.lerpVectors(eye.jumpFrom,eye.jumpTo,f);
-   const over=Math.sin(Math.min(1,(k-eye.jumpAt)/.16)*PI)*.12;
-   eye.gaze.addScaledVector(_gd.subVectors(eye.jumpTo,eye.jumpFrom),over);
-   if(k-eye.jumpAt>.16)eye.jumpAt=-1;
-  }else if(eye.seen){
-   // 미세 움직임: 가끔 아주 조금 튀고, 그 사이엔 천천히 나한테 되돌아온다
-   eye.gaze.lerp(GAZE_PLAYER,1-Math.exp(-dt*.6));
-   if(k>=eye.nextJump){eye.nextJump=k+rnd(.6,1.9);const a=rnd(0,TAU),r=rnd(.0022,.0058);eye.jumpFrom.copy(eye.gaze);eye.jumpTo.lerpVectors(GAZE_PLAYER,eye.gaze,.5);eye.jumpTo.x+=Math.cos(a)*r;eye.jumpTo.y+=Math.sin(a)*r*.7;eye.jumpAt=k;}
-  }
+  if(k>=T_SEE&&!eye.seen){eye.seen=true;AUDIO.gaze();}
+  eye.gaze.lerpVectors(GAZE0,GAZE_PLAYER,smoother(clamp((k-T_SEE)/T_SHIFT,0,1)));
   // 동공: 아래를 볼 때는 좁게, 눈을 맞춘 뒤 넓어져 그 크기를 유지한다.
-  const pupil=eye.seen?lerp(PUPIL_REST,PUPIL_CONTACT,easeOut3(clamp((k-T_DILATE)/.45,0,1))):PUPIL_REST;
+  const pupil=lerp(PUPIL_REST,PUPIL_CONTACT,smoother(clamp((k-T_DILATE)/.7,0,1)));
   eye.pupil=pupil;
   // 홍채 빛: 알아볼 때 확 올랐다가 가라앉고, 그 뒤로 느리게 맥동
   let glow=0;
-  if(eye.seen){const s=k-T_SEE;glow=s<.4?.9*smooth(s/.4):lerp(.9,.35,smooth((s-.4)/1.8));glow+=.06*Math.sin(k*.9);}
+  if(eye.seen){const s=k-T_SEE;glow=s<.65?.55*smooth(s/.65):lerp(.55,.28,smooth((s-.65)/1.8));}
   eye.lock=eye.seen?clamp((k-T_SEE)/.6,0,1):0;
   if(eye.lock>0&&caster.visible)caster.visible=false; // 눈이 나를 보는 순간 그 그림자는 걷히고 차가운 빛이 내려온다
   U.uGaze.value.copy(eye.gaze);U.uPupil.value=pupil;U.uGlow.value=glow;
   applyLights(eye.lock);
  }
- const _gd=new THREE.Vector2();
  function update(dt){
   updateOmen();
   if(!active)return;
@@ -4451,6 +4446,101 @@ const BOOTGEO=(()=>{let G=null;return()=>G||(G=(()=>{
  sole.rotateX(PI/2);sole.translate(0,-.046,0);sole.computeVertexNormals();
  return {body,sole};})());})();
 
+/* Attached arms keep their bone lengths while routing around the body. Small
+ * capsule samples include the cloth radius, not just the hand's target point. */
+const ARM_CLEARANCE=(()=>{
+ const invChest=new THREE.Matrix4(),local=V3(),sample=V3(),normal=V3(),shift=V3();
+ const S=V3(),E0=V3(),W0=V3(),goal=V3(),T=V3(),axis=V3(),center=V3(),u=V3(),v=V3(),elbow=V3(),bestE=V3(),bestW=V3(),nearE=V3();
+ const qHand=new THREE.Quaternion(),qUpper=new THREE.Quaternion(),qLower=new THREE.Quaternion(),qTmp=new THREE.Quaternion();
+ const colliders=Array.from({length:3},()=>({m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null}));
+ const angles=[0,.35,-.35,.7,-.7,1.2,-1.2,2,-2,Math.PI];
+ const upperSamples=[.5,.75,1],lowerSamples=[.2,.4,.6,.8,1];
+ let count=0;
+ const head=(x,y,z)=>SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245);
+ function obstacle(mesh,sdf,chest){if(!mesh||mesh.userData.detached)return;mesh.updateWorldMatrix(true,false);const c=colliders[count++];c.m.copy(mesh.matrixWorld).invert().multiply(chest.matrixWorld);c.n.setFromMatrix4(c.m).transpose();c.sdf=sdf;}
+ function distance(c,p){local.copy(p).applyMatrix4(c.m);return c.sdf(local.x,local.y,local.z);}
+ function penetration(p,r){let sum=0;for(let j=0;j<count;j++){const d=r-distance(colliders[j],p);if(d>0)sum+=d*d;}return sum;}
+ function score(e,w,limit=Infinity){
+  let n=0;
+  // The shoulder cap intentionally joins the torso; the rest of the sleeve must clear it.
+  for(const t of upperSamples){n+=penetration(sample.lerpVectors(S,e,t),.116*smooth((t-.25)/.75));if(n>limit)return n;}
+  for(const t of lowerSamples){n+=penetration(sample.lerpVectors(e,w,t),.124);if(n>limit)return n;}
+  // Palms may intentionally touch the face or belly (wipe / clutch / prayer).
+  // The forearm and cuff still clear both surfaces all the way to the wrist.
+  return n;
+ }
+ function project(p,r){
+  for(let j=0;j<count;j++){const c=colliders[j],d=distance(c,p);if(d>=r)continue;
+   const x=local.x,y=local.y,z=local.z,h=.001;
+   normal.set(c.sdf(x+h,y,z)-c.sdf(x-h,y,z),c.sdf(x,y+h,z)-c.sdf(x,y-h,z),c.sdf(x,y,z+h)-c.sdf(x,y,z-h)).applyMatrix3(c.n);
+   if(normal.lengthSq()<1e-10)normal.set(p.x<0?-1:1,0,1);normal.normalize();p.addScaledVector(normal,r-d+.004);
+  }
+ }
+ function solve(a,dt){
+  if(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
+  S.copy(a.sh.position);a.el.getWorldPosition(E0).applyMatrix4(invChest);a.wr.getWorldPosition(W0).applyMatrix4(invChest);
+  qHand.copy(a.sh.quaternion).multiply(a.el.quaternion).multiply(a.wr.quaternion);
+  const original=score(E0,W0);
+  const step=Math.max(.001,dt*1.5),previous=a.clearWrist;
+  if(original<1e-8&&(!previous||(previous.distanceTo(W0)<step&&a.clearElbow.distanceTo(E0)<step))){
+   if(!a.clearElbow){a.clearElbow=V3();a.clearWrist=V3();}a.clearElbow.copy(E0);a.clearWrist.copy(W0);return;
+  }
+  // Approach the requested pose from the last safe pose. Do not teleport back
+  // through the torso as soon as an animation's unconstrained target is clear.
+  goal.copy(W0);if(previous){shift.subVectors(W0,previous).clampLength(0,step);goal.copy(previous).add(shift);}
+  let best=Infinity,bestCollision=Infinity;
+  const L1=a.L1,L2=a.L2,max=L1+L2-.001,min=Math.abs(L1-L2)+.002;
+  for(let route=0;route<6;route++){
+   T.copy(goal);
+   if(route<5)T.add(shift.set(a.s*route*.055,0,route*.035));
+   else T.copy(S).add(shift.set(a.s*.34,-.27,.10));
+   for(let k=0;k<4;k++){project(T,.128);shift.subVectors(T,S).clampLength(min,max);T.copy(S).add(shift);}
+   const len=axis.subVectors(T,S).length();axis.divideScalar(len||1);
+   const along=(L1*L1-L2*L2+len*len)/(2*len),height=Math.sqrt(Math.max(0,L1*L1-along*along));center.copy(S).addScaledVector(axis,along);
+   u.subVectors(a.clearElbow||E0,center).addScaledVector(axis,-u.dot(axis));
+   if(u.lengthSq()<1e-8)u.set(a.s,0,.3).addScaledVector(axis,-u.dot(axis));u.normalize();v.crossVectors(axis,u).normalize();
+   let safe=false;
+   for(const angle of angles){
+    elbow.copy(center).addScaledVector(u,Math.cos(angle)*height).addScaledVector(v,Math.sin(angle)*height);
+    const collision=score(elbow,T,best/20000),cost=collision*20000+elbow.distanceToSquared(E0)*.2+T.distanceToSquared(goal)*12+(a.clearElbow?elbow.distanceToSquared(a.clearElbow)*2:0);
+    if(cost<best){best=cost;bestCollision=collision;bestE.copy(elbow);bestW.copy(T);}if(collision<1e-8)safe=true;
+   }
+   if(safe)break;
+  }
+  // A new route can lie on the other side of a shoulder's reach limit. Walk
+  // toward it along the outside instead of switching to that route in one frame.
+  if(previous&&bestW.distanceTo(previous)>step*1.1){
+   T.copy(previous).add(shift.subVectors(bestW,previous).clampLength(0,step));
+   const len=axis.subVectors(T,S).length();axis.divideScalar(len||1);
+   const along=(L1*L1-L2*L2+len*len)/(2*len),height=Math.sqrt(Math.max(0,L1*L1-along*along));center.copy(S).addScaledVector(axis,along);
+   u.subVectors(a.clearElbow,center).addScaledVector(axis,-u.dot(axis));
+   if(u.lengthSq()<1e-8)u.set(a.s,0,.3).addScaledVector(axis,-u.dot(axis));u.normalize();v.crossVectors(axis,u).normalize();
+   let nearCost=Infinity,nearCollision=Infinity;
+   for(let i=-16;i<=16;i++){
+    const angle=i*Math.PI/16;elbow.copy(center).addScaledVector(u,Math.cos(angle)*height).addScaledVector(v,Math.sin(angle)*height);
+    const collision=score(elbow,T,nearCost/20000),cost=collision*20000+elbow.distanceToSquared(a.clearElbow)*2;
+    if(cost<nearCost){nearCost=cost;nearCollision=collision;nearE.copy(elbow);}
+   }
+   if(nearCollision<.00006){bestE.copy(nearE);bestW.copy(T);bestCollision=nearCollision;}
+   else if(score(a.clearElbow,previous)<.00006){bestE.copy(a.clearElbow);bestW.copy(previous);bestCollision=0;}
+  }
+  if(bestCollision>=original&&original>1e-8&&!previous)return;
+  if(!a.clearElbow){a.clearElbow=V3();a.clearWrist=V3();}a.clearElbow.copy(bestE);a.clearWrist.copy(bestW);
+  qUpper.setFromUnitVectors(_down,axis.subVectors(bestE,S).normalize());
+  qLower.setFromUnitVectors(_down,axis.subVectors(bestW,bestE).normalize().applyQuaternion(qTmp.copy(qUpper).invert()));
+  a.sh.quaternion.copy(qUpper);a.el.quaternion.copy(qLower);
+  a.wr.quaternion.copy(qTmp.copy(qUpper).multiply(qLower).invert().multiply(qHand));
+  a.sh.updateWorldMatrix(true,true);
+ }
+ function apply(E,dt=1/60){
+  const chest=E.bones.chest;chest.updateWorldMatrix(true,false);invChest.copy(chest.matrixWorld).invert();count=0;
+  obstacle(E.belly,BODYGEO.belly,chest);obstacle(E.chestMesh,BODYGEO.chest,chest);
+  if(!E.headGone&&!E.headDestroyed)obstacle(E.face,head,chest);
+  for(const a of E.arms)solve(a,dt);
+ }
+ return {apply};
+})();
+
 class Emperor{
  constructor(result){
   this.result=result;
@@ -4622,7 +4712,7 @@ class Emperor{
    mk(cylGeo(.078,.078,.012,24,true),M.robeIn,fm,{p:[0,-.139,0],cast:false});
    // 넓은 소매 자락: 팔을 앞으로 들면 아래로 늘어진다
    // (늘어진 자락은 맞힘 판정에서 뺀다: 배 앞에 늘어져 있어도 칼·총이 그 뒤 배에 닿게)
-   const drape=grp(fm,[0,-.012,0]);const sleeve=mk(sphereGeo(26),M.robe,drape,{p:[0,-.1,0],s:[.1,.16,.15],flow:true});sleeve.userData.noHit=true;
+   const drape=grp(fm,[0,-.012,0]);const sleeve=mk(sphereGeo(26),M.robe,drape,{p:[0,-.055,0],s:[.1,.11,.065],flow:true});sleeve.userData.noHit=true;
    const wr=this.bone('wrist'+nm,fm,[0,-.107,0]);
    const hand=this._hand(wr,s,'hand'+nm);
    this.arms.push({s,nm,sh,um,el,fm,wr,hand,sleeve,drape,L1:.235,L2:.215});
@@ -5095,14 +5185,19 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
  },
 
  /* ---- 팔 IK: 손을 정해진 자리에 ---- */
- solveArm(a,ik){
-  if(ik.w<.001||a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
+ solveArm(a,ik,dt=1/60){
+  if(ik.w<.001){ik.follow=null;return;}
+  if(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
   const chest=this.bones.chest;chest.updateWorldMatrix(true,false);
   const T=_av1.copy(ik.target);
   if(ik.space==='root')this.root.localToWorld(T);
   chest.worldToLocal(T);
-  const S=a.sh.position,pole=_av2.set(S.x+a.s*.3,S.y-.2,S.z-.18);
+  // Weight alone did not smooth an already active IK: a new action snapped the target.
+  if(!ik.follow)ik.follow=chest.worldToLocal(a.wr.getWorldPosition(V3()));
+  ik.follow.lerp(T,1-Math.exp(-(ik.rate||8)*dt));T.copy(ik.follow);
+  const S=a.sh.position,pole=_av2.set(S.x+a.s*.35,S.y-.2,S.z+.18);
   if(ik.pole)pole.copy(S).add(ik.pole);
+  _av10.subVectors(T,S).clampLength(Math.abs(a.L1-a.L2)+.001,a.L1+a.L2-.001);T.copy(S).add(_av10);
   const E=_av3;solveTwoBone(S,T,pole,a.L1,a.L2,E);
   const v1=_av4.subVectors(E,S).normalize();
   const qU=_aq1.setFromUnitVectors(_down,v1);
@@ -5123,7 +5218,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   const w=smooth(ik.w);
   a.sh.quaternion.slerp(qU,w);a.el.quaternion.slerp(qE,w);if(qH)a.wr.quaternion.slerp(qH,w);
  },
- setIK(side,o){const a=this.arms[side==='L'?0:1],ik=this.ik[side];if(!o.rest)this._ikUse[side]=this._ikFrame;if(a&&(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)){ik.goal=0;return;}ik.goal=o.w==null?1:o.w;if(o.target)ik.target.copy(o.target);if(o.fd)ik.fd.copy(o.fd);if(o.pd)ik.pd.copy(o.pd);if(o.curl!=null)ik.curl=o.curl;ik.space=o.space||'root';ik.pole=o.pole||null;ik.rate=o.rate||8;},
+ setIK(side,o){const a=this.arms[side==='L'?0:1],ik=this.ik[side];if(!o.rest)this._ikUse[side]=this._ikFrame;if(a&&(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)){ik.goal=0;return;}ik.goal=o.w==null?1:o.w;if(o.target)ik.target.copy(o.target);if(o.fd)ik.fd.copy(o.fd);if(o.pd)ik.pd.copy(o.pd);if(o.curl!=null)ik.curl=o.curl;ik.space=o.space||'root';if(o.pole){if(!ik.pole)ik.pole=V3();ik.pole.copy(o.pole);}else ik.pole=null;ik.rate=o.rate||8;},
  releaseIK(side,rate=6){const ik=this.ik[side];ik.goal=0;ik.rate=rate;},
 
  /* ---- 홀(내 사주가 적힌 옥판) ---- */
@@ -5234,9 +5329,10 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   // 팔 IK
   this.root.updateMatrixWorld(true);
   this.updateRevive(dt);
-  for(const a of this.arms){const ik=this.ik[a.nm];ik.w=damp(ik.w,ik.goal,ik.rate||8,dt);this.solveArm(a,ik);this.setCurl(a,lerp(this.pose[a.nm+'curl'],ik.curl,smooth(ik.w)));}
+  for(const a of this.arms){const ik=this.ik[a.nm];ik.w=damp(ik.w,ik.goal,ik.rate||8,dt);this.solveArm(a,ik,dt);this.setCurl(a,lerp(this.pose[a.nm+'curl'],ik.curl,smooth(ik.w)));}
   this.root.updateMatrixWorld(true);
   this.updateFace(dt,time);this.updateTears(time);this.updateRepFace(dt,time);
+  ARM_CLEARANCE.apply(this,dt);
   if(this.fleshList)for(const f of this.fleshList)if(f.mesh.parent)f.update(dt);
   this.updateSecondary(dt);this.updateBelly(dt);this.updateRegrow(dt);this.updateHeadRegrow(dt);
   if(this.tabletHeld)this.placeTablet();else this.updateTablet(dt);
@@ -5255,10 +5351,11 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   for(const a of this.arms){const d=a.drape;if(!d||d.userData.detached||a.el.userData.detached)continue;
    a.el.matrixWorld.decompose(_av6,_aq4,_av7);
    const fa=_av2.set(0,-1,0).applyQuaternion(_aq4);const horiz=1-Math.abs(fa.y);
-   const k=smooth((horiz-.15)/.6);const zf=_av3.set(fa.x,0,fa.z);if(zf.lengthSq()<1e-6)zf.set(0,0,1);zf.normalize();
-   const yy=_av4.set(0,1,0),xx=_av5.crossVectors(yy,zf).normalize();_am.makeBasis(xx,yy,zf);
-   const qw=_aq3.setFromRotationMatrix(_am);d.quaternion.copy(_aq4.invert().multiply(qw));
-   const sc=.25+.38*k;d.scale.set(sc,sc,1);d.visible=k>.02;}
+   const k=smooth((horiz-.15)/.6);
+   // A compact fold hangs downward inside the forearm's collision envelope.
+   // Its depth no longer stays full-size while the other two axes shrink.
+   d.quaternion.copy(a.fm.getWorldQuaternion(_aq4).invert());
+   const sc=.25+.3*k;d.scale.setScalar(sc);d.visible=true;}
  },
  /* 되살림: 쓸 수 있는 팔로 손바닥을 위로 펴 머리 위로 든다(소원의 불씨가 여기로 모인다) → 가슴으로 내린다 */
  updateRevive(dt){
