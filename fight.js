@@ -4463,113 +4463,81 @@ const BOOTGEO=(()=>{let G=null;return()=>G||(G=(()=>{
  sole.rotateX(PI/2);sole.translate(0,-.046,0);sole.computeVertexNormals();
  return {body,sole};})());})();
 
-/* Attached arms keep their bone lengths while routing around the body. Small
- * capsule samples include the cloth radius, not just the hand's target point. */
+/* 팔이 몸통·머리를 뚫지 않게 밀어낸다(팔뼈 길이는 그대로 두고 회전만 바꾼다).
+ * 매 프레임 애니메이션이 요구한 자세(어깨·팔꿈치·손목 위치)만 보고 밀어낼 양을 처음부터 다시 계산한다.
+ * 지난 프레임의 결과를 다시 입력으로 쓰지 않으니 되먹임이 없고, 두 자세 사이를 매 프레임 오가며 떠는 일이 없다.
+ * 배는 물렁하다고 치고 소매가 꽤 잠겨도 둔다(옥판을 쥔 기본 자세가 원래 배에 손을 얹은 자세다). 가슴은 조금만 봐주고,
+ * 머리는 손사래 칠 때 손·소매가 얼굴을 뚫지 않게 띄운다. 밀어낸 양은 시간으로 부드럽게 따라간다(파고들 때는 빨리, 풀릴 때는 천천히).
+ * 손의 방향은 그대로 두되 손목이 소매 안쪽으로 꺾이지 않게만 막는다. */
 const ARM_CLEARANCE=(()=>{
- const invChest=new THREE.Matrix4(),local=V3(),sample=V3(),normal=V3(),shift=V3();
- const S=V3(),E0=V3(),W0=V3(),goal=V3(),T=V3(),axis=V3(),center=V3(),u=V3(),v=V3(),elbow=V3(),bestE=V3(),bestW=V3(),nearE=V3();
- const qHand=new THREE.Quaternion(),qUpper=new THREE.Quaternion(),qLower=new THREE.Quaternion(),qTmp=new THREE.Quaternion();
- const handDir=V3(),forearmDir=V3(),handPoint=V3(),bendAxis=V3(),safeHand=new THREE.Quaternion();
- const colliders=Array.from({length:3},()=>({m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null}));
- const angles=[0,.35,-.35,.7,-.7,1.2,-1.2,2,-2,Math.PI];
- const upperSamples=[.5,.75,1],lowerSamples=[.2,.4,.6,.8,1];
- let count=0,side=1;
+ const DOWN=V3(0,-1,0),invChest=new THREE.Matrix4(),local=V3(),p=V3(),n=V3(),push=V3();
+ const S=V3(),E0=V3(),W0=V3(),E1=V3(),W1=V3(),d0=V3(),d1=V3(),hd=V3(),fd=V3(),ax=V3(),cE=V3(),cW=V3();
+ const qU=new THREE.Quaternion(),qL=new THREE.Quaternion(),qH=new THREE.Quaternion(),qD=new THREE.Quaternion(),qT=new THREE.Quaternion(),qU0=new THREE.Quaternion(),qL0=new THREE.Quaternion();
+ // 표본점: 위팔은 중간부터 팔꿈치까지(어깨 쪽은 몸통에 묻히는 게 정상), 아래팔은 팔꿈치부터 손목까지, 손은 손목에서 손바닥·손끝까지
+ const UP=[.5,.75,1],LOW=[0,.25,.5,.75,1],HAND=[.065,.135];
+ // 허용 깊이: 표본점에서 잰 sdf(겉면 밖이 +)가 이 값보다 작으면 그만큼 밀어낸다. 음수면 그 깊이까지는 잠겨도 둔다
+ const colliders=[
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:-.15,low:-.12,hand:-.12}, // 배
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:-.1,low:-.07,hand:-.06},  // 가슴
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:0,low:-.02,hand:-.03}];   // 머리
  const head=(x,y,z)=>SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245);
- function obstacle(mesh,sdf,chest){if(!mesh||mesh.userData.detached)return;mesh.updateWorldMatrix(true,false);const c=colliders[count++];c.m.copy(mesh.matrixWorld).invert().multiply(chest.matrixWorld);c.n.setFromMatrix4(c.m).transpose();c.sdf=sdf;}
- function distance(c,p){local.copy(p).applyMatrix4(c.m);return c.sdf(local.x,local.y,local.z);}
- function penetration(p,r){let sum=Math.max(0,r-side*p.x)**2;for(let j=0;j<count;j++){const d=r-distance(colliders[j],p);if(d>0)sum+=d*d;}return sum;}
- function handOrientation(e,w){
-  safeHand.copy(qHand);handDir.copy(_down).applyQuaternion(safeHand);forearmDir.subVectors(w,e).normalize();
-  // A wrist may bend, but the palm must never fold backward into its own sleeve.
-  const angle=Math.acos(Math.max(-1,Math.min(1,handDir.dot(forearmDir)))),maxBend=.85;
-  if(angle>maxBend){bendAxis.crossVectors(handDir,forearmDir);if(bendAxis.lengthSq()<1e-8)bendAxis.set(0,0,side);bendAxis.normalize();qTmp.setFromAxisAngle(bendAxis,angle-maxBend);safeHand.premultiply(qTmp);handDir.copy(_down).applyQuaternion(safeHand);}
+ function obstacle(c,mesh,sdf,chest){
+  c.on=false;if(!mesh||mesh.userData.detached)return;
+  mesh.updateWorldMatrix(true,false);c.m.copy(mesh.matrixWorld).invert().multiply(chest.matrixWorld);c.n.setFromMatrix4(c.m).transpose();c.sdf=sdf;c.on=true;
  }
- function score(e,w,limit=Infinity){
-  let n=0;
-  // The shoulder cap intentionally joins the torso; the rest of the sleeve must clear it.
-  for(const t of upperSamples){n+=penetration(sample.lerpVectors(S,e,t),.116*smooth((t-.25)/.75));if(n>limit)return n;}
-  for(const t of lowerSamples){n+=penetration(sample.lerpVectors(e,w,t),.124);if(n>limit)return n;}
-  // Keep both hands in their own half of the body, including the fingertips.
-  // This prevents crossed forearms and hands from passing through each other.
-  handOrientation(e,w);
-  n+=penetration(handPoint.copy(w).addScaledVector(handDir,.065),.052);
-  n+=penetration(handPoint.copy(w).addScaledVector(handDir,.135),.038);
-  return n;
+ // 표본점 p가 허용 깊이보다 깊으면 겉면 법선 방향으로 밀 벡터를 push에 더한다
+ function pushOut(c,thr,p){
+  local.copy(p).applyMatrix4(c.m);const d=c.sdf(local.x,local.y,local.z);if(d>=thr)return false;
+  const x=local.x,y=local.y,z=local.z,h=.002;
+  n.set(c.sdf(x+h,y,z)-c.sdf(x-h,y,z),c.sdf(x,y+h,z)-c.sdf(x,y-h,z),c.sdf(x,y,z+h)-c.sdf(x,y,z-h)).applyMatrix3(c.n);
+  if(n.lengthSq()<1e-12)n.set(p.x<0?-1:1,0,1);n.normalize();
+  push.addScaledVector(n,thr-d);return true;
  }
- function project(p,r){
-  p.x=side*Math.max(r+.006,side*p.x);
-  for(let j=0;j<count;j++){const c=colliders[j],d=distance(c,p);if(d>=r)continue;
-   const x=local.x,y=local.y,z=local.z,h=.001;
-   normal.set(c.sdf(x+h,y,z)-c.sdf(x-h,y,z),c.sdf(x,y+h,z)-c.sdf(x,y-h,z),c.sdf(x,y,z+h)-c.sdf(x,y,z-h)).applyMatrix3(c.n);
-   if(normal.lengthSq()<1e-10)normal.set(p.x<0?-1:1,0,1);normal.normalize();p.addScaledVector(normal,r-d+.004);
+ function lengths(a){
+  ax.subVectors(E1,S);let l=ax.length()||1e-6;E1.copy(S).addScaledVector(ax,a.L1/l);
+  ax.subVectors(W1,E1);l=ax.length()||1e-6;W1.copy(E1).addScaledVector(ax,a.L2/l);
+ }
+ // E1·W1(가슴 좌표계)을 제자리에서 몇 번 되풀이해 밀어낸다. 밀 게 없으면 첫 바퀴에서 끝난다
+ function relax(a){
+  hd.copy(DOWN).applyQuaternion(qH);
+  for(let it=0;it<7;it++){
+   let moved=false;
+   for(const t of UP){p.lerpVectors(S,E1,t);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.up,p))hit=true;if(hit){moved=true;E1.addScaledVector(push,Math.min(2,1/t));}}
+   for(const t of LOW){p.lerpVectors(E1,W1,t);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.low,p))hit=true;if(hit){moved=true;E1.addScaledVector(push,1-t);W1.addScaledVector(push,t);}}
+   for(const k of HAND){p.copy(W1).addScaledVector(hd,k);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.hand,p))hit=true;if(hit){moved=true;W1.add(push);}}
+   if(!moved)break;
+   lengths(a);
   }
  }
  function solve(a,dt){
   if(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
-  side=a.s;
   S.copy(a.sh.position);a.el.getWorldPosition(E0).applyMatrix4(invChest);a.wr.getWorldPosition(W0).applyMatrix4(invChest);
-  qHand.copy(a.sh.quaternion).multiply(a.el.quaternion).multiply(a.wr.quaternion);
-  if(a.clearHand){a.clearHand.rotateTowards(qHand,Math.max(0,dt)*4);qHand.copy(a.clearHand);}
-  else a.clearHand=qHand.clone();
-  const original=score(E0,W0);
-  const step=Math.max(0,dt*1.5),previous=a.clearWrist;
-  if(original<1e-8&&(!previous||(previous.distanceTo(W0)<=step&&a.clearElbow.distanceTo(E0)<=step))){
-   if(!a.clearElbow){a.clearElbow=V3();a.clearWrist=V3();}a.clearElbow.copy(E0);a.clearWrist.copy(W0);
-   handOrientation(E0,W0);a.clearHand.copy(safeHand);
-   a.wr.quaternion.copy(qTmp.copy(a.sh.quaternion).multiply(a.el.quaternion).invert().multiply(safeHand));a.sh.updateWorldMatrix(true,true);return;
-  }
-  // Approach the requested pose from the last safe pose. Do not teleport back
-  // through the torso as soon as an animation's unconstrained target is clear.
-  goal.copy(W0);if(previous){shift.subVectors(W0,previous).clampLength(0,step);goal.copy(previous).add(shift);}
-  let best=Infinity,bestCollision=Infinity;
-  const L1=a.L1,L2=a.L2,max=L1+L2-.001,min=Math.abs(L1-L2)+.002;
-  for(let route=0;route<6;route++){
-   T.copy(goal);
-   if(route<5)T.add(shift.set(a.s*route*.055,0,route*.035));
-   else T.copy(S).add(shift.set(a.s*.34,-.27,.10));
-   for(let k=0;k<4;k++){project(T,.128);shift.subVectors(T,S).clampLength(min,max);T.copy(S).add(shift);}
-   const len=axis.subVectors(T,S).length();axis.divideScalar(len||1);
-   const along=(L1*L1-L2*L2+len*len)/(2*len),height=Math.sqrt(Math.max(0,L1*L1-along*along));center.copy(S).addScaledVector(axis,along);
-   u.subVectors(a.clearElbow||E0,center).addScaledVector(axis,-u.dot(axis));
-   if(u.lengthSq()<1e-8)u.set(a.s,0,.3).addScaledVector(axis,-u.dot(axis));u.normalize();v.crossVectors(axis,u).normalize();
-   let safe=false;
-   for(const angle of angles){
-    elbow.copy(center).addScaledVector(u,Math.cos(angle)*height).addScaledVector(v,Math.sin(angle)*height);
-    const collision=score(elbow,T,best/20000),cost=collision*20000+elbow.distanceToSquared(E0)*.2+T.distanceToSquared(goal)*12+(a.clearElbow?elbow.distanceToSquared(a.clearElbow)*2:0);
-    if(cost<best){best=cost;bestCollision=collision;bestE.copy(elbow);bestW.copy(T);}if(collision<1e-8)safe=true;
-   }
-   if(safe)break;
-  }
-  // A new route can lie on the other side of a shoulder's reach limit. Walk
-  // toward it along the outside instead of switching to that route in one frame.
-  if(previous&&(bestW.distanceTo(previous)>step*1.1||bestE.distanceTo(a.clearElbow)>step*1.4)){
-   T.copy(previous).add(shift.subVectors(bestW,previous).clampLength(0,step));
-   const len=axis.subVectors(T,S).length();axis.divideScalar(len||1);
-   const along=(L1*L1-L2*L2+len*len)/(2*len),height=Math.sqrt(Math.max(0,L1*L1-along*along));center.copy(S).addScaledVector(axis,along);
-   u.subVectors(a.clearElbow,center).addScaledVector(axis,-u.dot(axis));
-   if(u.lengthSq()<1e-8)u.set(a.s,0,.3).addScaledVector(axis,-u.dot(axis));u.normalize();v.crossVectors(axis,u).normalize();
-   let nearCost=Infinity,nearCollision=Infinity;
-   for(let i=-16;i<=16;i++){
-    const angle=i/16*Math.min(Math.PI,step/Math.max(height,.015));elbow.copy(center).addScaledVector(u,Math.cos(angle)*height).addScaledVector(v,Math.sin(angle)*height);
-    const collision=score(elbow,T,nearCost/20000),cost=collision*20000+elbow.distanceToSquared(a.clearElbow)*2;
-    if(cost<nearCost){nearCost=cost;nearCollision=collision;nearE.copy(elbow);}
-   }
-   if(nearCollision<.00006){bestE.copy(nearE);bestW.copy(T);bestCollision=nearCollision;}
-   else if(score(a.clearElbow,previous)<.00006){bestE.copy(a.clearElbow);bestW.copy(previous);bestCollision=0;}
-  }
-  if(bestCollision>=original&&original>1e-8&&!previous)return;
-  if(!a.clearElbow){a.clearElbow=V3();a.clearWrist=V3();}a.clearElbow.copy(bestE);a.clearWrist.copy(bestW);
-  qUpper.setFromUnitVectors(_down,axis.subVectors(bestE,S).normalize());
-  qLower.setFromUnitVectors(_down,axis.subVectors(bestW,bestE).normalize().applyQuaternion(qTmp.copy(qUpper).invert()));
-  a.sh.quaternion.copy(qUpper);a.el.quaternion.copy(qLower);
-  handOrientation(bestE,bestW);a.clearHand.copy(safeHand);
-  a.wr.quaternion.copy(qTmp.copy(qUpper).multiply(qLower).invert().multiply(safeHand));
+  qU0.copy(a.sh.quaternion);qL0.copy(a.el.quaternion);qH.copy(qU0).multiply(qL0).multiply(a.wr.quaternion);
+  E1.copy(E0);W1.copy(W0);relax(a);
+  // 이번 프레임에 밀어야 할 양. 파고들 때(밀 양이 커질 때)는 빨리 따라가고, 풀릴 때는 천천히 돌아온다.
+  // 한 프레임에 옮기는 양은 초속 1.8m까지로 잘라, 갑자기 깊이 박혀도 팔이 한 번에 튀지 않게 한다
+  cE.subVectors(E1,E0);cW.subVectors(W1,W0);
+  if(!a.clearE){a.clearE=V3();a.clearW=V3();}
+  const k=1-Math.exp(-(cE.lengthSq()+cW.lengthSq()>a.clearE.lengthSq()+a.clearW.lengthSq()?30:10)*Math.max(0,dt)),cap=1.8*Math.max(0,dt);
+  a.clearE.add(d0.subVectors(cE,a.clearE).multiplyScalar(k).clampLength(0,cap));a.clearW.add(d0.subVectors(cW,a.clearW).multiplyScalar(k).clampLength(0,cap));
+  if(a.clearE.lengthSq()+a.clearW.lengthSq()<1e-10){a.clearE.set(0,0,0);a.clearW.set(0,0,0);E1.copy(E0);W1.copy(W0);}
+  else{E1.copy(E0).add(a.clearE);W1.copy(W0).add(a.clearW);lengths(a);}
+  // 원래 회전에 '방향이 바뀐 만큼'만 얹는다(소매의 비틀림은 그대로)
+  d0.subVectors(E0,S).normalize();d1.subVectors(E1,S).normalize();qD.setFromUnitVectors(d0,d1);qU.copy(qD).multiply(qU0);
+  d0.subVectors(W0,E0).normalize();d1.subVectors(W1,E1).normalize();qD.setFromUnitVectors(d0,d1);
+  qL.copy(qU).invert().multiply(qD).multiply(qU0).multiply(qL0);
+  a.sh.quaternion.copy(qU);a.el.quaternion.copy(qL);
+  // 손은 가슴 기준 방향을 그대로 두되, 손목이 소매 쪽으로 너무 꺾이면(0.85rad 넘게) 그만큼 풀어 준다
+  hd.copy(DOWN).applyQuaternion(qH);fd.subVectors(W1,E1).normalize();
+  const ang=Math.acos(Math.max(-1,Math.min(1,hd.dot(fd))));
+  if(ang>.85){ax.crossVectors(hd,fd);if(ax.lengthSq()<1e-8)ax.set(0,0,a.s);ax.normalize();qT.setFromAxisAngle(ax,ang-.85);qH.premultiply(qT);}
+  a.wr.quaternion.copy(qT.copy(qU).multiply(qL).invert().multiply(qH));
   a.sh.updateWorldMatrix(true,true);
  }
  function apply(E,dt=1/60){
-  const chest=E.bones.chest;chest.updateWorldMatrix(true,false);invChest.copy(chest.matrixWorld).invert();count=0;
-  obstacle(E.belly,BODYGEO.belly,chest);obstacle(E.chestMesh,BODYGEO.chest,chest);
-  if(!E.headGone&&!E.headDestroyed)obstacle(E.face,head,chest);
+  const chest=E.bones.chest;chest.updateWorldMatrix(true,false);invChest.copy(chest.matrixWorld).invert();
+  obstacle(colliders[0],E.belly,BODYGEO.belly,chest);obstacle(colliders[1],E.chestMesh,BODYGEO.chest,chest);
+  obstacle(colliders[2],!E.headGone&&!E.headDestroyed?E.face:null,head,chest);
   for(const a of E.arms)solve(a,dt);
  }
  return {apply};
