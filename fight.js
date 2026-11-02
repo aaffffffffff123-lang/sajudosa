@@ -259,11 +259,18 @@ const FIGHT_HTML = `<section id="fight" hidden>
 
 const FIGHT_ICONS = `
 <symbol id="fi-fist" viewBox="0 0 48 48">
- <g stroke="#7c818a" stroke-width="2.2"><path d="M9 11l5 4M39 33l-5 4" stroke-linecap="round"/><circle cx="11" cy="12.5" r="3.1" fill="#b7bcc4"/><circle cx="37" cy="35.5" r="3.1" fill="#b7bcc4"/></g>
- <path d="M12 17l3 3M33 28l3 3" stroke="#ffd24a" stroke-width="2.4" stroke-linecap="round"/>
- <path d="M13 36c-4-3-5-8.4-4-13l1.6-7.4c.5-2.3 3.4-2.1 3.8.2l.5 2.6c.2-2.8 3.3-2.8 3.8 0 .3-2.4 3.4-2.4 3.8.2.5-2.1 3.5-1.8 3.7.5l.3 4c2.4 0 4.1 2 4.1 4.7 0 6.2-3.6 11-8.3 12.3L25.5 40H14z" fill="#f1b188" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
- <path d="M15.6 18.2l.6 5.2M20.6 16.6l.4 6M25.6 17l.3 5.6" fill="none" stroke="#c57c54" stroke-width="1.9" stroke-linecap="round"/>
- <g fill="#fbf4e3" stroke="#241c2b" stroke-width="1.5"><rect x="11.4" y="23.2" width="21" height="4.4" rx="1.4" transform="rotate(5 22 25.4)"/><rect x="12.4" y="29.4" width="17.8" height="3.7" rx="1.2" transform="rotate(5 21 31.2)"/></g>
+ <!-- 맨주먹: 정면에서 본 꽉 쥔 주먹(손가락 마디 네 개가 앞을 보고, 엄지가 그 아래를 가로지른다). 붕대·너클 없이 맨살 -->
+ <path d="M18.5 33h11.5v10H18.5z" fill="#e9a67c" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M10.2 21.5h27.6v10.5c0 3.2-2.6 5.8-5.8 5.8H16c-3.2 0-5.8-2.6-5.8-5.8z" fill="#f1b188" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
+ <g fill="#f1b188" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round">
+  <rect x="10.2" y="13.6" width="6.9" height="13.2" rx="3.4"/>
+  <rect x="17.3" y="11.4" width="6.9" height="15.4" rx="3.4"/>
+  <rect x="24.4" y="11.8" width="6.9" height="15" rx="3.4"/>
+  <rect x="31.5" y="14" width="6.5" height="12.8" rx="3.2"/>
+ </g>
+ <g fill="#fbd3b8"><ellipse cx="13.6" cy="16.2" rx="1.8" ry="1.2"/><ellipse cx="20.7" cy="14" rx="1.8" ry="1.2"/><ellipse cx="27.8" cy="14.4" rx="1.8" ry="1.2"/><ellipse cx="34.7" cy="16.6" rx="1.6" ry="1.1"/></g>
+ <path d="M8.6 27.6h22.2c2.2 0 3.9 1.7 3.9 3.9s-1.7 3.9-3.9 3.9H8.6z" fill="#f1b188" stroke="#241c2b" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M11.5 31.5h18" fill="none" stroke="#c57c54" stroke-width="1.6" stroke-linecap="round"/>
 </symbol>
 <symbol id="fi-knife" viewBox="0 0 48 48">
  <path d="M7 41l11-11" stroke="#241c2b" stroke-width="9" stroke-linecap="round"/><path d="M7 41l11-11" stroke="#3a2f2a" stroke-width="5.5" stroke-linecap="round"/>
@@ -2135,8 +2142,9 @@ const _cv=V3(),_cf=V3();
 /* ===== 4-1. 궁전 너머의 존재 =====
  * 쓰러진 천지신명 → 바닥 위로 큰 그림자가 지나감 → 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
  * 그림(fate-beyond-v2)은 화면이 아니라 세상의 하늘 방향에 붙어 있어, 고개를 드는 동안 원근대로 올라오고
- * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 더 깊이 내려다보다가 나와 눈을 맞추고 동공이 커지며,
- * 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 궁전 빛도 바뀐다. */
+ * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 내려다보다가 나와 눈을 맞추고(홍채 원판이 통째로 옮겨 온다),
+ * 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 홍채가 안에서 빛나고 궁전 빛도 바뀐다.
+ * 동공 크기는 바꾸지 않는다(지우고 다시 그리면 그림이 일그러져 보였다). */
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
@@ -2149,11 +2157,18 @@ const BEYOND=(()=>{
   vertexShader:`varying vec2 vNdc;
 void main(){vNdc=position.xy;gl_Position=vec4(position.xy,.999,1.);}`,
   fragmentShader:`uniform sampler2D uMap;uniform float uTime,uReveal,uAspect,uTanHalf,uPitch,uKx,uKy,uCy,uPupil,uGlow;uniform mat3 uCamRot;uniform vec2 uGaze;varying vec2 vNdc;
-// 그림 안 눈의 자리(UV): 눈구멍 타원 · 홍채 · 세로 동공(위아래로 뾰족한 렌즈꼴)
+/* 그림 안 눈의 자리(UV, 아래가 0): 홍채 원판의 중심·반지름, 그리고 눈꺼풀 사이(눈구멍)의 윗선·아랫선(그림을 재서 맞춘 값).
+ * 시선은 홍채 원판을 통째로 옮겨서 낸다 — 그림을 늘리거나 당기지 않고, 홍채가 비켜난 자리는 바로 바깥 흰자 색으로 메우고,
+ * 눈꺼풀 밖으로 나가는 부분은 눈꺼풀 뒤로 숨긴다. 동공은 그려진 대로 둔다(예전에 동공을 지우고 다시 그리던 것이 포토샵 잘못된 것처럼 보였다). */
 const vec2 IC=vec2(.493,.704),IR=vec2(.151,.101);
-const vec2 SC=vec2(.499,.706);const float SH=.0703,SW=.0303;
 float ell(vec2 p,vec2 c,vec2 r){return length((p-c)/r);}
-float slitHalf(float dy,float s){float u=dy/(SH*(.93+.07*s));float k=1.-u*u;if(k<=0.)return 0.;return SW*s*pow(k,.7);}
+float topV(float ux){float k=max(0.,1.-ux*ux);return .694+.1009*pow(k,1.3);}
+float botV(float ux){float k=max(0.,1.-ux*ux);return .6875-.0078*ux-.0781*pow(k,1.63);}
+float opening(vec2 q){ // 1=눈구멍 안(흰자·홍채), 0=눈꺼풀
+ float ux=(q.x-.5078)/.3076;if(abs(ux)>=1.)return 0.;
+ float t=topV(ux),b=botV(ux),e=.004;
+ return smoothstep(b-e,b+e,q.y)*(1.-smoothstep(t-e,t+e,q.y));
+}
 void main(){
  // 1) 이 픽셀이 보는 방향을 세상 좌표로 바꾸고, 그림이 붙은 하늘 면(정면 D를 바라보는 먼 평면) 위의 자리를 구한다
  vec3 rc=normalize(vec3(vNdc.x*uTanHalf*uAspect,vNdc.y*uTanHalf,-1.));
@@ -2163,27 +2178,22 @@ void main(){
  float dz=max(.02,-rp.z);
  vec2 q=vec2(.5+rp.x/dz*uKx,uCy+rp.y/dz*uKy);
  if(rp.z>-.02)q.y=-10.;
- // 3) 시선: 눈구멍 안쪽을 통째로 끌어 홍채가 움직이게 한다(눈꺼풀 가장자리는 붙박이)
- float w=1.-smoothstep(1.,1.9,ell(q,IC,IR)); // 홍채는 통째로 움직이고 흰자는 따라 늘어난다
- vec2 t=q-uGaze*w;
- // 4) 동공이 좁아질 때 홍채 결이 가운데로 당겨진다
- float di=ell(t,IC,IR);
- float pull=max(0.,.3*(1.-uPupil));
- if(di<1.){float k=1.+pull*(1.-di)*(1.-di);t=IC+(t-IC)*k;di=ell(t,IC,IR);}
- // 5) 동공: 그려진 동공을 지우고 원하는 폭으로 다시 그린다
- float dx=t.x-SC.x,dy=t.y-SC.y,adx=abs(dx);
- float hP=slitHalf(dy,1.),hN=slitHalf(dy,uPupil);
- vec2 ts=t;
- if(hP>1e-4&&adx<hP+.002&&adx>=hN-.003)ts.x=SC.x+(dx<0.?-1.:1.)*(2.*hP-adx+.005); // 그려진 동공 자리는 양옆 홍채를 거울처럼 가져와 메운다
- vec3 color=texture2D(uMap,clamp(ts,.002,.998)).rgb;
- float pm=hN>1e-4?1.-smoothstep(hN-.003,hN+.003,adx):0.;
- color=mix(color,vec3(.014,.017,.026)*(1.-.4*min(1.,dy*dy/(SH*SH))),pm);
- float ring=hN>1e-4?(1.-smoothstep(hN,hN+.018,adx))*(1.-pm)*(1.-step(1.,di)):0.;
- color*=1.-.38*ring;
- // 홍채가 안에서 빛난다
- color*=1.+uGlow*.32*pow(max(0.,1.-di),1.6)*(1.-pm);
- // 7) 그림 바깥은 어둡다
- float edge=smoothstep(-.15,.015,q.y)*(1.-smoothstep(.985,1.15,q.y))*smoothstep(-.12,.01,q.x)*(1.-smoothstep(.99,1.12,q.x));
+ // 2) 눈꺼풀은 그림 그대로
+ vec3 lid=texture2D(uMap,clamp(q,.002,.998)).rgb;
+ // 3) 눈구멍 안(흰자+홍채)을 통째로 시선만큼 옮긴다. 아래로 내려다볼 때 윗꺼풀 밑에 새로 드러나는 띠는 원래 그림에 없는 자리라서
+ //    눈 속 맨 윗줄을 가져오되 눈꺼풀 그늘로 어둡게 깔아 둔다(실제 눈도 내려다보면 윗흰자가 꺼풀 그늘에 든다). 아래로 밀려난 부분은 아랫꺼풀 뒤로 숨는다
+ float inOpen=opening(q);
+ float ux=(q.x-.5078)/.3076,ty=topV(clamp(ux,-1.,1.))-.006;
+ vec2 qs=q-uGaze;float di=ell(qs,IC,IR);
+ float over=max(0.,qs.y-ty);
+ vec2 ts=vec2(qs.x,min(qs.y,ty));
+ vec3 inner=texture2D(uMap,clamp(ts,.002,.998)).rgb;
+ inner=mix(inner,vec3(.055,.06,.065),.9*smoothstep(.004,.03,over));
+ vec3 color=mix(lid,inner,inOpen);
+ // 4) 홍채가 안에서 빛난다
+ color*=1.+uGlow*.32*pow(max(0.,1.-di),1.6)*inOpen;
+ // 5) 그림 바깥은 어둡다(가장자리를 끌어 늘리지 않고 바로 어둠으로 넘어간다)
+ float edge=smoothstep(-.03,.012,q.y)*(1.-smoothstep(.93,.995,q.y))*smoothstep(-.03,.01,q.x)*(1.-smoothstep(.99,1.01,q.x));
  color=mix(vec3(.026,.038,.048),color,edge);
  color*=.92+.08*smoothstep(.1,.9,uReveal);
  gl_FragColor=vec4(pow(color,vec3(2.2)),1.);
@@ -2227,10 +2237,10 @@ void main(){
  const T_SEE=TILT+.45,T_DILATE=T_SEE+.16;
  const PUPIL_REST=.6,PUPIL_CONTACT=1.08;
  const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:PUPIL_REST,glow:0,seen:false,lock:0};
- // 기존에 동공이 커져 있던 첫 시선(-.012,-.05)이 플레이어와 눈이 마주치는 각도다.
- // 처음엔 그보다 더 아래의 쓰러진 설계자를 보고, 이 각도로 돌아온 뒤 동공을 키운다.
- const GAZE0=new THREE.Vector2(-.012,-.09);
- const GAZE_PLAYER=new THREE.Vector2(-.012,-.05);
+ // 시선은 홍채 원판을 옮기는 양(그림 UV). 그림 그대로가 나와 눈이 마주친 각도이고, 처음엔 홍채를 반지름의 절반쯤 내려 쓰러진 설계자를 본다.
+ // (예전 값 -.09는 홍채 반지름에 가까워 그림을 심하게 끌어 늘였다)
+ const GAZE0=new THREE.Vector2(-.004,-.048);
+ const GAZE_PLAYER=new THREE.Vector2(0,0);
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
  // 화면 위 끝이 같은 하늘 높이(top: 올려다본 각도, 라디안)까지 오도록 고개 각도와 시야를 정한다
@@ -2723,7 +2733,8 @@ const CROWD=(()=>{
 
  // 서 있는 자리들
  const SIDES=[[-1.05,.3],[1.05,.3],[-1.18,.62],[1.18,.62],[-1.3,.95],[1.3,.95]];
- const KNEEL=[[-.5,.86],[.5,.86],[-.92,.52],[.92,.52],[-.27,1.16],[.27,1.16]];
+ // 되살림 때 꿇는 자리: 설계자 양옆에 세 명씩 두 무리로(가운데를 비워, 든 손과 거기 모이는 불씨가 사람들·말풍선에 가려지지 않게)
+ const KNEEL=[[-.88,.85],[.88,.85],[-.9,.5],[.9,.5],[-.8,1.15],[.8,1.15]];
  const WALLX=[-.8,-.27,.27,.8];
 
  function goTo(p,x,z,o={}){const g=p.goal;g.x=x;g.z=z;g.speed=o.speed||9;if(o.ry!=null)g.ry=o.ry;if(o.face)g.ry=faceDir(p,o.face[0],o.face[1]);p.run=1;}
@@ -2868,7 +2879,8 @@ const CROWD=(()=>{
   sched(REV_SHIFT+1.0,()=>{state.nextSob=G.time;});
   // 손을 모아 소원을 올린다
   sched(REV_SHIFT+3.0,()=>{for(const p of people){stance(p,'pray');mood(p,'pray');}});
-  talkLines(LINES.pray,false,REV_SHIFT);
+  // 소원 대사는 설계자가 든 손 반대쪽 무리에서 한다(말풍선이 손바닥 위 불씨를 가리지 않게). 왼쪽 무리 0·2·4, 오른쪽 무리 1·3·5
+  for(const [i,text,t] of LINES.pray)sched(t+REV_SHIFT,()=>{const handLeft=!!(rev.E&&rev.E.reviveArm==='L');const who=handLeft?(i===2?3:5):(i===2?2:4);BUB.say({obj:people[who].head,off:V3(0,.1,0),cam:'main'},text,0,{voice:VOICE.crowd[who]});});
  }
  // 불씨 출발점: 꿇은 사람들의 모은 손(절반), 나머지는 기둥 너머·천장·화면 밖에서
  function wispOrigin(i,out){
@@ -2882,17 +2894,18 @@ const CROWD=(()=>{
  function gatherStart(dur){
   rev.gather=true;rev.g0=G.time;rev.gdur=dur;rev.arrived=0;rev.sphere=0;
   const pts=rev.wisps,pos=pts.geometry.attributes.position.array,c=pts.geometry.attributes.color.array;
-  for(let i=0;i<N_W;i++){const w=rev.W[i];wispOrigin(i,w.o);w.c.copy(w.o).lerp(handTarget(wv3),.45);w.c.y+=rnd(.25,.8);w.c.x+=rnd(-.5,.5);w.t0=G.time+(i%2===0?rnd(0,dur*.6):rnd(0,dur*.75));w.dur=i%2===0?rnd(.9,1.4):rnd(1.1,1.9);w.done=false;
+  // 곡선의 가운데 점은 매 프레임 손 자리에 맞춰 다시 잡는다(여기선 흔들림 값만 정해 둔다): 손이 올라가는 동안에도 불씨가 손을 따라간다
+  for(let i=0;i<N_W;i++){const w=rev.W[i];wispOrigin(i,w.o);w.cx=rnd(-.2,.2);w.cy=rnd(0,.35);w.cz=rnd(-.15,.15);w.t0=G.time+(i%2===0?rnd(0,dur*.6):rnd(0,dur*.75));w.dur=i%2===0?rnd(.9,1.4):rnd(1.1,1.9);w.done=false;
    pos[i*3]=w.o.x;pos[i*3+1]=-50;pos[i*3+2]=w.o.z;const warm=rnd(.7,1);c[i*3]=1;c[i*3+1]=.72*warm+.2;c[i*3+2]=.3*warm;}
   pts.geometry.attributes.color.needsUpdate=true;pts.visible=true;
   rev.glow.visible=true;rev.core.visible=true;rev.light.intensity=0;
   AUDIO.charge(dur+.9,1);
  }
- // 불씨가 모이는 자리: 설계자가 든 손바닥 위(손이 없으면 가슴)
+ // 불씨가 모이는 자리: 설계자가 든 손바닥 바로 위(손이 없으면 가슴)
  function handTarget(out){
   const E=rev.E||G.E;if(!E)return out.set(0,1,0);
   const side=E.reviveArm||'R';const a=E.arms[side==='L'?0:1];
-  if(a&&E.armUsable(side)&&E.revive&&E.revive.k>.2){a.wr.updateWorldMatrix(true,false);return out.set(0,-.07,.02).applyMatrix4(a.wr.matrixWorld).add(wv2.set(0,.07,0));}
+  if(a&&E.armUsable(side)&&E.revive&&E.revive.k>.2){a.wr.updateWorldMatrix(true,false);return out.set(0,-.075,.02).applyMatrix4(a.wr.matrixWorld).add(wv2.set(0,.055,0));}
   E.bones.chest.updateWorldMatrix(true,false);return E.bones.chest.getWorldPosition(out).add(wv2.set(0,.05,.16));
  }
  function impact(){
@@ -2926,18 +2939,20 @@ const CROWD=(()=>{
     if(u<0){pos[i*3+1]=-50;continue;}
     if(u>=1){w.done=true;arrived++;pos[i*3+1]=-50;if(arrived%6===0)AUDIO.twinkle(.7);continue;}
     const e=easeIn(u)*.55+u*.45;
-    const a=1-e;wv1.set(a*a*w.o.x+2*a*e*w.c.x+e*e*T.x,a*a*w.o.y+2*a*e*w.c.y+e*e*T.y,a*a*w.o.z+2*a*e*w.c.z+e*e*T.z);
+    // 가운데 점: 손 바로 위 허공(머리보다 높게)에서 손으로 내리꽂힌다 — 얼굴을 가로질러 날아들지 않게(손이 움직여도 늘 지금 손 자리를 향한다)
+    const cx=T.x+(w.o.x-T.x)*.35+w.cx,cy=Math.max(T.y,w.o.y)+.3+w.cy,cz=T.z+(w.o.z-T.z)*.35+w.cz;
+    const a=1-e;wv1.set(a*a*w.o.x+2*a*e*cx+e*e*T.x,a*a*w.o.y+2*a*e*cy+e*e*T.y,a*a*w.o.z+2*a*e*cz+e*e*T.z);
     wv1.y+=Math.sin(G.time*9+i)*.012*(1-e);
     pos[i*3]=wv1.x;pos[i*3+1]=wv1.y;pos[i*3+2]=wv1.z;}
    rev.arrived=arrived;pts.geometry.attributes.position.needsUpdate=true;
    rev.sphere=damp(rev.sphere,arrived/N_W,6,dt);
   }
-  // 손바닥 위 구체와 빛
+  // 손바닥 위 구체와 빛(손이 보이게, 머리만 하게 커지지 않는다)
   if(rev.glow.visible){
    const T=handTarget(wv3);const s=rev.sphere;
    rev.glow.position.copy(T);rev.core.position.copy(T);rev.light.position.copy(T);
    const pul=1+Math.sin(G.time*14)*.06*s;
-   rev.glow.scale.setScalar((.12+1.25*s)*pul);rev.core.scale.setScalar((.012+.11*s)*pul);rev.light.intensity=3.2*s;
+   rev.glow.scale.setScalar((.1+.62*s)*pul);rev.core.scale.setScalar((.014+.085*s)*pul);rev.light.intensity=3.2*s;
    if(rev.impact){ // 터진 뒤: 커지며 사라진다
     rev.glow.scale.setScalar(rev.glow.scale.x+dt*9);rev.glow.material.opacity=Math.max(0,rev.glow.material.opacity-dt*1.6);rev.core.visible=false;rev.light.intensity=Math.max(0,rev.light.intensity-dt*3);
    }else rev.glow.material.opacity=1;
@@ -4879,6 +4894,8 @@ Object.assign(Emperor.prototype,{
   if(this.laughAmt>0){this.talkPhase+=dt*TAU*5.6;const w=(.5+.5*Math.sin(this.talkPhase))*this.laughAmt;T.mOpen+=w*.3;T.jaw+=w*.14;T.lidU-=w*.05;}
   // 말할 때: 음절마다 벌리는 크기가 다르게(로봇처럼 똑같이 뻐끔거리지 않게)
   if(this.talk>.01){this.talkPhase+=dt*TAU*5.2;const amp=.55+.45*Math.sin(this.talkPhase*.43+1.7),w=Math.max(0,Math.sin(this.talkPhase))*amp*this.talk;T.mOpen+=w*.95;T.jaw+=w*.55;T.mWide+=Math.sin(this.talkPhase*.71)*.16*this.talk;}
+  // 덜덜 떨 때는 턱이 딱딱 부딪히고 입술도 떨린다
+  const trm=this.tremble||0;if(trm>.08&&this.talk<.2){const ch=Math.max(0,Math.sin(time*44+.7))*Math.min(1,trm);T.mOpen+=ch*.1;T.jaw+=ch*.06;T.mWide+=Math.sin(time*29)*.04*trm;}
   const r=instant?1:1-Math.exp(-dt*(this.flinch>.3?30:this.talk>.2?26:16));
   for(const k of EXPR_KEYS)f[k]=lerp(f[k],T[k],r);
   for(const k of ['bY','bIn','bOut'])for(let i=0;i<2;i++)f[k][i]=lerp(f[k][i],T[k][i],r);
@@ -4929,7 +4946,7 @@ Object.assign(Emperor.prototype,{
   // 턱이 빠졌으면(jawDisloc) 입이 다물어지지 않고 아래턱이 비뚤게 늘어진다. 턱이 떨어졌으면(jawGone) 윗입술·윗니만 남는다
   const D=this.jawDisloc,da=D&&!this.jawGone?D.sp.x:0,side=D?D.side:1;
   const open=sat(f.mOpen+da*.2),jaw=sat(f.jaw),gap=sat(f.mGap);
-  const tremble=(this.emo==='cry'||this.emo==='scared'||this.emo==='beg')?Math.sin(time*31)*.0015:0;
+  const tremble=((this.emo==='cry'||this.emo==='scared'||this.emo==='beg')?Math.sin(time*31)*.0015:0)+(this.tremble||0)*Math.sin(time*46.5)*.0012;
   const rU=[],rL=[],LZ=this.lipZ,lz=x=>{const t=clamp((x/.07+1)/2*12,0,12),i=Math.min(11,Math.floor(t)),k=t-i;return lerp(LZ[i],LZ[i+1],k);};this._lz=lz;
   const scream=sat((f.mOpen-.5)*2)*sat(f.jaw*2);
   for(let i=0;i<n;i++){
@@ -5005,6 +5022,7 @@ Object.assign(Emperor.prototype,{
   this.ik={L:{w:0,goal:0,target:V3(),fd:V3(0,-1,0),pd:V3(),curl:.3,space:'root'},R:{w:0,goal:0,target:V3(),fd:V3(0,-1,0),pd:V3(),curl:.3,space:'root'}};
   this.act=null;this.actQueue=[];this.guard=0;this.guardGoal=0;this.guardHP=3;this.guardCool=0;this.guardHold=0;
   this.limp=[0,0];this.armHurt=[0,0];this.hunch=0;this.weak=0;this.mood=0;this.sinceHit=99;this.hitsRecent=[];
+  this.panic=0;this.tremble=0;this.flailSeed=0;this.calmUntil=0;this.whimperT=0;
   this.cutStrokeFallback=0;this.detached=new Set();
   this.limbCut={armL:{hits:0,last:null},armR:{hits:0,last:null},legL:{hits:0,last:null},legR:{hits:0,last:null}};this.armLimp=[0,0];this.legLimp=[0,0];this.regrowQ=[];
   this.abd=null;this.abdomenStage=0;this.abdomenOpen=false;this.abdomenCavity=null;this.coinQ=0;this.coinPow=0;this.coinAcc=0;this.coinCool=0;
@@ -5175,6 +5193,10 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(combatActive(this))combatStep(this,dt);
   this.stateT+=dt;this.sinceHit+=dt;this.breath+=dt*(1.6+this.mood*1.4);this._ikFrame++;
   this.talk=damp(this.talk||0,G.time<(this.talkUntil||0)?1:0,14,dt);
+  // 허둥댐은 2초쯤에 걸쳐 가라앉고, 떨림은 단계(1 조금 → 4 심하게)에 맞춘 기본값에 허둥대는 만큼 더해진다
+  this.panic=Math.max(0,this.panic-dt/1.9);
+  const calm=G.time<this.calmUntil,trG=G.mode==='fight'&&this.state!=='dead'&&!this.taunt?Math.min(1.15,([0,.12,.45,.78,1][this.phase]||0)*(calm?.3:1)+Math.min(.6,this.panic*.55)):0;
+  this.tremble=damp(this.tremble,trG,4,dt);
   const p=this.poseTmp;this.basePose(p,dt,time);
   if(this.shockT>0)this.shockT-=dt;else this.setEmotion(this.baseEmotion());
   if(this.state==='stand')this.updateIdle(dt,time);
@@ -5229,12 +5251,13 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(!this.reviveArm)this.reviveArm=this.armUsable('R')?'R':this.armUsable('L')?'L':null;
   const side=this.reviveArm;if(!side)return;
   const s=side==='R'?1:-1;
-  // 주저앉은 몸(허리 높이 .62-.5) 기준: 손바닥을 하늘로 펴서 얼굴 높이 앞에 든다(머리 위로 올리면 어깨가 빠진 것처럼 보였다)
-  const T=_av8.set(s*.2,1.0,.4);
+  // 주저앉은 몸(허리 높이 .62-.5) 기준: 팔을 옆·위로 비스듬히 뻗어 손바닥을 하늘로 편다.
+  // 얼굴 옆에 바짝 붙여 들면(예전 값) 불씨가 얼굴로 모이는 것처럼 보였다 — 머리에서 떨어진 허공에 손바닥이 놓이게 한다
+  const T=_av8.set(s*.55,1.28,.5);
   if(r.toChest){r.c=Math.min(1,(r.c||0)+dt/.32);T.lerp(_av9.set(s*.04,.74,.3),smooth(r.c));}
   else if(r.k>=1)T.y+=Math.sin(this.breath*31)*.012;
-  // 손끝은 앞·위, 손바닥(pd가 손등 방향이라 아래로 주면 손바닥이 하늘을 본다)
-  this.setIK(side,{target:T,fd:_av10.set(s*.15,.55,1),pd:_av2.set(0,-1,.2),curl:.1,w:smooth(r.k),rate:3,space:'root'});
+  // 손끝은 바깥·위, 손바닥(pd가 손등 방향이라 아래로 주면 손바닥이 하늘을 본다)
+  this.setIK(side,{target:T,fd:_av10.set(s*.6,.5,.6),pd:_av2.set(0,-1,.2),curl:.1,w:smooth(r.k),rate:5,space:'root'});
  },
  updateMaterials(dt){
   // 맞을 때 하얗게 번쩍(두어 프레임) → 붉게 빠짐, 피를 잃으면 창백해짐
@@ -5329,10 +5352,44 @@ Object.assign(Emperor.prototype,{
   for(let i=0;i<2;i++){const l=this.limp[i];if(l>0){const n=i?'R':'L';out[n+'kB']+=.38*l;out[n+'hF']+=.15*l;out.py-=.05*l;out.pR+=(i?-1:1)*.08*l;}this.limp[i]=Math.max(0,l-dt*.05);}
   for(let i=0;i<2;i++){const ah=this.armHurt[i];if(ah>0){const n=i?'R':'L';out[n+'sA']=lerp(out[n+'sA'],.2,ah);out[n+'sF']=lerp(out[n+'sF'],-.05,ah);out[n+'eB']=lerp(out[n+'eB'],.1,ah);out[n+'curl']=lerp(out[n+'curl'],.1,ah);}this.armHurt[i]=Math.max(0,ah-dt*.07);}
   if(this.laughing>0){const L=this.laughing;out.hF-=.2*L;out.sF-=.06*L;out.cF+=Math.sin(time*13)*.035*L;out.hF+=Math.sin(time*13)*.05*L;this.sp.belly.kick(0,Math.sin(time*13)*.25*L*dt*60*.02,0);}
-  if(this.mood>.4){const tr=Math.sin(time*29)*.006*this.mood;out.hT+=tr;out.cR+=tr*.5;}
   this.updateActions(out,dt,time);
+  this.updateDistress(out,dt,time);
   // 비틀거리는 동안은 손을 배에서 떼고 허우적인다(쉬는 손 IK를 걸지 않는다)
   if(!(this.combat&&this.combat.mode==='stagger'))this.restHands(out,dt,time);
+ },
+
+ /* ---- 맞을 때 허둥댐·덜덜 떨기 ----
+  * panic: 한 대 맞을 때마다 차오르고 2초쯤에 걸쳐 빠진다. 그 동안 손을 가슴·얼굴 앞으로 들어 손바닥을 내 쪽으로 펴고 좌우로 막 휘젓는다(손사래).
+  *        1단계(성남)에서는 작게 놀라 손을 드는 정도, 2단계부터는 얼굴 앞에서 빠르게 흔든다. 막기·움켜쥐기·빌기처럼 손을 쓰는 다른 동작이 있으면 그 손은 비켜 둔다.
+  * tremble: 머리·턱·어깨·팔꿈치·손목·무릎·몸통이 잘게 떨린다. 주파수 두세 개를 섞어 일정한 박자로 보이지 않게 한다.
+  * 추임새(「운명 최고」)를 뱉는 1.7초 동안은 손사래를 멈추고 떨림도 잦아든다(비웃는 얼굴과 맞추려고). */
+ updateDistress(out,dt,time){
+  const calm=G.time<this.calmUntil,ph=this.phase,pn=calm?0:this.panic,tr=this.tremble;
+  if(tr>.01){
+   const a=Math.sin(time*37.3)+.6*Math.sin(time*23.1+.8)+.35*Math.sin(time*51.7+2),
+         b=Math.sin(time*41.9+1.3)+.6*Math.sin(time*27.7+.4),
+         c=Math.sin(time*33.3+2.1)+.7*Math.sin(time*19.3+1.1);
+   out.hT+=a*.024*tr;out.hR+=b*.018*tr;out.hF+=c*.013*tr;out.nT+=a*.006*tr;
+   out.cT+=b*.009*tr;out.cR+=a*.006*tr;out.sR+=c*.004*tr;
+   out.LsA+=b*.018*tr;out.RsA+=a*.018*tr;out.LeB+=c*.04*tr;out.ReB-=a*.04*tr;out.LwF+=a*.1*tr;out.RwF+=b*.1*tr;
+   out.LkB+=Math.max(0,c)*.07*tr;out.RkB+=Math.max(0,-c)*.07*tr;out.py-=Math.abs(b)*.004*tr;out.tx+=a*.0035*tr;
+  }
+  const F=this._flail||(this._flail={L:false,R:false}),active=pn>=.02;
+  const k=Math.min(1,pn),w=smooth(Math.min(1,pn*1.6)),hz=ph>=2?31:24,amp=(ph>=2?.12:.07)*k,seed=this.flailSeed;
+  for(const s of [-1,1]){
+   const n=s<0?'L':'R',i=s<0?0:1;
+   const busy=this._ikUse[n]===this._ikFrame||(this.act&&this.act.prio>=1&&(this.act.both||(this.act.side||'R')===n));
+   const use=active&&!busy&&this.armUsable(n)&&this.armHurt[i]<=.5;
+   if(use){
+    const p1=seed+(s<0?0:PI*.9),sw=Math.sin(time*hz+p1),sw2=Math.sin(time*hz*.53+p1*1.7);
+    const x=s*(.19+.05*sw2)+sw*amp,y=(ph>=2?1.2:1.12)+sw2*.04*k+Math.abs(sw)*.02,z=.44+.05*sw2;
+    this.setIK(n,{target:_bv1.set(x,y,z),fd:_bv2.set(s*.35+sw*.3,1,.25),pd:_bv3.set(sw*.35,.15,-1),curl:.04,rate:20,w});
+   }else if(F[n]&&this._ikUse[n]!==this._ikFrame)this.releaseIK(n,8); // 손사래가 끝났는데 아무도 그 손을 안 쓰면 손을 내린다(쉬는 손이 이어받는다)
+   F[n]=use;
+  }
+  if(!active)return;
+  // 고개는 뒤로 빼고 어깨는 움츠린다
+  out.hF-=.06*k;out.sF+=.05*k;out.LsA+=.1*k;out.RsA+=.1*k;
  },
 
  /* ---- 행동(손을 쓰는 짧은 동작) ---- */
@@ -5446,8 +5503,9 @@ doAct(name,o={}){
  updateIdle(dt,time){
   this.idleT=(this.idleT==null?2.5:this.idleT)-dt;
   if(this.headDestroyed)return;
-  // 우는 소리
+  // 우는 소리. 2단계에서는 떨면서 가끔 숨을 들이켠다
   if(this.phase>=3&&time>(this.sobT||0)){this.sobT=time+rnd(2.6,4.5);if(this.sinceHit>.8)AUDIO.voice('sob',.7);}
+  else if(this.phase===2&&this.tremble>.3&&time>this.whimperT){this.whimperT=time+rnd(2.4,4.4);if(this.sinceHit>.7)AUDIO.voice('gasp',.45);}
   if(this.act||this.sinceHit<1.2||this.guard>.1||this.idleT>0)return;
   this.idleT=rnd(1.6,3.2);
   const c=[];
@@ -5459,6 +5517,7 @@ doAct(name,o={}){
    else if(this.lipSplit&&Math.random()<.3)c.push(['spit',1]);
    if(BLOOD.lost>.35&&!this.lookedHand)c.push(['look',2]);
    if(this.phase>=3)c.push(['beg',3]);
+   if(this.phase>=2)c.push(['face',2]); // 겁에 질려 손으로 얼굴을 감싼다
    if(this.phase===1&&!this.taunt)c.push(['huff',1]);
   }
   if(!c.length)return;
@@ -5469,20 +5528,31 @@ doAct(name,o={}){
   else if(name==='wipe'){this.wiped=true;this.doAct('wipe',{side:'R',dur:2.2});}
   else if(name==='spit'){this.doAct('spit',{side,dur:.9,L:false,R:false});}
   else if(name==='look'){this.lookedHand=true;this.doAct('look',{side,dur:1.8});}
+  else if(name==='face'){this.doAct('face',{side,dur:rnd(1.4,2)});if(Math.random()<.6)AUDIO.voice('gasp',.5);}
   else if(name==='beg'){this.doAct('beg',{dur:rnd(2,3)});AUDIO.voice('beg',.8);}
   else if(name==='huff'){AUDIO.voice('huff',.7);this.doFlinch('angry',.6);}
  },
- /* 울 때: 아래 눈꺼풀에서 눈물이 볼을 타고 흐른다 */
+ /* 울 때: 아래 눈꺼풀에서 눈물이 볼을 타고 흐른다.
+  * 1단계에서는 맞은 직후에만 찔끔, 2단계부터는 비웃거나 웃는 순간만 빼고 계속, 3·4단계에서는 굵고 잦게 */
  updateTears(time){
   if(this.headDestroyed||this.unmasked)return;
-  const crying=this.emo==='cry'||this.emo==='beg'||(this.emo==='scared'&&this.phase>=2)||(this.emo==='hurt'&&this.phase>=3);
+  const ph=this.phase,smugNow=this.emo==='smug'||this.emo==='laugh';
+  const crying=!smugNow&&(ph>=2||(ph>=1&&this.panic>.35));
   if(!crying||time<(this.tearT||0))return;
-  this.tearT=time+rnd(.6,1.3);
+  this.tearT=time+(ph>=3?rnd(.3,.7):ph>=2?rnd(.5,1):rnd(.9,1.6));
   const live=this.eyes.filter(e=>!e.ruined&&!e.ejected);if(!live.length)return;const e=pick(live);
   e.eg.updateWorldMatrix(true,false);this.face.updateWorldMatrix(true,false);
   const p=e.eg.localToWorld(V3(rnd(-.012,.012),-.052,.018));
   const n=V3(0,-.25,1).applyQuaternion(this.face.getWorldQuaternion(new THREE.Quaternion())).normalize();
-  const pr=BLOOD.project(p,n,.05);if(pr)BLOOD.startRiv(pr.seg||'head',pr.point,pr.normal,{kind:'tear',w:.0056,speed:.11,maxLen:rnd(.12,.24)});
+  const pr=BLOOD.project(p,n,.05);if(pr)BLOOD.startRiv(pr.seg||'head',pr.point,pr.normal,{kind:'tear',w:ph>=3?.0072:.006,speed:ph>=3?.14:.11,maxLen:rnd(.14,.3)});
+ },
+ /* 세게 맞는 순간 두 눈에서 눈물 방울이 옆·위로 튄다(피 끄기와 상관없이 맑은 방울) */
+ tearSplash(n){
+  if(this.headDestroyed||this.unmasked)return;
+  for(const e of this.eyes){if(e.ruined||e.ejected)continue;
+   e.eg.updateWorldMatrix(true,false);const p=e.eg.localToWorld(V3(e.s*.012,-.02,.046));
+   for(let i=0;i<n;i++){const v=V3(e.s*rnd(.25,1.1),rnd(.5,1.5),rnd(.5,1.3)).multiplyScalar(rnd(.8,1.5));BLOOD.emit('spit',p,v,rnd(.003,.0055),rnd(.5,.9));}
+  }
  },
  spitOut(s){
     if(this.headDestroyed)return;
@@ -5505,8 +5575,19 @@ doAct(name,o={}){
   else if(type==='floor'){seq=[{t:0,pose:from},{t:.3,pose:poseLerp(K.flail,K.buckle,.4,P()),ease:'out'},{t:.68,pose:poseLerp(K.buckle,POSES.floor,.7,P()),ease:'in'},{t:1.05,pose:POSES.floor,ease:'back'}];ev.push({t:.68,fn:()=>{if(this.onImpact)this.onImpact('floor');}});}
   else{seq=[{t:0,pose:from},{t:.5,pose:K.buckle,ease:'out'},{t:1.05,pose:K.slump,ease:'in'},{t:1.8,pose:POSES.final,ease:'in'},{t:2.4,pose:POSES.final}];ev.push({t:1.02,fn:()=>{if(this.onImpact)this.onImpact('knees');}},{t:1.75,fn:()=>{if(this.onImpact)this.onImpact('final');}});}
   if(this._combatScripted){
-   // A grounded body settles into the story pose without first standing up.
-   if(from.rx<-.6)seq=[{t:0,pose:from},{t:.75,pose:POSES.floor},{t:1.8,pose:POSES.final},{t:2.4,pose:POSES.final}];
+   const b=this.combat,lying=b.mode==='ground'||b.mode==='fall'||from.rx<-.6;
+   if(lying){
+    /* 누운 채(또는 넘어지는 도중에) 마지막 한 대를 맞으면 그 자리에서 그대로 숨이 끊긴다 — 일어나 앉지 않는다.
+     * 들려 있던 무릎이 툭 떨어져 다리가 벌어지고, 팔은 바닥에 늘어지고, 고개는 넘어진 쪽으로 돌아간다. 몸 위치(골반)는 그대로 둔다 */
+    const side=b.side||1,T=P(from);
+    T.rx=-1.49;T.rz=from.rz*.6;T.py=-.05;T.pF=0;T.sF=-.02;T.sT=0;T.sR=0;T.cF=0;T.cT=0;T.cR=0;T.nF=-.08;T.nT=0;T.nR=0;T.hF=.08;T.hT=side*.62;T.hR=side*.18;
+    T.LsF=-.05;T.LsA=1.32;T.LsT=.1;T.LeB=.12;T.LwF=.1;T.LwA=.1;T.Lcurl=.35;
+    T.RsF=.22;T.RsA=1.0;T.RsT=-.15;T.ReB=.3;T.RwF=.18;T.RwA=.05;T.Rcurl=.42;
+    T.LhF=.12;T.RhF=.08;T.LhA=.32;T.RhA=.24;T.LkB=.26;T.RkB=.12;T.LaF=.3;T.RaF=.36;
+    const pv=V3(0,.62+T.py,0).applyEuler(new THREE.Euler(T.rx,T.ry,-T.rz,'YXZ'));T.ty=.29-pv.y;T.tx=-pv.x;T.tz=-pv.z;
+    seq=[{t:0,pose:from},{t:.75,pose:T,ease:'in'},{t:2.4,pose:T}];
+    ev.length=0;ev.push({t:.72,fn:()=>{if(this.onImpact)this.onImpact('knees');}});
+   }
    for(let i=1;i<seq.length;i++){const q=P(seq[i].pose);q.tx+=this.combat.x;q.tz+=this.combat.z;seq[i].pose=q;}
   }
   this.down={type,seq,events:ev,stay:type==='throne'?2.5:type==='kneel'?3.1:type==='floor'?2.9:1e9,hitsDown:0};
@@ -6352,7 +6433,8 @@ Object.assign(Emperor.prototype,{
   const down=this.state!=='stand';
   const out={dmg:0,heavy:false,blocked:false,first:false,big:false,part,isHead};
   // 첫 대: 홀을 떨어뜨리고 놀란다
-  if(this.taunt){if(G.opening){G.opening=false;clearTalk();}this.taunt=false;out.first=true;if(this.tabletHeld)this.dropTablet(V3(dir.x*1.5+rnd(-.4,.4),1.1,dir.z*.6+1.2));this.setPhase(1);this.setEmotion('shock');this.shockT=.7;AUDIO.gasp(1.2);}
+  if(this.taunt){if(G.opening){G.opening=false;clearTalk();}this.taunt=false;out.first=true;if(this.tabletHeld)this.dropTablet(V3(dir.x*1.5+rnd(-.4,.4),1.1,dir.z*.6+1.2));this.setPhase(1);this.setEmotion('shock');this.shockT=.7;AUDIO.gasp(1.2);
+   if(this.act&&this.act.name==='laugh')this.endAct();} // 웃다가 맞으면 웃음이 뚝 끊긴다
   if(part==='tablet'){if(this.tabletHeld)this.dropTablet(V3(dir.x*3,1.4,1.5));out.dmg=.05;return out;}
   // 후광: 깡 하고 흔들리며 금이 간다(몸은 거의 안 다친다)
   if(part==='halo'){const counted=this.haloHit(h);if(counted&&!down){this.doFlinch('shock',.8);this.sp.head.kick(-1.2,dir.x*2,0);}out.halo=true;out.dmg=counted?.04:0;out.vis=counted?.6:0;return out;}
@@ -6369,8 +6451,13 @@ Object.assign(Emperor.prototype,{
   const kickP=P*(down?.55:1)*(blunt?1:sharp?(kind==='stab'?1.05:.6):.85);
   this.kickBody(part,dir,kickP,kind,pt);
   if(isHead){this.haloJolt(dir,kickP);this.repAfterHit(blunt?kind!=='jab':true);}
-  // 얼굴 표정·목소리
-  if(isHead){this.doFlinch('pain',1);}else if(part==='belly'){this.doFlinch(blunt?'oof':'pain',1);}else this.doFlinch(gun?'shock':'grunt',.9);
+  // 허둥댐: 맞을 때마다 차오른다(머리를 맞으면 더). 손사래 방향은 매번 조금씩 다르게
+  this.panic=Math.min(1.3,this.panic*.5+(isHead?.8:.6)*Math.min(P,1.6)*(down?.7:1)*(kind==='slash'?.6:1));
+  if(this.panic>.6&&Math.random()<.5)this.flailSeed=Math.random()*TAU;
+  // 눈물: 2단계부터는 세게 맞을 때마다 눈에서 눈물이 튄다
+  if(isHead&&!gun&&this.phase>=2&&!down)this.tearSplash(kind==='jab'?2:4);
+  // 얼굴 표정·목소리(머리를 맞으면 아픈 얼굴이 조금 더 오래 간다)
+  if(isHead){this.doFlinch('pain',1.3);}else if(part==='belly'){this.doFlinch(blunt?'oof':'pain',1.15);}else this.doFlinch(gun?'shock':'grunt',.9);
   this.voiceHit(tool,part,P,gun||sharp);
   // 부위별
   if(blunt)this.bluntHit(part,seg,pt,n,dir,tool,kind,P,h);
@@ -8064,6 +8151,22 @@ function combatPose(E,out,dt,time){
    const struggle=Math.sin(time*3.6)*.045*b.recovery;
    T.sF+=struggle;T.LkB+=Math.sin(time*2.5)*.09*b.recovery;
    T.hF-=.12*b.recovery;
+   // 밟히면 버둥댄다: 두 팔을 들어 얼굴·몸을 가리며 휘젓고, 다리를 번갈아 차고, 고개를 도리도리 흔든다. 떨림도 그대로 이어진다
+   const pn=Math.min(1,E.panic||0),tr=E.tremble||0;
+   if(pn>.02){
+    const f1=Math.sin(time*21+E.flailSeed),f2=Math.sin(time*18+1.1+E.flailSeed),kick=Math.sin(time*16);
+    // 팔: 옆으로 벌어져 있던 팔을 위(카메라 쪽)로 들어 올려 팔꿈치를 접어 얼굴 위로 가져가고, 좌우로 흔든다
+    T.LsA=lerp(T.LsA,.38+f1*.12,pn);T.RsA=lerp(T.RsA,.34-f2*.12,pn);
+    T.LsF=lerp(T.LsF,1.2+f2*.2,pn);T.RsF=lerp(T.RsF,1.1-f1*.2,pn);
+    T.LsT=lerp(T.LsT,f2*.25,pn);T.RsT=lerp(T.RsT,-f1*.25,pn);
+    T.LeB=lerp(T.LeB,1.05+Math.abs(f1)*.35,pn);T.ReB=lerp(T.ReB,.95+Math.abs(f2)*.35,pn);
+    T.LwF=lerp(T.LwF,-.2,pn);T.RwF=lerp(T.RwF,-.2,pn);T.Lcurl=lerp(T.Lcurl,.1,pn);T.Rcurl=lerp(T.Rcurl,.1,pn);
+    // 다리: 번갈아 차며 버둥댄다
+    T.LkB+=Math.max(0,kick)*.55*pn;T.RkB+=Math.max(0,-kick)*.55*pn;T.LhF+=.25*pn+kick*.18*pn;T.RhF+=.25*pn-kick*.18*pn;T.LaF-=.2*pn;T.RaF-=.2*pn;
+    // 고개 도리도리, 몸통 뒤척임
+    T.hT+=Math.sin(time*27)*.14*pn;T.hF-=.1*pn;T.cT+=Math.sin(time*13)*.05*pn;
+   }
+   if(tr>.01){const a=Math.sin(time*37.3)+.6*Math.sin(time*23.1+.8),c=Math.sin(time*33.3+2.1)+.7*Math.sin(time*19.3+1.1);T.hT+=a*.02*tr;T.hR+=c*.012*tr;T.LeB+=c*.03*tr;T.ReB-=a*.03*tr;T.LkB+=Math.max(0,c)*.05*tr;T.RkB+=Math.max(0,-c)*.05*tr;}
   }
  }
  T.tx=T.ty=T.tz=T.ry=0;
@@ -8264,12 +8367,13 @@ function updateTalk(dt){
  TALK.cur={b:BUB.say(anchor,n.text,n.dur,{voice:VOICE.boss,size:n.size,read:[.6,.03],tts:n.tts}),voiceUntil:G.time+4,quip:n.quip};
  // 글자가 찍히는 동안 입이 움직인다
  E.talkUntil=G.time+typeTime(n.text,VOICE.boss.speed)+.08;
- // 추임새는 아프다가도 그 순간만 비웃는 얼굴로 돌아와 말한다
- if(n.quip){E.setEmotion('smug');E.shockT=Math.max(E.shockT||0,1.7);}
+ // 추임새는 아프다가도 그 순간만 비웃는 얼굴로 돌아와 말한다(허둥대던 손도 그 동안만 멈추고, 떨림도 잦아든다)
+ if(n.quip){E.setEmotion('smug');E.shockT=Math.max(E.shockT||0,1.7);E.panic=0;E.calmUntil=G.time+1.7;if(E.act&&E.act.prio<2)E.endAct();}
 }
 
 /* ---- 추임새: 뭘 하고 있든 뜬금없이 「운명 최고」 ----
- * 첫 타격 뒤 22~42초에 한 번, 그 뒤로는 60~110초마다. 팔다리·머리가 떨어지거나 쓰러진 직후에는 네 번에 한 번꼴로 1초쯤 뒤에 한마디 더.
+ * 첫 타격 뒤 10~18초에 한 번, 그 뒤로는 22~40초마다(한 판에 서너 번꼴. 추종자 장면·되살림 동안 못 한 건 끝나고 몇 초 뒤에 나온다).
+ * 팔다리·머리가 떨어지거나 쓰러진 직후에는 세 번에 한 번꼴로 1초쯤 뒤에 한마디 더.
  * 시작 대사·추종자 장면·되살림·엔딩 중에는 하지 않고, 머리가 없으면 못 한다. 말하는 중에 맞아도 끝까지 말한다. */
 const QUIP={next:0,last:-99,n:0};
 function quipReset(){QUIP.next=0;QUIP.last=-99;QUIP.n=0;}
@@ -8284,14 +8388,14 @@ function sayQuip(){
 }
 function updateQuip(){
  if(G.mode!=='fight'||!G.started||G.ended)return;
- if(!QUIP.next)QUIP.next=G.time+rnd(22,42);
+ if(!QUIP.next)QUIP.next=G.time+rnd(10,18);
  if(G.time<QUIP.next)return;
  if(!quipAllowed()){QUIP.next=G.time+rnd(2,5);return;}
- sayQuip();QUIP.next=G.time+rnd(60,110);
+ sayQuip();QUIP.next=G.time+rnd(22,40);
 }
-// 큰 사건 직후: 가끔 한마디(마지막 추임새에서 35초는 지나야 한다)
+// 큰 사건 직후: 가끔 한마디(마지막 추임새에서 14초는 지나야 한다)
 function quipChance(){
- if(G.mode!=='fight'||!G.started||G.ended||G.time-QUIP.last<35||Math.random()>.25)return;
+ if(G.mode!=='fight'||!G.started||G.ended||G.time-QUIP.last<14||Math.random()>.35)return;
  QUIP.next=Math.min(QUIP.next||1e9,G.time+rnd(.9,1.5));
 }
 
@@ -8334,7 +8438,8 @@ function resolveHit(tool,kind,info,side,extra={}){
  G.lastHit=G.time;
  if(!extra.through&&!extra.quiet)AUDIO.duck();
  const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,strokeId:extra.strokeId,through:extra.through});
- if(combatActive(E)&&!r.halo){E.combat.hit({kind:extra.stomp?'stomp':kind,dx:dir.x,dz:extra.stomp?0:dir.z,power,blocked:r.blocked});}
+ // 되살림이 미뤄져 있는 동안(5%에서 누워 있을 때)은 맞아도 균형이 안 깎인다: 일어나는 길에 다시 쓰러지지 않고 서자마자 컷씬으로 간다
+ if(combatActive(E)&&!r.halo&&!G.revivalPending){E.combat.hit({kind:extra.stomp?'stomp':kind,dx:dir.x,dz:extra.stomp?0:dir.z,power,blocked:r.blocked});}
  G.hits++;
  const stop=((STOP[tool]||{})[kind]||.06)*(r.blocked?.75:1)+(r.big?.05:0);
  G.hitstop=Math.max(G.hitstop,extra.through?0:stop);
@@ -8440,7 +8545,9 @@ function warnCrowd(){ // 10%: 넷이 설계자 앞을 막아선다
  * 6.2 손을 가슴으로 → 6.55 박힘: 금빛 과노출, 그 안에서 몸을 갈아 끼운다(6.9)
  * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.65 '암백ㅋ'와 TTS → 다시 1인칭 */
 function beginRevival(){
- const E=G.E;if(!E||G.revivalUsed||(!combatActive(E)&&E.state!=='stand'))return false;
+ const E=G.E;if(!E||G.revivalUsed)return false;
+ // 누워 있거나 넘어지는 중·일어나는 중이면 일어설 때까지 미룬다(누운 채 갑자기 고쳐 앉는 꼴이 안 나게). 서 있을 때 무너지는 연출로 들어간다
+ if(combatActive(E)?/^(ground|fall|rise)$/.test(E.combat.mode):E.state!=='stand')return false;
  G.revivalUsed=true;G.revivalPending=false;G.inputLocked=true;G.crowdBeatUntil=0;clearPointers();$('#dock').hidden=true;VM.root.visible=false;
  anchorCombatStory(E,false);
  $('#fight .gauge').style.visibility='hidden';clearTalk();
@@ -8480,10 +8587,12 @@ function updateStory(){
  if(G.offerOpen&&G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
  if(G.offerBreakAt&&G.time>=G.offerBreakAt)finishOffer();
  if(G.crowdBeatUntil&&G.time>=G.crowdBeatUntil&&!G.revival){G.crowdBeatUntil=0;COMBAT.storyAnchor=null;G.inputLocked=false;$('#dock').hidden=false;hint(HINTS[G.tool],2.2);focusCanvas();}
+ // 되살림이 미뤄져 있으면: 누워 있는 동안은 밟혀도 곧 일어나게 하고(안 그러면 계속 밟히는 동안 못 일어난다), 서는 순간 시작한다
+ if(G.revivalPending&&G.E&&combatActive(G.E)){const b=G.E.combat;if(b.mode==='ground'&&b.canRise&&b.age>.6){b.change('rise');b.riseHit=0;}}
  if(G.revivalPending&&G.E&&G.E.state==='stand')beginRevival();
  if(G.revival){
   const r=G.revival,t=G.time-r.at-REV_SHIFT,E=G.E;
-  if(t>=3.0&&!r.raised){r.raised=true;if(E)E.revive={k:0,dur:1.1,c:0,toChest:false};}
+  if(t>=3.0&&!r.raised){r.raised=true;if(E)E.revive={k:0,dur:.9,c:0,toChest:false};}
   if(t>=3.5&&!r.gather){r.gather=true;CROWD.gatherStart(2.3);}
   if(t>=6.2&&!r.chest){r.chest=true;if(E&&E.revive)E.revive.toChest=true;}
   if(t>=6.55&&!r.impact){r.impact=true;CROWD.impact();AUDIO.boom(1);flashHold('#fff3cf',.985,.16);if(E)E.reviveGlow=1.7;camHit({shake:.05});
