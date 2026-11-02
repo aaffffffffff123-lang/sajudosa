@@ -7,7 +7,7 @@ function setup({voice=false}={}){
  const elements=new Map(),shown=[],calls={clears:0,focus:0,omen:0,beyond:0,again:0};
  const $=s=>{if(!elements.has(s))elements.set(s,{hidden:false,style:{},classList:{add(){},remove(){}}});return elements.get(s)};
  const BUB={cut(b){b.voice?.stop()},say(anchor,text,dur,options){const b={anchor,text,until:G.time+dur,voice:voice?{busy:true,started:true,stop(){this.busy=false}}:null};shown.push(b);return b}};
- const scope={G,$,BUB,VOICE:{player:{},boss:{}},HINTS:{hand:'tap'},typeTime:()=>.2,V3:()=>({}),hint(){},focusCanvas(){calls.focus++},clearPointers(){calls.clears++},BEYOND:{DUR:10.4,prepare:()=>true,omen(){calls.omen++},begin(){calls.beyond++}},showAgain(){calls.again++}};
+ const scope={G,$,BUB,PROGRESS:{add(){calls.defeated=(calls.defeated||0)+1}},updateDefeatCount(){},AUDIO:{stopMusic(){}},VOICE:{player:{},boss:{}},HINTS:{hand:'tap'},typeTime:()=>.2,V3:()=>({}),hint(){},focusCanvas(){calls.focus++},clearPointers(){calls.clears++},BEYOND:{DUR:10.4,prepare:()=>true,omen(){calls.omen++},begin(){calls.beyond++}},showAgain(){calls.again++}};
  const script=slice('const LINES={','// 되살림 컷씬:')+slice('const TALK=','/* ---- 추임새:')+slice('function onDead(){','/* ---- 게이지 ---- */')+slice('function updateStory(){','function damageBar(');
  const api=vm.runInNewContext(script+';({startEncounter,updateTalk,talkBusy,clearTalk,firstStrikeLine,onDead,updateStory,TALK,LINES})',scope);
  function advance(seconds){for(let i=0;i<seconds*60;i++){G.time+=1/60;api.updateStory();api.updateTalk(1/60)}}
@@ -19,7 +19,7 @@ test('opening keeps controls locked through both lines, then unlocks once',()=>{
  h.advance(2.3);assert.equal(h.shown[1].text,'천지신명이시여...');assert(h.G.inputLocked);
  h.advance(2);assert(!h.G.inputLocked);assert(!h.$('#dock').hidden);assert.equal(h.calls.focus,1);
  h.advance(2);assert.equal(h.calls.focus,1);
- h.firstStrikeLine();h.advance(.1);assert.equal(h.shown.at(-1).text,'죽어!');
+ h.firstStrikeLine();h.advance(.1);assert.equal(h.shown.at(-1).text,'죽어!');assert(!h.G.musicStarted);h.advance(1.5);assert(h.G.musicStarted);
 });
 test('a playing greeting stays locked; unavailable speech eventually releases the lock',()=>{
  const h=setup({voice:true});h.startEncounter();h.advance(.5);h.shown[0].voice.stop();h.advance(2.3);
@@ -33,14 +33,14 @@ test('restart cancels old audio and starts the locked opening from the first lin
  assert.equal(h.shown.at(-1).text,'넌 뭐야?');assert.equal(h.calls.focus,0);
 });
 test('final victory is the player line, once, and completes before the sky reveal',()=>{
- const h=setup({voice:true});h.onDead();h.onDead();assert(h.G.ended);assert(h.G.inputLocked);
+ const h=setup({voice:true});h.onDead();h.onDead();assert(h.G.ended);assert(h.G.inputLocked);assert.equal(h.calls.defeated,1);
  h.advance(.5);assert.equal(h.shown.length,1);assert.equal(h.shown[0].text,'운명좁밥ㅋ');assert(h.shown[0].anchor.player);
  h.advance(3);assert.equal(h.calls.omen,0);assert.equal(h.calls.beyond,0,'do not interrupt the voice');
  h.advance(1.6);assert.equal(h.calls.omen,1);assert.equal(h.calls.beyond,0);
  h.advance(2);assert.equal(h.calls.beyond,1);h.advance(12);assert.equal(h.calls.again,1);
 });
 test('revival collapse does not trigger the final victory line',()=>{
- const h=setup();h.G.revival={};h.onDead();assert(!h.G.ended);assert.equal(h.TALK.q.length,0);
+ const h=setup();h.G.revival={};h.onDead();assert(!h.G.ended);assert.equal(h.TALK.q.length,0);assert.equal(h.calls.defeated,undefined);
 });
 test('locked, paused, and non-combat inputs cannot start fist, knife, gun, or slash actions',()=>{
  const G={inputLocked:true,paused:false,mode:'fight'};

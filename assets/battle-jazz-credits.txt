@@ -1,0 +1,10 @@
+Next in Line — original battle cue for saj udosa
+196 BPM · 4/4 swing · 32 bars · loop length 39.183673469 seconds
+Original melody, arrangement and score in tools/compose-battle-jazz.py.
+Instruments: piano, acoustic bass, trumpet, tenor sax, jazz guitar, brass, drums.
+Rendered with GeneralUser GS 2.0.3 by S. Christian Collins:
+https://github.com/mrbumpy409/GeneralUser-GS
+https://www.schristiancollins.com/generaluser
+The SoundFont license permits private and commercial music creation.
+Renderer: TinySoundFont (MIT), https://github.com/schellingb/TinySoundFont
+The SoundFont and renderer library are build dependencies and are not shipped to browsers.
