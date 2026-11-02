@@ -2149,9 +2149,9 @@ const _cv=V3(),_cf=V3();
 /* ===== 4-1. 궁전 너머의 존재 =====
  * 쓰러진 천지신명 → 바닥 위로 큰 그림자가 지나감 → 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
  * 그림(fate-beyond-v2)은 화면이 아니라 세상의 하늘 방향에 붙어 있어, 고개를 드는 동안 원근대로 올라오고
- * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 내려다보다가 나와 눈을 맞추고(홍채 원판이 통째로 옮겨 온다),
- * 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 홍채가 안에서 빛나고 궁전 빛도 바뀐다.
- * 동공 크기는 바꾸지 않는다(지우고 다시 그리면 그림이 일그러져 보였다). */
+ * 처마·기둥이 그 앞을 가로질러 지나간다. 고개를 든 뒤 아래를 보는 눈을 잠깐 보여주고,
+ * 시선이 한 번 올라와 나와 마주친다. 이후 동공이 조금 넓어지고 완전히 정지한다.
+ * 눈꺼풀 경계와 홍채 외곽은 고정하며, 원화의 질감을 크게 늘리거나 빛을 맥동시키지 않는다. */
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
@@ -2185,20 +2185,21 @@ void main(){
  if(rp.z>-.02)q.y=-10.;
  // 2) 눈꺼풀은 그림 그대로
  vec3 lid=texture2D(uMap,clamp(q,.002,.998)).rgb;
- // 3) 위·아래 눈꺼풀에 닿을수록 이동량이 0이 되는 연속 변형. 복제한 윗줄/검은 띠가 미끄러져 나오지 않는다.
+ // 3) 경계의 위치와 기울기를 고정한 작은 회전. 위·아래에서 꺾이던 사인 변형을 없앤다.
  float inOpen=opening(q);
  float ux=(q.x-.5078)/.3076,ex=clamp(ux,-1.,1.);
  float bottom=botV(ex),top=topV(ex),ey=clamp((q.y-bottom)/max(.01,top-bottom),0.,1.);
- float roll=sin(ey*3.14159265)*(1.-smoothstep(.58,1.,abs(ux)));
- vec2 gaze=vec2(uGaze.x,clamp(uGaze.y,-.28*(top-bottom),.28*(top-bottom)));
+ float roll=16.*ey*ey*(1.-ey)*(1.-ey)*(1.-smoothstep(.58,1.,abs(ux)));
+ vec2 gaze=vec2(uGaze.x,clamp(uGaze.y,-.13*(top-bottom),.13*(top-bottom)));
  vec2 qs=q-gaze*roll;
  float di=ell(qs,IC,IR);
- // 세로로 긴 원래 동공을 보존하며 폭만 변화시킨다. 홍채 바깥 경계는 움직이지 않는다.
+ // 동공 가까이에서만 폭을 조금 바꾼다. 바깥 홍채와 반사광은 원화 위치에 고정한다.
  vec2 ip=(qs-IC)/IR;
  float rim=sqrt(max(0.,1.-ip.y*ip.y));
  if(rim>.02&&abs(ip.x)<rim){
-  float x=abs(ip.x)/rim,base=.18,dilated=base*uPupil;
-  float mapped=x<dilated?x/uPupil:base+(x-dilated)*(1.-base)/(1.-dilated);
+  float x=abs(ip.x)/rim;
+  float influence=1.-smoothstep(.20,.70,x);
+  float mapped=x*(1.+(1./uPupil-1.)*influence);
   qs.x=IC.x+sign(ip.x)*mapped*rim*IR.x;
  }
  vec3 inner=texture2D(uMap,clamp(qs,.002,.998)).rgb;
@@ -2245,14 +2246,13 @@ void main(){
  const _od=V3(),_or=V3(),_ou=V3(),_ol=V3();
  const _cp=V3(),_m3=new THREE.Matrix3();
  let active=false,t0=0,from=null,exposure=1.08,lights=null;
- const TILT=6.4,DUR=9.4;
+ const TILT=6.4,DUR=10.4;
  // 아래를 보다가 한 번 고개를 맞추고 정지. 그 다음 동공이 넓어진다.
- const T_SEE=TILT+.45,T_SHIFT=.58,T_DILATE=T_SEE+T_SHIFT+.12;
- const PUPIL_REST=.68,PUPIL_CONTACT=1.08;
+ const T_SEE=TILT+.8,T_SHIFT=.36,T_DILATE=T_SEE+T_SHIFT+.3;
+ const PUPIL_REST=.86,PUPIL_CONTACT=1;
  const eye={gaze:new THREE.Vector2(),pupil:PUPIL_REST,glow:0,seen:false,lock:0};
- // 시선은 홍채 원판을 옮기는 양(그림 UV). 그림 그대로가 나와 눈이 마주친 각도이고, 처음엔 홍채를 반지름의 절반쯤 내려 쓰러진 설계자를 본다.
- // (예전 값 -.09는 홍채 반지름에 가까워 그림을 심하게 끌어 늘였다)
- const GAZE0=new THREE.Vector2(0,-.048);
+ // 원화 그대로가 나와 마주친 각도. 작은 하향 시선으로 시작해 질감을 잡아 늘리지 않는다.
+ const GAZE0=new THREE.Vector2(0,-.022);
  const GAZE_PLAYER=new THREE.Vector2(0,0);
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
@@ -2296,15 +2296,14 @@ void main(){
  function updateEye(k,dt){
   const U=mat.uniforms;
   // 알아봄: 아래를 보던 시선이 먼저 나한테 꽂힌다. 시선 이동이 끝나면 동공이 커진다.
-  if(k>=T_SEE&&!eye.seen){eye.seen=true;AUDIO.gaze();}
+  if(k>=T_SEE+T_SHIFT&&!eye.seen){eye.seen=true;AUDIO.gaze(.65);}
   eye.gaze.lerpVectors(GAZE0,GAZE_PLAYER,smoother(clamp((k-T_SEE)/T_SHIFT,0,1)));
   // 동공: 아래를 볼 때는 좁게, 눈을 맞춘 뒤 넓어져 그 크기를 유지한다.
   const pupil=lerp(PUPIL_REST,PUPIL_CONTACT,smoother(clamp((k-T_DILATE)/.7,0,1)));
   eye.pupil=pupil;
-  // 홍채 빛: 알아볼 때 확 올랐다가 가라앉고, 그 뒤로 느리게 맥동
-  let glow=0;
-  if(eye.seen){const s=k-T_SEE;glow=s<.65?.55*smooth(s/.65):lerp(.55,.28,smooth((s-.65)/1.8));}
-  eye.lock=eye.seen?clamp((k-T_SEE)/.6,0,1):0;
+  // 마주친 뒤 조명만 한 번 바뀐다. 홍채가 번쩍이거나 숨 쉬듯 밝아지지 않는다.
+  const glow=0;
+  eye.lock=eye.seen?smoother(clamp((k-T_SEE-T_SHIFT)/.8,0,1)):0;
   if(eye.lock>0&&caster.visible)caster.visible=false; // 눈이 나를 보는 순간 그 그림자는 걷히고 차가운 빛이 내려온다
   U.uGaze.value.copy(eye.gaze);U.uPupil.value=pupil;U.uGlow.value=glow;
   applyLights(eye.lock);
@@ -2359,6 +2358,7 @@ const LINES={
  greeting:'천지신명이시여...',
  opening:'넌 뭐야?',
  firstHit:'죽어!',
+ victory:'운명좁밥ㅋ',
  grab:[[0,'잠깐만요!\n제 재물운은요?',.25],[1,'우리 애 대학은\n어떡해요!',.85]],
  wall:[[2,'억울하면\n다음 생에 잘 태어나!',.75],[4,'남의 복까지\n건드리지 마요!',1.55],[5,'그냥 순응하고\n사세요!',2.35]],
  wail:[[0,'천지신명님!\n눈 좀 떠 보세요!',1.2],[3,'제 팔자는\n어떡해요!',2.05]],
@@ -2401,7 +2401,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.back+LINES.submit.map(x=>x[0]).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.back+LINES.submit.map(x=>x[0]).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -7966,6 +7966,7 @@ const VM=(()=>{
   return at(nx,ny,depth);
  }
  function attack(kind,sx,sy,info){
+  if(G.inputLocked||G.paused||G.mode!=='fight')return false;
   const tool=st.tool;if(tool==='gun')return fire(sx,sy,info);
   // The next fist can launch once the previous contact is retracting.
   // Two rapid taps must not put both fists through the same point at once.
@@ -7995,6 +7996,7 @@ const VM=(()=>{
  /* 총: 탄은 무한. 누르면 한 발, 꾹 누르면 연사 */
  let fireCool=0;
  function fire(sx,sy,info){
+  if(G.inputLocked||G.paused||G.mode!=='fight')return false;
   if(fireCool>0)return false;
   fireCool=.15;st.recoil=1;st.slide=1;st.flash=.035;st.lastShot=st.time;
   const [nx,ny]=ndc(sx,sy);st.aimGoal.copy(at(nx,ny,3)).normalize();st.aim.copy(st.aimGoal);
@@ -8005,7 +8007,7 @@ const VM=(()=>{
  }
  function reload(){}
  /* 칼로 긋기: 손가락을 따라 칼끝이 움직이고, 몸에 닿으면 날이 살을 파고든다 */
- function slashStart(sx,sy){st.slash={sx,sy,px:sx,py:sy,t:0,len:0,lastWhoosh:st.time,touching:false,touchUntil:-1,bite:0};AUDIO.whoosh(.5,'slash');}
+ function slashStart(sx,sy){if(G.inputLocked||G.paused||G.mode!=='fight')return false;st.slash={sx,sy,px:sx,py:sy,t:0,len:0,lastWhoosh:st.time,touching:false,touchUntil:-1,bite:0};AUDIO.whoosh(.5,'slash');}
  function slashMove(sx,sy){const s=st.slash;if(!s)return;const d=Math.hypot(sx-s.sx,sy-s.sy);s.len+=d;s.px=s.sx;s.py=s.sy;s.sx=sx;s.sy=sy;if(d>14&&st.time-s.lastWhoosh>.18){s.lastWhoosh=st.time;AUDIO.whoosh(.4,'slash');}}
  function slashEnd(){st.slash=null;}
 
@@ -8471,7 +8473,9 @@ function updateTalk(dt){
    if(G.time<c.voiceUntil){b.until=Math.max(b.until,G.time+.15);if(b.voice.started&&G.E&&c.who==='boss')G.E.talkUntil=G.time+.1;return;}
    b.voice.stop(); // A missing device voice must not leave the revival locked.
   }
-  if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;if(G.opening&&!TALK.q.length)G.opening=false;return;
+  if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;
+  if(G.opening&&!TALK.q.length)finishEncounter();
+  return;
  }
  if(TALK.gap>0){TALK.gap-=dt;return;}
  const n=TALK.q[0];if(!n)return;
@@ -8487,12 +8491,20 @@ function updateTalk(dt){
 }
 
 function startEncounter(){
- G.opening=true;
+ G.opening=true;G.inputLocked=true;clearPointers();
+ $('#dock').hidden=true;$('#hint').classList.add('off');
  queueTalk([
   ['boss',LINES.opening,2,.15,1.2,LINES.opening],
   ['player',LINES.greeting,1.8,.25,1.1,LINES.greeting]
  ],true);
  if(G.E)G.E.idleT=6.5;
+}
+function finishEncounter(){
+ if(!G.opening)return;
+ G.opening=false;clearPointers();
+ if(G.mode!=='fight'||G.ended||G.revival)return;
+ G.inputLocked=false;$('#dock').hidden=false;
+ hint(HINTS[G.tool],4.5);focusCanvas();
 }
 function firstStrikeLine(){
  G.opening=false;
@@ -8734,9 +8746,12 @@ function updateStory(){
   if(t>=9.65&&!r.spoken){r.spoken=true;queueTalk([['boss',LINES.back,1.7,0,1.45,'암백']]);}
   if(r.spoken&&!talkBusy())finishRevival();
  }
- // 설계자가 말없이 쓰러지고 잠깐 뒤, 뒤에 있던 것을 올려다본다. 다 올려다보고 나면 '다시 족치기'
+ // 승리 대사가 끝나면 그림자가 지나가고, 그 뒤 고개를 든다.
  if(G.prepAt&&G.time>=G.prepAt){if(BEYOND.prepare(6))G.prepAt=0;}
- if(G.beyondAt&&G.time>=G.beyondAt){if(!G.prepAt||G.time>=G.beyondAt+1.5){G.beyondAt=0;BEYOND.begin();G.againAt=G.time+BEYOND.DUR+1.2;}}
+ if(G.beyondAt&&G.time>=G.beyondAt&&!talkBusy()){
+  if(!G.omenAt){G.omenAt=G.time;BEYOND.omen();}
+  if(G.time>=G.omenAt+1.6&&(!G.prepAt||G.time>=G.beyondAt+1.5)){G.beyondAt=0;BEYOND.begin();G.againAt=G.time+BEYOND.DUR+1.2;}
+ }
  if(G.againAt&&G.time>=G.againAt){G.againAt=0;showAgain();}
 }
 function damageBar(d,o={},fromStand=false){
@@ -8805,14 +8820,13 @@ function onImpact(type){
  FX.word(type==='throne'?'쾅!':'쿵!',V3(p.x,p.y+.15,p.z+.2),{size:64,color:'#ffd84a',force:true,dur:.7});
  quipChance();
 }
-// 마지막: 아무 말 없이 쓰러진다. 잠깐 조용하다가 고개를 들어 뒤에 있던 것을 본다(그것은 그 사이에 미리 만들어 둔다)
+// 최종 죽음에만 내 한마디. 다 읽고 잠깐 멈춘 뒤, 뒤에 있던 것을 올려다본다.
 function onDead(){
  if(G.revival||G.ended)return;
  G.ended=true;
  G.inputLocked=true;clearPointers();$('#dock').hidden=true;
- clearTalk();
- if(!G.prepAt)G.prepAt=G.time+.05;G.beyondAt=G.time+1.6;
- BEYOND.omen();
+ queueTalk([['player',LINES.victory,2,.35,1.25,'운명 좁밥']],true);
+ if(!G.prepAt)G.prepAt=G.time+.05;G.beyondAt=G.time+3;
 }
 
 /* ---- 게이지 ---- */
@@ -9016,6 +9030,7 @@ function ptrEnd(e){
 canvas.addEventListener('pointerup',ptrEnd);canvas.addEventListener('pointercancel',ptrEnd);canvas.addEventListener('lostpointercapture',ptrEnd);
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 function pollPointers(){
+ if(G.paused||G.inputLocked||G.mode!=='fight')return;
  for(const p of ptrs.values()){
   if(G.tool==='gun'&&p.auto&&G.time>=p.auto){p.auto=G.time+.19;VM.fire(p.x,p.y);}
   else if(G.tool==='hand'&&!p.decided&&p.grabAt&&G.time>=p.grabAt&&COMBAT.pointer==null){p.grabAt=0;combatGrab(p);}
@@ -9029,7 +9044,7 @@ function setTool(t){
  G.tool=t;VM.setTool(t);$$('#tools .tool').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));
  if(G.mode==='fight')hint(HINTS[t]);AUDIO.ui();updateAmmo();
 }
-$$('#tools .tool').forEach(b=>b.addEventListener('click',()=>{AUDIO.unlock();setTool(b.dataset.tool);}));
+$$('#tools .tool').forEach(b=>b.addEventListener('click',()=>{if(G.paused||G.inputLocked)return;AUDIO.unlock();setTool(b.dataset.tool);}));
 
 /* ---- 설정 ---- */
 function savePrefs(){try{localStorage.setItem('palja.prefs',JSON.stringify(PREF));}catch(_){}}
@@ -9061,7 +9076,7 @@ function startFightFromSubmit(){
  VM.root.visible=true;VM.setTool(G.tool);
  setCombatStage(true);if(G.E){G.E.endAct();combatInit(G.E,true);}
  startEncounter();
- fitView();setFrame('stand',true);hint(HINTS[G.tool],4.5);focusCanvas();
+ fitView();setFrame('stand',true);focusCanvas();
 }
 $('#submitFight').addEventListener('click',startFightFromSubmit);
 /* 나만 좋게 고친 사주를 친다: 친 자리를 지나 위아래로 찢어져 두 쪽이 양옆으로 날아가고, 그 뒤에 깔려 있던
@@ -9103,7 +9118,7 @@ function startRound(mode){
  const E=G.E;
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0});
+Object.assign(G,{mode,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0});
  setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
@@ -9122,7 +9137,6 @@ G.opening=mode==='fight';
 if(mode==='fight'){
  canvas.setAttribute('aria-label','천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.');
  startEncounter();
- hint(HINTS.hand,5);
 }else{
  $('#hint').classList.add('off');
  E.idleT=1e6;G.inputLocked=true;

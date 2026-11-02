@@ -89,9 +89,9 @@ const E=rig();for(const a of E.arms){a.sh.rotation.set(-1,0,a.s*.18);a.el.rotati
 for(const fps of [30,60,120]){
  let calls=0;const mat={uniforms:{uGaze:{value:new THREE.Vector2()},uPupil:{value:0},uGlow:{value:0}}};
  const eyeApi=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{...context,mat,AUDIO:{gaze(){calls++}},caster:{visible:false},applyLights(){}});
- let y=-.048,p=.68;
- for(let i=0;i<=20*fps;i++){eyeApi.updateEye(i/fps,1/fps);const e=eyeApi.eye;assert(e.gaze.y>=y-1e-12&&e.gaze.y<=1e-12);assert(e.gaze.x===0);assert(e.pupil>=p-1e-12);if(i/fps<eyeApi.T_DILATE)assert(e.pupil===.68);if(i/fps>eyeApi.T_SEE+eyeApi.T_SHIFT)assert(e.gaze.length()===0);y=e.gaze.y;p=e.pupil;}
- assert.equal(calls,1);assert.equal(eyeApi.eye.pupil,1.08);
+ let y=-.022,p=.86;
+ for(let i=0;i<=20*fps;i++){eyeApi.updateEye(i/fps,1/fps);const e=eyeApi.eye;assert(e.gaze.y>=y-1e-12&&e.gaze.y<=1e-12);assert(e.gaze.x===0);assert(e.pupil>=p-1e-12);if(i/fps<eyeApi.T_DILATE)assert(e.pupil===.86);if(i/fps>eyeApi.T_SEE+eyeApi.T_SHIFT)assert(e.gaze.length()===0);y=e.gaze.y;p=e.pupil;}
+ assert.equal(calls,1);assert.equal(eyeApi.eye.pupil,1);
 }
 console.log('Eye: 30/60/120 fps monotonic gaze, fixed contact, delayed dilation passed');
 
