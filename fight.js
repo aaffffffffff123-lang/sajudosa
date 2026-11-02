@@ -2135,7 +2135,7 @@ const _cv=V3(),_cf=V3();
 /* ===== 4-1. 궁전 너머의 존재 =====
  * 쓰러진 천지신명 → 바닥 위로 큰 그림자가 지나감 → 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
  * 그림(fate-beyond-v2)은 화면이 아니라 세상의 하늘 방향에 붙어 있어, 고개를 드는 동안 원근대로 올라오고
- * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 내려다보다가 나를 알아보고(동공이 좁아짐),
+ * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 더 깊이 내려다보다가 나와 눈을 맞추고 동공이 커지며,
  * 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 궁전 빛도 바뀐다. */
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
@@ -2224,12 +2224,13 @@ void main(){
  let active=false,t0=0,from=null,exposure=1.08,lights=null;
  const TILT=6.4,DUR=9.4;
  // 눈의 박자(begin 뒤 초): 알아봄(동공이 나한테 꽂힘) → 이후 미세한 움직임
- const T_SEE=TILT+.45;
- const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:1.08,glow:0,seen:false,lock:0};
- // 원본 그림의 (0,0)은 이 올려다보는 구도에서 플레이어 머리 위를 보는 각도다.
- // 쓰러진 설계자를 더 낮게 보다가, 살짝 내려다보는 위치에서 플레이어와 눈을 맞춘다.
- const GAZE0=new THREE.Vector2(-.012,-.05);
- const GAZE_PLAYER=new THREE.Vector2(0,-.03);
+ const T_SEE=TILT+.45,T_DILATE=T_SEE+.16;
+ const PUPIL_REST=.6,PUPIL_CONTACT=1.08;
+ const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:PUPIL_REST,glow:0,seen:false,lock:0};
+ // 기존에 동공이 커져 있던 첫 시선(-.012,-.05)이 플레이어와 눈이 마주치는 각도다.
+ // 처음엔 그보다 더 아래의 쓰러진 설계자를 보고, 이 각도로 돌아온 뒤 동공을 키운다.
+ const GAZE0=new THREE.Vector2(-.012,-.09);
+ const GAZE_PLAYER=new THREE.Vector2(-.012,-.05);
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
  // 화면 위 끝이 같은 하늘 높이(top: 올려다본 각도, 라디안)까지 오도록 고개 각도와 시야를 정한다
@@ -2266,12 +2267,12 @@ void main(){
   CAM.frame='cut';G.inputLocked=true;clearPointers();$('#dock').hidden=true;
   const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
   $('#hint').classList.add('off');
-  eye.gaze.copy(GAZE0);eye.jumpAt=-1;eye.nextJump=T_SEE+.7;eye.pupil=1.08;eye.glow=0;eye.seen=false;eye.lock=0;
+  eye.gaze.copy(GAZE0);eye.jumpAt=-1;eye.nextJump=T_SEE+.7;eye.pupil=PUPIL_REST;eye.glow=0;eye.seen=false;eye.lock=0;
   AUDIO.beyond();
  }
  function updateEye(k,dt){
   const U=mat.uniforms;
-  // 알아봄: 동공이 홱 나한테 꽂히고(살짝 지나쳤다가 돌아옴) 좁아진다
+  // 알아봄: 아래를 보던 시선이 먼저 나한테 꽂힌다. 시선 이동이 끝나면 동공이 커진다.
   if(k>=T_SEE&&!eye.seen){eye.seen=true;eye.jumpFrom.copy(eye.gaze);eye.jumpTo.copy(GAZE_PLAYER);eye.jumpAt=k;AUDIO.gaze();}
   if(eye.jumpAt>=0){
    const u=clamp((k-eye.jumpAt)/.09,0,1),f=1-Math.pow(1-u,3);
@@ -2284,9 +2285,8 @@ void main(){
    eye.gaze.lerp(GAZE_PLAYER,1-Math.exp(-dt*.6));
    if(k>=eye.nextJump){eye.nextJump=k+rnd(.6,1.9);const a=rnd(0,TAU),r=rnd(.0022,.0058);eye.jumpFrom.copy(eye.gaze);eye.jumpTo.lerpVectors(GAZE_PLAYER,eye.gaze,.5);eye.jumpTo.x+=Math.cos(a)*r;eye.jumpTo.y+=Math.sin(a)*r*.7;eye.jumpAt=k;}
   }
-  // 동공: 보기 전엔 느슨하게 넓고, 알아본 뒤 좁아졌다가 조금 풀린다. 아주 천천히 숨 쉬듯 오간다
-  let pupil=1.08;
-  if(eye.seen){const s=k-T_SEE;pupil=s<.45?lerp(1.08,.6,easeOut3(s/.45)):lerp(.6,.74,smooth((s-.45)/3.6));pupil+=.03*Math.sin(k*1.7);}
+  // 동공: 아래를 볼 때는 좁게, 눈을 맞춘 뒤 넓어져 그 크기를 유지한다.
+  const pupil=eye.seen?lerp(PUPIL_REST,PUPIL_CONTACT,easeOut3(clamp((k-T_DILATE)/.45,0,1))):PUPIL_REST;
   eye.pupil=pupil;
   // 홍채 빛: 알아볼 때 확 올랐다가 가라앉고, 그 뒤로 느리게 맥동
   let glow=0;
@@ -2346,7 +2346,7 @@ void main(){
 const LINES={
  opening:'왜 왔니?',
  grab:[[0,'잠깐만요!\n제 재물운은요?',.25],[1,'우리 애 대학은\n어떡해요!',.85]],
- wall:[[2,'억울하면\n노력을 했어야죠!',.75],[4,'남의 복까지\n건드리지 마요!',1.55],[5,'그냥 순응하고\n사세요!',2.35]],
+ wall:[[2,'억울하면\n다음 생에 잘 태어나!',.75],[4,'남의 복까지\n건드리지 마요!',1.55],[5,'그냥 순응하고\n사세요!',2.35]],
  wail:[[0,'천지신명님!\n눈 좀 떠 보세요!',1.2],[3,'제 팔자는\n어떡해요!',2.05]],
  pray:[[2,'제 것만은\n지켜 주세요!',3.3],[5,'지금 이대로면\n돼요!',4.3]],
  cheer:[[1,'살아나셨다!',0],[4,'천지신명님 만세!',.45]],
@@ -8972,4 +8972,5 @@ window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
+
 
