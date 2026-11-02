@@ -2226,7 +2226,10 @@ void main(){
  // 눈의 박자(begin 뒤 초): 알아봄(동공이 나한테 꽂힘) → 이후 미세한 움직임
  const T_SEE=TILT+.45;
  const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:1.08,glow:0,seen:false,lock:0};
- const GAZE0=new THREE.Vector2(-.012,-.03);   // 처음엔 쓰러진 쪽(아래)을 본다
+ // 원본 그림의 (0,0)은 이 올려다보는 구도에서 플레이어 머리 위를 보는 각도다.
+ // 쓰러진 설계자를 더 낮게 보다가, 살짝 내려다보는 위치에서 플레이어와 눈을 맞춘다.
+ const GAZE0=new THREE.Vector2(-.012,-.05);
+ const GAZE_PLAYER=new THREE.Vector2(0,-.03);
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
  // 화면 위 끝이 같은 하늘 높이(top: 올려다본 각도, 라디안)까지 오도록 고개 각도와 시야를 정한다
@@ -2269,7 +2272,7 @@ void main(){
  function updateEye(k,dt){
   const U=mat.uniforms;
   // 알아봄: 동공이 홱 나한테 꽂히고(살짝 지나쳤다가 돌아옴) 좁아진다
-  if(k>=T_SEE&&!eye.seen){eye.seen=true;eye.jumpFrom.copy(eye.gaze);eye.jumpTo.set(0,0);eye.jumpAt=k;AUDIO.gaze();}
+  if(k>=T_SEE&&!eye.seen){eye.seen=true;eye.jumpFrom.copy(eye.gaze);eye.jumpTo.copy(GAZE_PLAYER);eye.jumpAt=k;AUDIO.gaze();}
   if(eye.jumpAt>=0){
    const u=clamp((k-eye.jumpAt)/.09,0,1),f=1-Math.pow(1-u,3);
    eye.gaze.lerpVectors(eye.jumpFrom,eye.jumpTo,f);
@@ -2278,8 +2281,8 @@ void main(){
    if(k-eye.jumpAt>.16)eye.jumpAt=-1;
   }else if(eye.seen){
    // 미세 움직임: 가끔 아주 조금 튀고, 그 사이엔 천천히 나한테 되돌아온다
-   eye.gaze.multiplyScalar(Math.exp(-dt*.6));
-   if(k>=eye.nextJump){eye.nextJump=k+rnd(.6,1.9);const a=rnd(0,TAU),r=rnd(.0022,.0058);eye.jumpFrom.copy(eye.gaze);eye.jumpTo.set(eye.gaze.x*.5+Math.cos(a)*r,eye.gaze.y*.5+Math.sin(a)*r*.7);eye.jumpAt=k;}
+   eye.gaze.lerp(GAZE_PLAYER,1-Math.exp(-dt*.6));
+   if(k>=eye.nextJump){eye.nextJump=k+rnd(.6,1.9);const a=rnd(0,TAU),r=rnd(.0022,.0058);eye.jumpFrom.copy(eye.gaze);eye.jumpTo.lerpVectors(GAZE_PLAYER,eye.gaze,.5);eye.jumpTo.x+=Math.cos(a)*r;eye.jumpTo.y+=Math.sin(a)*r*.7;eye.jumpAt=k;}
   }
   // 동공: 보기 전엔 느슨하게 넓고, 알아본 뒤 좁아졌다가 조금 풀린다. 아주 천천히 숨 쉬듯 오간다
   let pupil=1.08;
