@@ -1635,6 +1635,18 @@ const AUDIO=(()=>{
  // 종이가 찢어지는 소리: 높고 거친 찢김 두 겹 + 섬유가 뜯기는 바스락
  function paper(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(R(-.2,.2),.12),d=drive(o,1.4);
   tearNoise(d,t,.34,3200,.85*k,R(30,42));tearNoise(d,t+.03,.26,1500,.42*k,R(55,70));clicks(o,t+.02,7,.3,5200,.18*k);}
+ // 그림자가 지나갈 때: 아주 낮게 차오르는 울림
+ function omen(k=1){if(!ready())return;const t=ctx.currentTime+.01,o=out(0,.5),d=drive(o,1.6);
+  nz(d,t,{dur:.9,peak:.5*k,a:.7,f:150,f1:70,type:'lowpass',q:.7,curve:'lin'});osc(d,t,{f0:42,f1:30,dur:1.1,a:.6,peak:.55*k});
+  nz(o,t+.2,{dur:1.1,peak:.05*k,a:.5,f:900,f1:300,q:.6,curve:'lin'});}
+ // 눈이 나를 알아보는 순간: 깊은 울림 하나 + 렌즈가 맞춰지는 듯한 짧은 틱
+ function gaze(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(0,.5),d=drive(o,2);
+  osc(d,t,{f0:84,f1:28,dur:1.0,peak:.9*k});nz(d,t,{dur:.5,peak:.45*k,f:520,f1:80,type:'lowpass',q:.8});
+  nz(o,t+.03,{dur:.025,peak:.22*k,f:3800,type:'highpass',q:.6});osc(o,t+.03,{f0:2200,f1:1400,dur:.05,peak:.09*k,type:'triangle'});}
+ // 막이 눈 위를 지나갈 때: 젖은 것이 미끄러지는 소리, 갔다가 돌아온다
+ function membrane(k=1){if(!ready())return;const t=ctx.currentTime+.01,o=out(.15,.35);
+  nz(o,t,{dur:.5,peak:.15*k,a:.06,f:500,f1:2600,q:1.7,curve:'lin'});nz(o,t+.58,{dur:.42,peak:.12*k,a:.05,f:2400,f1:600,q:1.7,curve:'lin'});
+  osc(o,t+.5,{f0:1400,f1:900,dur:.03,peak:.06*k});}
  // 뒤에 있던 것: 아주 낮게 웅웅거리는 덩어리(서로 조금 어긋난 두 톱니파가 천천히 맥놀이하고, 숨 쉬듯 부풀었다 가라앉는다)
  // + 그 위에 멀리서 '아—' 하는 듯한 모음 울림 + 젖은 유리잔 테두리를 문지르는 듯한 높은 울림. 고개를 드는 동안 천천히 차오르고, 끝나지 않는다
  function beyond(){if(!ready())return;const t=ctx.currentTime+.02,o=out(0,.55);
@@ -1718,7 +1730,7 @@ const AUDIO=(()=>{
   });
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
- return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,speak,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,stop,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -2085,32 +2097,73 @@ function updateCamera(dt){
 const _cv=V3(),_cf=V3();
 
 /* ===== 4-1. 궁전 너머의 존재 =====
- * 쓰러진 설계자 → 궁전 위로 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
- * 눈 양끝과 동공은 세로 화면에서도 온전히 남긴다. 벽·기둥이 크기의 기준이다. */
+ * 쓰러진 천지신명 → 바닥 위로 큰 그림자가 지나감 → 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
+ * 그림(fate-beyond-v2)은 화면이 아니라 세상의 하늘 방향에 붙어 있어, 고개를 드는 동안 원근대로 올라오고
+ * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 내려다보다가 나를 알아보고(동공이 좁아짐),
+ * 반투명한 막이 옆으로 지나가고(눈꺼풀 대신), 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 궁전 빛도 바뀐다. */
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
  let artReady=false,compiled=false;
  const fallback=canvasTex(16,16,(g,w,h)=>{const c=g.createLinearGradient(0,0,0,h);c.addColorStop(0,'#090d12');c.addColorStop(1,'#141d25');g.fillStyle=c;g.fillRect(0,0,w,h);});
  const mat=new THREE.ShaderMaterial({
-  uniforms:{uMap:{value:fallback},uTime:{value:0},uReveal:{value:0},uAspect:{value:1}},
+  uniforms:{uMap:{value:fallback},uTime:{value:0},uReveal:{value:0},uAspect:{value:1},uTanHalf:{value:.4},uCamRot:{value:new THREE.Matrix3()},uPitch:{value:1},uKx:{value:1},uKy:{value:1},uCy:{value:.5},
+   uGaze:{value:new THREE.Vector2(0,0)},uPupil:{value:1},uMemb:{value:-2},uGlow:{value:0}},
   depthTest:false,depthWrite:false,toneMapped:false,
-  vertexShader:`varying vec2 vUv;
-void main(){vUv=uv;gl_Position=vec4(position.xy,.999,1.);}`,
-  fragmentShader:`uniform sampler2D uMap;uniform float uTime;uniform float uReveal;uniform float uAspect;varying vec2 vUv;
+  vertexShader:`varying vec2 vNdc;
+void main(){vNdc=position.xy;gl_Position=vec4(position.xy,.999,1.);}`,
+  fragmentShader:`uniform sampler2D uMap;uniform float uTime,uReveal,uAspect,uTanHalf,uPitch,uKx,uKy,uCy,uPupil,uMemb,uGlow;uniform mat3 uCamRot;uniform vec2 uGaze;varying vec2 vNdc;
+// 그림 안 눈의 자리(UV): 눈구멍 타원 · 홍채 · 세로 동공(위아래로 뾰족한 렌즈꼴)
+const vec2 EC=vec2(.49,.699),ER=vec2(.28,.077);
+const vec2 IC=vec2(.493,.704),IR=vec2(.151,.101);
+const vec2 SC=vec2(.499,.706);const float SH=.0703,SW=.0303;
+float ell(vec2 p,vec2 c,vec2 r){return length((p-c)/r);}
+float slitHalf(float dy,float s){float u=dy/(SH*(.93+.07*s));float k=1.-u*u;if(k<=0.)return 0.;return SW*s*pow(k,.7);}
 void main(){
- // Fit the eye's width. Extra space uses the dark edges of the art, never an enlarged center crop.
- float sy=1./(1.06*uAspect*1.5);
- float cy=mix(.5,.65,smoothstep(.7,1.4,uAspect));
- vec2 q=vec2((vUv.x-.5)/1.06+.5,(vUv.y-.5)*sy+cy-(1.-uReveal)*1.25);
- vec2 eye=(q-vec2(.5,.70))/vec2(.23,.115);
- float eyeMask=1.-smoothstep(.55,1.,length(eye));
- float focus=smoothstep(6.1,8.,uTime);
- q.x+=(1.-focus)*.018*eyeMask;
- q.x+=(q.x-.5)*focus*.045*eyeMask;
- q+=sin(uTime*.32)*.0007*(q-vec2(.5,.7));
- vec3 color=texture2D(uMap,clamp(q,.002,.998)).rgb;
- float edge=smoothstep(-.15,.015,q.y)*(1.-smoothstep(.985,1.15,q.y));
+ // 1) 이 픽셀이 보는 방향을 세상 좌표로 바꾸고, 그림이 붙은 하늘 면(정면 D를 바라보는 먼 평면) 위의 자리를 구한다
+ vec3 rc=normalize(vec3(vNdc.x*uTanHalf*uAspect,vNdc.y*uTanHalf,-1.));
+ vec3 rw=uCamRot*rc;
+ float cs=cos(uPitch),sn=sin(uPitch);
+ vec3 rp=vec3(rw.x,rw.y*cs+rw.z*sn,-rw.y*sn+rw.z*cs);
+ float dz=max(.02,-rp.z);
+ vec2 q=vec2(.5+rp.x/dz*uKx,uCy+rp.y/dz*uKy);
+ if(rp.z>-.02)q.y=-10.;
+ // 2) 막(반투명한 셋째 눈꺼풀): 오른쪽 구석에서 접혀 있다가 왼쪽으로 쓸고 지나간다. uMemb 0=접힘 1=다 덮음
+ vec2 n=(q-EC)/ER;
+ float open=1.-smoothstep(.95,1.05,length(n));
+ float du=-1.,under=0.;
+ if(uMemb>0.001){float edgeU=1.-2.*uMemb*(1.+.16*(1.-n.y*n.y));du=n.x-edgeU;under=smoothstep(-.015,.03,du)*open;}
+ // 3) 시선: 눈구멍 안쪽을 통째로 끌어 홍채가 움직이게 한다(눈꺼풀 가장자리는 붙박이)
+ float w=1.-smoothstep(1.,1.9,ell(q,IC,IR)); // 홍채는 통째로 움직이고 흰자는 따라 늘어난다
+ vec2 t=q-uGaze*w;
+ // 막 밑은 조금 굴절되어 보인다
+ t.x+=.007*under*(1.-smoothstep(0.,.3,du));
+ // 4) 동공이 좁아질 때 홍채 결이 가운데로 당겨진다
+ float di=ell(t,IC,IR);
+ float pull=max(0.,.3*(1.-uPupil));
+ if(di<1.){float k=1.+pull*(1.-di)*(1.-di);t=IC+(t-IC)*k;di=ell(t,IC,IR);}
+ // 5) 동공: 그려진 동공을 지우고 원하는 폭으로 다시 그린다
+ float dx=t.x-SC.x,dy=t.y-SC.y,adx=abs(dx);
+ float hP=slitHalf(dy,1.),hN=slitHalf(dy,uPupil);
+ vec2 ts=t;
+ if(hP>1e-4&&adx<hP+.002&&adx>=hN-.003)ts.x=SC.x+(dx<0.?-1.:1.)*(2.*hP-adx+.005); // 그려진 동공 자리는 양옆 홍채를 거울처럼 가져와 메운다
+ vec3 color=texture2D(uMap,clamp(ts,.002,.998)).rgb;
+ float pm=hN>1e-4?1.-smoothstep(hN-.003,hN+.003,adx):0.;
+ color=mix(color,vec3(.014,.017,.026)*(1.-.4*min(1.,dy*dy/(SH*SH))),pm);
+ float ring=hN>1e-4?(1.-smoothstep(hN,hN+.018,adx))*(1.-pm)*(1.-step(1.,di)):0.;
+ color*=1.-.38*ring;
+ // 홍채가 안에서 빛난다
+ color*=1.+uGlow*.32*pow(max(0.,1.-di),1.6)*(1.-pm);
+ // 6) 막 그리기: 뿌연 막 + 앞 가장자리 두께(어두운 선) + 젖은 하이라이트 + 막 앞 그늘
+ if(uMemb>0.001){
+  float alpha=(.3+.1*smoothstep(0.,.5,du))*under*(.9+.1*sin((n.x*11.+n.y*2.5+uTime*.4)*3.1416)); // 막의 결
+  color=mix(color,vec3(.78,.86,.9),alpha);
+  float lineD=1.-smoothstep(0.,.04,abs(du-.012));color=mix(color,vec3(.34,.46,.54),.6*lineD*open);
+  float hi=1.-smoothstep(0.,.028,abs(du-.07));color+=vec3(.42,.46,.5)*hi*open;
+  float shade=(1.-smoothstep(0.,.14,-du))*step(du,0.)*open;color*=1.-.24*shade;
+ }
+ // 7) 그림 바깥은 어둡다
+ float edge=smoothstep(-.15,.015,q.y)*(1.-smoothstep(.985,1.15,q.y))*smoothstep(-.12,.01,q.x)*(1.-smoothstep(.99,1.12,q.x));
  color=mix(vec3(.026,.038,.048),color,edge);
  color*=.92+.08*smoothstep(.1,.9,uReveal);
  gl_FragColor=vec4(pow(color,vec3(2.2)),1.);
@@ -2126,11 +2179,36 @@ void main(){
   if(!compiled){compiled=true;try{fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);renderer.compile(far,fcam);}catch(_){}}
   return true;
  }
- const _cp=V3();
- let active=false,t0=0,from=null,exposure=1.08;
- const TILT=6.4,DUR=8.2;
+ /* 그림자만 드리우는 판: 눈이 보이기 전, 큰 것이 몸을 기울이는 그림자가 바닥과 시신 위를 훑고 지나간다 */
+ const caster=new THREE.Mesh(new THREE.PlaneGeometry(9,9),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false,side:THREE.DoubleSide}));
+ caster.castShadow=true;caster.receiveShadow=false;caster.visible=false;caster.frustumCulled=false;scene.add(caster);
+ let shadowSaved=null;
+ let omenT0=-1;
+ const OMEN={delay:.2,dur:1.5};
+ function omen(){if(omenT0>=0||active)return;omenT0=G.time;}
+ function updateOmen(){
+  if(omenT0<0)return;
+  const u=(G.time-omenT0-OMEN.delay)/OMEN.dur;
+  if(u<0)return;
+  if(!caster.visible){caster.visible=true;const c=key.shadow.camera;shadowSaved={left:c.left,right:c.right,top:c.top,bottom:c.bottom};c.left=-4.5;c.right=4.5;c.top=4.5;c.bottom=-3.5;c.updateProjectionMatrix();if(!omenSound){omenSound=true;AUDIO.omen();}}
+  const dir=_od.subVectors(key.target.position,key.position).normalize();
+  const right=_or.crossVectors(dir,UP).normalize(),upL=_ou.crossVectors(right,dir).normalize();
+  // 그림자 가장자리: 벽을 빠르게 타고 내려온 뒤(0~22%) 바닥을 천천히 훑어 내 앞까지 온다
+  const uu=clamp(u,0,1),edgeUp=uu<.22?lerp(7.6,1.6,smooth(uu/.22)):lerp(1.6,-2.6,(uu-.22)/.78);
+  caster.position.copy(key.position).addScaledVector(dir,1.4).addScaledVector(upL,edgeUp+4.5);
+  _ol.copy(caster.position).sub(dir);caster.lookAt(_ol);
+ }
+ let omenSound=false;
+ const _od=V3(),_or=V3(),_ou=V3(),_ol=V3();
+ const _cp=V3(),_m3=new THREE.Matrix3();
+ let active=false,t0=0,from=null,exposure=1.08,lights=null;
+ const TILT=6.4,DUR=9.4;
+ // 눈의 박자(begin 뒤 초): 알아봄(동공이 나한테 꽂힘) → 막 → 이후 미세한 움직임
+ const T_SEE=TILT+.45,T_MEMB=T_SEE+1.9;
+ const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:1.08,glow:0,memb:-2,membAt:-1,nextMemb:0,seen:false,lock:0};
+ const GAZE0=new THREE.Vector2(-.012,-.03);   // 처음엔 쓰러진 쪽(아래)을 본다
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
- // 카메라가 앞에 있던 예전과 같은 그림이 되게, 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
+ // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
  // 화면 위 끝이 같은 하늘 높이(top: 올려다본 각도, 라디안)까지 오도록 고개 각도와 시야를 정한다
  const portrait=()=>innerWidth<innerHeight;
  const END_P={top:1.274,beam:-.7},END_L={top:1.157,beam:-.66};
@@ -2144,16 +2222,68 @@ void main(){
   if(h>hMax){h=hMax;pitch=tb+Math.atan(k*Math.tan(h));}
   return {pitch,fov:THREE.MathUtils.radToDeg(h*2)};
  }
+ function snapLights(){
+  return {key:{i:key.intensity,p:key.position.clone(),c:key.color.clone()},hemi:{i:hemi.intensity,c:hemi.color.clone(),g:hemi.groundColor.clone()},fill:fill.intensity,rim:rim.intensity,bounce:bounce.intensity};
+ }
+ const COLD={key:col('#d3d7ae'),hemi:col('#93a6ae'),ground:col('#1d1f22')};
+ const _lp=V3(.35,9.5,1.1);
+ function applyLights(lock,dip){
+  if(!lights)return;const L=lights,k=smooth(lock);
+  key.position.lerpVectors(L.key.p,_lp,k);
+  key.color.copy(L.key.c).lerp(COLD.key,k);
+  key.intensity=lerp(L.key.i,1.9,k)*(1-.72*dip);
+  hemi.intensity=lerp(L.hemi.i,.3,k)*(1-.5*dip);hemi.color.copy(L.hemi.c).lerp(COLD.hemi,k);hemi.groundColor.copy(L.hemi.g).lerp(COLD.ground,k);
+  fill.intensity=lerp(L.fill,.08,k);rim.intensity=lerp(L.rim,.12,k);bounce.intensity=lerp(L.bounce,.1,k);
+ }
  function begin(){
   if(active)return;prepare();active=true;t0=G.time;exposure=renderer.toneMappingExposure;
+  if(!lights)lights=snapLights();
   const d=V3().subVectors(CAM.look,CAM.pos),len=d.length()||1;
   from={pos:CAM.pos.clone(),pitch:Math.asin(clamp(d.y/len,-1,1)),yaw:Math.atan2(d.x,-d.z),fov:CAM.fovBase};
   CAM.frame='cut';G.inputLocked=true;clearPointers();$('#dock').hidden=true;
   const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
   $('#hint').classList.add('off');
+  eye.gaze.copy(GAZE0);eye.jumpAt=-1;eye.nextJump=T_SEE+.7;eye.pupil=1.08;eye.glow=0;eye.memb=-2;eye.membAt=-1;eye.nextMemb=T_MEMB;eye.seen=false;eye.lock=0;
   AUDIO.beyond();
  }
+ function updateEye(k,dt){
+  const U=mat.uniforms;
+  // 알아봄: 동공이 홱 나한테 꽂히고(살짝 지나쳤다가 돌아옴) 좁아진다
+  if(k>=T_SEE&&!eye.seen){eye.seen=true;eye.jumpFrom.copy(eye.gaze);eye.jumpTo.set(0,0);eye.jumpAt=k;AUDIO.gaze();}
+  if(eye.jumpAt>=0){
+   const u=clamp((k-eye.jumpAt)/.09,0,1),f=1-Math.pow(1-u,3);
+   eye.gaze.lerpVectors(eye.jumpFrom,eye.jumpTo,f);
+   const over=Math.sin(Math.min(1,(k-eye.jumpAt)/.16)*PI)*.12;
+   eye.gaze.addScaledVector(_gd.subVectors(eye.jumpTo,eye.jumpFrom),over);
+   if(k-eye.jumpAt>.16)eye.jumpAt=-1;
+  }else if(eye.seen){
+   // 미세 움직임: 가끔 아주 조금 튀고, 그 사이엔 천천히 나한테 되돌아온다
+   eye.gaze.multiplyScalar(Math.exp(-dt*.6));
+   if(k>=eye.nextJump){eye.nextJump=k+rnd(.6,1.9);const a=rnd(0,TAU),r=rnd(.0022,.0058);eye.jumpFrom.copy(eye.gaze);eye.jumpTo.set(eye.gaze.x*.5+Math.cos(a)*r,eye.gaze.y*.5+Math.sin(a)*r*.7);eye.jumpAt=k;}
+  }
+  // 동공: 보기 전엔 느슨하게 넓고, 알아본 뒤 좁아졌다가 조금 풀린다. 아주 천천히 숨 쉬듯 오간다
+  let pupil=1.08;
+  if(eye.seen){const s=k-T_SEE;pupil=s<.45?lerp(1.08,.6,easeOut3(s/.45)):lerp(.6,.74,smooth((s-.45)/3.6));pupil+=.03*Math.sin(k*1.7);}
+  eye.pupil=pupil;
+  // 홍채 빛: 알아볼 때 확 올랐다가 가라앉고, 그 뒤로 느리게 맥동
+  let glow=0;
+  if(eye.seen){const s=k-T_SEE;glow=s<.4?.9*smooth(s/.4):lerp(.9,.35,smooth((s-.4)/1.8));glow+=.06*Math.sin(k*.9);}
+  // 막: 정해진 때 한 번, 그 뒤로 가끔. 나갈 때 .5초, 잠깐 멈춤, 돌아올 때 .42초
+  let memb=-2,dip=0;
+  if(eye.seen&&eye.membAt<0&&k>=eye.nextMemb){eye.membAt=k;eye.nextMemb=k+rnd(6,9);AUDIO.membrane();}
+  if(eye.membAt>=0){
+   const s=k-eye.membAt;
+   if(s<.5)memb=smooth(s/.5);else if(s<.58)memb=1;else if(s<1.0)memb=1-smooth((s-.58)/.42);else{memb=-2;eye.membAt=-1;}
+   if(memb>0){dip=memb;glow*=1-memb;}
+  }
+  eye.lock=eye.seen?clamp((k-T_SEE)/.6,0,1):0;
+  if(eye.lock>0&&caster.visible)caster.visible=false; // 눈이 나를 보는 순간 그 그림자는 걷히고 차가운 빛이 내려온다
+  U.uGaze.value.copy(eye.gaze);U.uPupil.value=pupil;U.uGlow.value=glow;U.uMemb.value=memb;
+  applyLights(eye.lock,dip);
+ }
+ const _gd=new THREE.Vector2();
  function update(dt){
+  updateOmen();
   if(!active)return;
   const k=G.time-t0,p=smoother(k/TILT);
   const ev=endView(from.pos),pitch=lerp(from.pitch,ev.pitch,p),yaw=lerp(from.yaw,0,p);
@@ -2163,20 +2293,31 @@ void main(){
   CAM.fovBase=lerp(from.fov,ev.fov,p);
   // 손은 내려간다
   if(VM.root.visible){const h=clamp(k/1.1,0,1);VM.root.position.y=-.6*easeIn(h);if(h>=1)VM.root.visible=false;}
-  mat.uniforms.uTime.value=k;mat.uniforms.uReveal.value=p;mat.uniforms.uAspect.value=innerWidth/innerHeight;
-  renderer.toneMappingExposure=lerp(exposure,.55,p);
+  // 그림을 붙인 하늘 면: 끝 구도(ev.pitch·ev.fov)에서 예전과 같은 그림이 되도록 배율을 정한다
+  const A=innerWidth/innerHeight,tF=Math.tan(ev.fov*PI/360);
+  const U=mat.uniforms;
+  U.uTime.value=k;U.uReveal.value=p;U.uAspect.value=A;U.uPitch.value=ev.pitch;
+  U.uKx.value=.4717/(tF*A);U.uKy.value=1/(2*1.06*A*1.5*tF);U.uCy.value=lerp(.5,.65,smooth((A-.7)/.7));
+  updateEye(k,dt);
+  renderer.toneMappingExposure=lerp(exposure,.6,p);
  }
  function draw(){
+  mat.uniforms.uTanHalf.value=Math.tan(camera.fov*PI/360);
+  mat.uniforms.uCamRot.value.setFromMatrix4(camera.matrixWorld);
   fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);
   if(fcam.fov!==camera.fov||fcam.aspect!==camera.aspect){fcam.fov=camera.fov;fcam.aspect=camera.aspect;fcam.updateProjectionMatrix();}
   renderer.render(far,fcam);
  }
  function reset(){
   if(active)renderer.toneMappingExposure=exposure;
-  active=false;t0=0;from=null;VM.root.position.y=0;mat.uniforms.uTime.value=0;mat.uniforms.uReveal.value=0;
+  if(lights){const L=lights;key.intensity=L.key.i;key.position.copy(L.key.p);key.color.copy(L.key.c);hemi.intensity=L.hemi.i;hemi.color.copy(L.hemi.c);hemi.groundColor.copy(L.hemi.g);fill.intensity=L.fill;rim.intensity=L.rim;bounce.intensity=L.bounce;lights=null;}
+  if(caster.visible){caster.visible=false;if(shadowSaved){const c=key.shadow.camera;c.left=shadowSaved.left;c.right=shadowSaved.right;c.top=shadowSaved.top;c.bottom=shadowSaved.bottom;c.updateProjectionMatrix();shadowSaved=null;}}
+  omenT0=-1;omenSound=false;
+  active=false;t0=0;from=null;VM.root.position.y=0;
+  const U=mat.uniforms;U.uTime.value=0;U.uReveal.value=0;U.uGaze.value.set(0,0);U.uPupil.value=1;U.uMemb.value=-2;U.uGlow.value=0;
   const gauge=$('#fight .gauge');if(gauge){gauge.style.transition='';gauge.style.opacity='';}
  }
- return {prepare,begin,update,draw,reset,DUR,get active(){return active;},get scene(){return far;},get camera(){return fcam;},get ready(){return artReady;}};
+ return {prepare,begin,omen,update,draw,reset,DUR,get active(){return active;},get scene(){return far;},get camera(){return fcam;},get ready(){return artReady;},get eye(){return eye;}};
 })();
 /* ===== 4-2. 운명의 수혜자들 =====
  * 大吉 보증서를 쥔 사람들(여섯 중 둘은 小吉·平, 별것 없는데도 똑같이 지킨다).
@@ -7807,6 +7948,7 @@ function onDead(){
  G.inputLocked=true;clearPointers();$('#dock').hidden=true;
  clearTalk();
  if(!G.prepAt)G.prepAt=G.time+.05;G.beyondAt=G.time+1.6;
+ BEYOND.omen();
 }
 
 /* ---- 게이지 ---- */
@@ -8190,7 +8332,7 @@ window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
  slash(points){VM.slashStart(points[0][0],points[0][1]);const p={lastCut:null};for(const [x,y] of points){VM.slashMove(x,y);slashContact(p,x,y);}finishLimb(p);finishBody(p);VM.slashEnd();},
  screenPart(name){const E=G.E;if(!E)return null;const m=E.parts.find(o=>o.userData.part===name&&o.visible);if(!m)return null;const p=m.getWorldPosition(V3()).project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  project(v){const p=v.clone().project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
- get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD,COMBAT,COMBAT_STAGE};},
+ get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD,COMBAT,COMBAT_STAGE,BEYOND};},
  debug:{audio:AUDIO,crowd:CROWD,combatHit:o=>G.E.combat.hit(o),grab:()=>G.E.combat.beginGrab(),drag:(x,y)=>G.E.combat.drag(x,y),release:()=>G.E.combat.release(),round(m){startRound(m||"fight");},
   cam(p,l,fov){CAM.frame='debug';CAM.goalPos.set(p[0],p[1],p[2]);CAM.goalLook.set(l[0],l[1],l[2]);CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);if(fov){CAM.fovBase=fov;CAM.fov=fov;}},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
