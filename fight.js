@@ -7383,8 +7383,8 @@ function startStomp(x,y){
  if(COMBAT.foot||VM.busy)return false;
  const info=pickAt(x,y);if(!info||!info.obj||!G.E.parts.includes(info.obj))return false;
  const local=info.obj.worldToLocal(info.point.clone());
- COMBAT.foot={t:0,obj:info.obj,local,part:info.part,done:false};
- VM.st.acts.length=0;AUDIO.whoosh(.75,'hook');return true;
+ COMBAT.foot={t:0,obj:info.obj,local,part:info.part,done:false,swung:false};
+ VM.st.acts.length=0;AUDIO.whoosh(.35,'hook');return true;
 }
 function combatEffects(dt){
  const a=COMBAT.foot,E=G.E;
@@ -7395,31 +7395,47 @@ function combatEffects(dt){
   if(!a.obj.parent||a.obj.userData.detached){COMBAT.foot=null;return;}
   const target=a.obj.localToWorld(a.local.clone());
   const boot=COMBAT_STAGE.boot;
-  /* 발은 주먹(.56m)보다 뒤에서 낮게 든다. 발끝을 세워 얼굴 높이까지 올리지 않고,
-   * 발바닥 앞부분을 표적에 맞춘다. 준비(.16)·접촉(.27)·회수(.57) 시간은 유지한다. */
+  /* 밟기: 무릎을 먼저 들어 올리고(발은 무릎 아래 축 늘어진다) 발바닥을 표적에 내리꽂는다.
+   * 카메라가 아래를 내려다보고 있어 세상의 '아래'는 화면 아래쪽+앞쪽으로 기울어 있다.
+   * 그 방향을 카메라 기울기에서 구해 발바닥이 바닥과 나란히 닿게 한다. 접촉(.27)·끝(.6) 시간. */
   const scr=target.clone().project(camera),nx=clamp(scr.x,-.9,.9),ny=clamp(scr.y,-.9,.9),t=a.t;
-  const pr=innerWidth<innerHeight,S=VM.at(.3,-1.65,.94),C=VM.at(nx*.2+.1,pr?-.92:-1.02,.9),Tg=VM.at(nx,ny,pr?1.08:1.02),P=boot.position;
-  if(t<.16)P.copy(S).lerp(C,smooth(t/.16));
-  else if(t<.27)P.copy(C).lerp(Tg,easeIn3((t-.16)/.11));
-  else if(t<.34)P.copy(Tg);
-  else P.copy(Tg).lerp(S,smooth((t-.34)/.23));
-  const down=t<.16?0:t<.27?easeIn3((t-.16)/.11):1-smooth((t-.34)/.23);
-  boot.rotation.set(lerp(.48,.72,down),nx*.16,-.06);
-  // 발목 대신 발바닥 접촉점을 맞춰 발끝이 표적 위로 튀어나오지 않게 한다.
-  P.sub(V3(-.008,.022,-.112).applyQuaternion(boot.quaternion));
+  const pr=innerWidth<innerHeight;
+  const upC=V3(0,1,0).applyQuaternion(camera.quaternion.clone().invert()); // 세상의 위쪽(카메라 기준)
+  const pitch=Math.atan2(upC.z,upC.y);                                      // 카메라가 내려다보는 각
+  const S=VM.at(.3,-1.65,.94);                                              // 화면 아래 바깥: 서 있는 발
+  const C=VM.at(nx*.1+.04,pr?-1.12:-1.18,.92);                               // 무릎을 들었을 때 매달린 발: 화면 아래 바깥
+  const Tg=VM.at(nx,ny,pr?1.08:1.02);                                       // 표적
+  const Td=Tg.clone().addScaledVector(upC,-.03);                            // 살에 조금 파묻힌 자리
+  const P=boot.position;
+  let toe;                                                                  // 발끝 각: 음수면 발끝이 늘어지고 0이면 발바닥이 바닥과 나란함
+  if(t<.17){const u=smooth(t/.17);P.copy(S).lerp(C,u);toe=-.55*u;}
+  else if(t<.27){const u=easeIn3((t-.17)/.1);P.copy(C).lerp(Td,u);toe=lerp(-.55,.06,u);}
+  else if(t<.36){const u=(t-.27)/.09;P.copy(Td).addScaledVector(upC,.012*Math.sin(u*PI));toe=.06;}
+  else{const u=smooth((t-.36)/.24);P.copy(Td).lerp(S,u);P.addScaledVector(upC,.12*Math.sin(u*PI));toe=lerp(.06,-.4,Math.sin(u*PI));}
+  boot.rotation.set(pitch+toe,nx*.16,-.06);
+  // 발바닥 가운데(발볼과 뒤꿈치 사이)가 표적에 닿게 발 위치를 맞춘다
+  P.sub(V3(-.002,.022,-.03).applyQuaternion(boot.quaternion));
   boot.updateMatrixWorld(true);
-  // 정강이: 발목(뒤꿈치 위)에서 화면 오른쪽 아래 바깥(내 무릎 자리)으로. 멀리서 보는 다리가 아니라 소매처럼 가까이서 들어온다
-  const ankle=V3(.002,.18,.073),hip=boot.worldToLocal(VM.at(.4,-1.8,.72));
-  const segment=(mesh,from,to)=>{const d=to.clone().sub(from),len=d.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,d.divideScalar(len||1));mesh.scale.y=len;};
-  const kneePos=ankle.clone().lerp(hip,.55);
-  segment(COMBAT_STAGE.shin,ankle,kneePos);segment(COMBAT_STAGE.thigh,kneePos,hip);COMBAT_STAGE.knee.position.copy(kneePos);
+  // 다리: 고관절(카메라 아래 바깥)–무릎–발목. 두 뼈 IK로 무릎 자리를 구한다. 무릎은 세상의 앞·위로 꺾인다
+  const ankleL=V3(.002,.18,.073),ankleW=boot.localToWorld(ankleL.clone());
+  const hipW=V3(.05,-.6,-.5);
+  const L1=.42,L2=.42,d=V3().subVectors(ankleW,hipW),dl=clamp(d.length(),.08,L1+L2-.01);d.normalize();
+  const ax=(L1*L1-L2*L2+dl*dl)/(2*dl),h=Math.sqrt(Math.max(0,L1*L1-ax*ax));
+  const fwdC=V3(0,0,-1).addScaledVector(upC,upC.z).normalize();           // 세상의 앞쪽(카메라 기준)
+  const bend=fwdC.clone();bend.addScaledVector(d,-bend.dot(d));
+  if(bend.lengthSq()<1e-4)bend.set(0,1,0).addScaledVector(d,-d.y);bend.normalize();
+  const kneeW=hipW.clone().addScaledVector(d,ax).addScaledVector(bend,h);
+  const kneeL=boot.worldToLocal(kneeW),hipL=boot.worldToLocal(hipW.clone());
+  const segment=(mesh,from,to)=>{const v=to.clone().sub(from),len=v.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,v.divideScalar(len||1));mesh.scale.y=len;};
+  segment(COMBAT_STAGE.shin,ankleL,kneeL);segment(COMBAT_STAGE.thigh,kneeL,hipL);COMBAT_STAGE.knee.position.copy(kneeL);
+  if(!a.swung&&t>=.17){a.swung=true;AUDIO.whoosh(.85,'hook');}
   if(!a.done&&a.t>=.27){
    a.done=true;
    resolveHit('hand','jab',{obj:a.obj,point:target,normal:UP.clone(),dir:V3(0,-1,-.12),part:a.part},'R',{powerMul:1.8,stomp:true});
    AUDIO.fall('floor');COMBAT.landKick=1.6;camHit({shake:.045});
    G.hitstop=Math.max(G.hitstop,.055);
   }
-  if(a.t>.57){COMBAT.foot=null;boot.visible=false;}
+  if(a.t>.6){COMBAT.foot=null;boot.visible=false;}
  }
  const grip=E&&combatActive(E)&&E.combat.grab;
  if(grip){
