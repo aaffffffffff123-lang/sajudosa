@@ -2100,7 +2100,7 @@ const _cv=V3(),_cf=V3();
  * 쓰러진 천지신명 → 바닥 위로 큰 그림자가 지나감 → 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
  * 그림(fate-beyond-v2)은 화면이 아니라 세상의 하늘 방향에 붙어 있어, 고개를 드는 동안 원근대로 올라오고
  * 처마·기둥이 그 앞을 가로질러 지나간다. 눈은 처음엔 쓰러진 쪽을 내려다보다가 나를 알아보고(동공이 좁아짐),
- * 반투명한 막이 옆으로 지나가고(눈꺼풀 대신), 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 궁전 빛도 바뀐다. */
+ * 그 뒤로는 미세하게 흔들리며 계속 본다. 눈이 나를 보는 순간 궁전 빛도 바뀐다. */
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
@@ -2108,13 +2108,12 @@ const BEYOND=(()=>{
  const fallback=canvasTex(16,16,(g,w,h)=>{const c=g.createLinearGradient(0,0,0,h);c.addColorStop(0,'#090d12');c.addColorStop(1,'#141d25');g.fillStyle=c;g.fillRect(0,0,w,h);});
  const mat=new THREE.ShaderMaterial({
   uniforms:{uMap:{value:fallback},uTime:{value:0},uReveal:{value:0},uAspect:{value:1},uTanHalf:{value:.4},uCamRot:{value:new THREE.Matrix3()},uPitch:{value:1},uKx:{value:1},uKy:{value:1},uCy:{value:.5},
-   uGaze:{value:new THREE.Vector2(0,0)},uPupil:{value:1},uMemb:{value:-2},uGlow:{value:0}},
+   uGaze:{value:new THREE.Vector2(0,0)},uPupil:{value:1},uGlow:{value:0}},
   depthTest:false,depthWrite:false,toneMapped:false,
   vertexShader:`varying vec2 vNdc;
 void main(){vNdc=position.xy;gl_Position=vec4(position.xy,.999,1.);}`,
-  fragmentShader:`uniform sampler2D uMap;uniform float uTime,uReveal,uAspect,uTanHalf,uPitch,uKx,uKy,uCy,uPupil,uMemb,uGlow;uniform mat3 uCamRot;uniform vec2 uGaze;varying vec2 vNdc;
+  fragmentShader:`uniform sampler2D uMap;uniform float uTime,uReveal,uAspect,uTanHalf,uPitch,uKx,uKy,uCy,uPupil,uGlow;uniform mat3 uCamRot;uniform vec2 uGaze;varying vec2 vNdc;
 // 그림 안 눈의 자리(UV): 눈구멍 타원 · 홍채 · 세로 동공(위아래로 뾰족한 렌즈꼴)
-const vec2 EC=vec2(.49,.699),ER=vec2(.28,.077);
 const vec2 IC=vec2(.493,.704),IR=vec2(.151,.101);
 const vec2 SC=vec2(.499,.706);const float SH=.0703,SW=.0303;
 float ell(vec2 p,vec2 c,vec2 r){return length((p-c)/r);}
@@ -2128,16 +2127,9 @@ void main(){
  float dz=max(.02,-rp.z);
  vec2 q=vec2(.5+rp.x/dz*uKx,uCy+rp.y/dz*uKy);
  if(rp.z>-.02)q.y=-10.;
- // 2) 막(반투명한 셋째 눈꺼풀): 오른쪽 구석에서 접혀 있다가 왼쪽으로 쓸고 지나간다. uMemb 0=접힘 1=다 덮음
- vec2 n=(q-EC)/ER;
- float open=1.-smoothstep(.95,1.05,length(n));
- float du=-1.,under=0.;
- if(uMemb>0.001){float edgeU=1.-2.*uMemb*(1.+.16*(1.-n.y*n.y));du=n.x-edgeU;under=smoothstep(-.015,.03,du)*open;}
  // 3) 시선: 눈구멍 안쪽을 통째로 끌어 홍채가 움직이게 한다(눈꺼풀 가장자리는 붙박이)
  float w=1.-smoothstep(1.,1.9,ell(q,IC,IR)); // 홍채는 통째로 움직이고 흰자는 따라 늘어난다
  vec2 t=q-uGaze*w;
- // 막 밑은 조금 굴절되어 보인다
- t.x+=.007*under*(1.-smoothstep(0.,.3,du));
  // 4) 동공이 좁아질 때 홍채 결이 가운데로 당겨진다
  float di=ell(t,IC,IR);
  float pull=max(0.,.3*(1.-uPupil));
@@ -2154,14 +2146,6 @@ void main(){
  color*=1.-.38*ring;
  // 홍채가 안에서 빛난다
  color*=1.+uGlow*.32*pow(max(0.,1.-di),1.6)*(1.-pm);
- // 6) 막 그리기: 뿌연 막 + 앞 가장자리 두께(어두운 선) + 젖은 하이라이트 + 막 앞 그늘
- if(uMemb>0.001){
-  float alpha=(.3+.1*smoothstep(0.,.5,du))*under*(.9+.1*sin((n.x*11.+n.y*2.5+uTime*.4)*3.1416)); // 막의 결
-  color=mix(color,vec3(.78,.86,.9),alpha);
-  float lineD=1.-smoothstep(0.,.04,abs(du-.012));color=mix(color,vec3(.34,.46,.54),.6*lineD*open);
-  float hi=1.-smoothstep(0.,.028,abs(du-.07));color+=vec3(.42,.46,.5)*hi*open;
-  float shade=(1.-smoothstep(0.,.14,-du))*step(du,0.)*open;color*=1.-.24*shade;
- }
  // 7) 그림 바깥은 어둡다
  float edge=smoothstep(-.15,.015,q.y)*(1.-smoothstep(.985,1.15,q.y))*smoothstep(-.12,.01,q.x)*(1.-smoothstep(.99,1.12,q.x));
  color=mix(vec3(.026,.038,.048),color,edge);
@@ -2203,9 +2187,9 @@ void main(){
  const _cp=V3(),_m3=new THREE.Matrix3();
  let active=false,t0=0,from=null,exposure=1.08,lights=null;
  const TILT=6.4,DUR=9.4;
- // 눈의 박자(begin 뒤 초): 알아봄(동공이 나한테 꽂힘) → 막 → 이후 미세한 움직임
- const T_SEE=TILT+.45,T_MEMB=T_SEE+1.9;
- const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:1.08,glow:0,memb:-2,membAt:-1,nextMemb:0,seen:false,lock:0};
+ // 눈의 박자(begin 뒤 초): 알아봄(동공이 나한테 꽂힘) → 이후 미세한 움직임
+ const T_SEE=TILT+.45;
+ const eye={gaze:new THREE.Vector2(),jumpFrom:new THREE.Vector2(),jumpTo:new THREE.Vector2(),jumpAt:-1,nextJump:0,pupil:1.08,glow:0,seen:false,lock:0};
  const GAZE0=new THREE.Vector2(-.012,-.03);   // 처음엔 쓰러진 쪽(아래)을 본다
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
@@ -2227,12 +2211,12 @@ void main(){
  }
  const COLD={key:col('#d3d7ae'),hemi:col('#93a6ae'),ground:col('#1d1f22')};
  const _lp=V3(.35,9.5,1.1);
- function applyLights(lock,dip){
+ function applyLights(lock){
   if(!lights)return;const L=lights,k=smooth(lock);
   key.position.lerpVectors(L.key.p,_lp,k);
   key.color.copy(L.key.c).lerp(COLD.key,k);
-  key.intensity=lerp(L.key.i,1.9,k)*(1-.72*dip);
-  hemi.intensity=lerp(L.hemi.i,.3,k)*(1-.5*dip);hemi.color.copy(L.hemi.c).lerp(COLD.hemi,k);hemi.groundColor.copy(L.hemi.g).lerp(COLD.ground,k);
+  key.intensity=lerp(L.key.i,1.9,k);
+  hemi.intensity=lerp(L.hemi.i,.3,k);hemi.color.copy(L.hemi.c).lerp(COLD.hemi,k);hemi.groundColor.copy(L.hemi.g).lerp(COLD.ground,k);
   fill.intensity=lerp(L.fill,.08,k);rim.intensity=lerp(L.rim,.12,k);bounce.intensity=lerp(L.bounce,.1,k);
  }
  function begin(){
@@ -2243,7 +2227,7 @@ void main(){
   CAM.frame='cut';G.inputLocked=true;clearPointers();$('#dock').hidden=true;
   const gauge=$('#fight .gauge');gauge.style.transition='opacity .9s';gauge.style.opacity='0';
   $('#hint').classList.add('off');
-  eye.gaze.copy(GAZE0);eye.jumpAt=-1;eye.nextJump=T_SEE+.7;eye.pupil=1.08;eye.glow=0;eye.memb=-2;eye.membAt=-1;eye.nextMemb=T_MEMB;eye.seen=false;eye.lock=0;
+  eye.gaze.copy(GAZE0);eye.jumpAt=-1;eye.nextJump=T_SEE+.7;eye.pupil=1.08;eye.glow=0;eye.seen=false;eye.lock=0;
   AUDIO.beyond();
  }
  function updateEye(k,dt){
@@ -2268,18 +2252,10 @@ void main(){
   // 홍채 빛: 알아볼 때 확 올랐다가 가라앉고, 그 뒤로 느리게 맥동
   let glow=0;
   if(eye.seen){const s=k-T_SEE;glow=s<.4?.9*smooth(s/.4):lerp(.9,.35,smooth((s-.4)/1.8));glow+=.06*Math.sin(k*.9);}
-  // 막: 정해진 때 한 번, 그 뒤로 가끔. 나갈 때 .5초, 잠깐 멈춤, 돌아올 때 .42초
-  let memb=-2,dip=0;
-  if(eye.seen&&eye.membAt<0&&k>=eye.nextMemb){eye.membAt=k;eye.nextMemb=k+rnd(6,9);AUDIO.membrane();}
-  if(eye.membAt>=0){
-   const s=k-eye.membAt;
-   if(s<.5)memb=smooth(s/.5);else if(s<.58)memb=1;else if(s<1.0)memb=1-smooth((s-.58)/.42);else{memb=-2;eye.membAt=-1;}
-   if(memb>0){dip=memb;glow*=1-memb;}
-  }
   eye.lock=eye.seen?clamp((k-T_SEE)/.6,0,1):0;
   if(eye.lock>0&&caster.visible)caster.visible=false; // 눈이 나를 보는 순간 그 그림자는 걷히고 차가운 빛이 내려온다
-  U.uGaze.value.copy(eye.gaze);U.uPupil.value=pupil;U.uGlow.value=glow;U.uMemb.value=memb;
-  applyLights(eye.lock,dip);
+  U.uGaze.value.copy(eye.gaze);U.uPupil.value=pupil;U.uGlow.value=glow;
+  applyLights(eye.lock);
  }
  const _gd=new THREE.Vector2();
  function update(dt){
@@ -2314,7 +2290,7 @@ void main(){
   if(caster.visible){caster.visible=false;if(shadowSaved){const c=key.shadow.camera;c.left=shadowSaved.left;c.right=shadowSaved.right;c.top=shadowSaved.top;c.bottom=shadowSaved.bottom;c.updateProjectionMatrix();shadowSaved=null;}}
   omenT0=-1;omenSound=false;
   active=false;t0=0;from=null;VM.root.position.y=0;
-  const U=mat.uniforms;U.uTime.value=0;U.uReveal.value=0;U.uGaze.value.set(0,0);U.uPupil.value=1;U.uMemb.value=-2;U.uGlow.value=0;
+  const U=mat.uniforms;U.uTime.value=0;U.uReveal.value=0;U.uGaze.value.set(0,0);U.uPupil.value=1;U.uGlow.value=0;
   const gauge=$('#fight .gauge');if(gauge){gauge.style.transition='';gauge.style.opacity='';}
  }
  return {prepare,begin,omen,update,draw,reset,DUR,get active(){return active;},get scene(){return far;},get camera(){return fcam;},get ready(){return artReady;},get eye(){return eye;}};
@@ -7527,6 +7503,24 @@ function startStomp(x,y){
  COMBAT.foot={t:0,obj:info.obj,local,part:info.part,done:false,swung:false};
  VM.st.acts.length=0;AUDIO.whoosh(.35,'hook');return true;
 }
+// Viewmodel leg: the pelvis stays behind the foot and above it in world-up.
+// Keep both bone lengths exact; an out-of-reach target pulls the offscreen pelvis
+// forward instead of clamping only the IK distance and stretching the shin.
+function stompLegPose(ankle,upC){
+ const hip=V3(.16,-.44,.05),L1=.5,L2=.5;
+ const height=hip.clone().sub(ankle).dot(upC);
+ if(height<.26)hip.z+=(.26-height)/Math.max(.2,upC.z);
+ const d=ankle.clone().sub(hip),distance=d.length();d.normalize();
+ const reach=L1+L2-.02;
+ if(distance>reach)hip.addScaledVector(d,distance-reach);
+ const dl=ankle.distanceTo(hip),ax=(L1*L1-L2*L2+dl*dl)/(2*dl);
+ const h=Math.sqrt(Math.max(0,L1*L1-ax*ax));
+ const forward=V3(0,0,-1).addScaledVector(upC,upC.z).normalize();
+ const bend=forward.addScaledVector(d,-forward.dot(d));
+ if(bend.lengthSq()<1e-6)bend.copy(upC).addScaledVector(d,-upC.dot(d));
+ bend.normalize();
+ return {hip,knee:hip.clone().addScaledVector(d,ax).addScaledVector(bend,h)};
+}
 function combatEffects(dt){
  const a=COMBAT.foot,E=G.E;
  COMBAT_STAGE.boot.visible=!!a&&G.mode==='fight'&&!G.inputLocked;
@@ -7557,16 +7551,10 @@ function combatEffects(dt){
   // 발바닥 가운데(발볼과 뒤꿈치 사이)가 표적에 닿게 발 위치를 맞춘다
   P.sub(V3(-.002,.022,-.03).applyQuaternion(boot.quaternion));
   boot.updateMatrixWorld(true);
-  // 다리: 고관절(카메라 아래 바깥)–무릎–발목. 두 뼈 IK로 무릎 자리를 구한다. 무릎은 세상의 앞·위로 꺾인다
+  // 앞쪽으로 굽는 무릎. 발목보다 높은 골반과 실제 도달 거리로 한쪽 굽힘 방향을 유지한다.
   const ankleL=V3(.002,.18,.073),ankleW=boot.localToWorld(ankleL.clone());
-  const hipW=V3(.05,-.6,-.5);
-  const L1=.42,L2=.42,d=V3().subVectors(ankleW,hipW),dl=clamp(d.length(),.08,L1+L2-.01);d.normalize();
-  const ax=(L1*L1-L2*L2+dl*dl)/(2*dl),h=Math.sqrt(Math.max(0,L1*L1-ax*ax));
-  const fwdC=V3(0,0,-1).addScaledVector(upC,upC.z).normalize();           // 세상의 앞쪽(카메라 기준)
-  const bend=fwdC.clone();bend.addScaledVector(d,-bend.dot(d));
-  if(bend.lengthSq()<1e-4)bend.set(0,1,0).addScaledVector(d,-d.y);bend.normalize();
-  const kneeW=hipW.clone().addScaledVector(d,ax).addScaledVector(bend,h);
-  const kneeL=boot.worldToLocal(kneeW),hipL=boot.worldToLocal(hipW.clone());
+  const leg=stompLegPose(ankleW,upC);
+  const kneeL=boot.worldToLocal(leg.knee),hipL=boot.worldToLocal(leg.hip);
   const segment=(mesh,from,to)=>{const v=to.clone().sub(from),len=v.length();mesh.position.copy(from).add(to).multiplyScalar(.5);mesh.quaternion.setFromUnitVectors(UP,v.divideScalar(len||1));mesh.scale.y=len;};
   segment(COMBAT_STAGE.shin,ankleL,kneeL);segment(COMBAT_STAGE.thigh,kneeL,hipL);COMBAT_STAGE.knee.position.copy(kneeL);
   if(!a.swung&&t>=.17){a.swung=true;AUDIO.whoosh(.85,'hook');}
