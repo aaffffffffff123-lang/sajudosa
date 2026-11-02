@@ -118,6 +118,22 @@ const FIGHT_CSS = `
 #fight .defeat-total{margin:0;color:#e6dcc5;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums;text-shadow:0 1px 5px #000}
 #fight #defeatCount{color:#bcae8e;font-size:10px;line-height:1.2}
 #fight #again .btn:active{box-shadow:0 1px 0 var(--ink),0 6px 16px rgba(25,18,45,.3)}
+#fight #again #trophyBtn{min-height:40px;min-width:0;padding:6px 20px;font-size:13px;color:#e6dcc5;background:#25201ce8;border:1px solid #8b795b;box-shadow:none}
+#fight #trophyModal{z-index:35;background:rgba(12,10,9,.94);padding:12px;overscroll-behavior:contain}
+#fight .trophy-sheet{width:min(100%,430px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);display:flex;flex-direction:column;color:#f3e8cf;background:#211c18;border:1px solid #65513b;border-radius:16px;overflow:hidden;box-shadow:0 15px 70px #000}
+#fight .trophy-top{display:flex;align-items:center;justify-content:space-between;flex:none;padding:8px 12px 8px 18px}
+#fight .trophy-top h2{font-size:15px;margin:0;font-weight:700}
+#fight #trophyClose{width:38px;height:38px;border:0;background:transparent;color:#f3e8cf;font-size:27px;line-height:1}
+#fight .trophy-view{min-height:0;overflow:auto;display:flex;justify-content:center;background:#14120f}
+#fight #trophyImage{display:block;width:100%;height:auto;object-fit:contain;max-height:calc(100vh - 225px);max-height:calc(100dvh - 225px);-webkit-touch-callout:default;user-select:auto}
+#fight .trophy-actions{padding:12px;display:flex;gap:9px;flex:none}
+#fight .trophy-actions .btn{flex:1;min-width:0;min-height:46px;font-size:14px;text-decoration:none;box-shadow:none;border:1px solid #65513b;border-radius:9px;background:#30271f;color:#f3e8cf}
+#fight .trophy-actions .btn.danger{background:#c63b2b;border-color:#c63b2b;color:#fff6e5}
+#fight .trophy-actions .btn:disabled{opacity:.45;cursor:wait}
+#fight #trophyStatus{min-height:18px;margin:0;padding:0 14px 12px;text-align:center;font-size:11px;color:#b9aa94;line-height:1.5}
+#fight #trophyPages{display:flex;align-items:center;justify-content:center;gap:12px;padding-top:10px;font-size:12px;color:#cbbba1}
+#fight #trophyPages button{padding:5px 12px;border:1px solid #65513b;border-radius:6px;background:#30271f;color:#f3e8cf}
+#fight #trophyPages button:disabled{opacity:.3}
 
 #fight #submitDock{width:min(100%,420px);padding-bottom:calc(16px + var(--safe-b))}
 #fight #submitFight{font-size:16px}
@@ -256,7 +272,16 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite">처치한 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite">처치한 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록 공유</button></div>
+ <div class="modal" id="trophyModal" hidden>
+  <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
+   <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
+   <div class="trophy-view"><img id="trophyImage" alt="처치한 천지신명의 랩틸리언 머리 전리품" hidden></div>
+   <nav id="trophyPages" aria-label="전리품 이미지 페이지" hidden><button type="button" id="trophyPrev" aria-label="이전 이미지">←</button><span id="trophyPageLabel"></span><button type="button" id="trophyNext" aria-label="다음 이미지">→</button></nav>
+   <div class="trophy-actions"><button type="button" class="btn danger" id="trophyShare" disabled>공유하기</button><a class="btn" id="trophySave" hidden>이미지 저장</a></div>
+   <p id="trophyStatus" role="status" aria-live="polite"></p>
+  </section>
+ </div>
  <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">불러오는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
 </section>`;
 
@@ -9131,6 +9156,106 @@ $$('#settingsModal [data-close]').forEach(b=>b.addEventListener('click',closeMod
 $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 $('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
 $('#fightBack').addEventListener('click',()=>leave(false));
+/* ---- 전리품 인증샷: 전투 모델을 작은 투명 이미지로 한 번만 구워 쌓는다. ---- */
+function trophyLayout(total,page=0){
+ const count=Number.isSafeInteger(total)?clamp(total,0,999999):0,perPage=120;
+ const pages=Math.max(1,Math.ceil(count/perPage)),index=clamp(Math.floor(page)||0,0,pages-1);
+ const start=index*perPage,n=Math.min(perPage,count-start),cols=Math.ceil(Math.sqrt(n));
+ const rows=[];let remaining=n;
+ for(let width=cols;remaining>0;){const take=Math.min(width,remaining);rows.push(take);remaining-=take;}
+ const size=n?Math.min(650,960/(cols*.66+.34),700/(Math.max(0,rows.length-1)*.43+1)):0;
+ const heads=[];let ordinal=start;
+ rows.forEach((width,row)=>{for(let col=0;col<width;col++)heads.push({ordinal:ordinal++,row,x:540+(col-(width-1)/2)*size*.66,y:1020-size*.5-row*size*.43,size});});
+ heads.sort((a,b)=>a.row-b.row||a.x-b.x);
+ return {count,page:index,pages,start,n,heads};
+}
+const TROPHIES=(()=>{
+ let sprites=null,blob=null,url='',serial=0,total=0,page=0,opened=false,wasPaused=false,returnFocus=null,sharing=false;
+ const modal=$('#trophyModal'),img=$('#trophyImage'),status=$('#trophyStatus'),share=$('#trophyShare'),save=$('#trophySave');
+ const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+ let headsLoading=null;
+ function loadHeads(){
+  if(sprites)return Promise.resolve(sprites);
+  if(!headsLoading)headsLoading=Promise.all(Array.from({length:6},(_,i)=>new Promise((resolve,reject)=>{
+   const image=new Image(),timer=setTimeout(()=>reject(new Error('trophy head timeout')),15000);image.onload=()=>{clearTimeout(timer);resolve(image);};image.onerror=()=>{clearTimeout(timer);reject(new Error('trophy head '+i));};image.src='assets/trophy-head-'+(i+1)+'.webp';
+  }))).then(images=>{sprites=images;return images;}).finally(()=>{headsLoading=null;});
+  return headsLoading;
+ }
+ function drawCard(layout){
+  const heads=sprites,c=document.createElement('canvas');c.width=1080;c.height=1350;const g=c.getContext('2d');
+  const bg=g.createLinearGradient(0,0,1080,1350);bg.addColorStop(0,'#eee3c8');bg.addColorStop(.55,'#d5c5a1');bg.addColorStop(1,'#b8a483');g.fillStyle=bg;g.fillRect(0,0,1080,1350);
+  // Dry paper grain, deliberately deterministic so reopening does not rearrange the trophy.
+  let seed=7419;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+  for(let i=0;i<12500;i++){g.fillStyle=i%2?'rgba(70,49,27,.045)':'rgba(255,251,222,.16)';g.fillRect(random()*1080,random()*1350,1+random()*3,1);}
+  g.strokeStyle='rgba(76,52,29,.35)';g.lineWidth=2;g.strokeRect(28,28,1024,1294);g.strokeStyle='rgba(76,52,29,.14)';g.strokeRect(38,38,1004,1274);
+  g.textAlign='center';g.fillStyle='#62503b';g.font='700 28px "Gowun Batang",serif';g.fillText('사 주 도 사',540,110);
+  g.strokeStyle='#9e2d22';g.lineWidth=3;g.beginPath();g.moveTo(468,134);g.lineTo(612,134);g.stroke();
+  g.save();g.translate(540,270);g.rotate(-.025);g.fillStyle='#251d16';g.font='900 122px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText('운명좁밥ㅋ',0,0);g.restore();
+  g.fillStyle='rgba(133,42,29,.065)';g.beginPath();g.arc(540,690,335,0,TAU);g.fill();
+  const ground=g.createRadialGradient(540,1002,15,540,1002,465);ground.addColorStop(0,'rgba(48,32,17,.35)');ground.addColorStop(1,'rgba(48,32,17,0)');g.save();g.translate(0,795);g.scale(1,.22);g.fillStyle=ground;g.fillRect(40,400,1000,1200);g.restore();
+  for(const h of layout.heads){
+   const jitter=Math.sin(h.ordinal*38.17+2.4),tilt=[-.3,.35,-.2,-.42,.18,.48,.12,-.32][h.ordinal%8];
+   g.save();g.translate(h.x+jitter*h.size*.025,h.y+Math.cos(h.ordinal*13.7)*h.size*.025);g.rotate(tilt);
+   g.shadowColor='rgba(37,25,13,.42)';g.shadowBlur=h.size*.025;g.shadowOffsetY=h.size*.025;
+   g.drawImage(heads[h.ordinal%heads.length],-h.size/2,-h.size/2,h.size,h.size);g.restore();
+  }
+  g.strokeStyle='rgba(83,54,29,.3)';g.lineWidth=1;g.beginPath();g.moveTo(130,1085);g.lineTo(950,1085);g.stroke();
+  g.fillStyle='#5d4833';g.font='700 31px "IBM Plex Sans KR",sans-serif';g.fillText('처치한 천지신명',540,1141);
+  g.save();g.translate(540,1230);g.rotate(-.035);g.fillStyle='#a43225';g.font='84px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText(layout.count.toLocaleString('ko-KR')+'명',0,0);g.restore();
+  g.fillStyle='#6e5841';g.font='20px "IBM Plex Sans KR",sans-serif';
+  if(layout.pages>1)g.fillText((layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages,540,1270);
+  g.font='18px sans-serif';g.fillText('aaffffffffff123-lang.github.io/sajudosa',540,1304);
+  return c;
+ }
+ function release(){if(url)URL.revokeObjectURL(url);url='';blob=null;img.removeAttribute('src');save.removeAttribute('href');}
+ async function prepare(){
+  const ticket=++serial;release();share.disabled=true;save.hidden=true;img.hidden=true;status.textContent='전리품 사진 만드는 중…';
+  const layout=trophyLayout(total,page);page=layout.page;
+  $('#trophyPages').hidden=layout.pages===1;$('#trophyPrev').disabled=page===0;$('#trophyNext').disabled=page===layout.pages-1;
+  $('#trophyPageLabel').textContent=(page+1)+' / '+layout.pages;
+  try{
+   await nextFrame();if(!opened||ticket!==serial)return;
+   if(document.fonts){let timer;try{await Promise.race([document.fonts.load('122px "Black Han Sans"'),new Promise(resolve=>{timer=setTimeout(resolve,1200);})]);}finally{clearTimeout(timer);}}
+   if(!opened||ticket!==serial)return;
+   await loadHeads();if(!opened||ticket!==serial)return;
+   const canvas=drawCard(layout);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
+   if(!opened||ticket!==serial)return;
+   blob=result;url=URL.createObjectURL(blob);img.src=url;img.hidden=false;
+   img.alt='운명좁밥ㅋ. 처치한 천지신명 '+total+'명. 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
+   save.href=url;save.download='운명좁밥_'+total+'명'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;share.disabled=false;status.textContent='';
+  }catch(error){if(opened&&ticket===serial){status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Trophy image failed',error);}}
+ }
+ function open(){
+  if(opened||$('#again').hidden||!G.ended||PROGRESS.defeated<1)return;
+  total=PROGRESS.defeated;page=0;wasPaused=G.paused;returnFocus=document.activeElement;opened=true;G.paused=true;clearPointers();AUDIO.hold(true);
+  modal.hidden=false;$('#trophyClose').focus({preventScroll:true});prepare();
+ }
+ function close(focus=true){
+  if(!opened)return;opened=false;serial++;release();modal.hidden=true;G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();
+  if(focus&&returnFocus&&returnFocus.isConnected)returnFocus.focus({preventScroll:true});
+ }
+ async function send(){
+  if(!blob||sharing)return;
+  const ticket=serial;let file;
+  try{file=new File([blob],save.download,{type:'image/png'});}catch(_){}
+  let canShare=false;try{canShare=!!(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]}));}catch(_){}
+  if(!canShare){save.click();status.textContent='저장한 이미지를 공유해 주세요.';return;}
+  sharing=true;share.disabled=true;
+  try{await navigator.share({files:[file],title:'운명좁밥ㅋ',text:'천지신명 '+total+'명 족침.\nhttps://aaffffffffff123-lang.github.io/sajudosa/'});}
+  catch(error){if(error.name!=='AbortError'&&opened&&ticket===serial)status.textContent='공유가 열리지 않았어요. 이미지 저장을 눌러 주세요.';}
+  finally{sharing=false;if(opened&&ticket===serial)share.disabled=false;}
+ }
+ $('#trophyBtn').addEventListener('click',open);$('#trophyClose').addEventListener('click',()=>close());share.addEventListener('click',send);
+ $('#trophyPrev').addEventListener('click',()=>{page--;prepare();});$('#trophyNext').addEventListener('click',()=>{page++;prepare();});
+ modal.addEventListener('click',e=>{if(e.target===modal)close();});
+ modal.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}
+  if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button:not(:disabled),a[href]')].filter(e=>e.getClientRects().length);const first=controls[0],end=controls[controls.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();end.focus();}else if(!e.shiftKey&&document.activeElement===end){e.preventDefault();first.focus();}}
+ });
+ return {close};
+})();
+
+
 // 끝: 누적 처치 수와 후임 천지신명으로 넘어가는 버튼.
 function showAgain(){const w=$('#again');w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));}
 function hideAgain(){const w=$('#again');w.classList.remove('on');w.hidden=true;}
@@ -9174,6 +9299,7 @@ $('#offerPaper').addEventListener('click',e=>{
 });
 /* ---- 라운드 ---- */
 function startRound(mode){
+ TROPHIES.close(false);
  G.round++;
  SUBMISSION.reset();
  AUDIO.stop();
@@ -9273,6 +9399,7 @@ function enter(result,mode='fight'){
  if(!G.running){G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
 }
 function leave(home){
+ TROPHIES.close(false);
  pause();
  SUBMISSION.reset();CROWD.reset();
  clearTalk();hideAgain();$('#settingsModal').hidden=true;$('#fight').hidden=true;
@@ -9296,5 +9423,6 @@ window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
+
 
 
