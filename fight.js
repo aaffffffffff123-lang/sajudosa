@@ -4469,24 +4469,35 @@ const ARM_CLEARANCE=(()=>{
  const invChest=new THREE.Matrix4(),local=V3(),sample=V3(),normal=V3(),shift=V3();
  const S=V3(),E0=V3(),W0=V3(),goal=V3(),T=V3(),axis=V3(),center=V3(),u=V3(),v=V3(),elbow=V3(),bestE=V3(),bestW=V3(),nearE=V3();
  const qHand=new THREE.Quaternion(),qUpper=new THREE.Quaternion(),qLower=new THREE.Quaternion(),qTmp=new THREE.Quaternion();
+ const handDir=V3(),forearmDir=V3(),handPoint=V3(),bendAxis=V3(),safeHand=new THREE.Quaternion();
  const colliders=Array.from({length:3},()=>({m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null}));
  const angles=[0,.35,-.35,.7,-.7,1.2,-1.2,2,-2,Math.PI];
  const upperSamples=[.5,.75,1],lowerSamples=[.2,.4,.6,.8,1];
- let count=0;
+ let count=0,side=1;
  const head=(x,y,z)=>SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245);
  function obstacle(mesh,sdf,chest){if(!mesh||mesh.userData.detached)return;mesh.updateWorldMatrix(true,false);const c=colliders[count++];c.m.copy(mesh.matrixWorld).invert().multiply(chest.matrixWorld);c.n.setFromMatrix4(c.m).transpose();c.sdf=sdf;}
  function distance(c,p){local.copy(p).applyMatrix4(c.m);return c.sdf(local.x,local.y,local.z);}
- function penetration(p,r){let sum=0;for(let j=0;j<count;j++){const d=r-distance(colliders[j],p);if(d>0)sum+=d*d;}return sum;}
+ function penetration(p,r){let sum=Math.max(0,r-side*p.x)**2;for(let j=0;j<count;j++){const d=r-distance(colliders[j],p);if(d>0)sum+=d*d;}return sum;}
+ function handOrientation(e,w){
+  safeHand.copy(qHand);handDir.copy(_down).applyQuaternion(safeHand);forearmDir.subVectors(w,e).normalize();
+  // A wrist may bend, but the palm must never fold backward into its own sleeve.
+  const angle=Math.acos(Math.max(-1,Math.min(1,handDir.dot(forearmDir)))),maxBend=.85;
+  if(angle>maxBend){bendAxis.crossVectors(handDir,forearmDir);if(bendAxis.lengthSq()<1e-8)bendAxis.set(0,0,side);bendAxis.normalize();qTmp.setFromAxisAngle(bendAxis,angle-maxBend);safeHand.premultiply(qTmp);handDir.copy(_down).applyQuaternion(safeHand);}
+ }
  function score(e,w,limit=Infinity){
   let n=0;
   // The shoulder cap intentionally joins the torso; the rest of the sleeve must clear it.
   for(const t of upperSamples){n+=penetration(sample.lerpVectors(S,e,t),.116*smooth((t-.25)/.75));if(n>limit)return n;}
   for(const t of lowerSamples){n+=penetration(sample.lerpVectors(e,w,t),.124);if(n>limit)return n;}
-  // Palms may intentionally touch the face or belly (wipe / clutch / prayer).
-  // The forearm and cuff still clear both surfaces all the way to the wrist.
+  // Keep both hands in their own half of the body, including the fingertips.
+  // This prevents crossed forearms and hands from passing through each other.
+  handOrientation(e,w);
+  n+=penetration(handPoint.copy(w).addScaledVector(handDir,.065),.052);
+  n+=penetration(handPoint.copy(w).addScaledVector(handDir,.135),.038);
   return n;
  }
  function project(p,r){
+  p.x=side*Math.max(r+.006,side*p.x);
   for(let j=0;j<count;j++){const c=colliders[j],d=distance(c,p);if(d>=r)continue;
    const x=local.x,y=local.y,z=local.z,h=.001;
    normal.set(c.sdf(x+h,y,z)-c.sdf(x-h,y,z),c.sdf(x,y+h,z)-c.sdf(x,y-h,z),c.sdf(x,y,z+h)-c.sdf(x,y,z-h)).applyMatrix3(c.n);
@@ -4495,12 +4506,17 @@ const ARM_CLEARANCE=(()=>{
  }
  function solve(a,dt){
   if(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
+  side=a.s;
   S.copy(a.sh.position);a.el.getWorldPosition(E0).applyMatrix4(invChest);a.wr.getWorldPosition(W0).applyMatrix4(invChest);
   qHand.copy(a.sh.quaternion).multiply(a.el.quaternion).multiply(a.wr.quaternion);
+  if(a.clearHand){a.clearHand.rotateTowards(qHand,Math.max(0,dt)*4);qHand.copy(a.clearHand);}
+  else a.clearHand=qHand.clone();
   const original=score(E0,W0);
-  const step=Math.max(.001,dt*1.5),previous=a.clearWrist;
-  if(original<1e-8&&(!previous||(previous.distanceTo(W0)<step&&a.clearElbow.distanceTo(E0)<step))){
-   if(!a.clearElbow){a.clearElbow=V3();a.clearWrist=V3();}a.clearElbow.copy(E0);a.clearWrist.copy(W0);return;
+  const step=Math.max(0,dt*1.5),previous=a.clearWrist;
+  if(original<1e-8&&(!previous||(previous.distanceTo(W0)<=step&&a.clearElbow.distanceTo(E0)<=step))){
+   if(!a.clearElbow){a.clearElbow=V3();a.clearWrist=V3();}a.clearElbow.copy(E0);a.clearWrist.copy(W0);
+   handOrientation(E0,W0);a.clearHand.copy(safeHand);
+   a.wr.quaternion.copy(qTmp.copy(a.sh.quaternion).multiply(a.el.quaternion).invert().multiply(safeHand));a.sh.updateWorldMatrix(true,true);return;
   }
   // Approach the requested pose from the last safe pose. Do not teleport back
   // through the torso as soon as an animation's unconstrained target is clear.
@@ -4526,7 +4542,7 @@ const ARM_CLEARANCE=(()=>{
   }
   // A new route can lie on the other side of a shoulder's reach limit. Walk
   // toward it along the outside instead of switching to that route in one frame.
-  if(previous&&bestW.distanceTo(previous)>step*1.1){
+  if(previous&&(bestW.distanceTo(previous)>step*1.1||bestE.distanceTo(a.clearElbow)>step*1.4)){
    T.copy(previous).add(shift.subVectors(bestW,previous).clampLength(0,step));
    const len=axis.subVectors(T,S).length();axis.divideScalar(len||1);
    const along=(L1*L1-L2*L2+len*len)/(2*len),height=Math.sqrt(Math.max(0,L1*L1-along*along));center.copy(S).addScaledVector(axis,along);
@@ -4534,7 +4550,7 @@ const ARM_CLEARANCE=(()=>{
    if(u.lengthSq()<1e-8)u.set(a.s,0,.3).addScaledVector(axis,-u.dot(axis));u.normalize();v.crossVectors(axis,u).normalize();
    let nearCost=Infinity,nearCollision=Infinity;
    for(let i=-16;i<=16;i++){
-    const angle=i*Math.PI/16;elbow.copy(center).addScaledVector(u,Math.cos(angle)*height).addScaledVector(v,Math.sin(angle)*height);
+    const angle=i/16*Math.min(Math.PI,step/Math.max(height,.015));elbow.copy(center).addScaledVector(u,Math.cos(angle)*height).addScaledVector(v,Math.sin(angle)*height);
     const collision=score(elbow,T,nearCost/20000),cost=collision*20000+elbow.distanceToSquared(a.clearElbow)*2;
     if(cost<nearCost){nearCost=cost;nearCollision=collision;nearE.copy(elbow);}
    }
@@ -4546,7 +4562,8 @@ const ARM_CLEARANCE=(()=>{
   qUpper.setFromUnitVectors(_down,axis.subVectors(bestE,S).normalize());
   qLower.setFromUnitVectors(_down,axis.subVectors(bestW,bestE).normalize().applyQuaternion(qTmp.copy(qUpper).invert()));
   a.sh.quaternion.copy(qUpper);a.el.quaternion.copy(qLower);
-  a.wr.quaternion.copy(qTmp.copy(qUpper).multiply(qLower).invert().multiply(qHand));
+  handOrientation(bestE,bestW);a.clearHand.copy(safeHand);
+  a.wr.quaternion.copy(qTmp.copy(qUpper).multiply(qLower).invert().multiply(safeHand));
   a.sh.updateWorldMatrix(true,true);
  }
  function apply(E,dt=1/60){
@@ -5321,9 +5338,9 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(combatActive(this))combatStep(this,dt);
   this.stateT+=dt;this.sinceHit+=dt;this.breath+=dt*(1.6+this.mood*1.4);this._ikFrame++;
   this.talk=damp(this.talk||0,G.time<(this.talkUntil||0)?1:0,14,dt);
-  // 허둥댐은 2초쯤에 걸쳐 가라앉고, 떨림은 단계(1 조금 → 4 심하게)에 맞춘 기본값에 허둥대는 만큼 더해진다
+  // 맞은 뒤의 긴장만 짧게 남긴다. 단계가 높아졌다고 팔이 영구히 떨지는 않는다.
   this.panic=Math.max(0,this.panic-dt/1.9);
-  const calm=G.time<this.calmUntil,trG=G.mode==='fight'&&this.state!=='dead'&&!this.taunt?Math.min(1.15,([0,.12,.45,.78,1][this.phase]||0)*(calm?.3:1)+Math.min(.6,this.panic*.55)):0;
+  const calm=G.time<this.calmUntil,trG=G.mode==='fight'&&this.state!=='dead'&&!this.taunt&&this.sinceHit<2.6?([0,.08,.12,.16,.2][this.phase]||0)*Math.exp(-this.sinceHit/1.1)*(calm?.3:1)+this.panic*.18:0;
   this.tremble=damp(this.tremble,trG,4,dt);
   const p=this.poseTmp;this.basePose(p,dt,time);
   if(this.shockT>0)this.shockT-=dt;else this.setEmotion(this.baseEmotion());
@@ -5385,7 +5402,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   // 얼굴 옆에 바짝 붙여 들면(예전 값) 불씨가 얼굴로 모이는 것처럼 보였다 — 머리에서 떨어진 허공에 손바닥이 놓이게 한다
   const T=_av8.set(s*.55,1.28,.5);
   if(r.toChest){r.c=Math.min(1,(r.c||0)+dt/.32);T.lerp(_av9.set(s*.04,.74,.3),smooth(r.c));}
-  else if(r.k>=1)T.y+=Math.sin(this.breath*31)*.012;
+  else if(r.k>=1)T.y+=Math.sin(this.breath*2)*.005;
   // 손끝은 바깥·위, 손바닥(pd가 손등 방향이라 아래로 주면 손바닥이 하늘을 본다)
   this.setIK(side,{target:T,fd:_av10.set(s*.6,.5,.6),pd:_av2.set(0,-1,.2),curl:.1,w:smooth(r.k),rate:5,space:'root'});
  },
@@ -5491,29 +5508,27 @@ Object.assign(Emperor.prototype,{
  /* ---- 맞을 때 허둥댐·덜덜 떨기 ----
   * panic: 한 대 맞을 때마다 차오르고 2초쯤에 걸쳐 빠진다. 그 동안 손을 가슴·얼굴 앞으로 들어 손바닥을 내 쪽으로 펴고 좌우로 막 휘젓는다(손사래).
   *        1단계(성남)에서는 작게 놀라 손을 드는 정도, 2단계부터는 얼굴 앞에서 빠르게 흔든다. 막기·움켜쥐기·빌기처럼 손을 쓰는 다른 동작이 있으면 그 손은 비켜 둔다.
-  * tremble: 머리·턱·어깨·팔꿈치·손목·무릎·몸통이 잘게 떨린다. 주파수 두세 개를 섞어 일정한 박자로 보이지 않게 한다.
+  * tremble: 맞은 직후 머리와 몸통에만 짧게 남는다. 팔·손목에 별도 진동을 더하지 않는다.
   * 추임새(「운명 최고」)를 뱉는 1.7초 동안은 손사래를 멈추고 떨림도 잦아든다(비웃는 얼굴과 맞추려고). */
  updateDistress(out,dt,time){
   const calm=G.time<this.calmUntil,ph=this.phase,pn=calm?0:this.panic,tr=this.tremble;
   if(tr>.01){
-   const a=Math.sin(time*37.3)+.6*Math.sin(time*23.1+.8)+.35*Math.sin(time*51.7+2),
-         b=Math.sin(time*41.9+1.3)+.6*Math.sin(time*27.7+.4),
-         c=Math.sin(time*33.3+2.1)+.7*Math.sin(time*19.3+1.1);
+   const a=Math.sin(time*10)+.3*Math.sin(time*6+.8),
+         b=Math.sin(time*8+1.3),c=Math.sin(time*11+2.1);
    out.hT+=a*.024*tr;out.hR+=b*.018*tr;out.hF+=c*.013*tr;out.nT+=a*.006*tr;
    out.cT+=b*.009*tr;out.cR+=a*.006*tr;out.sR+=c*.004*tr;
-   out.LsA+=b*.018*tr;out.RsA+=a*.018*tr;out.LeB+=c*.04*tr;out.ReB-=a*.04*tr;out.LwF+=a*.1*tr;out.RwF+=b*.1*tr;
    out.LkB+=Math.max(0,c)*.07*tr;out.RkB+=Math.max(0,-c)*.07*tr;out.py-=Math.abs(b)*.004*tr;out.tx+=a*.0035*tr;
   }
   const F=this._flail||(this._flail={L:false,R:false}),active=pn>=.02;
-  const k=Math.min(1,pn),w=smooth(Math.min(1,pn*1.6)),hz=ph>=2?31:24,amp=(ph>=2?.12:.07)*k,seed=this.flailSeed;
+  const k=Math.min(1,pn),w=smooth(Math.min(1,pn*1.6)),hz=ph>=2?6:5,amp=(ph>=2?.04:.025)*k,seed=this.flailSeed;
   for(const s of [-1,1]){
    const n=s<0?'L':'R',i=s<0?0:1;
    const busy=this._ikUse[n]===this._ikFrame||(this.act&&this.act.prio>=1&&(this.act.both||(this.act.side||'R')===n));
    const use=active&&!busy&&this.armUsable(n)&&this.armHurt[i]<=.5;
    if(use){
     const p1=seed+(s<0?0:PI*.9),sw=Math.sin(time*hz+p1),sw2=Math.sin(time*hz*.53+p1*1.7);
-    const x=s*(.19+.05*sw2)+sw*amp,y=(ph>=2?1.2:1.12)+sw2*.04*k+Math.abs(sw)*.02,z=.44+.05*sw2;
-    this.setIK(n,{target:_bv1.set(x,y,z),fd:_bv2.set(s*.35+sw*.3,1,.25),pd:_bv3.set(sw*.35,.15,-1),curl:.04,rate:20,w});
+    const x=s*(.28+.025*sw2)+sw*amp,y=(ph>=2?1.18:1.1)+sw2*.025*k,z=.46+.025*sw2;
+    this.setIK(n,{target:_bv1.set(x,y,z),fd:_bv2.set(s*.15+sw*.1,1,.35),pd:_bv3.set(sw*.08,.15,-1),curl:.04,rate:7,w});
    }else if(F[n]&&this._ikUse[n]!==this._ikFrame)this.releaseIK(n,8); // 손사래가 끝났는데 아무도 그 손을 안 쓰면 손을 내린다(쉬는 손이 이어받는다)
    F[n]=use;
   }
@@ -5573,18 +5588,18 @@ doAct(name,o={}){
    case 'wipe':{ // 손등으로 코피를 닦고 손을 본다
     const k=sat(u*2.2),x=lerp(-.1,.12,smooth(k))*s;
     if(u<.5){const F=this.faceIK(_bv1.set(x,-.1,.26),_bv2.set(-s,.15,.1),_bv3.set(0,0,1));this.setIK(n,{target:F.t,fd:F.fd,pd:F.pd,curl:.55,rate:14,space:'world'});}
-    else{this.setIK(n,{target:_bv1.set(s*.06,1.18,.48),fd:_bv2.set(0,.6,.8),pd:_bv3.set(0,1,0),curl:.2,rate:7});this.gazeTarget.copy(this.ik[n].target);this.root.localToWorld(this.gazeTarget);out.hF+=.25;if(!a.gasp){a.gasp=true;AUDIO.gasp();this.doFlinch('shock',.7);}}
+    else{this.setIK(n,{target:_bv1.set(s*.06,1.18,.48),fd:_bv2.set(0,.6,.8),pd:_bv3.set(0,1,0),curl:.2,rate:7});this.gazeTarget.copy(this.ik[n].target);this.root.localToWorld(this.gazeTarget);out.hF+=.25*smooth((u-.5)/.15)*smooth((1-u)/.15);if(!a.gasp){a.gasp=true;AUDIO.gasp();this.doFlinch('shock',.7);}}
     break;}
    case 'look':{ // 피 묻은 손을 들여다본다
     this.setIK(n,{target:_bv1.set(s*.05,1.15,.46),fd:_bv2.set(0,.65,.75),pd:_bv3.set(0,1,0),curl:.15,rate:7});
-    this.gazeTarget.copy(this.ik[n].target);this.root.localToWorld(this.gazeTarget);out.hF+=.28;
+    this.gazeTarget.copy(this.ik[n].target);this.root.localToWorld(this.gazeTarget);out.hF+=.28*smooth(u/.2)*smooth((1-u)/.2);
     if(!a.gasp&&u>.35){a.gasp=true;AUDIO.gasp();this.doFlinch('shock',.8);}break;}
    case 'spit':{ // 고개 돌려 침(피) 뱉기
     const k=Math.sin(sat(u)*PI);out.hT+=s*.55*k;out.hF+=.15*k;out.nT+=s*.2*k;
     if(!a.done&&u>.45){a.done=true;this.spitOut(s);}break;}
    case 'beg':{this.beg(false,u);break;}
    case 'shake':{ // 다친 손을 턴다
-    this.setIK(n,{target:_bv1.set(s*.2,1.05+Math.sin(a.t*28)*.04,.35),fd:_bv2.set(0,-.4,1),pd:_bv3.set(-s,0,0),curl:.3,rate:20});break;}
+    this.setIK(n,{target:_bv1.set(s*.25,1.05+Math.sin(a.t*8)*.022,.4),fd:_bv2.set(0,-.4,1),pd:_bv3.set(-s,0,0),curl:.3,rate:8});break;}
    case 'crown':{ // 삐뚤어진 면류관을 바로잡는다(면류관 테 옆을 잡는다)
     const F=this.faceIK(_bv1.set(s*.2,.2,.03),_bv2.set(-s,.25,0),_bv3.set(0,-1,0));
     this.setIK(n,{target:F.t,fd:F.fd,pd:F.pd,curl:.4,rate:9,space:'world'});
@@ -6583,7 +6598,6 @@ Object.assign(Emperor.prototype,{
   if(isHead){this.haloJolt(dir,kickP);this.repAfterHit(blunt?kind!=='jab':true);}
   // 허둥댐: 맞을 때마다 차오른다(머리를 맞으면 더). 손사래 방향은 매번 조금씩 다르게
   this.panic=Math.min(1.3,this.panic*.5+(isHead?.8:.6)*Math.min(P,1.6)*(down?.7:1)*(kind==='slash'?.6:1));
-  if(this.panic>.6&&Math.random()<.5)this.flailSeed=Math.random()*TAU;
   // 눈물: 2단계부터는 세게 맞을 때마다 눈에서 눈물이 튄다
   if(isHead&&!gun&&this.phase>=2&&!down)this.tearSplash(kind==='jab'?2:4);
   // 얼굴 표정·목소리(머리를 맞으면 아픈 얼굴이 조금 더 오래 간다)
@@ -7985,6 +7999,9 @@ const VM=(()=>{
  }
  function attack(kind,sx,sy,info){
   const tool=st.tool;if(tool==='gun')return fire(sx,sy,info);
+  // The next fist can launch once the previous contact is retracting.
+  // Two rapid taps must not put both fists through the same point at once.
+  if(tool==='hand'&&st.acts.some(a=>a.tool==='hand'&&a.t<a.contact+.045))return false;
   let side='R';
   if(tool==='hand'){side=st.nextHand;if(busy(side)){side=side==='R'?'L':'R';if(busy(side))return false;}st.nextHand=side==='R'?'L':'R';}
   else if(st.acts.some(a=>a.t<a.contact+.04))return false;
@@ -8284,7 +8301,7 @@ function combatPose(E,out,dt,time){
    // 밟히면 버둥댄다: 두 팔을 들어 얼굴·몸을 가리며 휘젓고, 다리를 번갈아 차고, 고개를 도리도리 흔든다. 떨림도 그대로 이어진다
    const pn=Math.min(1,E.panic||0),tr=E.tremble||0;
    if(pn>.02){
-    const f1=Math.sin(time*21+E.flailSeed),f2=Math.sin(time*18+1.1+E.flailSeed),kick=Math.sin(time*16);
+    const f1=Math.sin(time*6+E.flailSeed),f2=Math.sin(time*5+1.1+E.flailSeed),kick=Math.sin(time*7);
     // 팔: 옆으로 벌어져 있던 팔을 위(카메라 쪽)로 들어 올려 팔꿈치를 접어 얼굴 위로 가져가고, 좌우로 흔든다
     T.LsA=lerp(T.LsA,.38+f1*.12,pn);T.RsA=lerp(T.RsA,.34-f2*.12,pn);
     T.LsF=lerp(T.LsF,1.2+f2*.2,pn);T.RsF=lerp(T.RsF,1.1-f1*.2,pn);
@@ -8294,9 +8311,9 @@ function combatPose(E,out,dt,time){
     // 다리: 번갈아 차며 버둥댄다
     T.LkB+=Math.max(0,kick)*.55*pn;T.RkB+=Math.max(0,-kick)*.55*pn;T.LhF+=.25*pn+kick*.18*pn;T.RhF+=.25*pn-kick*.18*pn;T.LaF-=.2*pn;T.RaF-=.2*pn;
     // 고개 도리도리, 몸통 뒤척임
-    T.hT+=Math.sin(time*27)*.14*pn;T.hF-=.1*pn;T.cT+=Math.sin(time*13)*.05*pn;
+    T.hT+=Math.sin(time*8)*.1*pn;T.hF-=.1*pn;T.cT+=Math.sin(time*5)*.04*pn;
    }
-   if(tr>.01){const a=Math.sin(time*37.3)+.6*Math.sin(time*23.1+.8),c=Math.sin(time*33.3+2.1)+.7*Math.sin(time*19.3+1.1);T.hT+=a*.02*tr;T.hR+=c*.012*tr;T.LeB+=c*.03*tr;T.ReB-=a*.03*tr;T.LkB+=Math.max(0,c)*.05*tr;T.RkB+=Math.max(0,-c)*.05*tr;}
+   if(tr>.01){const a=Math.sin(time*10),c=Math.sin(time*8+2.1);T.hT+=a*.02*tr;T.hR+=c*.012*tr;}
   }
  }
  T.tx=T.ty=T.tz=T.ry=0;
@@ -8504,8 +8521,8 @@ function updateTalk(dt){
 function startEncounter(){
  G.opening=true;
  queueTalk([
-  ['player',LINES.greeting,1.8,.15,1.1,LINES.greeting],
-  ['boss',LINES.opening,2,.25,1.2,LINES.opening]
+  ['boss',LINES.opening,2,.15,1.2,LINES.opening],
+  ['player',LINES.greeting,1.8,.25,1.1,LINES.greeting]
  ],true);
  if(G.E)G.E.idleT=6.5;
 }

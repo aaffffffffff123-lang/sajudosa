@@ -40,6 +40,26 @@ for(let i=0;i<360;i++){
 console.log('Continuous motion',JSON.stringify({maxWristStep:maxStep,frame:stepAt,movingDepth}));
 assert(maxStep<.03,'collision avoidance must not jump across the torso');
 assert(movingDepth<.014,'animated sleeves must remain outside body colliders');
+// Check the actual palm surface, including poses that request a folded-back wrist.
+// Body-only sleeve checks missed hands entering the cuff or the opposite arm.
+const palmGeo=api.BODYGEO.build().palm,vertices=palmGeo.attributes.position;
+for(let frame=0;frame<120;frame++){
+ for(const a of moving.arms){a.sh.rotation.set(-1.1,0,a.s*.2);a.el.rotation.x=-1.4;a.wr.rotation.set(frame<60?2.4:-2.4,0,a.s*.7);}
+ moving.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(moving);moving.root.updateMatrixWorld(true);
+ const chestInverse=new THREE.Matrix4().copy(moving.bones.chest.matrixWorld).invert();
+ for(const a of moving.arms){
+  const direction=V3(0,-1,0).applyQuaternion(a.wr.quaternion);
+  assert(direction.dot(V3(0,-1,0))>=Math.cos(.86),'palm cannot fold back into the sleeve');
+  const matrix=new THREE.Matrix4().multiplyMatrices(chestInverse,a.wr.matrixWorld);
+  for(let i=0;i<vertices.count;i+=7){
+   const p=V3().fromBufferAttribute(vertices,i).applyMatrix4(matrix);
+   assert(a.s*p.x>=-.005,'palm surface cannot cross through the opposite hand');
+  }
+ }
+}
+const detached=moving.arms[0],heldRotation=detached.sh.quaternion.clone();detached.sh.userData.detached=true;
+api.ARM_CLEARANCE.apply(moving);assert(detached.sh.quaternion.angleTo(heldRotation)<1e-7,'detached arm is not driven by the pose solver');
+console.log('Palm separation, wrist bend, and detached-arm checks passed');
 const ikMethods=vm.runInNewContext(slice('function solveTwoBone(','/* 여러 메시')+slice('const _down=V3','/* ===== 6-4.')+'({'+slice(' solveArm(a,',' releaseIK(side,')+'})',context);
 const IK=rig();Object.assign(IK,ikMethods);IK._ikFrame=1;IK._ikUse={L:0,R:0};IK.ik={L:{w:1,goal:1,target:V3(),fd:V3(0,1,0),pd:V3(0,0,-1)},R:{w:1,goal:1,target:V3(),fd:V3(0,1,0),pd:V3(0,0,-1)}};
 const borrowed=V3(-.1,-.32,.08);IK.setIK('L',{target:V3(-.13,1.3,.5),pole:borrowed});borrowed.set(.1,-.32,.08);IK.setIK('R',{target:V3(.13,1.3,.5),pole:borrowed});borrowed.set(9,9,9);assert(IK.ik.L.pole.equals(V3(-.1,-.32,.08)));assert(IK.ik.R.pole.equals(V3(.1,-.32,.08)));
@@ -63,3 +83,4 @@ for(const fps of [30,60,120]){
 }
 console.log('Eye: 30/60/120 fps monotonic gaze, fixed contact, delayed dilation passed');
 if(failures)process.exitCode=1;
+
