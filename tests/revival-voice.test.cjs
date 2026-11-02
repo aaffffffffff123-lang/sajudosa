@@ -35,11 +35,30 @@ test('muted speech creates no playback',()=>{
 });
 
 test('opening line uses the fixed Korean voice clip',async()=>{
- const h=setup();const voice=h.scope.speak('왜 왔니?');h.release();await flush();
+ const h=setup();const voice=h.scope.speak('넌 뭐야?');h.release();await flush();
  assert.equal(h.played.length,1);assert.equal(h.spoken.length,0);assert.equal(voice.started,true);
  h.played[0].onended();assert.equal(voice.busy,false);
 });
 test('interrupting the opening cannot play its clip after the first hit',async()=>{
- const h=setup(),voice=h.scope.speak('왜 왔니?');voice.stop();h.release();await flush();
+ const h=setup(),voice=h.scope.speak('넌 뭐야?');voice.stop();h.release();await flush();
  assert.equal(h.played.length,0);assert.equal(voice.busy,false);
+});
+
+test('player greeting uses its clip and cannot resume after an early attack',async()=>{
+ const h=setup(),greeting=h.scope.speak('천지신명이시여...');
+ const attack=h.scope.speak('죽어!');
+ h.release();await flush();
+ assert.equal(greeting.busy,false);
+ assert.equal(h.played.length,0);
+ assert.equal(h.spoken.length,1);
+ assert.equal(h.spoken[0].text,'죽어!');
+ assert.equal(h.spoken[0].lang,'ko-KR');
+ assert.equal(h.spoken[0].rate,1.15);
+ attack.stop();assert.equal(attack.busy,false);
+});
+
+test('player greeting can complete normally',async()=>{
+ const h=setup(),voice=h.scope.speak('천지신명이시여...');h.release();await flush();
+ assert.equal(h.played.length,1);assert.equal(h.spoken.length,0);
+ h.played[0].onended();assert.equal(voice.busy,false);
 });
