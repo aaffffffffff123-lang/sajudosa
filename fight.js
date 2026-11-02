@@ -4562,8 +4562,19 @@ const ARM_CLEARANCE=(()=>{
  const colliders=[
   {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}, // 배
   {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}, // 가슴
-  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}]; // 머리
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}, // 머리
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.12,low:.125,hand:.055}]; // 옥좌 팔걸이
  const head=(x,y,z)=>SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245);
+ // The throne stays in world space as the actor stands up and moves away.
+ // Include the gold cap, red support, and curled front end, not just the bone's resting point.
+ function boxDistance(x,y,z,hx,hy,hz){
+  const qx=Math.abs(x)-hx,qy=Math.abs(y)-hy,qz=Math.abs(z)-hz;
+  return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0);
+ }
+ function armrest(x,y,z){
+  const ax=Math.abs(x)-.6;
+  return Math.min(boxDistance(ax,y-.77,z-.02,.06,.0225,.31),boxDistance(ax,y-.6,z-.02,.045,.15,.28),boxDistance(ax,y-.76,z-.34,.026,.08,.08));
+ }
  function obstacle(c,mesh,sdf,chest){
   c.on=false;if(!mesh||mesh.userData.detached)return;
   mesh.updateWorldMatrix(true,false);c.m.copy(mesh.matrixWorld).invert().multiply(chest.matrixWorld);c.n.setFromMatrix4(c.m).transpose();c.sdf=sdf;c.on=true;
@@ -4608,7 +4619,9 @@ const ARM_CLEARANCE=(()=>{
   // 이전의 안전한 팔 경로에서 목표를 따라간다. 매번 배 한가운데서 다시 풀면
   // 작은 자세 변화에도 팔꿈치가 몸의 반대편 해로 튀는 문제가 생긴다.
   if(a.safeE){
-   if(E0.distanceToSquared(a.safeE)+W0.distanceToSquared(a.safeW)<1e-14)return;
+   if(E0.distanceToSquared(a.safeE)+W0.distanceToSquared(a.safeW)<1e-14){
+    E1.copy(E0);W1.copy(W0);if(outside())return;
+   }
    const cap=1.8*Math.max(0,dt),k=1-Math.exp(-8*Math.max(0,dt));
    E1.copy(a.safeE).add(d0.subVectors(E0,a.baseE).clampLength(0,cap)).lerp(E0,k);
    W1.copy(a.safeW).add(d0.subVectors(W0,a.baseW).clampLength(0,cap)).lerp(W0,k);
@@ -4646,6 +4659,7 @@ const ARM_CLEARANCE=(()=>{
   const chest=E.bones.chest;chest.updateWorldMatrix(true,false);invChest.copy(chest.matrixWorld).invert();
   obstacle(colliders[0],E.belly,BODYGEO.belly,chest);obstacle(colliders[1],E.chestMesh,BODYGEO.chest,chest);
   obstacle(colliders[2],!E.headGone&&!E.headDestroyed?E.face:null,head,chest);
+  obstacle(colliders[3],typeof WORLD!=='undefined'?WORLD.throne:null,armrest,chest);
   for(const a of E.arms)solve(a,dt);
  }
  return {apply};
@@ -5303,7 +5317,8 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(ik.space==='root')this.root.localToWorld(T);
   chest.worldToLocal(T);
   // Weight alone did not smooth an already active IK: a new action snapped the target.
-  if(!ik.follow)ik.follow=chest.worldToLocal(a.wr.getWorldPosition(V3()));
+  const seatedStart=!a.safeE&&this.combat&&this.combat.mode==='seat';
+  if(!ik.follow)ik.follow=seatedStart?T.clone():chest.worldToLocal(a.wr.getWorldPosition(V3()));
   ik.follow.lerp(T,1-Math.exp(-(ik.rate||8)*dt));T.copy(ik.follow);
   const S=a.sh.position,pole=_av2.set(S.x+a.s*.35,S.y-.2,S.z+.18);
   if(ik.pole)pole.copy(S).add(ik.pole);
@@ -5325,6 +5340,7 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
    qH=_aq5.setFromRotationMatrix(_am);
    qH.premultiply(_aq6.copy(qU).multiply(qE).invert());
   }
+  if(seatedStart)ik.w=1;
   const w=smooth(ik.w);
   a.sh.quaternion.slerp(qU,w);a.el.quaternion.slerp(qE,w);if(qH)a.wr.quaternion.slerp(qH,w);
  },
@@ -7951,7 +7967,9 @@ const VM=(()=>{
  function arm(){const g=grp(root);const sl=grp(g,[0,.108,0]);mk(sleeveGeo,sleeveMat,sl,{cast:false});
   mk(cylGeo(.028,.034,.14,16),M.skin,g,{p:[0,.055,0]});const cf=mk(cylGeo(.05,.05,.034,20),M.cuff,g,{p:[0,.116,0]});return {g,sl,cf};}
  const R={hand:grp(root),arm:arm()},L={hand:grp(root),arm:arm()};
- R.fist=fist(R.hand,1);L.fist=fist(L.hand,-1);R.fist.scale.setScalar(1.02);L.fist.scale.setScalar(1.02);
+ // orient() points local +z away from the camera, reversing local x on screen.
+ // Mirror the anatomical models so each thumb faces inward, toward the other hand.
+ R.fist=fist(R.hand,-1);L.fist=fist(L.hand,1);R.fist.scale.setScalar(1.02);L.fist.scale.setScalar(1.02);
  // 칼: 폭이 넓고 날선이 곧은 부엌 식도
  const knife=grp(R.hand);knife.name='kitchen-knife';
  const KREACH=.289;// 손에서 칼끝까지
@@ -8011,7 +8029,7 @@ const VM=(()=>{
  // 멱살잡이 손(왼손): 손가락을 갈고리처럼 구부려 옷깃을 움켜쥔다. 평소엔 숨기고 잡는 동안 주먹 대신 보인다
  const GRAB_POSE={fingers:[{a:[30,70,55],L:[.042,.028,.022]},{a:[28,72,58],L:[.044,.029,.023]},{a:[30,70,56],L:[.042,.028,.022]},{a:[32,66,52],L:[.034,.023,.019]}],
   thumb:[[-.04,-.007,-.014],[-.06,-.012,.014],[-.056,-.026,.042],[-.04,-.03,.062]],thumbR:[.017,.0155,.0138,.0122],thumbNail:[-.6,.1,.8]};
- const grabHand=buildHand(-1,GRAB_POSE);grabHand.visible=false;grabHand.userData.wrist=V3(0,0,-.1);L.hand.add(grabHand);
+ const grabHand=buildHand(1,GRAB_POSE);grabHand.visible=false;grabHand.userData.wrist=V3(0,0,-.1);L.hand.add(grabHand);
  const tools={hand:null,knife,gun};
  // 탄피
  const shells=[];for(let i=0;i<6;i++){const m=mk(cylGeo(.0045,.0045,.016,8),M.brass,root,{cast:false});m.visible=false;shells.push({m,v:V3(),w:V3(),life:0});}
@@ -8048,7 +8066,7 @@ const VM=(()=>{
   const pr=portrait(),dy=pr?dockY():-1;
   for(const k of ['R','L']){const s=k==='R'?1:-1;const r=rest[k];
    // 왼손은 칼·총을 들 때 안 보이지만, 붙잡힐 때는 주먹 자리에서 나온다
-   if(st.tool==='hand'||k==='L'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.22,.62,-1),V3(s*.5,.72,.42));}
+   if(st.tool==='hand'||k==='L'){at(s*(pr?.74:.46),pr?dy+.03:-.76,.56,r.p);orient(r.q,V3(-s*.18,.48,-1),V3(s*.72,.68,.3));}
    else if(st.tool==='knife'){at(pr?KREST.x:.5,pr?dy+KREST.y:-.74,KREST.d,r.p);orient(r.q,KREST.dir,KN_UP);}
    else{at(pr?.6:.36,pr?dy+.16:-.62,.42,r.p);orient(r.q,V3(-.08,.05,-1),UP);}
   }
@@ -8091,7 +8109,7 @@ const VM=(()=>{
    const fwd=V3().subVectors(target,ANCH[side]).normalize();a.fwd=fwd;
    if(kind==='hook'){at(s*1.1,ny*.5-.15,.75,W);C.set(lerp(W.x,target.x,.15),target.y+.02,lerp(W.z,target.z,.75));orient(Q0,V3(-s*.6,.1,-.5),V3(0,1,.2));orient(Q1,V3(-s*.75,0,-.65),V3(0,1,0));a.dur=[.07,.07,.05,.13];}
    else if(kind==='upper'){at(s*.25,-1.2,.7,W);C.set(target.x,lerp(W.y,target.y,.2),lerp(W.z,target.z,.7));orient(Q0,V3(-s*.1,1,-.3),V3(0,.2,1));orient(Q1,V3(0,.8,-.6),V3(0,.3,1));a.dur=[.07,.075,.05,.13];}
-   else{W.copy(rest[side].p).add(V3(s*.02,-.04,.08).multiplyScalar(SC));C.copy(W).lerp(target,.5);C.y+=.03*SC;orient(Q0,V3(-s*.2,.4,-1),V3(s*.9,.4,.2));orient(Q1,fwd,V3(-s*.25,1,0));a.dur=[.04,.055,.045,.12];}
+   else{W.copy(rest[side].p).add(V3(s*.02,-.04,.08).multiplyScalar(SC));C.copy(W).lerp(target,.5);C.y+=.03*SC;orient(Q0,V3(-s*.2,.4,-1),V3(s*.72,.68,.3));orient(Q1,fwd,V3(-s*.25,1,0));a.dur=[.04,.055,.045,.12];}
   }else if(BLADE(tool)){
    const reach=KREACH;
    const H0=at(pr?.42:.4,-.74,.42);const dir=V3().subVectors(target,H0).normalize();a.dir1=dir;a.hand1=V3().copy(target).addScaledVector(dir,-reach);
@@ -8369,7 +8387,7 @@ function combatPose(E,out,dt,time){
   poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.pF=0;T.sF=-.08;T.cF=0;T.RsF=.1;T.RsA=.7;T.LeB=.8;T.Lcurl=.5;T.Rcurl=.5;
   E.updateActions(T,dt,time);
   // 홀을 들고 있지 않으면(순응 화면에서 넘어온 경우) 두 손을 팔걸이 위에 얹는다
-  if(!E.tabletHeld&&!E.act)for(const s of [-1,1])E.setIK(s<0?'L':'R',{target:_bv1.set(s*.56,.8,-.1),fd:_bv2.set(0,-.1,1),pd:_bv3.set(0,-1,0),curl:.3,rate:8});
+  if(!E.tabletHeld&&!E.act)for(const s of [-1,1])E.setIK(s<0?'L':'R',{target:_bv1.set(s*.52,.94,-.02),fd:_bv2.set(s*.08,-.08,1),pd:_bv3.set(0,-1,0),curl:.3,rate:8,pole:_bv4.set(s*.34,-.02,-.08)});
  }else if(b.mode==='stand'){
   E.standPose(T,dt,time);
   const speed=Math.hypot(b.vx,b.vz),a=Math.sin(b.stepDistance*22)*clamp(speed*.45,0,.34);
