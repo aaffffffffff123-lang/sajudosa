@@ -243,7 +243,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <div class="gauge" aria-hidden="true">
    <div class="grow"><span class="gname">천지신명</span><span class="kd" id="kdPips"><i></i><i></i><i></i></span><small id="gaugePct">100%</small></div>
    <div class="bar"><b id="gaugeLag"></b><i id="gaugeFill"></i><s style="left:25%"></s><s style="left:50%"></s><s style="left:75%"></s></div>
-   <span id="defeatCount" hidden>처치 0명</span>
+   <span id="defeatCount" hidden>족친 천지신명 0명</span>
   </div>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
@@ -272,7 +272,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite">처치한 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록 공유</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록 공유</button></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
@@ -2211,81 +2211,100 @@ function updateCamera(dt){
 }
 const _cv=V3(),_cf=V3();
 
-/* ===== 4-1. 궁전 너머의 존재 =====
- * 쓰러진 천지신명 → 바닥 위로 큰 그림자가 지나감 → 고개를 듦 → 하늘을 덮은 눈이 나를 바라봄.
- * 그림(fate-beyond-v2)은 화면이 아니라 세상의 하늘 방향에 붙어 있어, 고개를 드는 동안 원근대로 올라오고
- * 처마·기둥이 그 앞을 가로질러 지나간다. 고개를 든 뒤 아래를 보는 눈을 잠깐 보여주고,
- * 시선이 한 번 올라와 나와 마주친다. 이후 동공이 조금 넓어지고 완전히 정지한다.
- * 눈꺼풀 경계와 홍채 외곽은 고정하며, 원화의 질감을 크게 늘리거나 빛을 맥동시키지 않는다. */
+/* ===== 4-1. 궁전 너머의 존재: 그림자 → 고개 들기 → 3D 안구의 시선 → 동공 확대 ===== */
+/* 실제 곡면 안구·홍채·동공. 고정된 눈꺼풀 안에서 안구 전체가 회전한다. */
+function createBeyondEye(){
+ const root=new THREE.Group(),ball=new THREE.Group();root.name='beyond-eye-3d';ball.name='rotating-eyeball';root.add(ball);
+ const R=4.9,IR=2.03;
+ let seed=73913;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+ const irisTex=canvasTex(1024,1024,(g,w,h)=>{
+  const image=g.createImageData(w,h),d=image.data;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+   const dx=(x-w/2)/(w/2),dy=(y-h/2)/(h/2),r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
+   const f=.5+.22*Math.sin(a*183+Math.sin(r*29+a*7)*2.2)+.16*Math.sin(a*331-r*19)+.12*Math.sin(a*79+r*41);
+   const fibers=(.28+.72*f)*(.6+.4*Math.sin(r*9+.4)),edge=1-smooth((r-.79)/.21),inner=.72+.28*smooth(r/.25);
+   const n=(random()-.5)*17,k=(y*w+x)*4;
+   d[k]=Math.max(0,(74+126*fibers)*edge*inner+n);d[k+1]=Math.max(0,(66+108*fibers)*edge*inner+n);d[k+2]=Math.max(0,(40+62*fibers)*edge*inner+n);d[k+3]=255;
+  }g.putImageData(image,0,0);
+  // Uneven radial threads, with fine branches rather than a printed ring.
+  for(let i=0;i<1250;i++){
+   const a=random()*TAU,r0=60+random()*130,r1=350+random()*135;
+   g.strokeStyle=i%3?'rgba(228,213,151,.13)':'rgba(17,22,14,.30)';g.lineWidth=.5+random()*2;
+   g.beginPath();g.moveTo(512+Math.cos(a)*r0,512+Math.sin(a)*r0);
+   g.quadraticCurveTo(512+Math.cos(a+.025)*280,512+Math.sin(a+.025)*280,512+Math.cos(a)*r1,512+Math.sin(a)*r1);g.stroke();
+  }
+ });
+ const skinTex=canvasTex(512,512,(g,w,h)=>{
+  g.fillStyle='#272e30';g.fillRect(0,0,w,h);
+  for(let y=-1;y<25;y++)for(let x=-1;x<22;x++){
+   const cx=x*26+(y%2)*13+(random()-.5)*9,cy=y*23+(random()-.5)*7;
+   const v=Math.floor(35+random()*17);g.fillStyle=`rgb(${v},${v+5},${v+7})`;g.strokeStyle='rgba(9,13,15,.3)';g.lineWidth=.7;
+   g.beginPath();g.ellipse(cx,cy,11+random()*3,8+random()*3,(random()-.5)*.5,0,TAU);g.fill();g.stroke();
+  }
+  for(let i=0;i<14000;i++){g.fillStyle=i%2?'rgba(165,183,183,.08)':'rgba(0,0,0,.11)';g.fillRect(random()*w,random()*h,random()*3+1,1);}
+ });
+ skinTex.wrapS=skinTex.wrapT=THREE.RepeatWrapping;skinTex.repeat.set(5,3);
+ const scleraTex=canvasTex(512,512,(g,w,h)=>{
+  g.fillStyle='#4c5150';g.fillRect(0,0,w,h);
+  for(let i=0;i<160;i++){const x=random()*w,y=random()*h;g.strokeStyle='rgba(22,30,28,.12)';g.lineWidth=.4+random();g.beginPath();g.moveTo(x,y);g.bezierCurveTo(x+10,y+35,x-16,y+55,x+random()*60-30,y+100);g.stroke();}
+ });
+ const skin=new THREE.MeshStandardMaterial({map:skinTex,bumpMap:skinTex,bumpScale:.06,roughness:.81,color:col('#8c9695')});skin.name='beyond-skin';
+ const wet=new THREE.MeshStandardMaterial({color:col('#303b36'),roughness:.3,metalness:.08});wet.name='beyond-lid-rim';
+ const white=new THREE.MeshStandardMaterial({map:scleraTex,color:col('#8a9691'),roughness:.26});white.name='beyond-sclera';
+ const irisMat=new THREE.MeshStandardMaterial({map:irisTex,bumpMap:irisTex,bumpScale:.012,color:col('#bdc3b7'),roughness:.32,metalness:.02});irisMat.name='beyond-iris';
+ const pupilMat=new THREE.MeshStandardMaterial({color:col('#030606'),roughness:.19});pupilMat.name='beyond-pupil';
+ const add=(g,m,parent=root)=>{const mesh=new THREE.Mesh(g,m);parent.add(mesh);return mesh;};
+ add(new THREE.SphereGeometry(R,96,64),white,ball);
+ // Project every iris/pupil vertex onto the eyeball instead of putting a decal on a plane.
+ function cap(rx,ry,lift){
+  const p=[],uv=[],idx=[],rings=32,segments=128;
+  for(let j=0;j<=rings;j++)for(let i=0;i<=segments;i++){
+   const a=i/segments*TAU,t=j/rings,x=Math.cos(a)*t*rx,y=Math.sin(a)*t*ry;
+   p.push(x,y,Math.sqrt(Math.max(.01,R*R-x*x-y*y))+lift);uv.push(.5+x/(2*IR),.5+y/(2*IR));
+   if(j<rings&&i<segments){const k=j*(segments+1)+i;idx.push(k,k+segments+1,k+1,k+1,k+segments+1,k+segments+2);}
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();return geo;
+ }
+ add(cap(IR,IR,.012),irisMat,ball);
+ const pupil=add(cap(1,1.72,.027),pupilMat,ball);pupil.name='slit-pupil';
+ const pp=pupil.geometry.attributes.position,base=pp.array.slice();
+ let pupilWidth=-1,contactPitch=0;
+ function setPupil(width){
+  if(width===pupilWidth)return;pupilWidth=width;
+  for(let i=0;i<pp.count;i++){const x=base[i*3]*width,y=base[i*3+1];pp.setXYZ(i,x,y,Math.sqrt(R*R-x*x-y*y)+.027);}
+  pp.needsUpdate=true;pupil.geometry.computeVertexNormals();pupil.geometry.computeBoundingSphere();
+ }
+ // Skin begins at the almond aperture and continues beyond the screen, hiding the sphere silhouette.
+ function edge(a){const x=4.58*Math.cos(a),s=Math.sin(a);return V3(x,(s>0?1.46:1.12)*s+.08*x/4.58,Math.sqrt(Math.max(.1,R*R-x*x-((s>0?1.46:1.12)*s)**2))+.035);}
+ const p=[],uv=[],idx=[],segments=192,rows=42;
+ for(let j=0;j<=rows;j++)for(let i=0;i<=segments;i++){
+  const a=i/segments*TAU,t=j/rows,e=edge(a),spread=t*10;
+  const x=e.x+Math.cos(a)*spread,y=e.y+Math.sin(a)*spread,z=e.z*(1-smooth(t/.43))-.9*t;
+  const ridge=(.18*Math.sin(t*98+Math.sin(a*11)*.55)+.09*Math.sin(t*173+a*7))*Math.exp(-t*4)*Math.sin(Math.min(1,t*20)*PI/2);
+  const brow=Math.max(0,Math.sin(a))*.55*Math.exp(-(((t-.07)/.05)**2));
+  p.push(x,y,Math.max(z,Math.sqrt(Math.max(0,R*R-x*x-y*y))+.075)+Math.max(0,ridge)+brow);uv.push(i/segments,j/rows);
+  if(j<rows&&i<segments){const k=j*(segments+1)+i;idx.push(k,k+segments+1,k+1,k+1,k+segments+1,k+segments+2);}
+ }
+ const lidGeo=new THREE.BufferGeometry();lidGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));lidGeo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));lidGeo.setIndex(idx);lidGeo.computeVertexNormals();
+ const lids=add(lidGeo,skin);lids.name='fixed-eyelids';
+ const rimPoints=[];for(let i=0;i<192;i++)rimPoints.push(edge(i/192*TAU));
+ add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rimPoints,true),192,.045,8,true),wet);
+ const light=new THREE.DirectionalLight('#dce6db',2.3);light.position.set(-6,9,12);root.add(light);root.add(light.target);
+ const fillLight=new THREE.DirectionalLight('#728b91',.4);fillLight.position.set(7,-1,9);root.add(fillLight);root.add(fillLight.target);
+ root.add(new THREE.HemisphereLight('#919fa7','#050a0d',.65));
+ // A broad corneal catchlight is curved with the surface and turns with the eye.
+ const glintMat=new THREE.MeshBasicMaterial({color:col('#b5c6c4'),transparent:true,opacity:.22,depthWrite:false});glintMat.name='beyond-catchlight';
+ const glint=add(new THREE.SphereGeometry(1,28,16),glintMat,ball);glint.position.set(-.65,.66,Math.sqrt(R*R-.65*.65-.66*.66)+.03);glint.scale.set(.26,.085,.012);glint.rotation.z=-.45;
+ setPupil(.13);
+ return {root,ball,pupil,lids,setContactPitch(pitch){contactPitch=pitch;},setGaze(gaze,width){ball.rotation.set(contactPitch-gaze.y,gaze.x,0);setPupil(width);}};
+}
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
- let artReady=false,compiled=false;
- const fallback=canvasTex(16,16,(g,w,h)=>{const c=g.createLinearGradient(0,0,0,h);c.addColorStop(0,'#090d12');c.addColorStop(1,'#141d25');g.fillStyle=c;g.fillRect(0,0,w,h);});
- const mat=new THREE.ShaderMaterial({
-  uniforms:{uMap:{value:fallback},uTime:{value:0},uReveal:{value:0},uAspect:{value:1},uTanHalf:{value:.4},uCamRot:{value:new THREE.Matrix3()},uPitch:{value:1},uKx:{value:1},uKy:{value:1},uCy:{value:.5},
-   uGaze:{value:new THREE.Vector2(0,0)},uPupil:{value:1},uGlow:{value:0}},
-  depthTest:false,depthWrite:false,toneMapped:false,
-  vertexShader:`varying vec2 vNdc;
-void main(){vNdc=position.xy;gl_Position=vec4(position.xy,.999,1.);}`,
-  fragmentShader:`uniform sampler2D uMap;uniform float uTime,uReveal,uAspect,uTanHalf,uPitch,uKx,uKy,uCy,uPupil,uGlow;uniform mat3 uCamRot;uniform vec2 uGaze;varying vec2 vNdc;
-/* 눈꺼풀 경계는 고정하고 안구 안쪽만 굴린다. 눈을 맞춘 좌표(시선 0)는 원화 그대로다. */
-const vec2 IC=vec2(.500,.704),IR=vec2(.165,.101);
-float ell(vec2 p,vec2 c,vec2 r){return length((p-c)/r);}
-float topV(float ux){float k=max(0.,1.-ux*ux);return .694+.1009*pow(k,1.3);}
-float botV(float ux){float k=max(0.,1.-ux*ux);return .6875-.0078*ux-.0781*pow(k,1.63);}
-float opening(vec2 q){ // 1=눈구멍 안(흰자·홍채), 0=눈꺼풀
- float ux=(q.x-.5078)/.3076;if(abs(ux)>=1.)return 0.;
- float t=topV(ux),b=botV(ux),e=.004;
- return smoothstep(b-e,b+e,q.y)*(1.-smoothstep(t-e,t+e,q.y));
-}
-void main(){
- // 1) 이 픽셀이 보는 방향을 세상 좌표로 바꾸고, 그림이 붙은 하늘 면(정면 D를 바라보는 먼 평면) 위의 자리를 구한다
- vec3 rc=normalize(vec3(vNdc.x*uTanHalf*uAspect,vNdc.y*uTanHalf,-1.));
- vec3 rw=uCamRot*rc;
- float cs=cos(uPitch),sn=sin(uPitch);
- vec3 rp=vec3(rw.x,rw.y*cs+rw.z*sn,-rw.y*sn+rw.z*cs);
- float dz=max(.02,-rp.z);
- vec2 q=vec2(.5+rp.x/dz*uKx,uCy+rp.y/dz*uKy);
- if(rp.z>-.02)q.y=-10.;
- // 2) 눈꺼풀은 그림 그대로
- vec3 lid=texture2D(uMap,clamp(q,.002,.998)).rgb;
- // 3) 경계의 위치와 기울기를 고정한 작은 회전. 위·아래에서 꺾이던 사인 변형을 없앤다.
- float inOpen=opening(q);
- float ux=(q.x-.5078)/.3076,ex=clamp(ux,-1.,1.);
- float bottom=botV(ex),top=topV(ex),ey=clamp((q.y-bottom)/max(.01,top-bottom),0.,1.);
- float roll=16.*ey*ey*(1.-ey)*(1.-ey)*(1.-smoothstep(.58,1.,abs(ux)));
- vec2 gaze=vec2(uGaze.x,clamp(uGaze.y,-.13*(top-bottom),.13*(top-bottom)));
- vec2 qs=q-gaze*roll;
- float di=ell(qs,IC,IR);
- // 동공 가까이에서만 폭을 조금 바꾼다. 바깥 홍채와 반사광은 원화 위치에 고정한다.
- vec2 ip=(qs-IC)/IR;
- float rim=sqrt(max(0.,1.-ip.y*ip.y));
- if(rim>.02&&abs(ip.x)<rim){
-  float x=abs(ip.x)/rim;
-  float influence=1.-smoothstep(.20,.70,x);
-  float mapped=x*(1.+(1./uPupil-1.)*influence);
-  qs.x=IC.x+sign(ip.x)*mapped*rim*IR.x;
- }
- vec3 inner=texture2D(uMap,clamp(qs,.002,.998)).rgb;
- vec3 color=mix(lid,inner,inOpen);
- // 4) 홍채가 안에서 빛난다
- color*=1.+uGlow*.32*pow(max(0.,1.-di),1.6)*inOpen;
- // 5) 그림 바깥은 어둡다(가장자리를 끌어 늘리지 않고 바로 어둠으로 넘어간다)
- float edge=smoothstep(-.03,.012,q.y)*(1.-smoothstep(.93,.995,q.y))*smoothstep(-.03,.01,q.x)*(1.-smoothstep(.99,1.01,q.x));
- color=mix(vec3(.026,.038,.048),color,edge);
- color*=.92+.08*smoothstep(.1,.9,uReveal);
- gl_FragColor=vec4(pow(color,vec3(2.2)),1.);
- #include <encodings_fragment>
-}`});
- const surface=new THREE.Mesh(new THREE.PlaneGeometry(2,2),mat);
- surface.frustumCulled=false;far.add(surface);
- new THREE.TextureLoader().load('assets/fate-beyond-v2.webp',tex=>{
-  tex.encoding=THREE.LinearEncoding;tex.minFilter=THREE.LinearFilter;tex.generateMipmaps=false;
-  mat.uniforms.uMap.value=tex;artReady=true;
- },undefined,()=>{artReady=false;});
+ let model=null,compiled=false;
  function prepare(){
-  if(!compiled){compiled=true;try{fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);renderer.compile(far,fcam);}catch(_){}}
+  if(!model){model=createBeyondEye();far.add(model.root);}
+  if(!compiled){compiled=true;try{renderer.compile(far,fcam);}catch(_){}}
   return true;
  }
  /* 그림자만 드리우는 판: 눈이 보이기 전, 큰 것이 몸을 기울이는 그림자가 바닥과 시신 위를 훑고 지나간다 */
@@ -2296,7 +2315,7 @@ void main(){
  const OMEN={delay:.2,dur:1.5};
  function omen(){if(omenT0>=0||active)return;omenT0=G.time;}
  function updateOmen(){
-  if(omenT0<0)return;
+  if(omenT0<0||(active&&eye.lock>0))return;
   const u=(G.time-omenT0-OMEN.delay)/OMEN.dur;
   if(u<0)return;
   if(!caster.visible){caster.visible=true;const c=key.shadow.camera;shadowSaved={left:c.left,right:c.right,top:c.top,bottom:c.bottom};c.left=-4.5;c.right=4.5;c.top=4.5;c.bottom=-3.5;c.updateProjectionMatrix();if(!omenSound){omenSound=true;AUDIO.omen();}}
@@ -2309,15 +2328,15 @@ void main(){
  }
  let omenSound=false;
  const _od=V3(),_or=V3(),_ou=V3(),_ol=V3();
- const _cp=V3(),_m3=new THREE.Matrix3();
+ const _cp=V3();
  let active=false,t0=0,from=null,exposure=1.08,lights=null;
  const TILT=6.4,DUR=10.4;
  // 아래를 보다가 한 번 고개를 맞추고 정지. 그 다음 동공이 넓어진다.
- const T_SEE=TILT+.8,T_SHIFT=.36,T_DILATE=T_SEE+T_SHIFT+.3;
- const PUPIL_REST=.86,PUPIL_CONTACT=1;
+ const T_SEE=TILT+.8,T_SHIFT=.65,T_DILATE=T_SEE+T_SHIFT+.3;
+ const PUPIL_REST=.13,PUPIL_CONTACT=.34;
  const eye={gaze:new THREE.Vector2(),pupil:PUPIL_REST,glow:0,seen:false,lock:0};
- // 원화 그대로가 나와 마주친 각도. 작은 하향 시선으로 시작해 질감을 잡아 늘리지 않는다.
- const GAZE0=new THREE.Vector2(0,-.022);
+ // radians: 안구가 아래를 보는 각도에서 카메라를 정면으로 보는 각도까지 회전한다.
+ const GAZE0=new THREE.Vector2(0,-.16);
  const GAZE_PLAYER=new THREE.Vector2(0,0);
  // 끝 구도: 족치던 자리에서 움직이지 않고 고개만 들어, 벽 위 하늘 대부분이 그것으로 차게 본다.
  // 궁전 벽 위 도리가 화면 아래 같은 높이에 걸리고(beam: 화면 높이 -1~1)
@@ -2359,18 +2378,17 @@ void main(){
   AUDIO.beyond();
  }
  function updateEye(k,dt){
-  const U=mat.uniforms;
   // 알아봄: 아래를 보던 시선이 먼저 나한테 꽂힌다. 시선 이동이 끝나면 동공이 커진다.
   if(k>=T_SEE+T_SHIFT&&!eye.seen){eye.seen=true;AUDIO.gaze(.65);}
-  eye.gaze.lerpVectors(GAZE0,GAZE_PLAYER,smoother(clamp((k-T_SEE)/T_SHIFT,0,1)));
+  eye.gaze.lerpVectors(GAZE0,GAZE_PLAYER,clamp(smoother(clamp((k-T_SEE)/T_SHIFT,0,1)),0,1));
   // 동공: 아래를 볼 때는 좁게, 눈을 맞춘 뒤 넓어져 그 크기를 유지한다.
-  const pupil=lerp(PUPIL_REST,PUPIL_CONTACT,smoother(clamp((k-T_DILATE)/.7,0,1)));
+  const pupil=lerp(PUPIL_REST,PUPIL_CONTACT,clamp(smoother(clamp((k-T_DILATE)/.7,0,1)),0,1));
   eye.pupil=pupil;
   // 마주친 뒤 조명만 한 번 바뀐다. 홍채가 번쩍이거나 숨 쉬듯 밝아지지 않는다.
   const glow=0;
   eye.lock=eye.seen?smoother(clamp((k-T_SEE-T_SHIFT)/.8,0,1)):0;
   if(eye.lock>0&&caster.visible)caster.visible=false; // 눈이 나를 보는 순간 그 그림자는 걷히고 차가운 빛이 내려온다
-  U.uGaze.value.copy(eye.gaze);U.uPupil.value=pupil;U.uGlow.value=glow;
+  if(model)model.setGaze(eye.gaze,pupil);
   applyLights(eye.lock);
  }
  function update(dt){
@@ -2384,17 +2402,18 @@ void main(){
   CAM.fovBase=lerp(from.fov,ev.fov,p);
   // 손은 내려간다
   if(VM.root.visible){const h=clamp(k/1.1,0,1);VM.root.position.y=-.6*easeIn(h);if(h>=1)VM.root.visible=false;}
-  // 그림을 붙인 하늘 면: 끝 구도(ev.pitch·ev.fov)에서 예전과 같은 그림이 되도록 배율을 정한다
-  const A=innerWidth/innerHeight,tF=Math.tan(ev.fov*PI/360);
-  const U=mat.uniforms;
-  U.uTime.value=k;U.uReveal.value=p;U.uAspect.value=A;U.uPitch.value=ev.pitch;
-  U.uKx.value=.4717/(tF*A);U.uKy.value=1/(2*1.06*A*1.5*tF);U.uCy.value=lerp(.5,.65,smooth((A-.7)/.7));
+  // 먼 하늘의 실제 3D 형상. 처마·기둥 뒤에 있고, 카메라는 제자리에서 위를 본다.
+  const A=innerWidth/innerHeight,tF=Math.tan(ev.fov*PI/360),D=10000;
+  const scale=D*tF*Math.min(A,1.8)/(4.8+4.9*tF*Math.min(A,1.8));
+  model.root.rotation.x=ev.pitch;
+  model.root.position.copy(pos).add(V3(0,Math.sin(ev.pitch),-Math.cos(ev.pitch)).multiplyScalar(D));
+  model.root.position.add(V3(0,Math.cos(ev.pitch),Math.sin(ev.pitch)).multiplyScalar(D*tF*.18));
+  model.root.scale.setScalar(scale);
+  model.setContactPitch(Math.atan(tF*.18));
   updateEye(k,dt);
   renderer.toneMappingExposure=lerp(exposure,.6,p);
  }
  function draw(){
-  mat.uniforms.uTanHalf.value=Math.tan(camera.fov*PI/360);
-  mat.uniforms.uCamRot.value.setFromMatrix4(camera.matrixWorld);
   fcam.position.copy(camera.position);fcam.quaternion.copy(camera.quaternion);
   if(fcam.fov!==camera.fov||fcam.aspect!==camera.aspect){fcam.fov=camera.fov;fcam.aspect=camera.aspect;fcam.updateProjectionMatrix();}
   renderer.render(far,fcam);
@@ -2402,13 +2421,13 @@ void main(){
  function reset(){
   if(active)renderer.toneMappingExposure=exposure;
   if(lights){const L=lights;key.intensity=L.key.i;key.position.copy(L.key.p);key.color.copy(L.key.c);hemi.intensity=L.hemi.i;hemi.color.copy(L.hemi.c);hemi.groundColor.copy(L.hemi.g);fill.intensity=L.fill;rim.intensity=L.rim;bounce.intensity=L.bounce;lights=null;}
-  if(caster.visible){caster.visible=false;if(shadowSaved){const c=key.shadow.camera;c.left=shadowSaved.left;c.right=shadowSaved.right;c.top=shadowSaved.top;c.bottom=shadowSaved.bottom;c.updateProjectionMatrix();shadowSaved=null;}}
+  caster.visible=false;if(shadowSaved){const c=key.shadow.camera;c.left=shadowSaved.left;c.right=shadowSaved.right;c.top=shadowSaved.top;c.bottom=shadowSaved.bottom;c.updateProjectionMatrix();shadowSaved=null;}
   omenT0=-1;omenSound=false;
   active=false;t0=0;from=null;VM.root.position.y=0;
-  const U=mat.uniforms;U.uTime.value=0;U.uReveal.value=0;U.uGaze.value.set(0,0);U.uPupil.value=1;U.uGlow.value=0;
+  if(model)model.setGaze(GAZE0,PUPIL_REST);
   const gauge=$('#fight .gauge');if(gauge){gauge.style.transition='';gauge.style.opacity='';}
  }
- return {prepare,begin,omen,update,draw,reset,DUR,get active(){return active;},get scene(){return far;},get camera(){return fcam;},get ready(){return artReady;},get eye(){return eye;}};
+ return {prepare,begin,omen,update,draw,reset,DUR,get active(){return active;},get scene(){return far;},get camera(){return fcam;},get ready(){return !!model;},get eye(){return eye;}};
 })();
 /* ===== 4-2. 운명의 수혜자들 =====
  * 大吉 보증서를 쥔 사람들(여섯 중 둘은 小吉·平, 별것 없는데도 똑같이 지킨다).
@@ -4529,10 +4548,9 @@ const BOOTGEO=(()=>{let G=null;return()=>G||(G=(()=>{
  return {body,sole};})());})();
 
 /* 팔이 몸통·머리를 뚫지 않게 밀어낸다(팔뼈 길이는 그대로 두고 회전만 바꾼다).
- * 매 프레임 애니메이션이 요구한 자세(어깨·팔꿈치·손목 위치)만 보고 밀어낼 양을 처음부터 다시 계산한다.
- * 지난 프레임의 결과를 다시 입력으로 쓰지 않으니 되먹임이 없고, 두 자세 사이를 매 프레임 오가며 떠는 일이 없다.
- * 배는 물렁하다고 치고 소매가 꽤 잠겨도 둔다(옥판을 쥔 기본 자세가 원래 배에 손을 얹은 자세다). 가슴은 조금만 봐주고,
- * 머리는 손사래 칠 때 손·소매가 얼굴을 뚫지 않게 띄운다. 밀어낸 양은 시간으로 부드럽게 따라간다(파고들 때는 빨리, 풀릴 때는 천천히).
+ * 이전 안전 자세에서 애니메이션 목표를 따라가며, 소매를 포함한 팔 길이 제약을 다시 푼다.
+ * 몸의 반대편으로 해가 바뀌지 않도록 이동량을 제한하고, 충돌 없는 경로만 허용한다.
+ * 팔뼈 중심이 아니라 소매 반지름까지 몸 밖에 둔다. 손도 손바닥 두께만큼 띄운다.
  * 손의 방향은 그대로 두되 손목이 소매 안쪽으로 꺾이지 않게만 막는다. */
 const ARM_CLEARANCE=(()=>{
  const DOWN=V3(0,-1,0),invChest=new THREE.Matrix4(),local=V3(),p=V3(),n=V3(),push=V3();
@@ -4540,11 +4558,11 @@ const ARM_CLEARANCE=(()=>{
  const qU=new THREE.Quaternion(),qL=new THREE.Quaternion(),qH=new THREE.Quaternion(),qD=new THREE.Quaternion(),qT=new THREE.Quaternion(),qU0=new THREE.Quaternion(),qL0=new THREE.Quaternion();
  // 표본점: 위팔은 중간부터 팔꿈치까지(어깨 쪽은 몸통에 묻히는 게 정상), 아래팔은 팔꿈치부터 손목까지, 손은 손목에서 손바닥·손끝까지
  const UP=[.5,.75,1],LOW=[0,.25,.5,.75,1],HAND=[.065,.135];
- // 허용 깊이: 표본점에서 잰 sdf(겉면 밖이 +)가 이 값보다 작으면 그만큼 밀어낸다. 음수면 그 깊이까지는 잠겨도 둔다
+ // 표면 밖 여유: 소매 반지름과 손바닥 두께. 몸 안에 잠기는 음수 여유를 쓰지 않는다.
  const colliders=[
-  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:-.15,low:-.12,hand:-.12}, // 배
-  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:-.1,low:-.07,hand:-.06},  // 가슴
-  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:0,low:-.02,hand:-.03}];   // 머리
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}, // 배
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}, // 가슴
+  {m:new THREE.Matrix4(),n:new THREE.Matrix3(),sdf:null,on:false,up:.108,low:.118,hand:.052}]; // 머리
  const head=(x,y,z)=>SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245);
  function obstacle(c,mesh,sdf,chest){
   c.on=false;if(!mesh||mesh.userData.detached)return;
@@ -4552,7 +4570,7 @@ const ARM_CLEARANCE=(()=>{
  }
  // 표본점 p가 허용 깊이보다 깊으면 겉면 법선 방향으로 밀 벡터를 push에 더한다
  function pushOut(c,thr,p){
-  local.copy(p).applyMatrix4(c.m);const d=c.sdf(local.x,local.y,local.z);if(d>=thr)return false;
+  local.copy(p).applyMatrix4(c.m);const d=c.sdf(local.x,local.y,local.z);if(d>=thr-.0002)return false;
   const x=local.x,y=local.y,z=local.z,h=.002;
   n.set(c.sdf(x+h,y,z)-c.sdf(x-h,y,z),c.sdf(x,y+h,z)-c.sdf(x,y-h,z),c.sdf(x,y,z+h)-c.sdf(x,y,z-h)).applyMatrix3(c.n);
   if(n.lengthSq()<1e-12)n.set(p.x<0?-1:1,0,1);n.normalize();
@@ -4565,28 +4583,52 @@ const ARM_CLEARANCE=(()=>{
  // E1·W1(가슴 좌표계)을 제자리에서 몇 번 되풀이해 밀어낸다. 밀 게 없으면 첫 바퀴에서 끝난다
  function relax(a){
   hd.copy(DOWN).applyQuaternion(qH);
-  for(let it=0;it<7;it++){
+  for(let it=0;it<24;it++){
    let moved=false;
-   for(const t of UP){p.lerpVectors(S,E1,t);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.up,p))hit=true;if(hit){moved=true;E1.addScaledVector(push,Math.min(2,1/t));}}
+   for(const t of UP){p.lerpVectors(S,E1,t);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.up*smooth((t-.25)/.75),p))hit=true;if(hit){moved=true;E1.addScaledVector(push,Math.min(2,1/t));}}
    for(const t of LOW){p.lerpVectors(E1,W1,t);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.low,p))hit=true;if(hit){moved=true;E1.addScaledVector(push,1-t);W1.addScaledVector(push,t);}}
    for(const k of HAND){p.copy(W1).addScaledVector(hd,k);push.set(0,0,0);let hit=false;for(const c of colliders)if(c.on&&pushOut(c,c.hand,p))hit=true;if(hit){moved=true;W1.add(push);}}
    if(!moved)break;
    lengths(a);
   }
  }
+ function outside(){
+  function clear(p,kind,t=1){for(const c of colliders)if(c.on){local.copy(p).applyMatrix4(c.m);const radius=c[kind]*(kind==='up'?smooth((t-.25)/.75):1);if(c.sdf(local.x,local.y,local.z)<radius-.001)return false;}return true;}
+  for(const t of UP)if(!clear(p.lerpVectors(S,E1,t),'up',t))return false;
+  for(const t of LOW)if(!clear(p.lerpVectors(E1,W1,t),'low'))return false;
+  hd.copy(DOWN).applyQuaternion(qH);for(const k of HAND)if(!clear(p.copy(W1).addScaledVector(hd,k),'hand'))return false;
+  return true;
+ }
+ const proposedE=V3(),proposedW=V3();
  function solve(a,dt){
   if(a.sh.userData.detached||a.el.userData.detached||a.wr.userData.detached)return;
   S.copy(a.sh.position);a.el.getWorldPosition(E0).applyMatrix4(invChest);a.wr.getWorldPosition(W0).applyMatrix4(invChest);
   qU0.copy(a.sh.quaternion);qL0.copy(a.el.quaternion);qH.copy(qU0).multiply(qL0).multiply(a.wr.quaternion);
-  E1.copy(E0);W1.copy(W0);relax(a);
-  // 이번 프레임에 밀어야 할 양. 파고들 때(밀 양이 커질 때)는 빨리 따라가고, 풀릴 때는 천천히 돌아온다.
-  // 한 프레임에 옮기는 양은 초속 1.8m까지로 잘라, 갑자기 깊이 박혀도 팔이 한 번에 튀지 않게 한다
-  cE.subVectors(E1,E0);cW.subVectors(W1,W0);
-  if(!a.clearE){a.clearE=V3();a.clearW=V3();}
-  const k=1-Math.exp(-(cE.lengthSq()+cW.lengthSq()>a.clearE.lengthSq()+a.clearW.lengthSq()?30:10)*Math.max(0,dt)),cap=1.8*Math.max(0,dt);
-  a.clearE.add(d0.subVectors(cE,a.clearE).multiplyScalar(k).clampLength(0,cap));a.clearW.add(d0.subVectors(cW,a.clearW).multiplyScalar(k).clampLength(0,cap));
-  if(a.clearE.lengthSq()+a.clearW.lengthSq()<1e-10){a.clearE.set(0,0,0);a.clearW.set(0,0,0);E1.copy(E0);W1.copy(W0);}
-  else{E1.copy(E0).add(a.clearE);W1.copy(W0).add(a.clearW);lengths(a);}
+  if(a.safeH)qH.slerpQuaternions(a.safeH,qH,1-Math.exp(-12*Math.max(0,dt)));
+  // 이전의 안전한 팔 경로에서 목표를 따라간다. 매번 배 한가운데서 다시 풀면
+  // 작은 자세 변화에도 팔꿈치가 몸의 반대편 해로 튀는 문제가 생긴다.
+  if(a.safeE){
+   if(E0.distanceToSquared(a.safeE)+W0.distanceToSquared(a.safeW)<1e-14)return;
+   const cap=1.8*Math.max(0,dt),k=1-Math.exp(-8*Math.max(0,dt));
+   E1.copy(a.safeE).add(d0.subVectors(E0,a.baseE).clampLength(0,cap)).lerp(E0,k);
+   W1.copy(a.safeW).add(d0.subVectors(W0,a.baseW).clampLength(0,cap)).lerp(W0,k);
+   lengths(a);
+  }else{E1.copy(E0);W1.copy(W0);}
+  relax(a);
+  if(a.safeE){
+   const distance=Math.max(E1.distanceTo(a.safeE),W1.distanceTo(a.safeW)),limit=1.35*Math.max(0,dt);
+   if(distance>limit){
+    proposedE.copy(E1);proposedW.copy(W1);
+    E1.lerpVectors(a.safeE,proposedE,limit/distance);W1.lerpVectors(a.safeW,proposedW,limit/distance);lengths(a);
+    if(!outside()){
+     E1.copy(a.safeE);W1.copy(a.safeW);
+     // A moving torso can invalidate the old position; in that case escape the collision immediately.
+     if(!outside()){E1.copy(proposedE);W1.copy(proposedW);}
+    }
+   }
+  }
+  if(!a.safeE){a.safeE=V3();a.safeW=V3();a.baseE=V3();a.baseW=V3();}
+  a.safeE.copy(E1);a.safeW.copy(W1);a.baseE.copy(E0);a.baseW.copy(W0);
   // 원래 회전에 '방향이 바뀐 만큼'만 얹는다(소매의 비틀림은 그대로)
   d0.subVectors(E0,S).normalize();d1.subVectors(E1,S).normalize();qD.setFromUnitVectors(d0,d1);qU.copy(qD).multiply(qU0);
   d0.subVectors(W0,E0).normalize();d1.subVectors(W1,E1).normalize();qD.setFromUnitVectors(d0,d1);
@@ -4596,6 +4638,7 @@ const ARM_CLEARANCE=(()=>{
   hd.copy(DOWN).applyQuaternion(qH);fd.subVectors(W1,E1).normalize();
   const ang=Math.acos(Math.max(-1,Math.min(1,hd.dot(fd))));
   if(ang>.85){ax.crossVectors(hd,fd);if(ax.lengthSq()<1e-8)ax.set(0,0,a.s);ax.normalize();qT.setFromAxisAngle(ax,ang-.85);qH.premultiply(qT);}
+  if(!a.safeH)a.safeH=new THREE.Quaternion();a.safeH.copy(qH);
   a.wr.quaternion.copy(qT.copy(qU).multiply(qL).invert().multiply(qH));
   a.sh.updateWorldMatrix(true,true);
  }
@@ -4766,7 +4809,7 @@ class Emperor{
   for(const s of [-1,1]){
    const nm=s<0?'L':'R';
    // 위팔·아래팔은 가운데에 뼈를 하나 더 둔다(그은 자리 가까이에서 잘리게)
-   const sh=this.bone('shoulder'+nm,this.bones.chest,[s*.265,.19,-.01]);
+   const sh=this.bone('shoulder'+nm,this.bones.chest,[s*.265,.19,.1]);
    const BG=BODYGEO.build(),ap='arm'+nm,ax=(a,b)=>({axisA:V3(0,a,0),axisB:V3(0,b,0)});
    this.addFlesh(BG.shoulder.clone(),M.robe,sh,Object.assign({part:ap,center:V3(0,-.05,0),maxFrac:.4,maxAbs:.06}));
    const um=this.bone('uarmMid'+nm,sh,[0,-.118,0]);
@@ -5588,9 +5631,9 @@ doAct(name,o={}){
   }
   // 홀을 들고 있으면 두 손으로 받친다
   if(this.tabletHeld){
-   // 옥좌에 앉아 있을 때는 무릎 위에, 서 있을 때는 가슴 앞에 든다
+   // 배 위쪽의 앞 공간에서 받친다. 팔꿈치는 옆·앞으로 돌아 소매 두께까지 몸 밖에 둔다.
    const bob=Math.sin(time*1.4)*.006,seated=!!(this.combat&&this.combat.mode==='seat');
-   for(const s of [-1,1])this.setIK(s<0?'L':'R',{target:_bv1.set(s*(seated?.05:.034),(seated?.83:.93)+bob,seated?.35:.47),fd:_bv2.set(0,seated?.35:.15,1),pd:_bv3.set(-s,0,0),curl:.62,rate:10});
+   for(const s of [-1,1])this.setIK(s<0?'L':'R',{target:_bv1.set(s*.075,(seated?.93:1.04)+bob,seated?.36:.43),fd:_bv2.set(-s*.65,.25,1),pd:_bv3.set(-s,0,-.4),curl:.62,rate:10,pole:_bv4.set(s*.38,-.08,.3)});
   }
   // 막기: 주먹을 얼굴 앞으로
   this.guardCool=Math.max(0,this.guardCool-dt);this.guardHold=Math.max(0,this.guardHold-dt);
@@ -8208,8 +8251,8 @@ const PROGRESS=(()=>{
 function updateDefeatCount(){
  // 첫 전투에서는 최종 처치 직후에도 카운트를 숨겨 뒤의 존재를 미리 암시하지 않는다.
  $('#defeatCount').hidden=!G.defeatCountVisible;
- $('#defeatCount').textContent='처치 '+PROGRESS.defeated+'명';
- $('#endDefeatCount').textContent='처치한 천지신명 '+PROGRESS.defeated+'명';
+ $('#endDefeatCount').hidden=!G.defeatCountVisible;
+ $('#defeatCount').textContent=$('#endDefeatCount').textContent='족친 천지신명 '+PROGRESS.defeated+'명';
 }
 const OUTFITS=[
  {cloth:['#38191f','#78313a','#411c24'],shirt:'#788281',placket:'#8b9290',stole:'#292d2b',pants:'#343b3d',inside:'#211b20',gold:'#b99552',goldD:'#765631',gem:'#8a5ae0'},
@@ -8323,7 +8366,7 @@ function combatPose(E,out,dt,time){
  }
  if(b.mode==='seat'){
   // 옥좌에 거만하게 앉아 두 손으로 홀(운명판)을 받쳐 든다(손은 아래 updateActions의 IK가 홀 자리로 끌어다 놓는다)
-  poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.cF=-.12;T.RsF=.1;T.RsA=.7;T.LeB=.8;T.Lcurl=.5;T.Rcurl=.5;
+  poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.pF=0;T.sF=-.08;T.cF=0;T.RsF=.1;T.RsA=.7;T.LeB=.8;T.Lcurl=.5;T.Rcurl=.5;
   E.updateActions(T,dt,time);
   // 홀을 들고 있지 않으면(순응 화면에서 넘어온 경우) 두 손을 팔걸이 위에 얹는다
   if(!E.tabletHeld&&!E.act)for(const s of [-1,1])E.setIK(s<0?'L':'R',{target:_bv1.set(s*.56,.8,-.1),fd:_bv2.set(0,-.1,1),pd:_bv3.set(0,-1,0),curl:.3,rate:8});
@@ -9188,9 +9231,7 @@ const TROPHIES=(()=>{
   let seed=7419;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   for(let i=0;i<12500;i++){g.fillStyle=i%2?'rgba(70,49,27,.045)':'rgba(255,251,222,.16)';g.fillRect(random()*1080,random()*1350,1+random()*3,1);}
   g.strokeStyle='rgba(76,52,29,.35)';g.lineWidth=2;g.strokeRect(28,28,1024,1294);g.strokeStyle='rgba(76,52,29,.14)';g.strokeRect(38,38,1004,1274);
-  g.textAlign='center';g.fillStyle='#62503b';g.font='700 28px "Gowun Batang",serif';g.fillText('사 주 도 사',540,110);
-  g.strokeStyle='#9e2d22';g.lineWidth=3;g.beginPath();g.moveTo(468,134);g.lineTo(612,134);g.stroke();
-  g.save();g.translate(540,270);g.rotate(-.025);g.fillStyle='#251d16';g.font='900 122px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText('운명좁밥ㅋ',0,0);g.restore();
+  g.textAlign='center';g.fillStyle='#251d16';g.font='76px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText('족친 천지신명',540,205);
   g.fillStyle='rgba(133,42,29,.065)';g.beginPath();g.arc(540,690,335,0,TAU);g.fill();
   const ground=g.createRadialGradient(540,1002,15,540,1002,465);ground.addColorStop(0,'rgba(48,32,17,.35)');ground.addColorStop(1,'rgba(48,32,17,0)');g.save();g.translate(0,795);g.scale(1,.22);g.fillStyle=ground;g.fillRect(40,400,1000,1200);g.restore();
   for(const h of layout.heads){
@@ -9200,11 +9241,9 @@ const TROPHIES=(()=>{
    g.drawImage(heads[h.ordinal%heads.length],-h.size/2,-h.size/2,h.size,h.size);g.restore();
   }
   g.strokeStyle='rgba(83,54,29,.3)';g.lineWidth=1;g.beginPath();g.moveTo(130,1085);g.lineTo(950,1085);g.stroke();
-  g.fillStyle='#5d4833';g.font='700 31px "IBM Plex Sans KR",sans-serif';g.fillText('처치한 천지신명',540,1141);
-  g.save();g.translate(540,1230);g.rotate(-.035);g.fillStyle='#a43225';g.font='84px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText(layout.count.toLocaleString('ko-KR')+'명',0,0);g.restore();
+  g.save();g.translate(540,1205);g.rotate(-.035);g.fillStyle='#a43225';g.font='96px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText(layout.count.toLocaleString('ko-KR')+'명',0,0);g.restore();
   g.fillStyle='#6e5841';g.font='20px "IBM Plex Sans KR",sans-serif';
   if(layout.pages>1)g.fillText((layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages,540,1270);
-  g.font='18px sans-serif';g.fillText('aaffffffffff123-lang.github.io/sajudosa',540,1304);
   return c;
  }
  function release(){if(url)URL.revokeObjectURL(url);url='';blob=null;img.removeAttribute('src');save.removeAttribute('href');}
@@ -9221,8 +9260,8 @@ const TROPHIES=(()=>{
    const canvas=drawCard(layout);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
    if(!opened||ticket!==serial)return;
    blob=result;url=URL.createObjectURL(blob);img.src=url;img.hidden=false;
-   img.alt='운명좁밥ㅋ. 처치한 천지신명 '+total+'명. 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
-   save.href=url;save.download='운명좁밥_'+total+'명'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;share.disabled=false;status.textContent='';
+   img.alt='족친 천지신명 '+total+'명. 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
+   save.href=url;save.download='족친천지신명_'+total+'명'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;share.disabled=false;status.textContent='';
   }catch(error){if(opened&&ticket===serial){status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Trophy image failed',error);}}
  }
  function open(){
@@ -9241,7 +9280,7 @@ const TROPHIES=(()=>{
   let canShare=false;try{canShare=!!(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]}));}catch(_){}
   if(!canShare){save.click();status.textContent='저장한 이미지를 공유해 주세요.';return;}
   sharing=true;share.disabled=true;
-  try{await navigator.share({files:[file],title:'운명좁밥ㅋ',text:'천지신명 '+total+'명 족침.\nhttps://aaffffffffff123-lang.github.io/sajudosa/'});}
+  try{await navigator.share({files:[file],title:'족친 천지신명',text:'족친 천지신명 '+total+'명\nhttps://aaffffffffff123-lang.github.io/sajudosa/'});}
   catch(error){if(error.name!=='AbortError'&&opened&&ticket===serial)status.textContent='공유가 열리지 않았어요. 이미지 저장을 눌러 주세요.';}
   finally{sharing=false;if(opened&&ticket===serial)share.disabled=false;}
  }

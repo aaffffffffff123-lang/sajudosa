@@ -10,7 +10,7 @@ const bone=(parent,p)=>{const b=new THREE.Group();b.position.set(...p);parent.ad
 function rig(){
  const root=new THREE.Group(),pelvis=bone(root,[0,.62,0]),spine=bone(pelvis,[0,.06,0]),chest=bone(spine,[0,.24,-.01]),neck=bone(chest,[0,.265,0]),head=bone(neck,[0,.06,.03]),face=bone(head,[0,.215,0]);
  const belly=bone(spine,[0,0,0]),chestMesh=bone(chest,[0,0,0]);const E={root,bones:{pelvis,spine,chest,neck,head},belly,chestMesh,face,arms:[]};
- for(const s of [-1,1]){const sh=bone(chest,[s*.265,.19,-.01]),um=bone(sh,[0,-.118,0]),el=bone(um,[0,-.117,0]),fm=bone(el,[0,-.108,0]),wr=bone(fm,[0,-.107,0]);E.arms.push({s,nm:s<0?'L':'R',sh,um,el,fm,wr,L1:.235,L2:.215});}return E;
+ for(const s of [-1,1]){const sh=bone(chest,[s*.265,.19,.1]),um=bone(sh,[0,-.118,0]),el=bone(um,[0,-.117,0]),fm=bone(el,[0,-.108,0]),wr=bone(fm,[0,-.107,0]);E.arms.push({s,nm:s<0?'L':'R',sh,um,el,fm,wr,L1:.235,L2:.215});}return E;
 }
 function penetration(E,a){
  const ci=new THREE.Matrix4().copy(E.bones.chest.matrixWorld).invert(),S=a.sh.position.clone(),e=a.el.getWorldPosition(V3()).applyMatrix4(ci),w=a.wr.getWorldPosition(V3()).applyMatrix4(ci);
@@ -33,7 +33,7 @@ for(let i=0;i<240;i++){
 console.log('Sweep',JSON.stringify({maxDepth,worst,failures,ms:performance.now()-sweepStart}));
 const moving=rig();let last=null,maxStep=0,stepAt=0,movingDepth=0;
 for(let i=0;i<360;i++){
- const t=i/359;for(const a of moving.arms){a.sh.rotation.set(-(.8+1.0*Math.sin(t*5)),0,a.s*(.4+.35*Math.sin(t*7)));a.el.rotation.x=-(.85+.7*Math.sin(t*6));}
+ const t=i/359;for(const a of moving.arms){a.sh.rotation.set(-(.8+1.0*Math.sin(t*5)),0,a.s*(.4+.35*Math.sin(t*7)));a.el.rotation.x=-(.85+.7*Math.sin(t*6));a.wr.rotation.set(0,0,0);}
  moving.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(moving);moving.root.updateMatrixWorld(true);const p=moving.arms.map(a=>a.wr.getWorldPosition(V3()));moving.arms.forEach(a=>movingDepth=Math.max(movingDepth,penetration(moving,a).deepest));
  if(last)p.forEach((v,j)=>{const step=v.distanceTo(last[j]);if(step>maxStep){maxStep=step;stepAt=i;}});last=p;
 }
@@ -73,14 +73,38 @@ for(let i=0;i<150;i++){
 assert(ikStep<.08,'changing IK actions must interpolate their targets');console.log('IK target/pole regression passed',ikStep);
 // Re-run an identical base pose: no random elbow choice or left/right shared state.
 const E=rig();for(const a of E.arms){a.sh.rotation.set(-1,0,a.s*.18);a.el.rotation.x=-1.45;}E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E);const once=E.arms.map(a=>a.wr.getWorldPosition(V3()));api.ARM_CLEARANCE.apply(E);E.arms.forEach((a,i)=>assert(a.wr.getWorldPosition(V3()).distanceTo(once[i])<1e-6));
+// Exercise the actual seated tablet targets against the full sleeve surfaces.
+const tabletAction=vm.runInNewContext('({'+slice(' updateActions(out,dt,time){','  // 막기:')+'}})',{...context,G:{mode:'fight'},_bv1:V3(),_bv2:V3(),_bv3:V3(),_bv4:V3()}).updateActions;
+const throne=vm.runInNewContext('('+source.match(/throne:P\((\{[^\n]+?\})\),/)[1]+')');
+const T={...throne};vm.runInNewContext(slice('poseCopy(POSES.throne,T);','  E.updateActions(T,dt,time);'),{T,POSES:{throne},poseCopy:(a,b)=>Object.assign(b,a)});
+let openingDepth=0;
+for(const fps of [30,60,120]){
+ const seated=rig();Object.assign(seated,ikMethods);seated.tabletHeld=true;seated.combat={mode:'seat'};seated._ikFrame=0;seated._ikUse={L:0,R:0};seated.ik={};
+ seated.bones.pelvis.position.y=.62+T.py;seated.bones.pelvis.rotation.x=T.pF;seated.bones.spine.rotation.x=T.sF;seated.bones.chest.rotation.x=T.cF;seated.bones.neck.rotation.x=T.nF;seated.bones.head.rotation.x=T.hF;
+ for(const a of seated.arms)seated.ik[a.nm]={w:1,goal:1,target:V3(),fd:V3(),pd:V3()};
+ for(let frame=0;frame<fps*2;frame++){
+  tabletAction.call(seated,T,1/fps,frame/fps);
+  for(const a of seated.arms){a.sh.rotation.set(-T[a.nm+'sF'],0,a.s*T[a.nm+'sA']);a.el.rotation.x=-T[a.nm+'eB'];a.wr.rotation.set(0,0,0);}
+  seated.root.updateMatrixWorld(true);for(const a of seated.arms)seated.solveArm(a,seated.ik[a.nm],1/fps);seated.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(seated,1/fps);seated.root.updateMatrixWorld(true);
+  const geometry=api.BODYGEO.build();
+  for(const a of seated.arms)for(const [joint,key] of [[a.el,'elbow'],[a.fm,'farm']]){
+   const v=geometry[key].attributes.position;
+   for(const [body,sdf] of [[seated.belly,api.BODYGEO.belly],[seated.chestMesh,api.BODYGEO.chest]]){
+    const matrix=body.matrixWorld.clone().invert().multiply(joint.matrixWorld);
+    for(let i=0;i<v.count;i+=11){const q=V3().fromBufferAttribute(v,i).applyMatrix4(matrix);openingDepth=Math.max(openingDepth,-sdf(q.x,q.y,q.z));}
+   }
+  }
+ }
+}
+assert(openingDepth<.005,'the opening tablet pose keeps the actual sleeve mesh outside the belly and chest');
+console.log('Opening sleeve mesh clearance:',openingDepth);
 // The eye must move once, stop exactly at contact, then dilate monotonically.
 for(const fps of [30,60,120]){
  let calls=0;const mat={uniforms:{uGaze:{value:new THREE.Vector2()},uPupil:{value:0},uGlow:{value:0}}};
- const eyeApi=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{...context,mat,AUDIO:{gaze(){calls++}},caster:{visible:false},applyLights(){}});
- let y=-.022,p=.86;
- for(let i=0;i<=20*fps;i++){eyeApi.updateEye(i/fps,1/fps);const e=eyeApi.eye;assert(e.gaze.y>=y-1e-12&&e.gaze.y<=1e-12);assert(e.gaze.x===0);assert(e.pupil>=p-1e-12);if(i/fps<eyeApi.T_DILATE)assert(e.pupil===.86);if(i/fps>eyeApi.T_SEE+eyeApi.T_SHIFT)assert(e.gaze.length()===0);y=e.gaze.y;p=e.pupil;}
- assert.equal(calls,1);assert.equal(eyeApi.eye.pupil,1);
+ const eyeApi=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{...context,mat,AUDIO:{gaze(){calls++}},model:{setGaze(){}},caster:{visible:false},applyLights(){}});
+ let y=-.16,p=.13;
+ for(let i=0;i<=20*fps;i++){eyeApi.updateEye(i/fps,1/fps);const e=eyeApi.eye;assert(e.gaze.y>=y-1e-12&&e.gaze.y<=1e-12);assert(e.gaze.x===0);assert(e.pupil>=p-1e-12);if(i/fps<eyeApi.T_DILATE)assert(e.pupil===.13);if(i/fps>eyeApi.T_SEE+eyeApi.T_SHIFT)assert(e.gaze.length()===0);y=e.gaze.y;p=e.pupil;}
+ assert.equal(calls,1);assert.equal(eyeApi.eye.pupil,.34);
 }
 console.log('Eye: 30/60/120 fps monotonic gaze, fixed contact, delayed dilation passed');
 if(failures)process.exitCode=1;
-

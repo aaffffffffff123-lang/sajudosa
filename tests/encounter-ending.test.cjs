@@ -50,22 +50,23 @@ test('locked, paused, and non-combat inputs cannot start fist, knife, gun, or sl
   Object.assign(G,state);assert.equal(api.attack('jab',100,100),false);assert.equal(api.attack('stab',100,100),false);assert.equal(api.fire(100,100),false);assert.equal(api.slashStart(100,100),false);
  }
 });
-test('eye moves once, settles before dilation, and holds the original image without pulsing',()=>{
+test('eye moves once, settles before dilation, and holds 3D eye contact without pulsing',()=>{
  const THREE=require('../three.min.js'),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
  const lerp=(a,b,t)=>a+(b-a)*t,smoother=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10)};
  for(const fps of [30,60,120]){
   let calls=0;const mat={uniforms:{uGaze:{value:new THREE.Vector2()},uPupil:{value:0},uGlow:{value:0}}};
-  const api=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{THREE,clamp,lerp,smoother,mat,AUDIO:{gaze(){calls++}},caster:{visible:false},applyLights(){}});
-  let y=-.022,p=.86;
+  const api=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{THREE,clamp,lerp,smoother,mat,AUDIO:{gaze(){calls++}},model:{setGaze(){}},caster:{visible:false},applyLights(){}});
+  let y=-.16,p=.13;
   for(let frame=0;frame<20*fps;frame++){
    const t=frame/fps;api.updateEye(t,1/fps);const eye=api.eye;
    assert(eye.gaze.y>=y-1e-12&&eye.gaze.y<=0);assert.equal(eye.gaze.x,0);assert(eye.pupil>=p-1e-12);
    if(t<api.T_SEE+api.T_SHIFT)assert.equal(calls,0);
-   if(t<api.T_DILATE)assert.equal(eye.pupil,.86);
+   if(t<api.T_DILATE)assert.equal(eye.pupil,.13);
    if(t>=api.T_SEE+api.T_SHIFT)assert.equal(eye.gaze.length(),0);
-   if(t>10){assert.equal(eye.pupil,1);assert.equal(eye.lock,1)}
+   if(t>10){assert.equal(eye.pupil,.34);assert.equal(eye.lock,1)}
    assert.equal(mat.uniforms.uGlow.value,0);y=eye.gaze.y;p=eye.pupil;
   }
   assert.equal(calls,1);
  }
 });
+

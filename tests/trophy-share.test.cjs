@@ -2,11 +2,11 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const source=fs.readFileSync(path.join(__dirname,'../fight.js'),'utf8');
 const code=source.slice(source.indexOf('function trophyLayout('),source.indexOf('// 끝: 누적 처치 수'));
 function setup(count=7){
- const elements=new Map(),calls={draws:[],images:0,revoked:[],download:0,holds:[]};
+ const elements=new Map(),calls={draws:[],texts:[],images:0,revoked:[],download:0,holds:[]};
  class Element{constructor(id){this.id=id;this.hidden=false;this.disabled=false;this.listeners={};this.isConnected=true;this.textContent='';this.attrs={};}addEventListener(k,f){this.listeners[k]=f}click(){if(this.id==='#trophySave')calls.download++;return this.listeners.click?.({target:this})}focus(){document.activeElement=this}removeAttribute(k){delete this[k]}getClientRects(){return this.hidden?[]:[{}]}querySelectorAll(){return [...elements.values()]}}
  const $=id=>{if(!elements.has(id))elements.set(id,new Element(id));return elements.get(id)};
  $('#trophyModal').hidden=true;$('#again').hidden=false;
- const ctx=new Proxy({drawImage(...args){calls.draws.push(args)},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}}},{get(t,p){return p in t?t[p]:()=>{}},set(t,p,v){t[p]=v;return true}});
+ const ctx=new Proxy({fillText(text){calls.texts.push(text)},drawImage(...args){calls.draws.push(args)},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}}},{get(t,p){return p in t?t[p]:()=>{}},set(t,p,v){t[p]=v;return true}});
  const document={activeElement:$('#trophyBtn'),createElement(){return {width:0,height:0,getContext:()=>ctx,toBlob(cb){queueMicrotask(()=>cb(new Blob(['PNG'],{type:'image/png'})))}}}};
  class Image{set src(value){calls.images++;this.url=value;queueMicrotask(()=>calls.failImages?this.onerror():this.onload())}}
  const G={paused:false,ended:true},PROGRESS={defeated:count};let urlId=0;
@@ -29,7 +29,7 @@ test('sharing stays unavailable before the completed reveal and before a final k
  h.G.ended=true;h.PROGRESS.defeated=0;await h.open();assert(h.$('#trophyModal').hidden);
 });
 test('the card contains the exact count; close releases its blob and restores focus/pause',async()=>{
- const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.equal(h.calls.images,6);assert(h.G.paused);assert(!h.$('#trophyShare').disabled);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'운명좁밥_7명.png');
+ const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.deepEqual(h.calls.texts,['족친 천지신명','7명']);assert.equal(h.calls.images,6);assert(h.G.paused);assert(!h.$('#trophyShare').disabled);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'족친천지신명_7명.png');
  h.$('#trophyClose').click();assert(!h.G.paused);assert(h.$('#trophyModal').hidden);assert.deepEqual(h.calls.revoked,['blob:1']);assert.equal(h.document.activeElement,h.$('#trophyBtn'));
  await h.open();assert.equal(h.calls.images,6,'reuse the six decoded portraits');h.TROPHIES.close(false);
 });
