@@ -3072,19 +3072,35 @@ const SUBMISSION=(()=>{
  mk(new THREE.BoxGeometry(.296,.4,.004),stock,paper,{cast:false,receive:false});
  const front=new THREE.MeshBasicMaterial({toneMapped:false});
  mk(new THREE.PlaneGeometry(.288,.392),front,paper,{p:[0,0,.003],cast:false,receive:false});
- const skin=STD('#dca380',{roughness:.72}),crease=STD('#b87556',{roughness:.8}),sleeve=STD('#263d52',{roughness:.94});
+ const skin=STD('#dca380',{roughness:.78}),nail=STD('#e5baa0',{roughness:.65}),sleeve=STD('#263d52',{roughness:.94}),cuff=STD('#203448',{roughness:.96});
+ // A continuous wrist/palm silhouette. Local +x is the outside of each hand;
+ // +z faces the reader. The sheet stays between the thumb and all four fingers.
+ function handLoft(parent,mat,rings){
+  const pos=[],idx=[],n=16;
+  rings.forEach(([x,y,z,rx,rz])=>{for(let j=0;j<n;j++){const a=j/n*TAU;pos.push(x+Math.cos(a)*rx,y,z+Math.sin(a)*rz);}});
+  for(let i=0;i<rings.length-1;i++)for(let j=0;j<n;j++){const a=i*n+j,b=i*n+(j+1)%n,c=a+n,d=b+n;idx.push(a,c,b,b,c,d);}
+  for(let j=1;j<n-1;j++){idx.push(0,j,j+1);const a=(rings.length-1)*n;idx.push(a,a+j+1,a+j);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(idx);geo.computeVertexNormals();
+  return mk(geo,mat,parent,{cast:false,receive:false});
+ }
  for(const side of [-1,1]){
-  const hand=grp(hands,[side*.143,-.12,0]);hand.rotation.z=side*.12;
-  mk(capsuleGeo(.024,.17,10),sleeve,hand,{p:[side*.024,-.14,-.009],r:[0,0,side*.14],cast:false,receive:false});
-  mk(sphereGeo(12),skin,hand,{p:[side*.006,-.026,-.006],s:[.026,.046,.018],cast:false,receive:false});
-  // Four curled fingers sit behind the edge; the thumb presses visibly on the paper.
+  const hand=grp(hands,[side*.148,-.12,0],side<0?'fortune-left-hand':'fortune-right-hand');
+  hand.scale.x=side;
+  handLoft(hand,sleeve,[[.071,-.28,-.035,.031,.026],[.052,-.19,-.028,.028,.023],[.035,-.10,-.021,.023,.019],[.031,-.077,-.019,.022,.018]]);
+  handLoft(hand,cuff,[[.032,-.086,-.019,.023,.019],[.030,-.074,-.018,.022,.018]]);
+  handLoft(hand,skin,[[.031,-.082,-.019,.017,.013],[.027,-.060,-.018,.017,.013],[.020,-.040,-.017,.023,.016],[.018,-.020,-.017,.025,.016],[.017,-.002,-.018,.022,.014],[.014,.010,-.019,.014,.010],[.012,.015,-.019,.003,.003]]);
+  // The curled fingertips press on the back, never poke through the front.
   for(let j=0;j<4;j++){
-   const f=grp(hand,[side*.009,.006-j*.015,-.006]);
-   mk(capsuleGeo(.007,.024,8),skin,f,{p:[0,0,0],r:[0,0,side*1.3],cast:false,receive:false});
-   mk(sphereGeo(8),skin,f,{p:[-side*.01,.003,.008],s:[.008,.008,.008],cast:false,receive:false});
+   const y=.005-j*.013,r=.0068-j*.00045;
+   mk(taperTube([[.019,y,-.023],[.006,y+.003,-.019],[-.010,y+.003,-.015],[-.016,y-.002,-.012]],r,r*.85,10,8),skin,hand,{cast:false,receive:false});
+   mk(sphereGeo(10),skin,hand,{p:[-.016,y-.002,-.012],s:[r*.85,r*.85,.007],cast:false,receive:false});
   }
-  mk(capsuleGeo(.011,.032,10),skin,hand,{p:[-side*.019,.014,.018],r:[0,0,-side*.55],cast:false,receive:false});
-  mk(sphereGeo(8),crease,hand,{p:[-side*.026,.027,.027],s:[.006,.009,.001],cast:false,receive:false});
+  // A short, opposed thumb grows out of the palm and lies diagonally on the sheet.
+  mk(sphereGeo(16),skin,hand,{p:[.015,-.031,-.001],s:[.016,.021,.016],r:[0,0,-.35],cast:false,receive:false});
+  mk(taperTube([[.016,-.034,.002],[.006,-.024,.013],[-.004,-.011,.014],[-.011,.001,.012]],.012,.009,16,12),skin,hand,{cast:false,receive:false});
+  mk(sphereGeo(16),skin,hand,{p:[-.011,.001,.012],s:[.009,.011,.009],r:[0,0,.45],cast:false,receive:false});
+  mk(sphereGeo(12),nail,hand,{p:[-.0105,.002,.0206],s:[.0053,.007,.0011],r:[0,0,.45],cast:false,receive:false});
+  hand.updateMatrixWorld(true);mergeChildren(hand);
  }
  let crowd=null,texture=null,next=0,line=0;
  const clean=t=>String(t||'').replace(/\*\*/g,'').replace(/<[^>]*>/g,'').trim();
