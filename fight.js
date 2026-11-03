@@ -33,7 +33,6 @@ const FIGHT_CSS = `
 #fight #sblood{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 #fight #flash{position:absolute;inset:0;pointer-events:none;background:#fff;opacity:0;z-index:3}
 #fight #omenShade{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;background:linear-gradient(165deg,rgba(4,12,20,.92) 10%,rgba(4,12,20,.25) 75%)}
-#fight #fastStory{position:absolute;right:14px;top:calc(64px + var(--safe-t));z-index:8;font-size:12px;padding:10px 12px;min-height:44px}
 #fight #fxtext{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
 /* 타격 효과음 글자: 먹글씨(먹색 채움 + 흰 테 + 색깔 그림자). 한 글자씩 흔들리며 '쾅' 박혔다가 조각조각 흩어진다 */
 #fight .pop{position:absolute;left:0;top:0;line-height:1;white-space:nowrap;letter-spacing:-.01em;
@@ -234,7 +233,6 @@ const FIGHT_HTML = `<section id="fight" hidden>
  <canvas id="sblood"></canvas>
  <div id="flash"></div>
  <div id="omenShade" aria-hidden="true"></div>
- <button class="pill" id="fastStory" type="button" aria-pressed="false" hidden>연출 빨리 보기</button>
  <div id="fxtext" aria-hidden="true"></div>
  <canvas id="speech" aria-hidden="true"></canvas>
  <div id="talkLive" class="sr" aria-live="polite"></div>
@@ -1383,8 +1381,8 @@ const AUDIO=(()=>{
   if(!on||volumes.voice===0)return null;
   if(tts)tts.stop();
   const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
-  let busy=true,started=false,source=null,native=false;
-  const finish=()=>{busy=false;if(source){source.disconnect();source=null;}if(tts===handle)tts=null;};
+  let busy=true,started=false,source=null,voiceGain=null,native=false;
+  const finish=()=>{busy=false;if(source){source.disconnect();source=null;}if(voiceGain){voiceGain.disconnect();voiceGain=null;}if(tts===handle)tts=null;};
   const handle={get busy(){return busy;},get started(){return started;},stop(){
    if(!busy)return;try{if(source)source.stop();if(native&&synth)synth.cancel();}catch(_){}finish();
   }};
@@ -1402,7 +1400,13 @@ const AUDIO=(()=>{
   const play=buffer=>{
    if(!busy||!on)return;
    if(!buffer){fallback();return;}
-   try{source=ctx.createBufferSource();source.buffer=buffer;source.connect(vbus);source.onended=finish;source.start();started=true;}catch(_){finish();}
+   try{
+    source=ctx.createBufferSource();source.buffer=buffer;
+    // 엔딩의 내 한마디만 약 +8 dB. 음성 설정과 기존 출력 리미터를 그대로 거친다.
+    if(text==='뭘 꼬라봐 씨발아'){voiceGain=ctx.createGain();voiceGain.gain.value=2.5;source.connect(voiceGain);voiceGain.connect(vbus);}
+    else source.connect(vbus);
+    source.onended=finish;source.start();started=true;
+   }catch(_){finish();}
   };
   tts=handle;
   if(text==='암백'&&ctx){if(backBuffer)play(backBuffer);else loadBackVoice().then(play);}
@@ -2587,7 +2591,7 @@ const BUB=(()=>{
  function say(anchor,text,dur,o={}){
   const V=o.voice||VOICE.crowd[0],ts=typeSteps(text,V.speed),n=Array.from(String(text).replace(/\s/g,'')).length,rd=o.read||[.9,.04];
   const need=Math.max(1.5,ts.total+rd[0]+rd[1]*n);
-  const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,size:o.size||1,voice:G.fastStory&&replaySceneActive()?null:o.tts?AUDIO.tts(o.tts):AUDIO.speak(text,V,{gain:o.gain})};
+  const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,size:o.size||1,voice:o.tts?AUDIO.tts(o.tts):AUDIO.speak(text,V,{gain:o.gain})};
   live.push(b);
   const sr=$('#talkLive');if(sr)sr.textContent=text;
   return b;
@@ -9643,16 +9647,6 @@ function setTool(t){
 $$('#tools .tool').forEach(b=>b.addEventListener('click',()=>{if(G.paused||G.inputLocked)return;AUDIO.unlock();setTool(b.dataset.tool);}));
 
 /* ---- 설정 ---- */
-function replaySceneActive(){
- return G.defeatCountVisible&&G.mode==='fight'&&!G.opening&&!G.retorting&&G.inputLocked&&$('#again').hidden&&!!(G.crowdBeatUntil||G.revival||G.beyondAt||BEYOND.active);
-}
-$('#fastStory').addEventListener('click',()=>{
- if(!replaySceneActive())return;
- G.fastStory=!G.fastStory;
- if(G.fastStory){AUDIO.stop();BUB.silence();}
- $('#fastStory').setAttribute('aria-pressed',String(G.fastStory));
- $('#fastStory').textContent=G.fastStory?'연출 3배속 · 원래대로':'연출 빨리 보기';
-});
 function savePrefs(){try{localStorage.setItem('palja.prefs',JSON.stringify(PREF));}catch(_){}}
 function syncPrefs(){
  if(G.E)for(const m of G.E.goreMeshes)m.visible=PREF.blood;
@@ -9816,7 +9810,6 @@ $('#offerPaper').addEventListener('click',e=>{
 });
 /* ---- 라운드 ---- */
 function startRound(mode){
- G.fastStory=false;$('#fastStory').hidden=true;$('#fastStory').setAttribute('aria-pressed','false');$('#fastStory').textContent='연출 빨리 보기';
  TROPHIES.close(false);
  G.round++;
  SUBMISSION.reset();
@@ -9909,11 +9902,7 @@ function frame(now){
  const raw=(now-last)/1000;last=now;const dt=clamp(raw,0,.05);
  // 느린 기기: 1단계 해상도·그림자 낮춤, 2단계 금속 반사 끔
  if(raw<.25){perfT+=raw;perfN++;}if(perfT>2.5){if(perfT/perfN>.045&&lite<2){lite++;if(lite===1){renderer.setPixelRatio(1);renderer.shadowMap.enabled=false;allMats(m=>m.needsUpdate=true);fitView();}else{allMats(m=>{if(m.envMap){m.envMap=null;m.needsUpdate=true;}});}}perfT=0;perfN=0;}
- const fast=G.fastStory&&replaySceneActive();
  step(dt);
- // Substeps retain the normal simulation step and event order; active fighting is never sped up.
- if(fast)for(let i=0;i<2&&replaySceneActive();i++)step(dt);
- $('#fastStory').hidden=G.paused||!replaySceneActive();
  render();
 }
 function pause(){G.running=false;cancelAnimationFrame(G.raf);clearPointers();AUDIO.stop();}

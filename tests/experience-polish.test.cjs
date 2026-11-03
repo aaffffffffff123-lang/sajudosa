@@ -60,11 +60,6 @@ test('submission reveals its choice at four seconds and rejects early activation
  api.updateStory();assert.equal(dock.hidden,true);api.startFightFromSubmit();
  G.time=4;api.updateStory();assert.equal(dock.hidden,false);assert.equal(G.submitReadyAt,0);
 });
-test('fast-forward is only offered for previously completed, locked story scenes',()=>{
- const G={defeatCountVisible:false,mode:'fight',inputLocked:true,revival:{}},BEYOND={active:false},again={hidden:true};
- const active=vm.runInNewContext(slice('function replaySceneActive(){',"$('#fastStory').addEventListener")+';replaySceneActive',{G,BEYOND,$:()=>again});
- assert.equal(active(),false);G.defeatCountVisible=true;assert.equal(active(),true);G.inputLocked=false;assert.equal(active(),false);G.inputLocked=true;again.hidden=false;assert.equal(active(),false);
-});
 test('low-quality ending keeps a visual omen when shadows are disabled',()=>{
  const shade={style:{}},G={time:.95},renderer={shadowMap:{enabled:false}},key={position:V3(1,6,2),target:{position:V3()},shadow:{camera:new THREE.OrthographicCamera(-1,1,1,-1)}},caster=new THREE.Mesh();caster.visible=false;let sounds=0;
  const scope={G,renderer,key,caster,$:()=>shade,OMEN:{delay:.2,dur:1.5},omenT0:0,active:false,eye:{lock:0},shadowSaved:null,omenSound:false,_od:V3(),_or:V3(),_ou:V3(),_ol:V3(),UP:V3(0,1,0),clamp,smooth,lerp,AUDIO:{omen(){sounds++}}};
