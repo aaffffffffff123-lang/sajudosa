@@ -2135,7 +2135,7 @@ const COMBAT_STAGE=(()=>{
  root.updateMatrixWorld(true);
  const groups=new Map();root.traverse(o=>{if(o.isMesh&&o!==contact){const k=o.material.uuid;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(o);}});
  for(const list of groups.values()){if(list.length<2)continue;const geo=mergeMeshes(list,new THREE.Matrix4());const m=new THREE.Mesh(geo,list[0].material);m.castShadow=true;m.receiveShadow=true;list.forEach(o=>o.removeFromParent());root.add(m);}
- metalEnv(root);return {root,boot,shin,thigh,knee,contact,dust,grain,weave,robe};
+ metalEnv(root);return {root,throne,boot,shin,thigh,knee,contact,dust,grain,weave,robe};
 })();
 function setCombatStage(active){
  WORLD.root.visible=!active;COMBAT_STAGE.root.visible=active;COMBAT_STAGE.boot.visible=false;
@@ -4624,6 +4624,10 @@ const ARM_CLEARANCE=(()=>{
   return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0);
  }
  function armrest(x,y,z){
+  if(typeof COMBAT_STAGE!=='undefined'&&COMBAT_STAGE.root.visible){
+   const ax=Math.abs(x)-.62;
+   return Math.min(boxDistance(ax,y-.78,z-.01,.065,.0225,.35),boxDistance(ax,y-.59,z-.01,.045,.165,.325));
+  }
   const ax=Math.abs(x)-.6;
   return Math.min(boxDistance(ax,y-.77,z-.02,.06,.0225,.31),boxDistance(ax,y-.6,z-.02,.045,.15,.28),boxDistance(ax,y-.76,z-.34,.026,.08,.08));
  }
@@ -4711,7 +4715,8 @@ const ARM_CLEARANCE=(()=>{
   const chest=E.bones.chest;chest.updateWorldMatrix(true,false);invChest.copy(chest.matrixWorld).invert();
   obstacle(colliders[0],E.belly,BODYGEO.belly,chest);obstacle(colliders[1],E.chestMesh,BODYGEO.chest,chest);
   obstacle(colliders[2],!E.headGone&&!E.headDestroyed?E.face:null,head,chest);
-  obstacle(colliders[3],typeof WORLD!=='undefined'?WORLD.throne:null,armrest,chest);
+  const throne=typeof COMBAT_STAGE!=='undefined'&&COMBAT_STAGE.root.visible?COMBAT_STAGE.throne:typeof WORLD!=='undefined'?WORLD.throne:null;
+  obstacle(colliders[3],throne,armrest,chest);
   for(const a of E.arms)solve(a,dt);
  }
  return {apply};
@@ -5706,7 +5711,7 @@ doAct(name,o={}){
   if(this.tabletHeld){
    // 배 위쪽의 앞 공간에서 받친다. 팔꿈치는 옆·앞으로 돌아 소매 두께까지 몸 밖에 둔다.
    const bob=Math.sin(time*1.4)*.006,seated=!!(this.combat&&this.combat.mode==='seat');
-   for(const s of [-1,1])this.setIK(s<0?'L':'R',{target:_bv1.set(s*.075,(seated?.93:1.04)+bob,seated?.36:.43),fd:_bv2.set(-s*.65,.25,1),pd:_bv3.set(-s,0,-.4),curl:.62,rate:10,pole:_bv4.set(s*.38,-.08,.3)});
+   for(const s of [-1,1])this.setIK(s<0?'L':'R',{target:_bv1.set(s*.075,(seated?1.055:1.04)+bob,seated?.36:.43),fd:_bv2.set(-s*.65,.25,1),pd:_bv3.set(-s,0,-.4),curl:.62,rate:10,pole:_bv4.set(s*.38,-.08,.3)});
   }
   // 막기: 주먹을 얼굴 앞으로
   this.guardCool=Math.max(0,this.guardCool-dt);this.guardHold=Math.max(0,this.guardHold-dt);
@@ -8461,12 +8466,34 @@ const COMBAT_POSE={
  held:P({py:-.05,sF:.19,cF:.12,hF:-.2,LsF:1.05,RsF:1.1,LsA:.18,RsA:.2,
   LeB:1.45,ReB:1.4,LwF:.2,RwF:.2,Lcurl:.85,Rcurl:.85,LhF:.12,RhF:-.08,LkB:.22,RkB:.34}),
 };
+function combatSeatPose(T){
+ // 방석 윗면(.50)에 엉덩이 밑면이 닿고, 허벅지는 수평으로 앞으로 나온다.
+ // 다운용 throne 자세와 분리해 무릎·정강이가 방석이나 앞판을 관통하지 않게 한다.
+ poseCopy(POSES.throne,T);
+ T.py=.045;T.pF=0;T.sF=-.08;T.cF=0;T.hR=.02;T.hF=-.14;
+ T.LhF=T.RhF=PI/2;T.LkB=T.RkB=PI/2;T.LhA=T.RhA=.14;T.LaF=T.RaF=0;
+ T.LsF=T.RsF=.25;T.LsA=T.RsA=.38;T.LeB=T.ReB=.85;T.Lcurl=T.Rcurl=.5;
+ return T;
+}
+function resetSeatedEncounter(E){
+ // 인사 중에는 combat.age가 0에 멈춘다. 서 있는 자세에서 보간을 시작하면
+ // 다리가 의자를 뚫은 채 인사가 끝날 때까지 멈추므로 첫 프레임부터 앉힌다.
+ E.endAct();E.guard=E.guardHold=0;E.pat=null;
+ for(const a of E.arms){
+  a.safeE=a.safeW=a.baseE=a.baseW=a.safeH=null;
+  const ik=E.ik[a.nm];ik.w=ik.goal=0;ik.follow=null;ik.pole=null;
+  E.rest[a.nm].on=false;
+ }
+ combatSeatPose(E.pose);E.pose.tx=E.pose.ty=E.pose.ry=0;E.pose.tz=E.combat.z;
+ E.applyPose(E.pose);E.root.updateMatrixWorld(true);
+}
 function combatInit(E,seated){
  if(!window.FateMotion)throw new Error('몸싸움 모듈을 불러오지 못했습니다. 새로고침해 주세요.');
  E.combat=new window.FateMotion.Body(seated);E._combatScripted=false;
  E._combatPoseSerial=-1;E._combatFrom=P();E._combatTarget=P();
  E.rootPos.set(0,0,0);E.rootVel.set(0,0,0);E.down=null;
  E.rest.L.on=E.rest.R.on=false;
+ if(seated)resetSeatedEncounter(E);
  for(const name of ['robe','hem','chest','belly','trouser','shirt']){
   const m=E.M[name];if(!m)continue;m.roughness=.88;m.bumpMap=COMBAT_STAGE.weave;m.bumpScale=.0015;
   m.envMapIntensity=.22;
@@ -8538,10 +8565,10 @@ function combatPose(E,out,dt,time){
  }
  if(b.mode==='seat'){
   // 옥좌에 거만하게 앉아 두 손으로 홀(운명판)을 받쳐 든다(손은 아래 updateActions의 IK가 홀 자리로 끌어다 놓는다)
-  poseCopy(POSES.throne,T);T.hR=.02;T.hF=-.14;T.pF=0;T.sF=-.08;T.cF=0;T.RsF=.1;T.RsA=.7;T.LeB=.8;T.Lcurl=.5;T.Rcurl=.5;
+  combatSeatPose(T);
   E.updateActions(T,dt,time);
   // 홀을 들고 있지 않으면(순응 화면에서 넘어온 경우) 두 손을 팔걸이 위에 얹는다
-  if(!E.tabletHeld&&!E.act)for(const s of [-1,1])E.setIK(s<0?'L':'R',{target:_bv1.set(s*.52,.94,-.02),fd:_bv2.set(s*.08,-.08,1),pd:_bv3.set(0,-1,0),curl:.3,rate:8,pole:_bv4.set(s*.34,-.02,-.08)});
+  if(!E.tabletHeld&&!E.act)for(const s of [-1,1])E.setIK(s<0?'L':'R',{target:_bv1.set(s*.50,.94,.20),fd:_bv2.set(s*.08,-.08,1),pd:_bv3.set(0,-1,0),curl:.3,rate:8,pole:_bv4.set(s*.12,-.40,.10)});
  }else if(b.mode==='stand'){
   E.standPose(T,dt,time);
   const speed=Math.hypot(b.vx,b.vz),a=Math.sin(b.stepDistance*22)*clamp(speed*.45,0,.34);
