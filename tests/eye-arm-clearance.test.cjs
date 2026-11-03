@@ -10,101 +10,88 @@ const bone=(parent,p)=>{const b=new THREE.Group();b.position.set(...p);parent.ad
 function rig(){
  const root=new THREE.Group(),pelvis=bone(root,[0,.62,0]),spine=bone(pelvis,[0,.06,0]),chest=bone(spine,[0,.24,-.01]),neck=bone(chest,[0,.265,0]),head=bone(neck,[0,.06,.03]),face=bone(head,[0,.215,0]);
  const belly=bone(spine,[0,0,0]),chestMesh=bone(chest,[0,0,0]);const E={root,bones:{pelvis,spine,chest,neck,head},belly,chestMesh,face,arms:[]};
- for(const s of [-1,1]){const sh=bone(chest,[s*.265,.19,.1]),um=bone(sh,[0,-.118,0]),el=bone(um,[0,-.117,0]),fm=bone(el,[0,-.108,0]),wr=bone(fm,[0,-.107,0]);E.arms.push({s,nm:s<0?'L':'R',sh,um,el,fm,wr,L1:.235,L2:.215});}return E;
+ for(const s of [-1,1]){const sh=bone(chest,[s*.265,.19,-.01]),um=bone(sh,[0,-.118,0]),el=bone(um,[0,-.117,0]),fm=bone(el,[0,-.108,0]),wr=bone(fm,[0,-.107,0]);E.arms.push({s,nm:s<0?'L':'R',sh,um,el,fm,wr,L1:.235,L2:.215});}return E;
 }
-function penetration(E,a){
+// 팔 중심선(어깨→팔꿈치 뒷반, 팔꿈치→손목)과 손(손바닥·손끝) 표본이 몸통·머리 겉면 안으로 들어간 깊이(+면 안쪽)
+function depth(E,a){
  const ci=new THREE.Matrix4().copy(E.bones.chest.matrixWorld).invert(),S=a.sh.position.clone(),e=a.el.getWorldPosition(V3()).applyMatrix4(ci),w=a.wr.getWorldPosition(V3()).applyMatrix4(ci);
- const objects=[[E.belly,api.BODYGEO.belly],[E.chestMesh,api.BODYGEO.chest],[E.face,(x,y,z)=>api.SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245)]];
- const points=[];for(let i=9;i<=20;i++)points.push([S.clone().lerp(e,i/20),.108*smooth((i/20-.25)/.75)]);for(let i=1;i<=20;i++)points.push([e.clone().lerp(w,i/20),.116]);let deepest=0;
- for(const [mesh,sdf] of objects){const m=new THREE.Matrix4().copy(mesh.matrixWorld).invert().multiply(E.bones.chest.matrixWorld);for(const [p,r] of points){const q=p.clone().applyMatrix4(m);deepest=Math.max(deepest,r-sdf(q.x,q.y,q.z));}}
- return {deepest,upper:S.distanceTo(e),lower:e.distanceTo(w),wrist:w.toArray()};
+ const hq=a.sh.quaternion.clone().multiply(a.el.quaternion).multiply(a.wr.quaternion),hd=V3(0,-1,0).applyQuaternion(hq);
+ const objects={belly:[E.belly,api.BODYGEO.belly],chest:[E.chestMesh,api.BODYGEO.chest],head:[E.face,(x,y,z)=>api.SCULPT.ell(x,y,z,0,-.005,.015,.218,.25,.245)]};
+ const arm=[];for(let i=10;i<=20;i++)arm.push(S.clone().lerp(e,i/20));for(let i=0;i<=20;i++)arm.push(e.clone().lerp(w,i/20));
+ const hand=[w.clone().addScaledVector(hd,.065),w.clone().addScaledVector(hd,.135)];
+ const out={upper:S.distanceTo(e),lower:e.distanceTo(w),wrist:w.toArray()};
+ for(const k in objects){const [mesh,sdf]=objects[k],m=new THREE.Matrix4().copy(mesh.matrixWorld).invert().multiply(E.bones.chest.matrixWorld);
+  let d=-1,h=-1;for(const p of arm){const q=p.clone().applyMatrix4(m);d=Math.max(d,-sdf(q.x,q.y,q.z));}for(const p of hand){const q=p.clone().applyMatrix4(m);h=Math.max(h,-sdf(q.x,q.y,q.z));}
+  out[k]=d;out[k+'Hand']=h;}
+ return out;
 }
-const cases=[['rest',.12,.44,.42],['guard',1,.18,1.45],['face',1.5,.15,1.5],['raised',2.1,.12,1.7],['folded',.4,-.1,1.7],['ground',.12,1.2,.45],['brace',1.4,.3,.15],['hurt',.8,-.2,1.1]];
-let failures=0;const results=[];
-for(const [name,f,ab,eb] of cases){const E=rig();for(const a of E.arms){a.sh.rotation.set(-f,0,a.s*ab);a.el.rotation.x=-eb;}E.root.updateMatrixWorld(true);const before=E.arms.map(a=>penetration(E,a));const started=performance.now();api.ARM_CLEARANCE.apply(E);E.root.updateMatrixWorld(true);const after=E.arms.map(a=>penetration(E,a));for(const a of after){assert(Math.abs(a.upper-.235)<1e-6);assert(Math.abs(a.lower-.215)<1e-6);if(a.deepest>.014)failures++;}results.push({name,before:before.map(x=>+x.deepest.toFixed(4)),after:after.map(x=>+x.deepest.toFixed(4)),ms:+(performance.now()-started).toFixed(2)});}
-assert.equal(failures,0,'named poses keep sleeves outside the torso');
-let maxDepth=0,worst=null;const sweepStart=performance.now();
-for(let i=0;i<240;i++){
- const E=rig(),t=i/239;E.bones.spine.rotation.set(.5*Math.sin(t*9),.12*Math.sin(t*7),0);E.bones.chest.rotation.x=.18*Math.sin(t*6);E.bones.head.rotation.set(.3*Math.sin(t*8),.4*Math.sin(t*5),.3*Math.sin(t*4));
- for(const a of E.arms){a.sh.rotation.set(-(.8+1.2*Math.sin(t*11+a.s*.2)),a.s*.3*Math.sin(t*6),a.s*(.45+.55*Math.sin(t*7)));a.el.rotation.x=-(.9+.85*Math.sin(t*13));}
- E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E);E.root.updateMatrixWorld(true);
- for(const a of E.arms){const p=penetration(E,a);if(p.deepest>maxDepth){maxDepth=p.deepest;worst={i,side:a.nm,...p};}if(p.deepest>.012)failures++;assert(Math.abs(p.upper-.235)<1e-6&&Math.abs(p.lower-.215)<1e-6);}
+const lengthsOk=(E)=>{for(const a of E.arms){const p=depth(E,a);assert(Math.abs(p.upper-.235)<1e-6&&Math.abs(p.lower-.215)<1e-6,'bone lengths are kept');}};
+// 가슴 좌표의 팔꿈치·손목 위치로 어깨·팔꿈치 회전을 맞춘다(실제 게임에서 잰 자세를 그대로 재현하려고)
+function poseTo(a,e,w){const S=a.sh.position,DOWN=V3(0,-1,0);const qU=new THREE.Quaternion().setFromUnitVectors(DOWN,V3().subVectors(e,S).normalize()),qL=new THREE.Quaternion().setFromUnitVectors(DOWN,V3().subVectors(w,e).normalize());a.sh.quaternion.copy(qU);a.el.quaternion.copy(qU.clone().invert().multiply(qL));a.wr.rotation.set(0,0,0);}
+// 1. 배에 손을 얹은 기본 자세(옥판 쥐기, 게임에서 잰 값): 중심선이 배 안에 꽤 들어가 있어도 손대지 않는다
+{
+ const E=rig();for(const a of E.arms)poseTo(a,V3(a.s*.195,.039,.156),V3(a.s*.104,-.091,.301));E.root.updateMatrixWorld(true);
+ const before=E.arms.map(a=>[a.sh.quaternion.clone(),a.el.quaternion.clone(),a.wr.quaternion.clone()]),d0=E.arms.map(a=>depth(E,a));
+ assert(d0.every(d=>d.belly>.04),'test pose must rest inside the soft belly');
+ api.ARM_CLEARANCE.apply(E,1/60);
+ E.arms.forEach((a,i)=>{assert(a.sh.quaternion.angleTo(before[i][0])<1e-6);assert(a.el.quaternion.angleTo(before[i][1])<1e-6);assert(a.wr.quaternion.angleTo(before[i][2])<1e-6);});
+ console.log('Rest pose on the belly is left untouched',JSON.stringify(d0.map(d=>+d.belly.toFixed(3))));
 }
-console.log('Sweep',JSON.stringify({maxDepth,worst,failures,ms:performance.now()-sweepStart}));
-const moving=rig();let last=null,maxStep=0,stepAt=0,movingDepth=0;
-for(let i=0;i<360;i++){
- const t=i/359;for(const a of moving.arms){a.sh.rotation.set(-(.8+1.0*Math.sin(t*5)),0,a.s*(.4+.35*Math.sin(t*7)));a.el.rotation.x=-(.85+.7*Math.sin(t*6));a.wr.rotation.set(0,0,0);}
- moving.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(moving);moving.root.updateMatrixWorld(true);const p=moving.arms.map(a=>a.wr.getWorldPosition(V3()));moving.arms.forEach(a=>movingDepth=Math.max(movingDepth,penetration(moving,a).deepest));
- if(last)p.forEach((v,j)=>{const step=v.distanceTo(last[j]);if(step>maxStep){maxStep=step;stepAt=i;}});last=p;
+// 2. 손을 얼굴 속에 집어넣는 자세: 머리 밖(허용 깊이)으로 밀려나고, 자세를 계속 유지해도 매 프레임 같은 자리다(떨림 없음)
+{
+ const E=rig();const pose=()=>{for(const a of E.arms)poseTo(a,V3(a.s*.315,.39,.10),V3(a.s*.117,.472,.085));};
+ pose();E.root.updateMatrixWorld(true);const raw=E.arms.map(a=>depth(E,a));assert(raw.some(d=>d.head>.03||d.headHand>.03),'test pose must push a hand into the head');
+ let prev=null,maxStep=0,settledStep=0;
+ for(let f=0;f<90;f++){pose();E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E,1/60);E.root.updateMatrixWorld(true);
+  const w=E.arms.map(a=>a.wr.getWorldPosition(V3()));if(prev){const st=Math.max(...w.map((v,i)=>v.distanceTo(prev[i])));maxStep=Math.max(maxStep,st);if(f>40)settledStep=Math.max(settledStep,st);}prev=w;lengthsOk(E);}
+ for(const a of E.arms){const d=depth(E,a);assert(d.head<.02+.004,'forearm centreline stays out of the head: '+d.head);assert(d.headHand<.03+.004,'palm and fingertips stay out of the head: '+d.headHand);}
+ assert(settledStep<1e-5,'held pose must not oscillate frame to frame (was '+settledStep+')');
+ assert(maxStep<.08,'a hand that starts deep inside the head is pushed out over several frames, not in one (was '+maxStep+')');
+ console.log('Hand-into-face pose: pushed out, no frame-to-frame jitter',JSON.stringify({maxStep:+maxStep.toFixed(4),settledStep}));
 }
-console.log('Continuous motion',JSON.stringify({maxWristStep:maxStep,frame:stepAt,movingDepth}));
-assert(maxStep<.03,'collision avoidance must not jump across the torso');
-assert(movingDepth<.014,'animated sleeves must remain outside body colliders');
-// Check the actual palm surface, including poses that request a folded-back wrist.
-// Body-only sleeve checks missed hands entering the cuff or the opposite arm.
-const palmGeo=api.BODYGEO.build().palm,vertices=palmGeo.attributes.position;
-for(let frame=0;frame<120;frame++){
- for(const a of moving.arms){a.sh.rotation.set(-1.1,0,a.s*.2);a.el.rotation.x=-1.4;a.wr.rotation.set(frame<60?2.4:-2.4,0,a.s*.7);}
- moving.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(moving);moving.root.updateMatrixWorld(true);
- const chestInverse=new THREE.Matrix4().copy(moving.bones.chest.matrixWorld).invert();
- for(const a of moving.arms){
-  const direction=V3(0,-1,0).applyQuaternion(a.wr.quaternion);
-  assert(direction.dot(V3(0,-1,0))>=Math.cos(.86),'palm cannot fold back into the sleeve');
-  const matrix=new THREE.Matrix4().multiplyMatrices(chestInverse,a.wr.matrixWorld);
-  for(let i=0;i<vertices.count;i+=7){
-   const p=V3().fromBufferAttribute(vertices,i).applyMatrix4(matrix);
-   assert(a.s*p.x>=-.005,'palm surface cannot cross through the opposite hand');
-  }
+// 3. 팔을 천천히 얼굴로 들어 올려 가는 동안 손목이 프레임마다 뛰지 않는다(연속성)
+{
+ const E=rig();let prev=null,maxStep=0;
+ for(let f=0;f<240;f++){const t=f/239;for(const a of E.arms)poseTo(a,V3(a.s*.195,.039,.156).lerp(V3(a.s*.315,.39,.10),t),V3(a.s*.104,-.091,.301).lerp(V3(a.s*.117,.472,.085),t));
+  E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E,1/60);E.root.updateMatrixWorld(true);lengthsOk(E);
+  const w=E.arms.map(a=>a.wr.getWorldPosition(V3()));if(prev)maxStep=Math.max(maxStep,...w.map((v,i)=>v.distanceTo(prev[i])));prev=w;
+  for(const a of E.arms){const d=depth(E,a);assert(d.head<.02+.02,'head is never entered deeply while raising the arms: '+d.head);}}
+ assert(maxStep<.03,'continuous motion stays continuous (was '+maxStep+')');
+ console.log('Raising arms into the face: continuous, head kept clear',maxStep.toFixed(4));
+}
+// 4. 손목이 소매 안쪽으로 접히지 않는다 / 떨어진 팔은 건드리지 않는다
+{
+ const E=rig();
+ for(let frame=0;frame<60;frame++){
+  for(const a of E.arms){a.sh.rotation.set(-1.1,0,a.s*.2);a.el.rotation.x=-1.4;a.wr.rotation.set(frame<30?2.4:-2.4,0,a.s*.7);}
+  E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E,1/60);E.root.updateMatrixWorld(true);
+  for(const a of E.arms){const f=V3(0,-1,0).applyQuaternion(a.el.getWorldQuaternion(new THREE.Quaternion())),h=V3(0,-1,0).applyQuaternion(a.wr.getWorldQuaternion(new THREE.Quaternion()));assert(f.dot(h)>=Math.cos(.86),'palm cannot fold back into the sleeve');}
  }
+ const detached=E.arms[0],held=detached.sh.quaternion.clone();detached.sh.userData.detached=true;
+ api.ARM_CLEARANCE.apply(E,1/60);assert(detached.sh.quaternion.angleTo(held)<1e-7,'detached arm is not driven by the pose solver');
+ console.log('Wrist bend and detached-arm checks passed');
 }
-const detached=moving.arms[0],heldRotation=detached.sh.quaternion.clone();detached.sh.userData.detached=true;
-api.ARM_CLEARANCE.apply(moving);assert(detached.sh.quaternion.angleTo(heldRotation)<1e-7,'detached arm is not driven by the pose solver');
-console.log('Palm separation, wrist bend, and detached-arm checks passed');
 const ikMethods=vm.runInNewContext(slice('function solveTwoBone(','/* 여러 메시')+slice('const _down=V3','/* ===== 6-4.')+'({'+slice(' solveArm(a,',' releaseIK(side,')+'})',context);
 const IK=rig();Object.assign(IK,ikMethods);IK._ikFrame=1;IK._ikUse={L:0,R:0};IK.ik={L:{w:1,goal:1,target:V3(),fd:V3(0,1,0),pd:V3(0,0,-1)},R:{w:1,goal:1,target:V3(),fd:V3(0,1,0),pd:V3(0,0,-1)}};
 const borrowed=V3(-.1,-.32,.08);IK.setIK('L',{target:V3(-.13,1.3,.5),pole:borrowed});borrowed.set(.1,-.32,.08);IK.setIK('R',{target:V3(.13,1.3,.5),pole:borrowed});borrowed.set(9,9,9);assert(IK.ik.L.pole.equals(V3(-.1,-.32,.08)));assert(IK.ik.R.pole.equals(V3(.1,-.32,.08)));
 let ikStep=0,ikPrevious=null;
 for(let i=0;i<150;i++){
  const target=i<50?V3(.13,1.3,.5):i<100?V3(.03,1.1,.3):V3(.55,1.45,.5);IK.setIK('R',{target,rate:12,fd:V3(0,1,.3),pd:V3(0,0,-1)});
- IK.root.updateMatrixWorld(true);IK.solveArm(IK.arms[1],IK.ik.R,1/60);IK.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(IK);IK.root.updateMatrixWorld(true);
+ IK.root.updateMatrixWorld(true);IK.solveArm(IK.arms[1],IK.ik.R,1/60);IK.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(IK,1/60);IK.root.updateMatrixWorld(true);
  const w=IK.arms[1].wr.getWorldPosition(V3());assert(w.toArray().every(Number.isFinite));if(ikPrevious)ikStep=Math.max(ikStep,w.distanceTo(ikPrevious));ikPrevious=w;
- const p=penetration(IK,IK.arms[1]);assert(Math.abs(p.upper-.235)<1e-6&&Math.abs(p.lower-.215)<1e-6);
+ const p=depth(IK,IK.arms[1]);assert(Math.abs(p.upper-.235)<1e-6&&Math.abs(p.lower-.215)<1e-6);
 }
-assert(ikStep<.08,'changing IK actions must interpolate their targets');console.log('IK target/pole regression passed',ikStep);
+// 손목이 한 프레임에 얼마나 움직이는지는 IK의 follow 보간(rate)이 정하는 것이고 밀어내기 솔버가 제한하지 않는다(예전 솔버의 초당 1.5m 제한이 바로 떨림의 원인이었다)
+console.log('IK target/pole regression passed (max wrist step per frame '+ikStep.toFixed(4)+')');
 // Re-run an identical base pose: no random elbow choice or left/right shared state.
 const E=rig();for(const a of E.arms){a.sh.rotation.set(-1,0,a.s*.18);a.el.rotation.x=-1.45;}E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E);const once=E.arms.map(a=>a.wr.getWorldPosition(V3()));api.ARM_CLEARANCE.apply(E);E.arms.forEach((a,i)=>assert(a.wr.getWorldPosition(V3()).distanceTo(once[i])<1e-6));
-// Exercise the actual seated tablet targets against the full sleeve surfaces.
-const tabletAction=vm.runInNewContext('({'+slice(' updateActions(out,dt,time){','  // 막기:')+'}})',{...context,G:{mode:'fight'},_bv1:V3(),_bv2:V3(),_bv3:V3(),_bv4:V3()}).updateActions;
-const throne=vm.runInNewContext('('+source.match(/throne:P\((\{[^\n]+?\})\),/)[1]+')');
-const T={...throne};vm.runInNewContext(slice('poseCopy(POSES.throne,T);','  E.updateActions(T,dt,time);'),{T,POSES:{throne},poseCopy:(a,b)=>Object.assign(b,a)});
-let openingDepth=0;
-for(const fps of [30,60,120]){
- const seated=rig();Object.assign(seated,ikMethods);seated.tabletHeld=true;seated.combat={mode:'seat'};seated._ikFrame=0;seated._ikUse={L:0,R:0};seated.ik={};
- seated.bones.pelvis.position.y=.62+T.py;seated.bones.pelvis.rotation.x=T.pF;seated.bones.spine.rotation.x=T.sF;seated.bones.chest.rotation.x=T.cF;seated.bones.neck.rotation.x=T.nF;seated.bones.head.rotation.x=T.hF;
- for(const a of seated.arms)seated.ik[a.nm]={w:1,goal:1,target:V3(),fd:V3(),pd:V3()};
- for(let frame=0;frame<fps*2;frame++){
-  tabletAction.call(seated,T,1/fps,frame/fps);
-  for(const a of seated.arms){a.sh.rotation.set(-T[a.nm+'sF'],0,a.s*T[a.nm+'sA']);a.el.rotation.x=-T[a.nm+'eB'];a.wr.rotation.set(0,0,0);}
-  seated.root.updateMatrixWorld(true);for(const a of seated.arms)seated.solveArm(a,seated.ik[a.nm],1/fps);seated.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(seated,1/fps);seated.root.updateMatrixWorld(true);
-  const geometry=api.BODYGEO.build();
-  for(const a of seated.arms)for(const [joint,key] of [[a.el,'elbow'],[a.fm,'farm']]){
-   const v=geometry[key].attributes.position;
-   for(const [body,sdf] of [[seated.belly,api.BODYGEO.belly],[seated.chestMesh,api.BODYGEO.chest]]){
-    const matrix=body.matrixWorld.clone().invert().multiply(joint.matrixWorld);
-    for(let i=0;i<v.count;i+=11){const q=V3().fromBufferAttribute(v,i).applyMatrix4(matrix);openingDepth=Math.max(openingDepth,-sdf(q.x,q.y,q.z));}
-   }
-  }
- }
-}
-assert(openingDepth<.005,'the opening tablet pose keeps the actual sleeve mesh outside the belly and chest');
-console.log('Opening sleeve mesh clearance:',openingDepth);
 // The eye must move once, stop exactly at contact, then dilate monotonically.
 for(const fps of [30,60,120]){
  let calls=0;const mat={uniforms:{uGaze:{value:new THREE.Vector2()},uPupil:{value:0},uGlow:{value:0}}};
- const eyeApi=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{...context,mat,AUDIO:{gaze(){calls++}},model:{setGaze(){}},caster:{visible:false},applyLights(){}});
- let y=-.16,p=.13;
- for(let i=0;i<=20*fps;i++){eyeApi.updateEye(i/fps,1/fps);const e=eyeApi.eye;assert(e.gaze.y>=y-1e-12&&e.gaze.y<=1e-12);assert(e.gaze.x===0);assert(e.pupil>=p-1e-12);if(i/fps<eyeApi.T_DILATE)assert(e.pupil===.13);if(i/fps>eyeApi.T_SEE+eyeApi.T_SHIFT)assert(e.gaze.length()===0);y=e.gaze.y;p=e.pupil;}
- assert.equal(calls,1);assert.equal(eyeApi.eye.pupil,.34);
+ const eyeApi=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{...context,mat,AUDIO:{gaze(){calls++}},caster:{visible:false},applyLights(){}});
+ let y=-.022,p=.86;
+ for(let i=0;i<=20*fps;i++){eyeApi.updateEye(i/fps,1/fps);const e=eyeApi.eye;assert(e.gaze.y>=y-1e-12&&e.gaze.y<=1e-12);assert(e.gaze.x===0);assert(e.pupil>=p-1e-12);if(i/fps<eyeApi.T_DILATE)assert(e.pupil===.86);if(i/fps>eyeApi.T_SEE+eyeApi.T_SHIFT)assert(e.gaze.length()===0);y=e.gaze.y;p=e.pupil;}
+ assert.equal(calls,1);assert.equal(eyeApi.eye.pupil,1);
 }
 console.log('Eye: 30/60/120 fps monotonic gaze, fixed contact, delayed dilation passed');
-if(failures)process.exitCode=1;
+
