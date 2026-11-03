@@ -2128,6 +2128,9 @@ const COMBAT_STAGE=(()=>{
  const shin=mk(cylGeo(.072,.056,1,18),legMat,boot);
  const thigh=mk(cylGeo(.1,.074,1,16),legMat,boot);
  const knee=mk(sphereGeo(16),legMat,boot,{s:.076});
+ // Draw the unchanged foot/leg pose first; hands keep their own depth buffer above it.
+ boot.traverse(o=>o.layers.set(1));
+ vmScene.traverse(o=>{if(o.isLight)o.layers.enable(1);});
  const dust=new THREE.Group();root.add(dust);
  const dots=new Float32Array(180*3);for(let i=0;i<180;i++){dots[i*3]=rnd(-5,5);dots[i*3+1]=rnd(.3,5);dots[i*3+2]=rnd(-4,2);}
  const dg=new THREE.BufferGeometry();dg.setAttribute('position',new THREE.BufferAttribute(dots,3));
@@ -2682,7 +2685,7 @@ const CROWD=(()=>{
  const sphere=sphereGeo(16),earGeo=sphereGeo(10),noseGeo=sphereGeo(14);
  // 얼굴: 머리 타원면을 따라 휘어진 판(평면 스티커처럼 떠 보이지 않게). 그림은 앞에서 비춘 좌표로 붙인다
  const faceGeo=(()=>{const g=new THREE.SphereGeometry(1,40,28,PI/2-1.3,2.6,.42,2.3),P=g.attributes.position,uv=g.attributes.uv;
-  for(let i=0;i<P.count;i++){const x=P.getX(i)*.068*1.016,y=P.getY(i)*.084*1.016,z=P.getZ(i)*.062*1.016;P.setXYZ(i,x,y,z);uv.setXY(i,.5+x/.136,.5+(y+.002)/.146);}
+  for(let i=0;i<P.count;i++){const x=P.getX(i)*.073*1.016,y=P.getY(i)*.082*1.016,z=P.getZ(i)*.066*1.016;P.setXYZ(i,x,y,z);uv.setXY(i,.5+x/.146,.5+(y+.002)/.15);}
   P.needsUpdate=true;uv.needsUpdate=true;g.computeVertexNormals();g.computeBoundingSphere();return g;})();
  const sole=STD('#292528',{roughness:.75});
  const LEG_LIFT=.2,THIGH=.17,SHIN=.16;
@@ -2692,40 +2695,38 @@ const CROWD=(()=>{
  /* ---- 얼굴(512px): 기분마다 한 장 ---- */
  function faceTex(mood){return canvasTex(512,512,(g,w,h)=>{
   g.clearRect(0,0,w,h);g.lineCap='round';g.lineJoin='round';
-  const ink='#2a1f1c',brow='#3a2622';
-  const eye=(x,y,open,sz=1)=>{ // 눈: 흰자+홍채+동공+하이라이트
-   if(open<=0){g.strokeStyle=ink;g.lineWidth=14;g.beginPath();g.arc(x,y+6,26*sz,PI*1.1,PI*1.9);g.stroke();return;}
-   g.fillStyle='#fffdf8';g.beginPath();g.ellipse(x,y,30*sz,22*open*sz,0,0,TAU);g.fill();
-   g.strokeStyle=ink;g.lineWidth=5;g.stroke();
-   g.save();g.beginPath();g.ellipse(x,y,30*sz,22*open*sz,0,0,TAU);g.clip();
-   g.fillStyle='#5a3a24';g.beginPath();g.arc(x+2,y+3,13*sz,0,TAU);g.fill();
-   g.fillStyle='#120a08';g.beginPath();g.arc(x+2,y+3,7*sz,0,TAU);g.fill();
-   g.fillStyle='#fff';g.beginPath();g.arc(x-3,y-4,4*sz,0,TAU);g.fill();g.restore();
-   // 윗눈꺼풀 선
-   g.strokeStyle=ink;g.lineWidth=7;g.beginPath();g.ellipse(x,y,30*sz,22*open*sz,0,PI*1.05,PI*1.95);g.stroke();
+  const ink='#4a302a',brow='#594139';
+  // Soft cheeks and a small nose shadow keep the expression human at phone size.
+  for(const x of [124,388]){const blush=g.createRadialGradient(x,286,2,x,286,43);blush.addColorStop(0,'rgba(224,125,111,.24)');blush.addColorStop(1,'rgba(224,125,111,0)');g.fillStyle=blush;g.fillRect(x-44,242,88,88);}
+  const eye=(x,open=1)=>{
+   g.strokeStyle=ink;g.lineWidth=6;
+   if(open===0){g.beginPath();g.moveTo(x-24,223);g.quadraticCurveTo(x,205,x+24,223);g.stroke();return;}
+   g.fillStyle='#fff9ee';g.beginPath();g.ellipse(x,219,28,24*open,0,0,TAU);g.fill();
+   g.save();g.beginPath();g.ellipse(x,219,28,24*open,0,0,TAU);g.clip();
+   const iris=g.createRadialGradient(x-4,216,2,x,222,19);iris.addColorStop(0,'#946c4c');iris.addColorStop(1,'#443029');
+   g.fillStyle=iris;g.beginPath();g.ellipse(x,222,18,20,0,0,TAU);g.fill();
+   g.fillStyle='#251e1c';g.beginPath();g.ellipse(x,222,9,13,0,0,TAU);g.fill();
+   g.fillStyle='#fff';g.beginPath();g.arc(x-5,213,5,0,TAU);g.fill();g.beginPath();g.arc(x+6,229,2,0,TAU);g.fill();g.restore();
+   g.strokeStyle=ink;g.lineWidth=5;g.beginPath();g.ellipse(x,219,28,24*open,0,PI*1.06,PI*1.94);g.stroke();
+   g.strokeStyle='rgba(137,84,65,.28)';g.lineWidth=3;g.beginPath();g.arc(x,221,28,.23,PI-.23);g.stroke();
   };
-  const browL=(x0,y0,x1,y1,x2,y2)=>{g.strokeStyle=brow;g.lineWidth=15;g.beginPath();g.moveTo(x0,y0);g.quadraticCurveTo(x1,y1,x2,y2);g.stroke();};
-  const blush=(a)=>{g.fillStyle=`rgba(236,110,110,${a})`;for(const x of [112,400]){g.beginPath();g.ellipse(x,268,34,18,0,0,TAU);g.fill();}};
-  const tears=()=>{g.strokeStyle='#5fb0ea';g.lineWidth=12;for(const x of [124,388]){g.beginPath();g.moveTo(x,236);g.quadraticCurveTo(x-6,300,x-4,372);g.stroke();g.fillStyle='#7cc3f2';g.beginPath();g.ellipse(x-4,382,12,16,0,0,TAU);g.fill();}};
-  const mouth=(kind)=>{g.fillStyle='#5a1b1f';g.strokeStyle='#3a1416';g.lineWidth=7;g.beginPath();
-   if(kind==='small'){g.moveTo(206,352);g.quadraticCurveTo(256,372,306,352);g.quadraticCurveTo(256,382,206,352);}
-   else if(kind==='open'){g.ellipse(256,362,40,46,0,0,TAU);}
-   else if(kind==='wide'){g.ellipse(256,366,66,52,0,0,TAU);}
-   else if(kind==='shout'){g.moveTo(190,336);g.lineTo(322,336);g.lineTo(300,398);g.lineTo(212,398);g.closePath();}
-   else if(kind==='smile'){g.moveTo(186,338);g.quadraticCurveTo(256,428,326,338);g.quadraticCurveTo(256,364,186,338);}
-   g.closePath();g.fill();g.stroke();
-   if(kind==='wide'||kind==='shout'||kind==='smile'){g.fillStyle='#fff8ec';g.beginPath();if(kind==='smile'){g.moveTo(200,342);g.quadraticCurveTo(256,362,312,342);g.lineTo(306,352);g.quadraticCurveTo(256,372,206,352);}else{g.rect(kind==='wide'?208:204,kind==='wide'?326:340,kind==='wide'?96:104,18);}g.closePath();g.fill();}
-   if(kind==='wide'){g.fillStyle='#c9405a';g.beginPath();g.ellipse(256,396,30,16,0,0,TAU);g.fill();}
-  };
-  if(mood==='normal'){eye(152,192,1);eye(360,192,1);browL(104,142,150,128,196,140);browL(316,140,362,128,408,142);mouth('small');}
-  else if(mood==='plead'){eye(152,198,1.15,1.05);eye(360,198,1.15,1.05);browL(104,150,146,118,196,132);browL(316,132,366,118,408,150);mouth('open');blush(.35);}
-  else if(mood==='warn'){eye(152,196,.8);eye(360,196,.8);browL(100,126,150,138,200,164);browL(312,164,362,138,412,126);mouth('shout');}
-  else if(mood==='wail'){eye(152,196,0);eye(360,196,0);browL(104,160,152,126,200,142);browL(312,142,360,126,408,160);tears();mouth('wide');blush(.45);}
-  else if(mood==='pray'){eye(152,196,0);eye(360,196,0);browL(108,156,152,128,198,140);browL(314,140,360,128,404,156);mouth('open');blush(.35);}
-  else{ // cheer
-   g.strokeStyle=ink;g.lineWidth=14;for(const x of [152,360]){g.beginPath();g.arc(x,206,28,PI*1.1,PI*1.9);g.stroke();}
-   browL(104,146,152,130,200,146);browL(312,146,360,130,408,146);mouth('smile');blush(.5);
+  const brows=(worried=false)=>{g.strokeStyle=brow;g.lineWidth=8;for(const side of [-1,1]){g.beginPath();g.moveTo(256+side*128,worried?176:174);g.quadraticCurveTo(256+side*88,worried?155:163,256+side*52,worried?161:177);g.stroke();}};
+  const closed=mood==='pray'||mood==='cheer'||mood==='wail';
+  eye(166,closed?0:mood==='plead'?1.12:1);eye(346,closed?0:mood==='plead'?1.12:1);
+  brows(mood==='plead'||mood==='wail'||mood==='warn');
+  g.strokeStyle='rgba(143,82,64,.45)';g.lineWidth=4;g.beginPath();g.moveTo(244,283);g.quadraticCurveTo(256,291,268,283);g.stroke();
+  g.strokeStyle='#9a5c52';g.lineWidth=5;
+  if(mood==='normal'){
+   g.beginPath();g.moveTo(226,333);g.quadraticCurveTo(256,352,286,333);g.stroke();
+   for(const x of [223,289]){g.fillStyle='rgba(158,91,73,.32)';g.beginPath();g.arc(x,332,2.5,0,TAU);g.fill();}
+  }else if(mood==='cheer'){
+   g.fillStyle='#874940';g.beginPath();g.moveTo(216,326);g.quadraticCurveTo(256,386,296,326);g.quadraticCurveTo(256,338,216,326);g.fill();
+   g.strokeStyle='#fff7e9';g.lineWidth=7;g.beginPath();g.moveTo(226,332);g.quadraticCurveTo(256,341,286,332);g.stroke();
+  }else{
+   g.fillStyle='#80463f';g.beginPath();g.ellipse(256,341,mood==='wail'?33:21,mood==='wail'?35:24,0,0,TAU);g.fill();g.stroke();
+   g.fillStyle='#d68f87';g.beginPath();g.ellipse(256,354,mood==='wail'?20:12,7,0,0,TAU);g.fill();
   }
+  if(mood==='wail'){g.strokeStyle='rgba(137,196,220,.8)';g.lineWidth=9;for(const x of [144,368]){g.beginPath();g.moveTo(x,241);g.quadraticCurveTo(x-4,283,x,312);g.stroke();}}
  },{srgb:true});}
  const faceMats={};
  for(const mood of ['normal','plead','warn','wail','pray','cheer'])faceMats[mood]=new THREE.MeshBasicMaterial({map:faceTex(mood),transparent:true,depthWrite:false,side:THREE.DoubleSide,toneMapped:false});
@@ -2769,13 +2770,24 @@ const CROWD=(()=>{
   mk(new THREE.ConeGeometry(.02,.12,5),tie,body,{p:[0,.33,.077],r:[0,0,PI],cast:false,receive:false});
   mk(cylGeo(.027,.031,.055,10),skin,body,{p:[0,.485,0],cast:false,receive:false});
   const head=grp(body,[0,.585,0],'head');
-  mk(sphere,skin,head,{s:[.068,.084,.062],cast:false,receive:false});
-  mk(sphere,hair,head,{p:[0,.05,-.012],s:[.072,.048,.066],cast:false,receive:false});
-  mk(sphere,hair,head,{p:[0,.064,.03],s:[.05,.028,.03],cast:false,receive:false});
-  for(const sx of [-1,1])mk(earGeo,skin,head,{p:[sx*.066,-.002,0],s:[.014,.024,.012],cast:false,receive:false});
+  mk(sphere,skin,head,{s:[.073,.082,.066],cast:false,receive:false});
+  mk(sphere,hair,head,{p:[0,.05,-.013],s:[.076,.046,.069],cast:false,receive:false});
+  // Six everyday haircuts: side part, soft fringe, grey short cut, bob, curls, crop.
+  if(i===3){mk(sphere,hair,head,{p:[0,.018,-.024],s:[.078,.068,.054],cast:false,receive:false});}
+  const locks=i===4?5:3;
+  for(let j=0;j<locks;j++){
+   const x=(j-(locks-1)/2)*(i===4?.024:.033),y=.052+(i===0?j*.006:i===1?-j*.003:i===5?.015:0);
+   mk(sphere,hair,head,{p:[x,y,.039],s:[i===4?.022:.029,i===5?.018:.027,.025],r:[0,0,i===0?-.3:0],cast:false,receive:false});
+  }
+  if(i===1||i===2){
+   const frames=STD(i===1?'#64524b':'#887b6d',{roughness:.65});
+   for(const side of [-1,1])mk(new THREE.TorusGeometry(.022,.0025,5,22),frames,head,{p:[side*.027,.012,.061],r:[0,side*.22,0],s:[1,.85,1],cast:false,receive:false});
+   mk(new THREE.BoxGeometry(.012,.0028,.003),frames,head,{p:[0,.013,.068],cast:false,receive:false});
+  }
+  for(const sx of [-1,1])mk(earGeo,skin,head,{p:[sx*.071,-.002,0],s:[.013,.021,.013],cast:false,receive:false});
   // 코: 콧대 + 둥근 코끝(뾰족한 원뿔 대신)
-  mk(noseGeo,skin,head,{p:[0,.002,.06],s:[.0085,.017,.011],cast:false,receive:false});
-  mk(noseGeo,skin,head,{p:[0,-.013,.063],s:[.0155,.0135,.014],cast:false,receive:false});
+  mk(noseGeo,skin,head,{p:[0,.001,.063],s:[.0075,.014,.009],cast:false,receive:false});
+  mk(noseGeo,skin,head,{p:[0,-.013,.066],s:[.0115,.010,.0105],cast:false,receive:false});
   const face=mk(faceGeo,faceMats.normal,head,{cast:false,receive:false});face.renderOrder=1;
   function makeArm(side){
    const sh=grp(body,[side*.114,.425,.004],side<0?'armL':'armR');
@@ -4850,11 +4862,8 @@ class Emperor{
   const spine=this.bone('spine',pelvis,[0,.06,0]);
   // 배: 늘어진 똥배(돼지저금통). 출렁일 때는 가운데를 붙든 채 크기만 바뀐다
   this.belly=this.addFlesh(BG.belly.clone(),M.belly,spine,{part:'belly',center:BELLY_C,maxFrac:.42,maxAbs:.16,minEdge:.007});
-  // 옥대: 배 밑에 걸친 보라 띠 + 옥 장식
+  // Keep the attachment group, without the rigid ring that protruded through a deformed belly.
   const belt=grp(spine,[0,.035,.045]);belt.rotation.x=.2;this.belt=belt;
-  mk(new THREE.TorusGeometry(.305,.026,10,56),M.red,belt,{r:[PI/2,0,0],s:[1,.93,1],part:'belly'});
-  mk(new THREE.TorusGeometry(.306,.008,6,56),M.gold,belt,{p:[0,.02,0],r:[PI/2,0,0],s:[1,.93,1],cast:false});
-  for(let i=-3;i<=3;i++){const a=i*.28+PI/2,x=Math.cos(a)*.305,z=Math.sin(a)*.284;const pl=mk(new THREE.BoxGeometry(.062,.05,.02),i===0?M.gold:M.jadeL,belt,{p:[x,0,z],part:'belly'});pl.rotation.y=-(a-PI/2);if(i===0)mk(sphereGeo(16),M.jade,belt,{p:[x,0,z+.014],s:[.022,.018,.01],cast:false});}
   // 옷자락: 허리띠 아래로 옆과 뒤만 두르고 앞은 터 있다(바지 입은 다리가 보이게). 안감은 보라
   this.apronF=grp(pelvis,[0,.07,0]);this.apronB=grp(pelvis,[0,.08,0]);
   {const gap=1.02,geo=new THREE.CylinderGeometry(.315,.4,.36,40,1,true,gap,TAU-gap*2);
@@ -5227,6 +5236,9 @@ Object.assign(Emperor.prototype,{
   if(this.talk>.01){this.talkPhase+=dt*TAU*5.2;const amp=.55+.45*Math.sin(this.talkPhase*.43+1.7),w=Math.max(0,Math.sin(this.talkPhase))*amp*this.talk;T.mOpen+=w*.95;T.jaw+=w*.55;T.mWide+=Math.sin(this.talkPhase*.71)*.16*this.talk;}
   // 덜덜 떨 때는 턱이 딱딱 부딪히고 입술도 떨린다
   const trm=this.tremble||0;if(trm>.08&&this.talk<.2){const ch=Math.max(0,Math.sin(time*44+.7))*Math.min(1,trm);T.mOpen+=ch*.1;T.jaw+=ch*.06;T.mWide+=Math.sin(time*29)*.04*trm;}
+  if(time<this.mouthCoinUntil&&!this.headGone&&!this.jawGone){
+   T.mOpen=Math.max(T.mOpen,.9);T.jaw=Math.max(T.jaw,.85);T.mWide=-.12;T.pucker=.2;T.mSmile=0;T.mSmirk=0;
+  }
   const r=instant?1:1-Math.exp(-dt*(this.flinch>.3?30:this.talk>.2?26:16));
   for(const k of EXPR_KEYS)f[k]=lerp(f[k],T[k],r);
   for(const k of ['bY','bIn','bOut'])for(let i=0;i<2;i++)f[k][i]=lerp(f[k][i],T[k][i],r);
@@ -5357,6 +5369,7 @@ Object.assign(Emperor.prototype,{
   this.cutStrokeFallback=0;this.detached=new Set();
   this.limbCut={armL:{hits:0,last:null},armR:{hits:0,last:null},legL:{hits:0,last:null},legR:{hits:0,last:null}};this.armLimp=[0,0];this.legLimp=[0,0];this.regrowQ=[];
   this.abd=null;this.abdomenStage=0;this.abdomenOpen=false;this.abdomenCavity=null;this.coinQ=0;this.coinPow=0;this.coinAcc=0;this.coinCool=0;
+  this.mouthCoinQ=0;this.mouthCoinAcc=0;this.mouthCoinCool=0;this.mouthCoinDelay=0;this.mouthCoinUntil=0;this.mouthCoinPower=0;
   this.unmasked=false;this.memAt=0;this._ikFrame=0;this._ikUse={L:-1,R:-1};this.rest={L:{on:false,p:V3(),fd:V3(),pd:V3()},R:{on:false,p:V3(),fd:V3(),pd:V3()}};this.patT=rnd(3,6);this.pat=null;
 
   this.headGunHits=0;this.eyeGunHits=[0,0];this.headDone={};this.headDestroyed=false;this.headRuin=null;
@@ -6247,7 +6260,7 @@ const rg=grp(grow,[0,.15,.02]);this.repFaceG=rg;
   // 말할 때는 턱을 벌렸다 닫는다
   if(this.talk>.01)this.talkPhase=(this.talkPhase||0)+dt*TAU*5.4;
   const talkOpen=this.talk>.01?this.talk*(.05+.24*Math.max(0,Math.sin(this.talkPhase))*(.6+.4*Math.sin(this.talkPhase*.43+1.7))):0;
-  const open=.1+.09*Math.max(0,Math.sin(time*1.1))+(this.flinch>.2?.25*this.flinch:0)+talkOpen;
+  const open=.1+.09*Math.max(0,Math.sin(time*1.1))+(this.flinch>.2?.25*this.flinch:0)+talkOpen+(time<this.mouthCoinUntil?.38:0);
   // 턱이 빠졌으면 벌어진 채 비뚤게 늘어진다. 떨어졌으면 건드리지 않는다
   const D=this.jawDisloc,da=D?D.sp.x:0;
   if(this.repJawBone&&!this.jawGone&&!this.repJawBone.userData.detached){this.repJawBone.rotation.set(open+da*.5,0,D?D.side*da*.3:0);this.repJawBone.position.x=D?D.side*da*.014:0;}
@@ -6870,6 +6883,8 @@ Object.assign(Emperor.prototype,{
   // 눈에 보이는 살 변형(움푹·파임·베임): 맞을수록 누적
   if(!/^(crown|halo|tablet|beard)$/.test(part)&&!((part==='eyeL'||part==='eyeR')&&this.eyes[part==='eyeL'?0:1]&&this.eyes[part==='eyeL'?0:1].lizard))
    this.applyDeform(part,seg,pt,n,dir,tool,kind,h);
+  // A punch or stomp squeezes coins out through the mouth, even with an intact belly.
+  if(part==='belly'&&blunt)this.vomitCoins(Math.round(9+Math.min(P,2)*5),P);
   // 갈라진 배(돼지저금통)를 치면 동전이 또 쏟아진다
   if(part==='belly'&&this.abdomenOpen&&kind!=='slash'&&this.nearSlit(pt,.17))this.coinBurst(gun?10:sharp?14:6,gun?1.2:sharp?1.3:.8);
   // 총 맞는 반응(부위별)
@@ -7174,7 +7189,38 @@ placeAbdomenCavity(z){
  const qB=bone.getWorldQuaternion(new THREE.Quaternion()).invert();
  g.quaternion.copy(qB.multiply(qW));
 },
+// Mouth emission follows the current human/reptile head transform, including falls.
+vomitCoins(n,power=1){
+ if(this.headGone||this.headDestroyed||this.jawGone||this.state==='dead'||!this.headFrame())return;
+ if(G.time<this.mouthCoinCool)return;
+ this.mouthCoinCool=G.time+.16;
+ if(!this.mouthCoinQ){this.mouthCoinAcc=0;this.mouthCoinDelay=.055;}
+ this.mouthCoinQ=Math.min(38,(this.mouthCoinQ||0)+n);
+ this.mouthCoinPower=Math.min(1.8,Math.max(this.mouthCoinPower||0,power));
+ this.mouthCoinUntil=G.time+this.mouthCoinQ/38+.16;
+ AUDIO.coinGush(clamp(n/28,.45,.85));
+},
+updateMouthCoins(dt){
+ if(this.headGone||this.headDestroyed||this.jawGone||this.state==='dead'){
+  this.mouthCoinQ=0;this.mouthCoinUntil=0;this.mouthCoinPower=0;return;
+ }
+ if(!(this.mouthCoinQ>0)||dt<=0)return;
+ if(this.mouthCoinDelay>0){this.mouthCoinDelay-=dt;return;}
+ const F=this.headFrame();if(!F)return;F.updateWorldMatrix(true,false);
+ const rep=this.headKind==='rep',origin=V3(0,rep?-.116:-.126,rep?.284:.226);
+ const forward=V3(0,-.22,1).transformDirection(F.matrixWorld);
+ const side=V3(1,0,0).transformDirection(F.matrixWorld),pw=this.mouthCoinPower||1;
+ this.mouthCoinAcc+=dt*38;
+ while(this.mouthCoinAcc>=1&&this.mouthCoinQ>0){
+  this.mouthCoinAcc--;this.mouthCoinQ--;
+  const p=F.localToWorld(origin.clone()).addScaledVector(side,rnd(-.012,.012));
+  const v=forward.clone().multiplyScalar(rnd(1.2,1.9)*(.7+.3*pw)).addScaledVector(side,rnd(-.18,.18)).add(V3(0,.15,0));
+  COINS.spawn(p,v,Math.random()<.62?0:1);
+ }
+ if(!this.mouthCoinQ)this.mouthCoinPower=0;
+},
 updateBelly(dt){
+ this.updateMouthCoins(dt);
  const z=this.abd&&this.abd.z;
  if(this.abdomenCavity&&z)this.placeAbdomenCavity(z);
  if(!(this.coinQ>0)||dt<=0||!z||!z.hostLP)return;
@@ -9750,7 +9796,10 @@ function render(){
  if(far){BEYOND.draw();renderer.clearDepth();scene.background=null;}
  renderer.render(scene,camera);
  if(far)scene.background=G.mode==='fight'?col('#151d1e'):SKY;
- renderer.clearDepth();renderer.render(vmScene,vmCam);renderer.clearDepth();renderer.render(FX.scene,camera);BUB.draw();
+ renderer.clearDepth();
+ if(COMBAT_STAGE.boot.visible){vmCam.layers.set(1);renderer.render(vmScene,vmCam);renderer.clearDepth();}
+ vmCam.layers.set(0);renderer.render(vmScene,vmCam);
+ renderer.clearDepth();renderer.render(FX.scene,camera);BUB.draw();
 }
 function frame(now){
  if(!G.running)return;G.raf=requestAnimationFrame(frame);
@@ -9792,6 +9841,7 @@ window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
+
 
 
 
