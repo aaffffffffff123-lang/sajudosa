@@ -307,7 +307,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .caution p{position:relative;margin:0 0 10px;padding-left:18px;font-size:15.5px;line-height:1.65;color:var(--ink-2);word-break:keep-all}
 .caution p::before{content:"";position:absolute;left:3px;top:.64em;width:7px;height:7px;border-radius:2px;background:var(--red)}
 .caution p:last-child{margin-bottom:0}
-.fate-end{margin:30px 6px 0;text-align:center;font-family:var(--serif);font-weight:700;font-size:clamp(23px,6.4vw,27px);line-height:1.45;letter-spacing:-.03em;word-break:keep-all;color:var(--ink)}
+.fate-end{margin:52px 6px 0;text-align:center;font-family:var(--serif);font-weight:700;font-size:clamp(23px,6.4vw,27px);line-height:1.45;letter-spacing:-.03em;word-break:keep-all;color:var(--ink)}
 /* 결과 화면을 내려갈수록: 왼쪽 위 도사, 칸 제목 앞 표시, 숨은 상징 (움직이는 부분은 스크립트의 DOOM) */
 .topbar .home svg.mark.morph{width:44px;height:46px;margin:-5px 0}
 #sec-money .sec-label::before,#sec-money~.reading .sec-label::before,#sections~section .sec-label::before{width:14px;height:13px;border-radius:0;box-shadow:none;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M14 7L22 21.3H6Z' fill='none' stroke='%23ff8f7a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E")}
@@ -2885,7 +2885,7 @@ function doomApply(){
   if(DOOM.meta)DOOM.meta.content=bg;
  }
  // 마지막 문장 뒤 삼각형 눈: 거의 끝에 와서야 떠오른다 (값은 그 문장에만 두어 다른 곳은 다시 계산하지 않게)
- const eye=(doomSS(.86,1,p)*.2).toFixed(3),fe=R.querySelector('.fate-end');
+ const eye=(doomSS(.86,1,p)*.08).toFixed(3),fe=R.querySelector('.fate-end');
  if(fe&&eye!==DOOM.eye){DOOM.eye=eye;fe.style.setProperty('--doomEye',eye);}
  if(P){
   const q=Math.pow(Math.max(0,(p-.3)/.7),1.6);
@@ -3060,7 +3060,7 @@ function loadOne(srcs,ok,done,i){
 }
 function preloadFight(){
  if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';
- const bust=/^https?:/.test(location.protocol)?'?v=20261103-copy-mix-tears-1':'';
+ const bust=/^https?:/.test(location.protocol)?'?v=20261103-voices-grip-crown-2':'';
  loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
   if(!ok){FIGHT.state='failed';fightFailed();return;}
   loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{

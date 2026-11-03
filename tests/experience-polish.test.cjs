@@ -45,7 +45,7 @@ test('knife cancel never commits a pending cut; gun hold stops on release',()=>{
 test('followers only spray after the wall, with a bounded pool during sustained hits',()=>{
  const scene=new THREE.Scene(),root=new THREE.Group(),people=Array.from({length:6},(_,i)=>{const root=new THREE.Group(),head=new THREE.Group();root.position.set(i-3,0,0);head.position.y=1;root.add(head);scene.add(root);return {root,head}});
  const G={time:1,ended:false,inputLocked:false},rev={on:false};let sobs=0;
- const api=vm.runInNewContext(slice(" const state={mode:'hidden'",' function setMode(')+';({state,witnessHit,updateTears,tearMesh,tearDrops})',{THREE,V3,scene,root,people,G,rev,col:x=>new THREE.Color(x),UP:V3(0,1,0),rnd:(a,b)=>(a+b)/2,AUDIO:{voiceRaw(){sobs++}}});
+ const api=vm.runInNewContext(slice(" const state={mode:'hidden'",' function setMode(')+';({state,witnessHit,updateTears,tearMesh,tearDrops})',{THREE,V3,scene,root,people,G,rev,col:x=>new THREE.Color(x),UP:V3(0,1,0),rnd:(a,b)=>(a+b)/2,AUDIO:{crowdSob(){sobs++}}});
  api.witnessHit();api.updateTears(.016,G.time);assert.equal(api.tearMesh.count,0);
  api.state.watching=true;
  for(let i=0;i<1200;i++){G.time+=1/60;api.witnessHit(2);api.updateTears(1/60,G.time);assert(api.tearMesh.count<=108);}

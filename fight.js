@@ -1729,8 +1729,8 @@ const AUDIO=(()=>{
   const ix=bag.pop();reactionLast[name]=ix;
   const t=ctx.currentTime,s=ctx.createBufferSource(),g=ctx.createGain(),clip=list[ix];s.playbackRate.value=R(.94,1.045);
   g.gain.value=clamp(k,.25,1.3)*.76;s.connect(g);g.connect(vbus);
-  // Two voices maximum, with a short fade on the old one. Nothing queues behind hits.
-  while(reactionLive.length>=2){const old=reactionLive.shift();old.g.gain.cancelScheduledValues(t);old.g.gain.setTargetAtTime(.0001,t,.009);try{old.s.stop(t+.035);}catch(_){}}
+  // One character, one impact voice. Crossfade the previous cry instead of doubling it.
+  while(reactionLive.length){const old=reactionLive.shift();old.g.gain.cancelScheduledValues(t);old.g.gain.setTargetAtTime(.0001,t,.009);try{old.s.stop(t+.035);}catch(_){}}
   const item={s,g};reactionLive.push(item);live.add(s);
   s.onended=()=>{live.delete(s);const n=reactionLive.indexOf(item);if(n>=0)reactionLive.splice(n,1);s.disconnect();g.disconnect();};startClip(s,clip,t+.012);return true;
  }
@@ -1765,8 +1765,8 @@ const AUDIO=(()=>{
    case 'groan':voice(t,{dur:R(.8,1.2),f0:108*P,f1:88*P,v1:'eu',v2:'eo',breath:.35,peak:.3*k,trem:6,vib:.02,rough:.07,bright:1800});break;
    case 'gasp':breath(t,.14,.34*k,700,2600);voice(t+.1,{dur:.1,f0:170*P,f1:150*P,v1:'eo',breath:.5,peak:.26*k,release:.015});break;
    case 'laugh':{const big=k>1.05,n=big?7:5;let tt=t;for(let i=0;i<n;i++){const last=i===n-1,dur=last?.32:R(.085,.11);breath(tt,.045,.22,1200,1500);voice(tt+.03,{dur,f0:(big?178:142)*(1-i*.03)*P,f1:(big?160:128)*(1-i*.03)*(last?.82:1)*P,v1:big?'a':'eo',breath:.42,peak:(big?.4:.3)*(last?.8:1),release:.03,attack:.012,rough:.04,wet:.25});tt+=dur+(big?.07:.09);}break;}
-   case 'sob':{breath(t,.22,.26,500,2400);let tt=t+.24;for(let i=0;i<3;i++){const last=i===2;voice(tt,{dur:last?.55:.16,f0:(212-i*6)*P,f1:(last?160:225)*P,v1:'eu',v2:last?'m':'eo',breath:.5,peak:.22*k,vib:.05,vibHz:7.5,rough:.1,bright:2600,wet:.25});tt+=last?.6:.2;}break;}
-   case 'beg':{let tt=t;for(let i=0;i<2;i++){voice(tt,{dur:.38,f0:205*P,fm:245*P,fmAt:.7,f1:215*P,v1:'eu',v2:'m',breath:.45,peak:.2*k,vib:.04,vibHz:6.5,rough:.08,bright:2400});tt+=.48;}break;}
+   case 'sob':{breath(t,.12,.17*k,650,1800);for(let i=0;i<2;i++)voice(t+.14+i*.22,{dur:.11+i*.02,f0:(150-i*12)*P,f1:(118-i*8)*P,v1:'eu',v2:'m',breath:.65,peak:.17*k,vib:.003,rough:.03,bright:1800,wet:.04,release:.045});break;}
+   case 'beg':{breath(t,.09,.12*k,650,1600);for(let i=0;i<2;i++)voice(t+.08+i*.25,{dur:.14,f0:(160-i*10)*P,f1:(132-i*8)*P,v1:'eo',v2:'m',breath:.6,peak:.17*k,vib:.004,rough:.03,bright:2100,wet:.04,release:.05});break;}
    case 'cough':{let tt=t;for(let i=0;i<3;i++){const o=out(0,.2,true);nz(o,tt,{dur:.09,peak:.36*k,f:1200,f1:600,q:.7});voice(tt,{dur:.08,f0:150*P,f1:120*P,v1:'eo',breath:.6,peak:.25*k,release:.02,attack:.004});tt+=R(.19,.26);}break;}
    case 'spit':{const o=out(.2,.12,true);nz(o,t,{dur:.012,peak:.4,f:3500,type:'highpass',q:.5});nz(o,t+.012,{dur:.09,peak:.26,f:2400,f1:1500,q:.9});voice(t+.01,{dur:.07,f0:180*P,v1:'e',breath:.7,peak:.12,release:.02});break;}
    case 'huff':{const o=out(0,.12,true);nz(o,t,{dur:.22,peak:.3*k,f:500,f1:350,type:'lowpass',q:.6});voice(t,{dur:.16,f0:120*P,f1:100*P,v1:'m',breath:.6,peak:.18*k,bright:1200});break;}
@@ -1774,11 +1774,9 @@ const AUDIO=(()=>{
   }
  }
  /* ---- 수혜자들과 되살림 ---- */
- // 웅성거림: 짧은 애원 목소리 서넛이 겹친다
- function murmur(k=1){if(!ready())return;const t=Math.max(ctx.currentTime+.01,duckUntil);for(let i=0;i<4;i++){const tt=t+i*R(.06,.14),P=R(.9,1.12);voice(tt,{dur:R(.22,.38),f0:(170+i*22)*P,fm:(215+i*20)*P,fmAt:.6,f1:(185+i*16)*P,v1:pick(['eo','a','e']),v2:'m',breath:.4,peak:.14*k,vib:.03,vibHz:6.5,rough:.07,bright:2600,pan:R(-.5,.5)});}}
- // 환호: 여럿이 '와—' 하고 올라갔다 내려온다
- function cheer(k=1){if(!ready())return;const t=Math.max(ctx.currentTime+.01,duckUntil);for(let i=0;i<6;i++){const tt=t+R(0,.22),P=R(.85,1.2),f0=(190+i*28)*P;voice(tt,{dur:R(.55,.85),f0:f0,fm:f0*1.35,fmAt:.3,f1:f0*1.15,v1:'a',v2:'a',breath:.25,peak:.16*k,vib:.02,vibHz:5,rough:.05,bright:3400,wet:.3,pan:R(-.6,.6)});}
-  const o=out(0,.25);nz(o,t,{dur:.9,peak:.12*k,a:.12,f:1600,f1:2600,q:.6,curve:'lin'});}
+ // 말풍선의 모음 발성이 환호·항의를 맡는다. 별도의 긴 합성 합창은 겹치지 않는다.
+ // 울음도 같은 짧은 음절 방식으로: 길게 떨리는 모음 대신 두 번 끊기는 흐느낌.
+ function crowdSob(k=1){return speak('흑…흑.',{pitch:R(330,390),formant:1.12,speed:1.25,gain:.75*k});}
  // 불씨가 모이는 동안: 점점 올라가는 울림 + 바람
  function charge(dur=2.5,k=1){if(!ready())return;const t=ctx.currentTime+.01,o=out(0,.35);
   osc(o,t,{f0:160,f1:1250,dur:dur,peak:.22*k,a:dur*.55,type:'sine',curve:'lin',glide:dur});
@@ -1894,7 +1892,7 @@ const AUDIO=(()=>{
   });
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
- return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ return {unlock,hold,crowdSob,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -2884,7 +2882,7 @@ const CROWD=(()=>{
   a.z=adamp(a.z,v[0],l,dt);a.x=adamp(a.x,v[1],l,dt);a.ez=adamp(a.ez,v[2],l,dt);
   a.sh.rotation.set(-a.x,0,s*a.z);a.el.rotation.set(-a.ez,0,0);}
 
- const state={mode:'hidden',at:0,ev:[],nextSob:0,nextMurmur:0,watching:false,cryUntil:0,nextTear:0};
+ const state={mode:'hidden',at:0,ev:[],nextSob:0,watching:false,cryUntil:0,nextTear:0};
  // Fixed pool: cheek streams and comic sprays share one draw call, including on slow devices.
  const TEAR_COUNT=96,tearDrops=Array.from({length:TEAR_COUNT},()=>({p:V3(),v:V3(),life:0}));
  const tearMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(1,6,4),new THREE.MeshBasicMaterial({color:col('#b4eeff'),toneMapped:false}),TEAR_COUNT+12);
@@ -2903,7 +2901,7 @@ const CROWD=(()=>{
   if(!state.watching||rev.on||G.ended||G.inputLocked)return;
   state.cryUntil=G.time+2.4;
   for(const p of people){if(!p.root.visible)continue;p.shakeT=G.time;tearBurst(p,Math.min(power,2));}
-  if(G.time>=state.nextSob){AUDIO.voiceRaw('sob',.32);state.nextSob=G.time+rnd(1.2,1.7);}
+  if(G.time>=state.nextSob){AUDIO.crowdSob(.32);state.nextSob=G.time+rnd(1.8,2.4);}
  }
  function updateTears(dt,now){
   const crying=state.watching&&!rev.on&&!G.ended&&!G.inputLocked&&now<state.cryUntil;
@@ -2956,7 +2954,6 @@ const CROWD=(()=>{
   for(const gp of grabbers){gp.root.visible=true;mood(gp,'plead');}
   setMode('grab',at);clearEvents();
   talkLines(LINES.grab,true);
-  sched(.05,()=>{AUDIO.murmur(.5);});
   // 두 마디가 다 찍히고 읽을 틈을 둔 뒤 뿌리친다
   sched(2.9,()=>{grab.shaken=true;VM.shakeOff();AUDIO.whoosh(.9,'hook');for(const gp of grabbers)mood(gp,'wail');BUB.cutFrom(grabbers.map(gp=>gp.root));});
   // 뿌리쳐진 둘은 무대 양옆에 서서 설계자를 지켜본다
@@ -3036,7 +3033,6 @@ const CROWD=(()=>{
   // 2번은 한 걸음 나와서 손가락질
   sched(.55,()=>{const p=people[2];p.root.scale.setScalar(1.34);goTo(p,-.16,1.3,{ry:0,speed:7});stance(p,'point');p.arms.R.finger.visible=true;});
   talkLines(LINES.wall);
-  sched(.1,()=>AUDIO.murmur(.5));
   // 비켜서기: 양옆으로 갈라져 설계자 쪽을 보고 선다
   sched(3.7,()=>{state.watching=true;for(let i=2;i<6;i++){const p=people[i];p.arms.R.finger.visible=false;p.root.scale.setScalar(1);goTo(p,SIDES[i][0],SIDES[i][1],{face:[0,0],speed:6.5});stance(p,'stand');mood(p,'warn');}});
  }
@@ -3114,9 +3110,7 @@ const CROWD=(()=>{
  }
  function cheer(){
   for(let i=0;i<6;i++){const p=people[i];stance(p,'cheer');mood(p,'cheer');p.goal.y=.015;}
-  AUDIO.cheer(.75);
   for(const [i,text,t] of LINES.cheer)later(t,()=>BUB.say({obj:people[i].head,off:V3(0,.1,0),cam:'main'},text,0,{voice:VOICE.crowd[i]}));
-  later(1.4,()=>AUDIO.cheer(.5));
  }
  function sides(){
   for(let i=0;i<6;i++){const p=people[i];goTo(p,SIDES[i][0],SIDES[i][1],{face:[0,0],speed:5.5});stance(p,'cheer');mood(p,'cheer');}
@@ -3197,7 +3191,7 @@ const CROWD=(()=>{
    if(p.stampT>=0){const u=(now-p.stampT)/.2;if(u<1){const e=easeIn3(u);p.stamp.scale.setScalar(lerp(2.4,1,e));p.stamp.position.z=.0085+lerp(.05,0,e);p.stamp.material=stampMat;}
     else{p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;const v=(now-p.stampT-.2)/.4;if(v<1){p.ink.visible=true;p.ink.scale.setScalar(.03+v*.075);p.ink.material.opacity=.6*(1-v);}else{p.ink.visible=false;p.stampT=-1;}}}
   }
-  if(state.mode==='revive'&&!rev.impact&&now>=state.nextSob&&people.some(p=>p.mood==='wail'||p.mood==='pray')){AUDIO.voiceRaw('sob',.4);state.nextSob=now+rnd(.6,1.0);}
+  if(state.mode==='revive'&&!rev.impact&&now>=state.nextSob&&people.some(p=>p.mood==='wail'||p.mood==='pray')){AUDIO.crowdSob(.4);state.nextSob=now+rnd(1.8,2.4);}
   updateTears(dt,now);reviveUpdate(dt);
  }
  function hide(){setMode('retreat');for(const p of people){const s=p.x<0?-1:1;goTo(p,p.x+s*1.2,p.z+.3,{ry:p.ry,speed:6});}sched(.9,()=>{root.visible=false;for(const p of people)p.hidden=true;state.mode='hidden';});}
@@ -4832,6 +4826,23 @@ const ARM_CLEARANCE=(()=>{
  return {apply};
 })();
 
+// Keep the hollow crown's rim outside the scalp while it tips. Reuse samples each frame.
+const CROWN_FIT=(()=>{
+ const rim=[],p=V3();
+ for(const [r,y] of [[.166,-.03],[.158,.03],[.15,.09],[.1755,-.0385]])for(let i=0;i<96;i++)rim.push(V3(Math.sin(i*TAU/96)*r,y,Math.cos(i*TAU/96)*r));
+ function apply(crown,rest,tilt){
+  const t=clamp(tilt,0,1.15);
+  crown.rotation.set(rest.r.x-t*.2,0,t*.45);
+  crown.position.set(rest.p.x+t*.035,rest.p.y,rest.p.z);
+  let lift=0;
+  for(const v of rim){p.copy(v).applyQuaternion(crown.quaternion).add(crown.position);
+   const r2=(p.x/.182)**2+((p.z+.028)/.192)**2;
+   if(r2<1)lift=Math.max(lift,.045+.198*Math.sqrt(1-r2)+.002-p.y);
+  }
+  crown.position.y+=lift;
+ }
+ return {apply};
+})();
 class Emperor{
  constructor(result,lookIndex=0){
   this.result=result;this.lookIndex=lookIndex;
@@ -5164,7 +5175,10 @@ const F=this.face=grp(head,[0,.215,0],'face');
   const cr=this.crown=grp(this.face,[0,.205,-.015],'crown');cr.rotation.x=-.05;
   this.crownRest={p:cr.position.clone(),r:cr.rotation.clone()};
   // 속관도 붉은 칠로 마감해 떨어졌을 때 검은 원통 덩어리로 보이지 않게 한다
-  mk(cylGeo(.15,.166,.12,32),M.lacRed,cr,{p:[0,.03,0],part:'crown'});
+  // Open underside: a solid bottom disk cut straight through the head when tilted.
+  mk(cylGeo(.15,.166,.12,32,true),M.lacRed,cr,{p:[0,.03,0],part:'crown'});
+  const capMat=M.lacRed.clone();capMat.side=THREE.DoubleSide;this.disposables.push(capMat);
+  mk(new THREE.CircleGeometry(.15,32),capMat,cr,{p:[0,.09,0],r:[-PI/2,0,0],part:'crown'});
   mk(cylGeo(.179,.183,.054,48,true),M.gold,cr,{p:[0,-.006,0],part:'crown'});
   for(const y of [.021,-.033])mk(new THREE.TorusGeometry(.181,.0055,6,56),M.goldD,cr,{p:[0,y,0],r:[PI/2,0,0],part:'crown',cast:false});
   // 금관 뾰족 장식(면판 아래까지만 솟는다) + 끝에 진주, 테에는 자수정·옥
@@ -5869,7 +5883,7 @@ doAct(name,o={}){
    case 'crown':{ // 삐뚤어진 면류관을 바로잡는다(면류관 테 옆을 잡는다)
     const F=this.faceIK(_bv1.set(s*.2,.2,.03),_bv2.set(-s,.25,0),_bv3.set(0,-1,0));
     this.setIK(n,{target:F.t,fd:F.fd,pd:F.pd,curl:.4,rate:9,space:'world'});
-    if(!a.done&&u>.5){a.done=true;if(this.crownOn)this.crownTilt=Math.max(0,this.crownTilt-.6);}break;}
+    if(!a.done&&u>.5){a.done=true;if(this.crownOn!==false)this.crownTilt=Math.max(0,(this.crownTilt||0)-.6);}break;}
   }
   if(a.t>=a.dur)this.endAct();
  },
@@ -6917,7 +6931,7 @@ Object.assign(Emperor.prototype,{
   if(part==='tablet'){if(this.tabletHeld)this.dropTablet(V3(dir.x*3,1.4,1.5));out.dmg=.05;return out;}
   // 후광: 깡 하고 흔들리며 금이 간다(몸은 거의 안 다친다)
   if(part==='halo'){const counted=this.haloHit(h);if(counted&&!down){this.doFlinch('shock',.8);this.sp.head.kick(-1.2,dir.x*2,0);}out.halo=true;out.dmg=counted?.04:0;out.vis=counted?.6:0;return out;}
-  if(part==='crown'&&(sharp||gun)){this.kickBody('head',dir,P*.6,kind);if(gun)this.knockCrown(dir);else{this.crownTilt=(this.crownTilt||0)+.35;AUDIO.crown(.8);}this.doFlinch('shock',1);AUDIO.voice('gasp',1);out.dmg=.08;return out;}
+  if(part==='crown'&&(sharp||gun)){this.kickBody('head',dir,P*.6,kind);if(gun)this.knockCrown(dir);else{this.crownTilt=(this.crownTilt||0)+.35;if(this.crownTilt>1.15)this.knockCrown(dir);else AUDIO.crown(.8);}this.doFlinch('shock',1);AUDIO.voice('gasp',1);out.dmg=.08;return out;}
   // 막기
   // 손으로 막기: 너클·칼만 막힌다(총알은 손을 뚫는다)
   const blocked=!gun&&this.guard>.5&&/^(arm|hand)/.test(part)&&!down;
@@ -8031,9 +8045,9 @@ updateBits(dt){
 
 
  crownUpdate(dt){
-  if(this.crownOn===false)return;const t=this.crownTilt||0;
+  if(this.crownOn===false)return;const t=clamp(this.crownTilt||0,0,1.15);
   this.crownTilt=Math.max(0,t-dt*.01);
-  this.crown.rotation.set(this.crownRest.r.x-t*.2,0,t*.45);this.crown.position.set(this.crownRest.p.x+t*.035,this.crownRest.p.y-t*.012,this.crownRest.p.z);
+  CROWN_FIT.apply(this.crown,this.crownRest,this.crownTilt);
  },
 });
 /* ===== 6-6. 후광과 정체 =====
@@ -8410,10 +8424,10 @@ const VM=(()=>{
   thumbHand:true,thumb:[[-.016,-.012,-.06],[-.021,-.004,-.034],[-.02,.0,-.006]],thumbR:[.016,.0145,.0125],thumbNail:[-.8,.6,0]},GUN_M);
  gunGrip.name='pistol-grip';gunGrip.userData.wrist=V3(0,-.006,-.045).applyMatrix4(GUN_M);R.hand.add(gunGrip);
  R.fist.userData.wrist=V3(0,0,-.1);L.fist.userData.wrist=V3(0,0,-.1);
- // 멱살잡이 손(왼손): 손가락을 갈고리처럼 구부려 옷깃을 움켜쥔다. 평소엔 숨기고 잡는 동안 주먹 대신 보인다
- const GRAB_POSE={fingers:[{a:[30,70,55],L:[.042,.028,.022]},{a:[28,72,58],L:[.044,.029,.023]},{a:[30,70,56],L:[.042,.028,.022]},{a:[32,66,52],L:[.034,.023,.019]}],
-  thumb:[[-.04,-.007,-.014],[-.06,-.012,.014],[-.056,-.026,.042],[-.04,-.03,.062]],thumbR:[.017,.0155,.0138,.0122],thumbNail:[-.6,.1,.8]};
- const grabHand=buildHand(1,GRAB_POSE);grabHand.visible=false;grabHand.userData.wrist=V3(0,0,-.1);L.hand.add(grabHand);
+ // 멱살잡이 손(왼손): 네 손가락을 함께 말고 엄지가 검지 옆에서 옷깃을 누른다.
+ const GRAB_POSE={fingers:[{a:[56,82,48],L:[.042,.028,.022]},{a:[58,84,50],L:[.044,.029,.023]},{a:[60,82,48],L:[.042,.028,.022]},{a:[58,78,46],L:[.034,.023,.019]}],
+  thumb:[[-.04,-.007,-.014],[-.054,-.019,.012],[-.041,-.032,.04],[-.02,-.039,.047]],thumbR:[.017,.0155,.0138,.0122],thumbNail:[0,-.5,1]};
+ const grabHand=buildHand(1,GRAB_POSE);grabHand.visible=false;grabHand.userData.wrist=V3(0,-.005,-.1);L.hand.add(grabHand);
  const tools={hand:null,knife,gun};
  // 탄피
  const shells=[];for(let i=0;i<6;i++){const m=mk(cylGeo(.0045,.0045,.016,8),M.brass,root,{cast:false});m.visible=false;shells.push({m,v:V3(),w:V3(),life:0});}
@@ -8429,6 +8443,15 @@ const VM=(()=>{
  function bez(a,b,c,t,out){const u=1-t;return out.set(u*u*a.x+2*u*t*b.x+t*t*c.x,u*u*a.y+2*u*t*b.y+t*t*c.y,u*u*a.z+2*u*t*b.z+t*t*c.z);}
  // 어깨 자리: 화면 아래 양옆(팔이 화면 가운데를 덜 가리게)
  const ANCH={R:V3(.34,-.95,-.04),L:V3(-.34,-.95,-.04)};
+ // The wrist follows the forearm, instead of pitching down against an upward reach.
+ const gripTarget=V3(),gripForward=V3(),gripOffset=V3(),gripUp=V3(-.15,1,.15);
+ function poseCollarGrip(h,x,y){
+  at(x-.025,y+.015,.8,gripTarget);
+  gripForward.subVectors(gripTarget,h.anch).normalize();
+  orient(h.q,gripForward,gripUp);
+  gripOffset.set(-.014,-.028,.046).multiplyScalar(h.scale).applyQuaternion(h.q);
+  h.p.copy(gripTarget).sub(gripOffset);
+ }
  // 도구칸 위쪽 끝(화면 좌표 -1~1)
  function dockY(){const el=$('#tools');if(!el||!el.offsetParent)return -1;return 1-2*el.getBoundingClientRect().top/innerHeight;}
 
@@ -8527,7 +8550,7 @@ const VM=(()=>{
   const h=side==='R'?R:L,ar=h.arm;h.hand.updateMatrix();
   const k=h.hand.scale.x;
   // 소매가 이어지는 손목 자리: 들고 있는 도구의 손마다 다르다
-  const wp=side==='R'&&st.tool==='knife'?knifeGrip.userData.wrist:side==='R'&&st.tool==='gun'?gunGrip.userData.wrist:h.fist.userData.wrist;
+  const wp=side==='L'&&grabHand.visible?grabHand.userData.wrist:side==='R'&&st.tool==='knife'?knifeGrip.userData.wrist:side==='R'&&st.tool==='gun'?gunGrip.userData.wrist:h.fist.userData.wrist;
   const wrist=tv.copy(wp).applyMatrix4(h.hand.matrix);const A=H[side].anch;const d=tv2.subVectors(A,wrist);const len=d.length();d.normalize();
   ar.g.position.copy(wrist);ar.g.quaternion.setFromUnitVectors(UP,d);ar.g.scale.setScalar(k);
   ar.sl.scale.set(1,Math.max(.05,(len-.08*k)/k),1);
@@ -8623,9 +8646,9 @@ const VM=(()=>{
    if(GR.shake>=0){const u=GR.shake/.55,e=Math.sin(Math.min(1,u)*PI),h=H[k];h.p.x+=s*.17*e;h.p.y+=.21*e*(1-u*.4);h.p.z+=.03*e;tmpQ.setFromAxisAngle(tv2.set(0,0,1),-s*.8*e);h.q.premultiply(tmpQ);}}
   if(GR.shake>=0){GR.shake+=rdt;if(GR.shake>.55)GR.shake=-1;}
   for(const s of shells)if(s.life>0){s.life-=rdt;s.v.y-=4*SC*rdt;s.m.position.addScaledVector(s.v,rdt);s.m.rotation.x+=s.w.x*rdt;s.m.rotation.y+=s.w.y*rdt;if(s.life<=0)s.m.visible=false;}
-  // 멱살잡이: 왼손이 상대 가슴 자리로 뻗어 옷깃을 움켜쥔다(손등이 위, 손가락이 상대 쪽). 손 모양은 갈고리 손으로 바꾼다
+  // 멱살잡이: 손목을 팔과 나란히 두고, 손바닥 앞의 쥔 자리를 옷깃에 맞춘다.
   {const g=!!(gripPoint&&st.tool==='hand');if(grabHand.visible!==g){grabHand.visible=g;L.fist.visible=!g;}
-   if(g){const h=H.L;h.p.copy(at(gripPoint.x-.03,gripPoint.y+.03,.8));orient(h.q,V3(.15,-.55,-1),V3(.15,1,-.5));}}
+   if(g)poseCollarGrip(H.L,gripPoint.x,gripPoint.y);}
   // 손 배치(칼·총을 들 때도 붙잡히면 왼팔이 보인다: 왼쪽 사람이 허공을 붙잡지 않게)
   {const showL=st.tool==='hand'||GR.L>.03||GR.goal.L>0;L.hand.visible=L.arm.g.visible=showL;}
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(H[k].scale,1,GR[k]));if(h.hand.visible)placeArm(k);}
