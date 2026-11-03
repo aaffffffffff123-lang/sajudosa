@@ -1224,15 +1224,15 @@ const SCULPT=(()=>{
   if(cols)g.setAttribute('color',new THREE.BufferAttribute(cols,3));
   g.computeBoundingSphere();return g;
  }
- /* 관(팔·다리): a→b 축, 반지름 함수 rf(t,ang), 둘레 칸 rs, 길이 칸 ls. 양 끝은 둥글게 닫는다 */
+ /* 관(팔·다리): a→b 축, 반지름 함수 rf(t,ang), 둘레 칸 rs, 길이 칸 ls. 양 끝은 둥글게 닫는다(openA·openB면 그쪽 끝을 뚫어 둔다: 소매 아가리) */
  function tube(a,b,rf,rs,ls,o={}){
   const ax=V3().subVectors(b,a),L=ax.length();ax.normalize();
   let up=Math.abs(ax.y)>.9?V3(1,0,0):V3(0,1,0);const u=V3().crossVectors(up,ax).normalize(),v=V3().crossVectors(ax,u);
   const capN=o.cap||4,rows=[];
-  // 아래 끝 반구 → 몸통 → 위 끝 반구
-  for(let i=capN;i>=1;i--){const q=i/capN*PI/2;rows.push({t:0,k:Math.cos(q),off:-Math.sin(q)});}
+  // a쪽 끝 반구 → 몸통 → b쪽 끝 반구
+  if(!o.openA)for(let i=capN;i>=1;i--){const q=i/capN*PI/2;rows.push({t:0,k:Math.cos(q),off:-Math.sin(q)});}
   for(let i=0;i<=ls;i++)rows.push({t:i/ls,k:1,off:0});
-  for(let i=1;i<=capN;i++){const q=i/capN*PI/2;rows.push({t:1,k:Math.cos(q),off:Math.sin(q)});}
+  if(!o.openB)for(let i=1;i<=capN;i++){const q=i/capN*PI/2;rows.push({t:1,k:Math.cos(q),off:Math.sin(q)});}
   const pos=[],nor=[],uv=[],idx=[],R=rows.length;
   for(let r=0;r<R;r++){const w=rows[r];
    for(let j=0;j<=rs;j++){const ang=j/rs*TAU,ca=Math.cos(ang),sa=Math.sin(ang);
@@ -1242,7 +1242,10 @@ const SCULPT=(()=>{
     pos.push(cx+dx*rad,cy+dy*rad,cz+dz*rad);
     const nk=w.k,no=w.off;nor.push(dx*nk+ax.x*no,dy*nk+ax.y*no,dz*nk+ax.z*no);
     uv.push(j/rs,r/(R-1));}}
-  for(let r=0;r<R-1;r++)for(let j=0;j<rs;j++){const p=r*(rs+1)+j,q=p+rs+1;idx.push(p,q,p+1,p+1,q,q+1);}
+  // 삼각형 감는 방향: 둘레(j)는 축(a→b)을 오른손으로 감고 줄(r)은 축을 따라 내려가므로, (p, p+1, q) 순으로 감아야 바깥면이 앞면이 된다.
+  // 예전 (p, q, p+1) 순서는 안팎이 뒤집혀 팔·다리·목이 속이 빈 통처럼 보이고(앞면이 걸러짐), 법선이 안쪽을 봐서 찌그러짐·칼자국이 반대로 들어가고,
+  // 맞힘 판정(앞면만)이 반대편 안쪽 벽에 걸렸다.
+  for(let r=0;r<R-1;r++)for(let j=0;j<rs;j++){const p=r*(rs+1)+j,q=p+rs+1;idx.push(p,p+1,q,p+1,q+1,q);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
   g.computeVertexNormals();g.computeBoundingSphere();return g;
  }
@@ -4551,7 +4554,10 @@ const BODYGEO=(()=>{
   G.shoulder=SCULPT.star(ballCap(.09,.1,.118),V3(0,-.05,0),56,44,.2);
   G.uarm=SCULPT.tube(V3(0,.01,0),V3(0,-.13,0),fold(t=>lerp(.099,.109,t),.035,.6),40,12,{cap:3,capScale:.35});
   G.elbow=SCULPT.tube(V3(0,.04,0),V3(0,-.11,0),fold(t=>lerp(.104,.1,t)+.012*Math.exp(-((t-.25)**2)/.02),.04,1.7),40,12,{cap:3,capScale:.5});
-  G.farm=SCULPT.tube(V3(0,.01,0),V3(0,-.137,0),fold(t=>lerp(.1,.112,t),.045,2.9),44,13,{cap:3,capScale:.3});
+  // 아래팔 소매: 손목 쪽 끝은 막지 않고 뚫어 둔다(넓은 소매 아가리). 그 속은 안감(보라, 안쪽 면만 그리는 재질)으로 메워 아가리로 들여다보면 안감·테두리·손이 보인다
+  const farmRf=fold(t=>lerp(.1,.112,t),.045,2.9);
+  G.farm=SCULPT.tube(V3(0,.01,0),V3(0,-.137,0),farmRf,44,13,{cap:3,capScale:.3,openB:true});
+  G.farmLining=SCULPT.tube(V3(0,-.137,0),V3(0,-.07,0),(t,a)=>farmRf(1-t*.456,a)*.985,44,6,{cap:3,capScale:.5,openA:true});
   G.wrist=SCULPT.tube(V3(0,.025,0),V3(0,-.034,0),t=>lerp(.04,.035,t),24,5,{cap:2,capScale:.5});
   G.palm=SCULPT.star((x,y,z)=>smin(ell(x,y,z,0,-.055,.004,.026,.058,.05),ell(x,y,z,0,-.083,.004,.027,.03,.054),.02),V3(0,-.06,.004),30,24,.09);
   // 바지: 엉덩이·허벅지·정강이
@@ -4872,6 +4878,8 @@ class Emperor{
    this.addFlesh(BG.farm.clone(),M.robe,fm,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.01,-.137)));
    mk(new THREE.TorusGeometry(.083,.016,8,30),M.trim,fm,{p:[0,-.135,0],r:[PI/2,0,0],part:'arm'+nm});
    mk(cylGeo(.078,.078,.012,24,true),M.robeIn,fm,{p:[0,-.139,0],cast:false});
+   // 소매 안감: 뚫린 소매 아가리 속을 메우는 컵(안쪽 면만 그린다). 맞힘 판정에는 넣지 않는다
+   mk(BG.farmLining.clone(),M.lining,fm,{cast:false}).userData.noHit=true;
    // 넓은 소매 자락: 팔을 앞으로 들면 아래로 늘어진다
    // (늘어진 자락은 맞힘 판정에서 뺀다: 배 앞에 늘어져 있어도 칼·총이 그 뒤 배에 닿게)
    const drape=grp(fm,[0,-.012,0]);const sleeve=mk(sphereGeo(26),M.robe,drape,{p:[0,-.055,0],s:[.1,.11,.065],flow:true});sleeve.userData.noHit=true;
