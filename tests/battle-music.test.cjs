@@ -5,7 +5,7 @@ function setup(){
  const sources=[],gains=[];let resolve;
  const pending=new Promise(r=>resolve=r);
  const ctx={currentTime:0,decodeAudioData:async()=>({duration:128*60/196}),createBufferSource(){const s={connect(){},disconnect(){},start(t,offset){this.offset=offset;this.started=true},stop(t){this.stopped=t}};sources.push(s);return s},createGain(){const g={gain:{value:0,setValueAtTime(v){this.value=v},linearRampToValueAtTime(v){this.value=v},setTargetAtTime(v){this.value=v},cancelScheduledValues(){}},connect(){},disconnect(){}};gains.push(g);return g}};
- const api=vm.runInNewContext(code+';({music,loadMusic,updateMusic,stopMusic})',{ctx,comp:{},fetch:()=>pending,Promise});
+ const api=vm.runInNewContext(code+';({music,loadMusic,updateMusic,stopMusic})',{ctx,mbus:{},fetch:()=>pending,Promise});
  return {...api,ctx,sources,gains,resolve:()=>resolve({ok:true,arrayBuffer:async()=>new ArrayBuffer(8)})};
 }
 const flush=()=>new Promise(r=>setImmediate(r));
@@ -39,3 +39,4 @@ test('saved defeat count survives reload and ignores corrupt or inaccessible sto
  for(const bad of ['bad','-1','1.5','Infinity']){data.set('palja.defeated',bad);assert.equal(vm.runInNewContext(progressCode,{localStorage}).defeated,0)}
  p=vm.runInNewContext(progressCode,{localStorage:{getItem(){throw Error('blocked')},setItem(){throw Error('blocked')}}});assert.equal(p.add(),1);
 });
+

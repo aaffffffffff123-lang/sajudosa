@@ -350,6 +350,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   .drum .it{font-size:17px}
 }
 @media (prefers-reduced-motion:reduce){.dosa .blink{animation:none}.sheet{animation:none}}
+.privacy-note{margin:10px 0 0;text-align:center;font-size:11px;line-height:1.5;color:var(--muted);font-weight:400}
 </style>
 </head>
 <body>
@@ -462,6 +463,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
    <div class="field" id="occurrence-field" hidden><div class="lbl"><span>그날은 이 시각이 두 번 있었습니다</span></div><div class="seg" role="radiogroup" aria-label="두 번 있던 시각"><label><input type="radio" name="birth-occurrence" value="0"><span>처음 온 시각</span></label><label><input type="radio" name="birth-occurrence" value="1"><span>한 시간 뒤</span></label></div></div>
    <p id="form-error" class="error" role="alert" hidden></p>
    <button type="submit" class="cta">내 사주 풀이 보기</button>
+      <p class="privacy-note">입력 정보는 저장되지 않습니다.</p>
   </form>
  </div>
 </main>
@@ -1869,15 +1871,15 @@ function transitEvidenceV2(g,a,P,kind,ctx){
   if(g===layer.g)push({id:'layer:repeat:'+layer.kind,valence:(harmEl.includes(t.stem.element)||harmEl.includes(t.branch.element))?'adverse':'mixed',level:3,domain:'layer',title:'같은 문제가 다시 겹치는',fact:g+' 간지가 '+lname+'과 그대로 겹칩니다.',effect:'이미 진행 중인 일이 같은 형태로 반복되거나 예상보다 길게 이어집니다.'});
   if(g!==layer.g&&t.branch.ch===o.branch.ch&&SELF_PUNISH[t.branch.ch])push({id:'layer:self-punish:'+layer.kind,valence:'mixed',level:2,domain:'layer',title:'같은 지지의 마찰이 겹치는',fact:g+'의 지지 '+jo(t.branch.ch,'과','와')+' '+lname+'의 지지 '+jo(o.branch.ch,'이','가')+' 만나 자형이 성립합니다.',effect:'서로 다른 시기의 요구가 같은 자리에서 되풀이되어 이미 정한 일정과 대응을 다시 손보기 쉽습니다.'});
   const incomingBad=harmEl.includes(t.branch.element)||bad.includes(t.branch.family),upperNeeded=useEl.includes(o.branch.element)||fav.includes(o.branch.family),upperBad=harmEl.includes(o.branch.element)||bad.includes(o.branch.family),clashVal=incomingBad||upperNeeded&&!upperBad?'adverse':'mixed';
-  if(pairIs(t.branch.ch,o.branch.ch,CLASH))push({id:'layer:clash:'+layer.kind,valence:clashVal,level:3,domain:'layer',title:kind==='달'?'이번 달 일정 때문에 올해 계획을 다시 짜는':kind==='해'?'올해 선택 때문에 오래 잡은 계획을 다시 손보는':'오래 잡은 계획을 다시 짜는',fact:g+'의 지지 '+t.branch.ch+', '+lname+'의 지지 '+o.branch.ch+' 사이에 충이 성립합니다.',effect:upperBad&&!incomingBad?'기존 부담은 줄어도 그동안 정한 직장·거주·관계 일정은 함께 바뀝니다.':'눈앞의 선택을 오래 잡은 일정에 맞추느라 같은 곳을 여러 번 고칩니다.'});
+  if(pairIs(t.branch.ch,o.branch.ch,CLASH))push({id:'layer:clash:'+layer.kind,valence:clashVal,level:3,domain:'layer',title:kind==='달'?'한 달 일정에 밀려 한 해의 계획을 다시 짜는':kind==='해'?'이 해의 선택 때문에 오래 잡은 계획을 다시 손보는':'오래 잡은 계획을 다시 짜는',fact:g+'의 지지 '+t.branch.ch+', '+lname+'의 지지 '+o.branch.ch+' 사이에 충이 성립합니다.',effect:upperBad&&!incomingBad?'기존 부담은 줄어도 그동안 정한 직장·거주·관계 일정은 함께 바뀝니다.':'눈앞의 선택을 오래 잡은 일정에 맞추느라 같은 곳을 여러 번 고칩니다.'});
   if(pairIs(t.branch.ch,o.branch.ch,[['子','卯']]))push({id:'layer:punish:'+layer.kind,valence:'mixed',level:2,domain:'layer',title:'운 사이의 마찰이 반복되는',fact:g+'의 '+jo(t.branch.ch,'과','와')+' '+lname+'의 '+jo(o.branch.ch,'이','가')+' 형을 이룹니다.',effect:'두 시기의 요구가 겹치며 같은 조정을 반복하기 쉽습니다.'});
   if(pairIs(t.branch.ch,o.branch.ch,[['寅','巳'],['巳','申'],['寅','申'],['丑','戌'],['戌','未'],['丑','未']])&&!inCompletedPunishment(t.branch.ch,o.branch.ch))push({id:'layer:partial-punish:'+layer.kind,valence:'mixed',level:1,domain:'layer',title:'같은 마찰이 되풀이되는',fact:g+'의 '+jo(t.branch.ch,'과','와')+' '+lname+'의 '+jo(o.branch.ch,'이','가')+' 삼형의 일부를 이룹니다.',effect:'큰 변화로 단정할 정도는 아닙니다. 전에 걸렸던 역할과 일정에서 한 번 더 멈춥니다.'});
-  if(pairIs(t.branch.ch,o.branch.ch,HARM))push({id:'layer:harm:'+layer.kind,valence:'mixed',level:2,domain:'layer',title:kind==='달'?'이번 달 약속에서 빠진 항목이 뒤늦게 보이는':kind==='해'?'올해 잡은 역할에서 빠진 일이 뒤늦게 보이는':'합의한 역할에서 빠진 일이 뒤늦게 보이는',fact:g+'의 '+jo(t.branch.ch,'과','와')+' '+lname+'의 '+jo(o.branch.ch,'이','가')+' 해를 이룹니다.',effect:'합의한 일정이나 역할에서 작은 누락이 반복되기 쉽습니다.'});
+  if(pairIs(t.branch.ch,o.branch.ch,HARM))push({id:'layer:harm:'+layer.kind,valence:'mixed',level:2,domain:'layer',title:kind==='달'?'이 달의 약속에서 빠진 항목이 뒤늦게 보이는':kind==='해'?'이 해에 맡은 역할에서 빠진 일이 뒤늦게 보이는':'합의한 역할에서 빠진 일이 뒤늦게 보이는',fact:g+'의 '+jo(t.branch.ch,'과','와')+' '+lname+'의 '+jo(o.branch.ch,'이','가')+' 해를 이룹니다.',effect:'합의한 일정이나 역할에서 작은 누락이 반복되기 쉽습니다.'});
   if(pairIs(t.branch.ch,o.branch.ch,BREAK))push({id:'layer:break:'+layer.kind,valence:'mixed',level:1,domain:'layer',title:'진행 중인 관계와 일정이 느슨해지는',fact:g+'의 '+jo(t.branch.ch,'과','와')+' '+lname+'의 '+jo(o.branch.ch,'이','가')+' 파를 이룹니다.',effect:'진행 중인 일정은 흐려지고 약속은 여러 번 밀립니다.'});
   if(COMBINE.some(x=>pairIs(t.branch.ch,o.branch.ch,[x])))push({id:'layer:combine:'+layer.kind,valence:'mixed',level:1,domain:'layer',title:'오래 이어진 일과 새 일정이 묶이는',fact:g+'의 '+jo(t.branch.ch,'과','와')+' '+lname+'의 '+jo(o.branch.ch,'이','가')+' 육합을 이룹니다.',effect:'기존 일정과 관계는 쉽게 끊기지 않고 예상보다 오래 이어집니다.'});
   const sk=Object.keys(STEM_COMBINE_ELEMENT).find(k=>pairIs(t.stem.ch,o.stem.ch,[[k[0],k[1]]]));
   if(sk)push({id:'layer:stem-bind:'+layer.kind,valence:'mixed',level:2,domain:'layer',title:'전에 한 결정이 새 약속에 따라붙는',fact:g+'의 '+jo('천간 '+t.stem.ch,'과','와')+' '+lname+'의 '+jo('천간 '+o.stem.ch,'이','가')+' 합을 이룹니다.',effect:'전에 한 약속이 새 계약에 붙습니다. 하나만 끝내려 해도 다른 쪽 확인이 다시 필요합니다.'});
-  if(!sk&&stemsControl(t.stem.ch,o.stem.ch))push({id:'layer:stem-control:'+layer.kind,valence:(harmEl.includes(t.stem.element)||bad.includes(t.stem.family))?'adverse':'mixed',level:2,domain:'layer',title:kind==='달'?'이번 달 결정 때문에 전에 잡은 약속을 다시 보는':kind==='해'?'올해 결정 때문에 오래 잡은 약속을 다시 보는':'전에 정한 계약과 이동을 다시 보는',fact:g+'의 '+jo('천간 '+t.stem.ch,'과','와')+' '+lname+'의 천간 '+o.stem.ch+' 사이에 극이 성립합니다.',effect:'계약·지원·이동 결정을 다시 검토합니다.'});
+  if(!sk&&stemsControl(t.stem.ch,o.stem.ch))push({id:'layer:stem-control:'+layer.kind,valence:(harmEl.includes(t.stem.element)||bad.includes(t.stem.family))?'adverse':'mixed',level:2,domain:'layer',title:kind==='달'?'이 달의 결정 때문에 전에 잡은 약속을 다시 보는':kind==='해'?'이 해의 결정 때문에 오래 잡은 약속을 다시 보는':'전에 정한 계약과 이동을 다시 보는',fact:g+'의 '+jo('천간 '+t.stem.ch,'과','와')+' '+lname+'의 천간 '+o.stem.ch+' 사이에 극이 성립합니다.',effect:'계약·지원·이동 결정을 다시 검토합니다.'});
  }
  const seen={};return ev.filter(x=>{if(seen[x.id])return false;seen[x.id]=1;return true;});
 }
@@ -2026,12 +2028,12 @@ function closingVerdictV2(d,a,P){
 /* ---------- 팔자 문장: 사회 구조를 그 사람의 팔자로 돌려 말하는 줄 ---------- */
 const FATE_V3={
  work:{
-  hurt_officer:'바른말을 해도 말투와 순서로 찍혀서 결국 손해 보는 팔자입니다.',
-  mixed_officer:'시키는 사람과 책임을 묻는 사람이 늘 다르고 결국 그 책임은 당신이 떠안는 팔자입니다.',
-  officer_overload:'일을 잘 끝낼수록 남의 몫까지 더 얹혀서 일이 줄어들 날이 없는 팔자입니다.',
+  hurt_officer:'틀린 말을 한 사람은 남고, 그 말을 바로잡은 당신이 불편한 사람이 됩니다.',
+  mixed_officer:'하라는 대로 했다는 말은 책임을 물을 때 통하지 않습니다. 시킨 사람은 그 자리에 없고, 당신 이름만 남습니다.',
+  officer_overload:'잘했다는 말은 다음 일을 얹을 때 돌아옵니다. 일을 줄여 주는 보상은 당신 몫에 없습니다.',
   killer_unchecked:'급한 일이 생길 때마다 이름이 먼저 불리고 결국 그 일을 떠맡는 팔자입니다.',
-  owl_food:'결과물을 다 만들어 놓고도 늦은 날짜로만 평가받는 팔자입니다.',
-  wealth_weak_self:'남들이 미룬 잡일까지 다 떠안고 정작 본인 일은 늘 뒤로 밀리는 팔자입니다.',
+  owl_food:'고친 곳은 보이지 않고 늦은 날짜만 남습니다. 당신이 들인 시간은 성실함이 아니라 지각으로 기록됩니다.',
+  wealth_weak_self:'남이 미룬 일을 끝내면 당신 일이 늦었다는 말을 듣습니다. 대신 해 준 시간은 계산에 들어가지 않습니다.',
   wealth_breaks_resource:'생활비를 버느라 준비하던 일이 번번이 끊기고 늘 처음부터 다시 시작하는 팔자입니다.',
   resource_blocks_output:'자격증과 시험 준비로 몇 해를 보내도 뽑는 자리가 없어 준비만 하다 끝나는 팔자입니다.',
   month_day_clash:'일자리를 따라 이리저리 옮겨 다니다가 어디에도 자리 잡지 못하는 팔자입니다.',
@@ -2041,9 +2043,9 @@ const FATE_V3={
   palace_clash:'자리를 옮길 때마다 처음부터 다시 시작해서 쌓은 경력이 하나도 남지 않는 팔자입니다.',
   palace_punish:'궂은 역할은 늘 당신 몫으로 돌아오고 그 자리를 벗어나지 못하는 팔자입니다.',
   palace_self:'바꿀 틈을 주지 않는 일정을 타고나서 항상 바꾸는 게 늦을 팔자입니다.',
-  관성:'일을 잘 끝낼수록 남의 몫까지 더 얹혀서 일이 줄어들 날이 없는 팔자입니다.',
-  재성:'남들이 미룬 잡일까지 다 떠안고 정작 본인 일은 늘 뒤로 밀리는 팔자입니다.',
-  식상:'당신은 먼저 말하면 문제를 꺼내고 뒷수습까지 떠맡아지는 팔자입니다.',
+  관성:'잘했다는 말은 다음 일을 얹을 때 돌아옵니다. 일을 줄여 주는 보상은 당신 몫에 없습니다.',
+  재성:'남이 미룬 일을 끝내면 당신 일이 늦었다는 말을 듣습니다. 대신 해 준 시간은 계산에 들어가지 않습니다.',
+  식상:'문제를 먼저 꺼낸 사람이 해결도 맡습니다. 말한 순간부터 원래 당신 일이었던 것처럼 돌아갑니다.',
   비겁:'스스로 결론을 내지 못하며 시키는 대로만 일하다가 주위는 다 떠나고 끝에는 혼자 남는 팔자입니다.',
   인성:'경력은 쌓지 못하고 준비한 시간은 그냥 소모만 되는 팔자입니다.'
  },
@@ -2056,7 +2058,7 @@ const FATE_V3={
   squeeze:'태어난 해나 태어난 달에 돈·생활 기운이 있어 집안에서 받는 것은 있습니다. 받은 돈은 집값과 교육비로 고스란히 빠져나가고 당신 대에서는 한 칸도 올라가지 못하는 팔자입니다.'
  },
  love:[
-  ['돈 쓰는 방식','둘이 쓸 돈이 늘 빠듯해서 같은 문제로 되풀이해 다투는 팔자입니다.'],
+  ['돈 쓰는 방식','서운했던 말은 사과로 끝낼 수 있어도, 다음 달에 모자랄 돈은 그대로입니다. 화해한 뒤에도 싸울 이유가 남습니다.'],
   ['근무 시간이 바뀌면','근무 시간이 바뀔 때마다 만남도 연락도 같이 흔들려서 인연이 일에 끌려다니는 팔자입니다.'],
   ['답장을 늦춥니다','만날 힘도 남지 않을 만큼 일하다가 인연이 소리 없이 멀어지는 팔자입니다.'],
   ['집 문제','집값이 다 오른 뒤에 태어나 결혼이 늦어지는 팔자입니다.','집 한 칸 마련할 때까지 결혼이 밀리고 결혼한 뒤에는 대출을 갚느라 같이 보낼 시간이 없는 팔자입니다.'],
@@ -2071,7 +2073,7 @@ const FATE_V3={
   ['활동이 적었던','남들 잘 때 일하고 해가 뜬 뒤에야 잠드는 생활에서 벗어나지 못하는 팔자입니다.'],
   ['쉬는 간격 없이','쉬는 시간 몇 분도 눈치를 보며 쓰다가 지쳐서 실수가 나면 그 책임까지 혼자 떠안는 팔자입니다.'],
   ['외부 일정이 늘면','쉬는 시간은 법이 정한 만큼만 받고 쌓인 피로는 혼자 알아서 견디는 팔자입니다.'],
-  ['집에 와서도','일이 끝나도 머리는 퇴근하지 못하고 쉬는 날에도 일을 붙들고 사는 팔자입니다.'],
+  ['집에 와서도','쉬는 날에도 연락을 받을 수 있게 둡니다. 아무 연락도 오지 않은 날까지 쉰 것 같지 않습니다.'],
   ['내일 확인해도','내일 해도 될 일까지 오늘 끝내라는 요구를 받아 잠을 줄이며 사는 팔자입니다.'],
   ['빈 시간이 생기면','빈 시간이 생겨도 일이 먼저 채워져서 제대로 쉬어 본 날이 없는 팔자입니다.'],
   ['시간을 아꼈는데','몸을 갈아 넣어 아낀 시간만큼 회복하는 데 돈과 날을 다시 쓰는 팔자입니다.'],
@@ -2292,7 +2294,7 @@ function makeReading(chart,inp,now){
  // 올해·내년
  const years=[curYear,curYear+1].map(Y=>{const r=readYearV2(Y,a,P,cycles);
   const ms=r.months.filter(m=>m.end>now&&m.score>=38).sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||x.start-y.start).slice(0,2).sort((x,y)=>x.start-y.start);return Object.assign(r,{worstMonths:ms});});
- const pastHits=cycles.filter(c=>c.worstYear&&c.worstYear.year<curYear).map(c=>c.worstYear).sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||y.year-x.year).slice(0,2).sort((x,y)=>x.year-y.year);
+ const pastHits=cycles.filter(c=>c.worstYear&&c.worstYear.year<curYear).map(c=>({...c.worstYear})).sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||y.year-x.year).slice(0,2).sort((x,y)=>x.year-y.year);
  const profile={id:'ziping-month-command-conservative-v2',monthCommand:'건록·양인 월령 우선, 겁재 본기는 월겁격, 그 밖은 비겁을 제외한 투간·본기 순',strength:'득령·득지·득세와 설기·극제의 범주 판정',structureRepair:'투간과 통근이 함께 있을 때 구제·제화를 주근거로 사용',transform:'합·삼합·방합은 묶임과 집중으로만 반영하고 합화는 판정하지 않음',specialPattern:'종격은 확정하지 않고 일반 강약 구조로 해석'};
  const dayBoundaryNote=inp.unknown&&chart.boundary&&chart.boundary.day?'태어난 시간이 없어 날짜 경계에 걸린 경우 결과가 달라질 수 있습니다. 아래 풀이는 낮 12시를 기준으로 계산했습니다. ':'';
  return {P:P,a:a,pillars:pillars,dayStem:dayStem,me:STEMS[dayStem],trait:traitSummaryV2(a,P),counts:counts,shares:sh,elRemark:elRemark,
@@ -2417,10 +2419,73 @@ function plainMd(s){return plainEsc(s).replace(/\*\*(.+?)\*\*/g,'<strong class="
 function dedupeReadingDisplayV2(r){
  const seen=new Set,key=s=>String(s||'').replace(/\*\*/g,'').replace(/\s+/g,' ').trim();
  const keep=value=>sentenceListV2(value).filter(s=>{const k=key(s);if(!k||seen.has(k))return false;seen.add(k);return true;}).join(' ');
- sentenceListV2(r.verdict).forEach(s=>seen.add(key(s)));
+ [r.trait,r.core.text,r.core.strength].forEach(t=>sentenceListV2(t).forEach(s=>seen.add(key(s))));
  r.sections.forEach(sec=>{
   sentenceListV2(sec.head).forEach(s=>seen.add(key(s)));
   sec.body=sec.body.map(keep).filter(Boolean);
+ });
+ return r;
+}
+// Narrative time belongs to the displayed year, never the date the shared template was written.
+function pastReadingText(text){
+ const endings={
+  '다시 손봅니다':'다시 손봤습니다','손보기 쉽습니다':'손보아야 했습니다',
+  '생깁니다':'생겼습니다','부딪힙니다':'부딪혔습니다','바뀝니다':'바뀌었습니다',
+  '줄어듭니다':'줄었습니다','늘어납니다':'늘었습니다','고칩니다':'고쳤습니다',
+  '맞춥니다':'맞췄습니다','받습니다':'받았습니다','맡습니다':'맡았습니다',
+  '남습니다':'남았습니다','샙니다':'샜습니다','깁니다':'길었습니다',
+  '밀립니다':'밀렸습니다','끊깁니다':'끊겼습니다','묶입니다':'묶였습니다',
+  '붙습니다':'붙었습니다','보입니다':'보였습니다','흔들립니다':'흔들렸습니다',
+  '어긋납니다':'어긋났습니다','늦어집니다':'늦어졌습니다','커집니다':'커졌습니다',
+  '작아집니다':'작아졌습니다','줄어집니다':'줄어졌습니다','늘어집니다':'늘어졌습니다',
+  '따릅니다':'따랐습니다','따라옵니다':'따라왔습니다','갑니다':'갔습니다',
+  '봅니다':'봤습니다','셉니다':'셌습니다','칩니다':'쳤습니다',
+  '합니다':'했습니다','됩니다':'됐습니다','있습니다':'있었습니다','없습니다':'없었습니다',
+  '적습니다':'적었습니다','큽니다':'컸습니다','않습니다':'않았습니다'
+ };
+ let out=String(text).replace(/올해|이 해/g,'그해').replace(/이번 달|이 달/g,'그달').replace(/지금/g,'당시');
+ for(const [from,to] of Object.entries(endings))out=out.split(from).join(to);
+ return out;
+}
+function refinePeriodCopy(r){
+ const seen=new Map(),titles=new Map();
+ const edit=(item,kind,label)=>{
+  const priority={structure:5,formation:4,palace:3,layer:2,stem:1,balance:0};
+  const evidence=(item.evidence||[]).filter(x=>x.valence==='adverse').sort((a,b)=>b.level-a.level||(priority[b.domain]||0)-(priority[a.domain]||0));
+  const top=evidence[0];
+  if(top&&top.id==='transit:hurt_officer'){
+   const copy={
+    past:['옳은 말을 하고도 찍혔던 해','문제를 지적한 말이 보고와 평가에서 되레 흠이 됐습니다. 잘못된 일을 바로잡으려다 자기 말부터 해명해야 했습니다.'],
+    year:['말한 내용보다 말한 사람이 문제가 되는 해','잘못된 순서를 지적하면 협조하지 않는 사람이 됩니다. 그냥 넘기면 뒤처리는 당신 몫입니다.'],
+    next:['지난 말까지 다음 평가에 따라붙는 해','끝난 줄 알았던 말이 평가 자리에서 다시 나옵니다. 설명을 보탤수록 해명해야 할 말만 늘어납니다.'],
+    cycle:['자리를 옮겨도 바른말을 한 대가가 남습니다','맡는 일과 윗사람은 바뀝니다. 문제를 짚었다가 처리 방식과 태도까지 평가받는 자리는 반복됩니다.']
+   }[kind];
+   item.title=copy[0];item.text=copy[1];
+   // Keep an independent second cause, instead of repeating the same cause in two phrasings.
+   const second=evidence.find(x=>x!==top&&x.domain!==top.domain&&x.level>=3);
+   if(second)item.text+=' '+plainOutcomeTextV2(second.effect);
+  }
+  if(kind==='past'){
+   item.title=pastReadingText(item.title).replace(/손보는 해$/,'손봐야 했던 해').replace(/다시 보는 해$/,'다시 살펴야 했던 해').replace(/는 해$/,'는 해였습니다');
+   item.text=pastReadingText(item.text);
+   item.title=item.title.replace('그해의 선택 때문에 오래 잡은 계획을 다시 손봐야 했던 해','눈앞의 선택으로 오래 잡은 계획이 틀어졌던 해');
+   item.text=item.text.replace('눈앞의 선택을 오래 잡은 일정에 맞추느라 같은 곳을 여러 번 고쳤습니다.','당장 결정해야 할 일에 맞추느라 오래 잡아 둔 계획을 여러 번 고쳤습니다.');
+  }
+  const oldTitle=titles.get(item.title);
+  if(oldTitle)item.title=kind==='cycle'?'앞선 10년의 문제가 다음 자리까지 이어집니다':oldTitle+'의 문제가 다시 겹치는 해';
+  else titles.set(item.title,label);
+  let firstRepeat=null;
+  const kept=sentenceListV2(item.text).filter(s=>{const old=seen.get(s);if(old){firstRepeat=firstRepeat||old;return false;}seen.set(s,label);return true;});
+  // A repeated pattern is stated once and linked back, not padded with interchangeable synonyms.
+  if(firstRepeat)kept.unshift(firstRepeat+'에 짚은 문제가 '+(kind==='past'?'이때도 이어졌습니다.':'이 시기에도 이어집니다.'));
+  item.text=kept.join(' ');
+ };
+ (r.pastHits||[]).forEach(x=>edit(x,'past',x.year+'년'));
+ r.years.forEach((x,i)=>edit(x,i?'next':'year',x.year+'년'));
+ const at=r.luck.cycles.findIndex(x=>x.i===r.luck.current),shown=r.luck.cycles.slice(Math.max(0,at),Math.max(0,at)+3);
+ r.luck.cycles.forEach(x=>{
+  if(shown.includes(x))edit(x,'cycle',x.startYear+'~'+x.endYear+'년');
+  if(x.worstYear&&x.worstYear.year<r.years[0].year){x.worstYear.title=pastReadingText(x.worstYear.title).replace(/는 해$/,'는 해였습니다');}
  });
  return r;
 }
@@ -2429,13 +2494,15 @@ function modernizeReadingDisplay(r){
  r.trait=f(r.trait);r.elRemark=f(r.elRemark);
  r.core.title=f(r.core.title);r.core.text=f(r.core.text);r.core.strength=f(r.core.strength);r.core.tags=arr(r.core.tags);r.core.facts.forEach(x=>{x.label=f(x.label);x.value=f(x.value);});
  r.sections.forEach(x=>{x.title=f(x.title);x.head=f(x.head);x.body=arr(x.body);if(x.note){x.note.label=f(x.note.label);x.note.value=f(x.note.value);}});
+ const work=r.sections.find(x=>x.basisKey==='work:hurt_officer');
+ if(work){work.head='문제를 고치러 갔다가 태도를 지적받습니다.';work.body[0]='일이 잘못된 이유를 설명하러 갔다가, 누구 허락을 받고 말했느냐는 질문을 받습니다.';}
  r.sinsal.forEach(x=>{x.name=f(x.name);x.where=f(x.where);x.text=f(x.text);});
  (r.pastHits||[]).forEach(x=>{x.title=f(x.title);x.text=f(x.text);});
- r.years.forEach(x=>{x.title=f(x.title);x.text=f(x.text);(x.worstMonths||[]).forEach(m=>m.title=f(m.title));});
- r.luck.cycles.forEach(x=>{x.title=f(x.title);x.text=f(x.text);if(x.worstYear)x.worstYear.title=f(x.worstYear.title);});
+ r.years.forEach(x=>{x.title=f(x.title);x.text=f(x.text);(x.worstMonths||[]).forEach(m=>m.title=f(m.title).replace('말과 규정이 다시 부딪히는 달','보고·평가에서 말이 문제가 되는 시기'));});
+ r.luck.cycles.forEach(x=>{x.title=f(x.title);x.text=f(x.text);if(x.worstYear)x.worstYear.title=f(x.worstYear.title).replace('말과 규정이 다시 부딪히는 해','보고·평가 마찰 집중');});
  r.loop=arr(r.loop);r.verdict=f(r.verdict);r.secondary=arr(r.secondary);
  if(r.dominant){r.dominant.title=f(r.dominant.title);r.dominant.core=f(r.dominant.core);r.dominant.verdict=f(r.dominant.verdict);r.dominant.tags=arr(r.dominant.tags);r.dominant.loop=arr(r.dominant.loop);}
- return dedupeReadingDisplayV2(r);
+ return dedupeReadingDisplayV2(refinePeriodCopy(r));
 }
 function icon(id,cls){return '<svg class="'+(cls||'')+'" viewBox="0 0 64 64" aria-hidden="true"><use href="#'+id+'"/></svg>';}
 function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
@@ -2841,6 +2908,13 @@ function glyphHtml(info,tag,isMe){
  const e=ELEMENTS[info.el];
  return '<div class="glyph">'+icon(info.icon)+'<span class="nm">'+esc(info.name)+'</span><span class="tags"><span class="el" style="--c:'+e.color+'">'+esc(e.name)+'</span><span class="tg'+(isMe?' me':'')+'">'+esc(tag)+'</span></span></div>';
 }
+function monthWindowsHtml(months){
+ const groups=new Map();
+ months.forEach(m=>{const a=new Date(m.start+9*HOUR),z=new Date(m.end+9*HOUR-1),range=(a.getUTCMonth()+1)+'월 '+a.getUTCDate()+'일~'+(z.getUTCMonth()+1)+'월 '+z.getUTCDate()+'일';
+  if(!groups.has(m.title))groups.set(m.title,[]);groups.get(m.title).push(range);
+ });
+ return Array.from(groups,([title,ranges])=>'<span>'+ranges.map(esc).join('<br>')+'</span><em>'+plainEsc(title)+'</em>').join('');
+}
 function renderResult(R){
  const inp=R.input,r=R.reading,c=R.chart;
  $('r-title').textContent=(inp.name?inp.name+'님의 사주':'나의 사주');
@@ -2895,15 +2969,15 @@ function renderResult(R){
  // 올해·내년
  const Y=$('years');Y.replaceChildren();
  r.years.forEach((y,i)=>{
-  const b=BRANCHES[y.g[1]],months=y.worstMonths.map(m=>{const a=new Date(m.start+9*HOUR),z=new Date(m.end+9*HOUR-1);return '<span>'+(a.getUTCMonth()+1)+'월 '+a.getUTCDate()+'일~'+(z.getUTCMonth()+1)+'월 '+z.getUTCDate()+'일</span><em>'+plainEsc(m.title)+'</em>';}).join(''),monthNotice=y.monthDataComplete?'':'<div class="months"><b>한 달 흐름을 계산할 수 없는 해</b><p>이 해의 월별 날짜를 나누는 기준 시각 자료가 없어 월별 날짜는 표시하지 않습니다.</p></div>',ps=new Date(y.periodStart+9*HOUR),pe=new Date(y.periodEnd+9*HOUR-1),period=(ps.getUTCMonth()+1)+'월 '+ps.getUTCDate()+'일~'+(pe.getUTCFullYear()===ps.getUTCFullYear()?'':pe.getUTCFullYear()+'년 ')+(pe.getUTCMonth()+1)+'월 '+pe.getUTCDate()+'일';
+  const b=BRANCHES[y.g[1]],months=monthWindowsHtml(y.worstMonths),monthNotice=y.monthDataComplete?'':'<div class="months"><b>한 달 흐름을 계산할 수 없는 해</b><p>이 해의 월별 날짜를 나누는 기준 시각 자료가 없어 월별 날짜는 표시하지 않습니다.</p></div>',ps=new Date(y.periodStart+9*HOUR),pe=new Date(y.periodEnd+9*HOUR-1),period=(ps.getUTCMonth()+1)+'월 '+ps.getUTCDate()+'일~'+(pe.getUTCFullYear()===ps.getUTCFullYear()?'':pe.getUTCFullYear()+'년 ')+(pe.getUTCMonth()+1)+'월 '+pe.getUTCDate()+'일';
   Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(y.text?'<p>'+plainMd(y.text)+'</p>':'')+(months?'<div class="months"><b>'+(i===0?'남은 기간 중 나쁜 신호가 겹치는 때':'나쁜 신호가 겹치는 때')+'</b><div class="mgrid">'+months+'</div></div>':monthNotice)));
  });
  // 대운
  const L=r.luck,currentCycle=L.cycles.find(c=>c.i===L.current),cyc=L.cycles,fd=localYmd(inp.place,L.start),currentAt=cyc.findIndex(c=>c.i===L.current),nearby=currentAt>=0?cyc.slice(currentAt,currentAt+3):cyc.slice(0,3),worstNearby=nearby.slice().sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||x.i-y.i)[0],worstShown=worstNearby&&worstNearby.score>=45?worstNearby.i:-1;
- $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년 '+fd.m+'월**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':'')+' 직장은 여러 번 바뀌어도 하는 일과 받는 대우는 늘 비슷한 자리를 맴도는 팔자입니다.');
+ $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년'+(inp.unknown?' 무렵':(' '+fd.m+'월'))+'**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':'')+' 직장은 여러 번 바뀌어도 하는 일과 받는 대우는 늘 비슷한 자리를 맴도는 팔자입니다.');
  $('luck-graph').innerHTML=luckGraph(L,nearby,worstShown);
  const LL=$('luck-list');LL.replaceChildren();
- nearby.forEach(cy=>{const now=cy.i===L.current,worst=cy.i===worstShown,ageBits=['만 '+cy.age+'세'];if(cy.ageMonths)ageBits.push(cy.ageMonths+'개월');if(cy.ageDays)ageBits.push(cy.ageDays+'일');if(cy.ageHours)ageBits.push(cy.ageHours+'시간');const showWorstYear=cy.worstYear&&!(r.pastHits||[]).some(x=>x.year===cy.worstYear.year);
+ nearby.forEach(cy=>{const now=cy.i===L.current,worst=cy.i===worstShown,ageBits=[cycleAgeLabel(cy,inp.unknown)];const showWorstYear=cy.worstYear&&!(r.pastHits||[]).some(x=>x.year===cy.worstYear.year);
   const li=el('li',(now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+ageBits.join(' ')+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">나쁜 흐름이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(showWorstYear?'<div class="wy"><b>'+cy.worstYear.year+'년</b> '+plainEsc(cy.worstYear.title)+'</div>':'')+'</div>');
   LL.append(li);});
  // 되풀이·총평
@@ -2911,6 +2985,10 @@ function renderResult(R){
  $('verdict').textContent=plainSajuText(r.verdict);
  $('also').innerHTML=r.secondary.length?'<b>함께 나타나는 특징</b>'+r.secondary.map(t=>'<li>'+plainEsc(t)+'</li>').join(''):'';
  const cz=$('caution'),cs=r.cautions||[];cz.hidden=!cs.length;cz.innerHTML=cs.length?'<b>탈 없이 지나가려면</b>'+cs.map(t=>'<p>'+plainEsc(t)+'</p>').join(''):'';
+}
+function cycleAgeLabel(cy,unknown){
+ if(unknown)return '약 만 '+cy.age+'세 무렵';
+ return '만 '+cy.age+'세'+(cy.ageMonths?' '+cy.ageMonths+'개월':'');
 }
 function luckGraph(L,cycles,worstIndex){
  const cyc=cycles||L.cycles,W=420,H=230,pl=22,pr=22,pt=44,pb=50,n=cyc.length;
@@ -2982,7 +3060,7 @@ function loadOne(srcs,ok,done,i){
 }
 function preloadFight(){
  if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';
- const bust=/^https?:/.test(location.protocol)?'?t='+Math.floor(Date.now()/60000):'';
+ const bust=/^https?:/.test(location.protocol)?'?v=20261103-copy-mix-tears-1':'';
  loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
   if(!ok){FIGHT.state='failed';fightFailed();return;}
   loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{
@@ -3011,5 +3089,6 @@ window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wall
 </script>
 </body>
 </html>
+
 
 

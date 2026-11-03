@@ -9,7 +9,7 @@ function setup(ok=true){
  const played=[],spoken=[];let release;
  const pending=new Promise(resolve=>release=resolve);
  const ctx={decodeAudioData:async()=>({duration:.528}),createBufferSource(){const s={connect(){},disconnect(){},start(){played.push(s)},stop(){s.stopped=true}};return s}};
- const scope={ctx,vbus:{},on:true,Promise,fetch:()=>pending,window:{
+ const scope={ctx,vbus:{},volumes:{voice:1},on:true,Promise,fetch:()=>pending,window:{
   SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
   speechSynthesis:{getVoices:()=>[{name:'English male',lang:'en-US'},{name:'Korean female',lang:'ko-KR'},{name:'Korean male',lang:'ko-KR'}],speak:u=>spoken.push(u),cancel(){}}
  }};
@@ -32,6 +32,10 @@ test('a missing clip falls back to Korean text with an available male Korean voi
 });
 test('muted speech creates no playback',()=>{
  const h=setup();h.scope.on=false;assert.equal(h.scope.speak('암백'),null);assert.equal(h.played.length,0);assert.equal(h.spoken.length,0);
+});
+test('voice level independently mutes clips and sets native fallback volume',()=>{
+ const h=setup();h.scope.volumes.voice=0;assert.equal(h.scope.speak('암백'),null);
+ h.scope.volumes.voice=.35;h.scope.speak('테스트');assert.equal(h.spoken[0].volume,.35);
 });
 
 test('opening line uses the fixed Korean voice clip',async()=>{
@@ -62,3 +66,4 @@ test('player greeting can complete normally',async()=>{
  assert.equal(h.played.length,1);assert.equal(h.spoken.length,0);
  h.played[0].onended();assert.equal(voice.busy,false);
 });
+

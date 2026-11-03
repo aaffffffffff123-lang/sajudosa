@@ -32,6 +32,8 @@ const FIGHT_CSS = `
 #fight #world{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
 #fight #sblood{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 #fight #flash{position:absolute;inset:0;pointer-events:none;background:#fff;opacity:0;z-index:3}
+#fight #omenShade{position:absolute;inset:0;pointer-events:none;z-index:2;opacity:0;background:linear-gradient(165deg,rgba(4,12,20,.92) 10%,rgba(4,12,20,.25) 75%)}
+#fight #fastStory{position:absolute;right:14px;top:calc(64px + var(--safe-t));z-index:8;font-size:12px;padding:10px 12px;min-height:44px}
 #fight #fxtext{position:absolute;inset:0;pointer-events:none;z-index:4;overflow:hidden}
 /* 타격 효과음 글자: 먹글씨(먹색 채움 + 흰 테 + 색깔 그림자). 한 글자씩 흔들리며 '쾅' 박혔다가 조각조각 흩어진다 */
 #fight .pop{position:absolute;left:0;top:0;line-height:1;white-space:nowrap;letter-spacing:-.01em;
@@ -94,6 +96,13 @@ const FIGHT_CSS = `
 #fight .btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 #fight .btn.danger{background:var(--red);color:#fff}
 #fight .btn.soft{border-color:#d9d2c6;box-shadow:0 3px 0 #d9d2c6;font-size:15px;min-height:46px}
+#fight .audio-levels{padding:10px 0;border-bottom:1px solid var(--line)}
+#fight .audio-levels label{display:flex;justify-content:space-between;font-size:14px}
+#fight .audio-levels output{font-variant-numeric:tabular-nums;font-size:12px}
+#fight .audio-levels input{display:block;width:100%;height:28px;margin:2px 0 8px;accent-color:#8b3035}
+#fight #submitDock:not([hidden]){animation:submit-appear .35s ease-out both}
+@keyframes submit-appear{from{opacity:0}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){#fight #submitDock{animation:none}}
 #fight #submitDock .btn{box-shadow:0 4px 0 var(--ink),0 6px 18px rgba(0,0,0,.22)}
 #fight .modal{position:absolute;inset:0;z-index:20;background:rgba(36,28,58,.48);display:flex;align-items:center;justify-content:center;padding:16px}
 #fight .msheet{width:min(100%,400px);max-height:calc(100% - 24px);overflow:auto;background:#fff;border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.28);padding:18px 18px 16px}
@@ -224,6 +233,8 @@ const FIGHT_HTML = `<section id="fight" hidden>
  <canvas id="world" tabindex="-1" aria-label="천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다."></canvas>
  <canvas id="sblood"></canvas>
  <div id="flash"></div>
+ <div id="omenShade" aria-hidden="true"></div>
+ <button class="pill" id="fastStory" type="button" aria-pressed="false" hidden>연출 빨리 보기</button>
  <div id="fxtext" aria-hidden="true"></div>
  <canvas id="speech" aria-hidden="true"></canvas>
  <div id="talkLive" class="sr" aria-live="polite"></div>
@@ -265,6 +276,11 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="pill close" type="button" data-close aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
    <h2 id="fSetTitle">설정</h2>
    <div class="row">소리<button class="switch" id="swSound" type="button" role="switch" aria-checked="true" aria-label="소리"></button></div>
+   <div class="audio-levels">
+    <label for="vol-music">배경음악<output id="volume-music" for="vol-music">100%</output></label><input id="vol-music" type="range" min="0" max="100" step="5" value="100">
+    <label for="vol-effects">효과음<output id="volume-effects" for="vol-effects">100%</output></label><input id="vol-effects" type="range" min="0" max="100" step="5" value="100">
+    <label for="vol-voice">음성<output id="volume-voice" for="vol-voice">100%</output></label><input id="vol-voice" type="range" min="0" max="100" step="5" value="100">
+   </div>
    <div class="row">진동<button class="switch" id="swVibe" type="button" role="switch" aria-checked="true" aria-label="진동"></button></div>
    <div class="row">화면 흔들림<button class="switch" id="swShake" type="button" role="switch" aria-checked="true" aria-label="화면 흔들림"></button></div>
    <div class="row"><div>피<small>끄면 피 대신 먼지가 납니다.</small></div><button class="switch" id="swBlood" type="button" role="switch" aria-checked="true" aria-label="피"></button></div>
@@ -1255,7 +1271,13 @@ const SCULPT=(()=>{
  * 부활 대사만 고정 한국어 남성 음성 파일을 쓴다. 타격음은 여러 겹(낮은 쿵 + 살 철썩 + 뼈 딱 + 공간 울림)으로 쌓고,
  * 목소리는 성대 소리를 모음 울림통(포먼트)에 통과시켜 '윽·억·아악·으으·흐흐' 같은 소리를 낸다. */
 const AUDIO=(()=>{
- let ctx=null,master,comp,lim,bus,vbus,verb,noise,glot,irBuf,on=true,baking=false;
+ let ctx=null,master,comp,lim,bus,vbus,mbus,verb,vverb,noise,glot,irBuf,on=true,baking=false;
+ const volumes={music:1,effects:1,voice:1};
+ function setVolumes(next){
+  for(const k of Object.keys(volumes))if(Number.isFinite(next[k]))volumes[k]=clamp(next[k],0,1);
+  if(ctx)for(const [k,node] of [['music',mbus],['effects',bus],['voice',vbus]])if(node)node.gain.setTargetAtTime(volumes[k],ctx.currentTime,.03);
+  if(tts&&volumes.voice===0)tts.stop();
+ }
  const R=(a,b)=>a+Math.random()*(b-a);
 
  // 한 번만 받아 두는 196 BPM 스윙. 음표 생성은 빌드 때 끝내고 전투 중에는 버퍼 하나만 재생한다.
@@ -1273,7 +1295,7 @@ const AUDIO=(()=>{
   const source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=music.buffer;source.loop=true;
   source.loopStart=0;source.loopEnd=Math.min(music.buffer.duration,128*60/196);
   gain.gain.setValueAtTime(0,ctx.currentTime);gain.gain.linearRampToValueAtTime(MUSIC_LEVEL*(music.quiet?.22:1),ctx.currentTime+.14);
-  source.connect(gain);gain.connect(comp);music.source=source;music.gain=gain;music.at=ctx.currentTime;
+  source.connect(gain);gain.connect(mbus);music.source=source;music.gain=gain;music.at=ctx.currentTime;
   source.onended=()=>{source.disconnect();gain.disconnect();};
   source.start(0,music.offset%source.loopEnd);
  }
@@ -1307,9 +1329,11 @@ const AUDIO=(()=>{
   comp=ctx.createDynamicsCompressor();comp.threshold.value=-14;comp.knee.value=8;comp.ratio.value=5;comp.attack.value=.002;comp.release.value=.14;
   lim=ctx.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.09;
   master=ctx.createGain();master.gain.value=on?.95:0;
-  bus=ctx.createGain();vbus=ctx.createGain();vbus.connect(bus);
-  bus.connect(comp);comp.connect(lim);lim.connect(master);master.connect(ctx.destination);
-  irBuf=makeIR(1.6,2.8,.3);verb=ctx.createConvolver();verb.buffer=irBuf;const vr=ctx.createGain();vr.gain.value=.4;verb.connect(vr);vr.connect(comp);
+  bus=ctx.createGain();vbus=ctx.createGain();mbus=ctx.createGain();
+  bus.gain.value=volumes.effects;vbus.gain.value=volumes.voice;mbus.gain.value=volumes.music;
+  bus.connect(comp);vbus.connect(comp);mbus.connect(comp);comp.connect(lim);lim.connect(master);master.connect(ctx.destination);
+  irBuf=makeIR(1.6,2.8,.3);verb=ctx.createConvolver();verb.buffer=irBuf;const vr=ctx.createGain();vr.gain.value=.4;verb.connect(vr);vr.connect(bus);
+  vverb=ctx.createConvolver();vverb.buffer=irBuf;const vvr=ctx.createGain();vvr.gain.value=.4;vverb.connect(vvr);vvr.connect(vbus);
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
@@ -1356,7 +1380,7 @@ const AUDIO=(()=>{
   return retortLoad;
  }
  function speakTTS(text){
-  if(!on)return null;
+  if(!on||volumes.voice===0)return null;
   if(tts)tts.stop();
   const synth=window.speechSynthesis,Utterance=window.SpeechSynthesisUtterance;
   let busy=true,started=false,source=null,native=false;
@@ -1369,7 +1393,7 @@ const AUDIO=(()=>{
    if(!busy||!on)return;
    if(!synth||!Utterance){finish();return;}
    const sharp=text==='죽어!'||text==='뭘 꼬라봐 씨발아'; // 내 외침은 빠르고 높게, 설계자 말은 느리고 낮게
-   const u=new Utterance(text);u.lang='ko-KR';u.rate=sharp?1.15:.9;u.pitch=sharp?1:.75;u.volume=1;
+   const u=new Utterance(text);u.lang='ko-KR';u.rate=sharp?1.15:.9;u.pitch=sharp?1:.75;u.volume=volumes.voice;
    const voices=(synth.getVoices?synth.getVoices():[]).filter(v=>/^ko(?:[-_]|$)/i.test(v.lang));
    const v=voices.find(v=>/남성|남자|\bmale\b|Minho|InJoon|BongJin|Hyunsu|Hyunwoo|Hyun-Woo/i.test(v.name))||voices[0];if(v)u.voice=v;
    native=true;u.onstart=()=>{started=true;};u.onend=u.onerror=finish;
@@ -1395,7 +1419,7 @@ const AUDIO=(()=>{
  function out(pan=0,wet=.2,voice=false){
   const g=ctx.createGain();let node=g;
   if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=clamp(pan,-1,1);g.connect(p);node=p;}
-  node.connect(voice?vbus:bus);if(wet>0){const s=ctx.createGain();s.gain.value=wet;node.connect(s);s.connect(verb);}
+  node.connect(voice?vbus:bus);if(wet>0){const s=ctx.createGain();s.gain.value=wet;node.connect(s);s.connect(voice?vverb:verb);}
   return g;
  }
  // 살짝 찌그러뜨려(소프트 클립) 소리를 두껍고 세게
@@ -1444,12 +1468,12 @@ const AUDIO=(()=>{
  const reactionLive=[],reactionBags={},reactionLast={};
  function bakeOne(fn,dur,raw,mono=false){
   const sr=mono?24000:ctx.sampleRate,oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(mono?1:2,Math.ceil(sr*dur),sr);
-  const saved=[ctx,bus,vbus,verb];
+  const saved=[ctx,bus,vbus,verb,vverb];
   baking=true;
   try{ctx=oc;bus=oc.createGain();bus.connect(oc.destination);vbus=bus;
    if(mono){verb=oc.createGain();}else{verb=oc.createConvolver();verb.buffer=irBuf;const vr=oc.createGain();vr.gain.value=.4;verb.connect(vr);vr.connect(oc.destination);}
-   fn(.004);}
-  finally{baking=false;[ctx,bus,vbus,verb]=saved;}
+   vverb=verb;fn(.004);}
+  finally{baking=false;[ctx,bus,vbus,verb,vverb]=saved;}
   // 옛 사파리는 startRendering이 약속(Promise)을 돌려주지 않는다. 끝내 안 오면 3초 뒤 포기
   let pr=null;try{pr=oc.startRendering();}catch(_){pr=null;}
   if(!pr||!pr.then)pr=new Promise(res=>{oc.oncomplete=e=>res(e.renderedBuffer);});
@@ -1870,7 +1894,7 @@ const AUDIO=(()=>{
   });
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
- return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -2346,6 +2370,8 @@ const BEYOND=(()=>{
   if(omenT0<0||(active&&eye.lock>0))return;
   const u=(G.time-omenT0-OMEN.delay)/OMEN.dur;
   if(u<0)return;
+  // Shadow maps may be disabled by adaptive quality. Keep the approach readable then too.
+  $('#omenShade').style.opacity=renderer.shadowMap.enabled?'0':String(.65*smooth(clamp(u,0,1)));
   if(!caster.visible){caster.visible=true;const c=key.shadow.camera;shadowSaved={left:c.left,right:c.right,top:c.top,bottom:c.bottom};c.left=-4.5;c.right=4.5;c.top=4.5;c.bottom=-3.5;c.updateProjectionMatrix();if(!omenSound){omenSound=true;AUDIO.omen();}}
   const dir=_od.subVectors(key.target.position,key.position).normalize();
   const right=_or.crossVectors(dir,UP).normalize(),upL=_ou.crossVectors(right,dir).normalize();
@@ -2439,6 +2465,7 @@ const BEYOND=(()=>{
   model.root.scale.setScalar(scale);
   model.setContactPitch(Math.atan(tF*.18));
   updateEye(k,dt);
+  if(eye.lock>0)$('#omenShade').style.opacity='0';
   renderer.toneMappingExposure=lerp(exposure,.6,p);
  }
  function draw(){
@@ -2450,7 +2477,7 @@ const BEYOND=(()=>{
   if(active)renderer.toneMappingExposure=exposure;
   if(lights){const L=lights;key.intensity=L.key.i;key.position.copy(L.key.p);key.color.copy(L.key.c);hemi.intensity=L.hemi.i;hemi.color.copy(L.hemi.c);hemi.groundColor.copy(L.hemi.g);fill.intensity=L.fill;rim.intensity=L.rim;bounce.intensity=L.bounce;lights=null;}
   caster.visible=false;if(shadowSaved){const c=key.shadow.camera;c.left=shadowSaved.left;c.right=shadowSaved.right;c.top=shadowSaved.top;c.bottom=shadowSaved.bottom;c.updateProjectionMatrix();shadowSaved=null;}
-  omenT0=-1;omenSound=false;
+  omenT0=-1;omenSound=false;$('#omenShade').style.opacity='0';
   active=false;t0=0;from=null;VM.root.position.y=0;
   if(model)model.setGaze(GAZE0,PUPIL_REST);
   const gauge=$('#fight .gauge');if(gauge){gauge.style.transition='';gauge.style.opacity='';}
@@ -2562,7 +2589,7 @@ const BUB=(()=>{
  function say(anchor,text,dur,o={}){
   const V=o.voice||VOICE.crowd[0],ts=typeSteps(text,V.speed),n=Array.from(String(text).replace(/\s/g,'')).length,rd=o.read||[.9,.04];
   const need=Math.max(1.5,ts.total+rd[0]+rd[1]*n);
-  const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,size:o.size||1,voice:o.tts?AUDIO.tts(o.tts):AUDIO.speak(text,V,{gain:o.gain})};
+  const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,size:o.size||1,voice:G.fastStory&&replaySceneActive()?null:o.tts?AUDIO.tts(o.tts):AUDIO.speak(text,V,{gain:o.gain})};
   live.push(b);
   const sr=$('#talkLive');if(sr)sr.textContent=text;
   return b;
@@ -2661,7 +2688,7 @@ const BUB=(()=>{
    drawOne(b,G.time>b.until?1-(G.time-b.until)/FADE:1);
   }
  }
- return {say,cut,cutFrom,step,clear,draw,preload(){preload(allText());},get count(){return live.length;}};
+ return {say,cut,cutFrom,step,clear,draw,silence(){for(const b of live){if(b.voice)b.voice.stop();b.voice=null;}},preload(){preload(allText());},get count(){return live.length;}};
 })();
 
 /* 팔 붙잡기 장면 배치(1인칭 손 화면 좌표 -1~1, 깊이 m): 붙잡는 사람 머리(hx·hy·hd)·크기(sc)·몸 돌림(turn)·숙임(lean)·고개 듦(look),
@@ -2857,7 +2884,39 @@ const CROWD=(()=>{
   a.z=adamp(a.z,v[0],l,dt);a.x=adamp(a.x,v[1],l,dt);a.ez=adamp(a.ez,v[2],l,dt);
   a.sh.rotation.set(-a.x,0,s*a.z);a.el.rotation.set(-a.ez,0,0);}
 
- const state={mode:'hidden',at:0,ev:[],nextSob:0,nextMurmur:0};
+ const state={mode:'hidden',at:0,ev:[],nextSob:0,nextMurmur:0,watching:false,cryUntil:0,nextTear:0};
+ // Fixed pool: cheek streams and comic sprays share one draw call, including on slow devices.
+ const TEAR_COUNT=96,tearDrops=Array.from({length:TEAR_COUNT},()=>({p:V3(),v:V3(),life:0}));
+ const tearMesh=new THREE.InstancedMesh(new THREE.SphereGeometry(1,6,4),new THREE.MeshBasicMaterial({color:col('#b4eeff'),toneMapped:false}),TEAR_COUNT+12);
+ tearMesh.frustumCulled=false;tearMesh.visible=false;scene.add(tearMesh);
+ const tearDummy=new THREE.Object3D(),tearOrigin=V3(),tearDirection=V3();let tearCursor=0;
+ function tearBurst(p,power){
+  p.head.updateWorldMatrix(true,false);
+  for(const side of [-1,1])for(let j=0;j<2;j++){
+   const d=tearDrops[tearCursor++%TEAR_COUNT];
+   d.p.set(side*.032,.008,.067).applyMatrix4(p.head.matrixWorld);
+   d.v.set(side*rnd(.45,.95),rnd(.45,1.1),rnd(.25,.7)).transformDirection(p.head.matrixWorld).multiplyScalar(.7+power*.35);
+   d.life=rnd(.45,.75);
+  }
+ }
+ function witnessHit(power=1){
+  if(!state.watching||rev.on||G.ended||G.inputLocked)return;
+  state.cryUntil=G.time+2.4;
+  for(const p of people){if(!p.root.visible)continue;p.shakeT=G.time;tearBurst(p,Math.min(power,2));}
+  if(G.time>=state.nextSob){AUDIO.voiceRaw('sob',.32);state.nextSob=G.time+rnd(1.2,1.7);}
+ }
+ function updateTears(dt,now){
+  const crying=state.watching&&!rev.on&&!G.ended&&!G.inputLocked&&now<state.cryUntil;
+  if(crying&&now>=state.nextTear){state.nextTear=now+.13;for(const p of people)if(p.root.visible)tearBurst(p,.35);}
+  let count=0;
+  const put=(pos,scale,dir)=>{tearDummy.position.copy(pos);tearDummy.scale.copy(scale);tearDummy.quaternion.identity();if(dir.lengthSq()>0)tearDummy.quaternion.setFromUnitVectors(UP,tearDirection.copy(dir).normalize());tearDummy.updateMatrix();tearMesh.setMatrixAt(count++,tearDummy.matrix);};
+  for(const d of tearDrops){d.life=Math.max(0,d.life-dt);if(!d.life)continue;d.v.y-=dt*2.5;d.p.addScaledVector(d.v,dt);put(d.p,tearOrigin.set(.012,.024,.012).multiplyScalar(Math.min(1,d.life*8)),d.v);}
+  if(crying)for(const p of people){if(!p.root.visible)continue;p.head.updateWorldMatrix(true,false);for(const side of [-1,1]){
+   tearOrigin.set(side*.032,-.027,.067).applyMatrix4(p.head.matrixWorld);
+   tearDummy.position.copy(tearOrigin);tearDummy.quaternion.copy(p.head.getWorldQuaternion(tearDummy.quaternion));tearDummy.scale.set(.009,.044,.006).multiplyScalar(p.root.scale.x);tearDummy.updateMatrix();tearMesh.setMatrixAt(count++,tearDummy.matrix);
+  }}
+  tearMesh.count=count;tearMesh.visible=root.visible&&count>0&&!rev.on&&!G.ended;tearMesh.instanceMatrix.needsUpdate=true;
+ }
  function setMode(m,at){state.mode=m;state.at=at||G.time;}
  function sched(t,fn){state.ev.push({t:state.at+t,fn,done:false});}
  function later(t,fn){state.ev.push({t:G.time+t,fn,done:false});}
@@ -2979,7 +3038,7 @@ const CROWD=(()=>{
   talkLines(LINES.wall);
   sched(.1,()=>AUDIO.murmur(.5));
   // 비켜서기: 양옆으로 갈라져 설계자 쪽을 보고 선다
-  sched(3.7,()=>{for(let i=2;i<6;i++){const p=people[i];p.arms.R.finger.visible=false;p.root.scale.setScalar(1);goTo(p,SIDES[i][0],SIDES[i][1],{face:[0,0],speed:6.5});stance(p,'stand');mood(p,'warn');}});
+  sched(3.7,()=>{state.watching=true;for(let i=2;i<6;i++){const p=people[i];p.arms.R.finger.visible=false;p.root.scale.setScalar(1);goTo(p,SIDES[i][0],SIDES[i][1],{face:[0,0],speed:6.5});stance(p,'stand');mood(p,'warn');}});
  }
 
  /* ---- 5%: 되살리기 ---- */
@@ -3131,6 +3190,7 @@ const CROWD=(()=>{
    armPose(p,'L',A,dt);armPose(p,'R',A,dt);
    gripPaper(p,akey,dt);
    mood(p,g.mood||p.mood);
+   if(state.watching&&!rev.on&&!G.ended&&!G.inputLocked)mood(p,now<state.cryUntil?'wail':'warn');
    const cry=p.mood==='wail'||p.mood==='pray';
    p.head.rotation.set(g.arms==='pray'?-.35:cry?-.1:0,0,cry?Math.sin(now*11+p.i)*.07:0);
    // 도장 찍기: 크게 떠 있다가 쾅 내려앉고 인주가 번진다
@@ -3138,11 +3198,11 @@ const CROWD=(()=>{
     else{p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;const v=(now-p.stampT-.2)/.4;if(v<1){p.ink.visible=true;p.ink.scale.setScalar(.03+v*.075);p.ink.material.opacity=.6*(1-v);}else{p.ink.visible=false;p.stampT=-1;}}}
   }
   if(state.mode==='revive'&&!rev.impact&&now>=state.nextSob&&people.some(p=>p.mood==='wail'||p.mood==='pray')){AUDIO.voiceRaw('sob',.4);state.nextSob=now+rnd(.6,1.0);}
-  reviveUpdate(dt);
+  updateTears(dt,now);reviveUpdate(dt);
  }
  function hide(){setMode('retreat');for(const p of people){const s=p.x<0?-1:1;goTo(p,p.x+s*1.2,p.z+.3,{ry:p.ry,speed:6});}sched(.9,()=>{root.visible=false;for(const p of people)p.hidden=true;state.mode='hidden';});}
  function reset(){
-  state.mode='hidden';state.ev.length=0;state.nextSob=0;root.visible=false;vmRoot.visible=false;
+  state.mode='hidden';state.ev.length=0;state.nextSob=0;state.watching=false;state.cryUntil=0;state.nextTear=0;tearCursor=0;tearMesh.visible=false;tearMesh.count=0;for(const d of tearDrops)d.life=0;root.visible=false;vmRoot.visible=false;
   grab.on=false;grab.w=0;grab.off=0;grab.shaken=false;
   rev.on=false;rev.gather=false;rev.impact=false;if(rev.wisps){rev.wisps.visible=false;rev.glow.visible=false;rev.core.visible=false;rev.light.intensity=0;rev.glow.material.opacity=1;}
   for(const p of [...people,...grabbers]){p.root.visible=false;p.hidden=true;p.root.scale.setScalar(p.s);p.x=p.z=0;p.y=.015;p.ry=p.rx=p.rz=0;p.run=0;p.bob=0;p.stampT=-1;p.shakeT=-1;p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;p.ink.visible=false;
@@ -3197,7 +3257,7 @@ const CROWD=(()=>{
   congregation.userData.count=placements.reduce((n,a)=>n+a.length,0);
   return congregation;
  }
- return {root,people,congregationView,reset,update,hide,grabStart,wallStart,reviveStart,gatherStart,impact,restamp,cheer,sides,handTarget,get mode(){return state.mode;},get rev(){return rev;}};
+ return {root,people,congregationView,reset,update,hide,grabStart,wallStart,witnessHit,reviveStart,gatherStart,impact,restamp,cheer,sides,handTarget,get mode(){return state.mode;},get rev(){return rev;}};
 })();
 
 /* 운명을 받아들인 자리: 같은 추종자들 틈, 손에 남은 내 운세. */
@@ -8582,9 +8642,9 @@ const _fz=V3(0,0,1),_aimRest=V3(-.04,.12,-1).normalize();
  * 몸싸움의 다운은 균형과 타격으로 결정한다. 게이지는 이야기 진행만 맡는다.
  * 75/50/25: 표정과 후광 변화 → 15(팔 붙잡기) → 10(막아서기) → 5(되살아남, 30으로) → 0(마지막 다운).
  * 한 대에 깎이는 양은 DMG_MUL배: 1분 반쯤이면 끝난다(초당 네 대쯤 칠 때 약 1분 25초. 예전에는 3분). */
-const PREF={sound:true,blood:true,vibe:true,shake:true,deform:true};
+const PREF={sound:true,blood:true,vibe:true,shake:true,deform:true,musicVolume:1,effectsVolume:1,voiceVolume:1};
 metalEnv(VM.root);
-try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof p[k]==='boolean')PREF[k]=p[k];}catch(_){}
+try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of Object.keys(PREF))if(typeof PREF[k]==='boolean'&&typeof p[k]==='boolean')PREF[k]=p[k];else if(typeof PREF[k]==='number'&&Number.isFinite(p[k]))PREF[k]=clamp(p[k],0,1);}catch(_){}
 const PROGRESS=(()=>{
  let defeated=0;
  try{const n=Number(localStorage.getItem('palja.defeated'));if(Number.isSafeInteger(n)&&n>=0)defeated=Math.min(n,999999);}catch(_){}
@@ -9064,6 +9124,7 @@ function pickAll(x,y,list){
  return out;
 }
 function pickAt(x,y,list){return pickAll(x,y,list)[0]||null;}
+const HOLD_GRAB_SECONDS=.38;
 const POWER={hand:{jab:1.15,hook:1.5,upper:1.65,shove:1.2},knife:{stab:.95,slash:.45},gun:{shot:1.8}};
 // 멈춤(히트스톱) 길이: 이 동안 맞은 모습 그대로 멈춰 있다
 const STOP={hand:{jab:.036,hook:.05,upper:.058,shove:.05},knife:{stab:.045,slash:.014},gun:{shot:.018}};
@@ -9090,6 +9151,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  if(r.big)G.slow=Math.max(G.slow,.3);
  if(!extra.quiet){impactFX(tool,kind,info,r,dir,s,extra);if(!extra.through)AUDIO.hit(tool,kind,info.part,power,r.blocked);}
  if(PREF.vibe&&navigator.vibrate&&!extra.quiet)try{navigator.vibrate(r.blocked?10:tool==='gun'?26:kind==='slash'?6:kind==='jab'?16:[20,8,26]);}catch(_){}
+ if(!r.halo&&!extra.through)CROWD.witnessHit(power);
  damageBar(r.dmg,r,gaugeEligible);
  return {hit:true,blocked:r.blocked,hard:!!r.halo,blood:!r.blocked&&!r.halo&&(tool==='knife'||tool==='gun'||E.noseBleeding||E.lipSplit||E.faceCuts>0)};
 }
@@ -9230,6 +9292,7 @@ function finishRevival(){
  focusCanvas();
 }
 function updateStory(){
+ if(G.mode==='submit'&&G.submitReadyAt&&G.time>=G.submitReadyAt){G.submitReadyAt=0;$('#submitDock').hidden=false;}
  if(G.offerPending){if(G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);if(!talkBusy())openOffer();}
  if(G.offerOpen&&G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
  if(G.offerBreakAt&&G.time>=G.offerBreakAt)finishOffer();
@@ -9255,7 +9318,7 @@ function updateStory(){
  if(G.prepAt&&G.time>=G.prepAt){if(BEYOND.prepare(6))G.prepAt=0;}
  if(G.beyondAt&&G.time>=G.beyondAt&&!talkBusy()){
   if(!G.omenAt){G.omenAt=G.time;BEYOND.omen();}
-  if(G.time>=G.omenAt+1.6&&(!G.prepAt||G.time>=G.beyondAt+1.5)){G.beyondAt=0;BEYOND.begin();G.againAt=G.time+BEYOND.DUR+1.2;}
+  if(G.time>=G.omenAt+1.6&&(!G.prepAt||G.time>=G.beyondAt+1.5)){G.beyondAt=0;BEYOND.begin();G.againAt=G.time+BEYOND.DUR;}
  }
  if(G.againAt&&G.time>=G.againAt){G.againAt=0;showAgain();}
  // 그 눈에 대고 한마디 다 뱉었으면(글자·목소리·읽을 틈까지) 후임 천지신명한테 간다
@@ -9493,7 +9556,7 @@ canvas.addEventListener('pointerdown',e=>{
  if(tool==='gun'){VM.fire(p.x,p.y);p.auto=G.time+.19;}
  else if(tool==='hand'){
   const info=pickAt(p.x,p.y);p.grabbable=!!(info&&info.obj&&G.E.parts.includes(info.obj)&&!['halo','crown','tablet'].includes(info.part));
-  p.grabAt=G.time+.24;
+  p.grabAt=G.time+HOLD_GRAB_SECONDS;
  }
  e.preventDefault();
 });
@@ -9528,8 +9591,10 @@ function ptrEnd(e){
  if(p.grabbing){if(G.E&&G.E.combat)G.E.combat.release(e.type!=='pointerup');COMBAT.pointer=null;canvas.classList.remove('grabbing');VM.grip(null,null);return;}
  if(tool==='knife'){
   if(p.slashing){
-   if(e.type==='pointerup'&&Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))slashPath(p,[[e.clientX,e.clientY]]);
-   finishLimb(p);finishEar(p);finishBody(p);
+   if(e.type==='pointerup'){
+    if(Number.isFinite(e.clientX)&&Number.isFinite(e.clientY))slashPath(p,[[e.clientX,e.clientY]]);
+    finishLimb(p);finishEar(p);finishBody(p);
+   }else{p.limb=null;p.ear=null;p.body=null;}
    VM.slashEnd();
   }else if(e.type==='pointerup')VM.attack('stab',p.x0,p.y0);
  }
@@ -9555,11 +9620,24 @@ function setTool(t){
 $$('#tools .tool').forEach(b=>b.addEventListener('click',()=>{if(G.paused||G.inputLocked)return;AUDIO.unlock();setTool(b.dataset.tool);}));
 
 /* ---- 설정 ---- */
+function replaySceneActive(){
+ return G.defeatCountVisible&&G.mode==='fight'&&!G.opening&&!G.retorting&&G.inputLocked&&$('#again').hidden&&!!(G.crowdBeatUntil||G.revival||G.beyondAt||BEYOND.active);
+}
+$('#fastStory').addEventListener('click',()=>{
+ if(!replaySceneActive())return;
+ G.fastStory=!G.fastStory;
+ if(G.fastStory){AUDIO.stop();BUB.silence();}
+ $('#fastStory').setAttribute('aria-pressed',String(G.fastStory));
+ $('#fastStory').textContent=G.fastStory?'연출 3배속 · 원래대로':'연출 빨리 보기';
+});
 function savePrefs(){try{localStorage.setItem('palja.prefs',JSON.stringify(PREF));}catch(_){}}
 function syncPrefs(){
  if(G.E)for(const m of G.E.goreMeshes)m.visible=PREF.blood;
  if(G.E)G.E.root.traverse(o=>{if(o.userData.cutSafe)o.visible=!PREF.blood;});
- if(G.E&&G.E.bits)for(const b of G.E.bits)b.obj.traverse(o=>{if(o.userData.cutSafe)o.visible=!PREF.blood;});for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.setAttribute('aria-checked',String(PREF[k]));}$('#soundBtn').setAttribute('aria-pressed',String(!PREF.sound));AUDIO.setOn(PREF.sound);}
+ if(G.E&&G.E.bits)for(const b of G.E.bits)b.obj.traverse(o=>{if(o.userData.cutSafe)o.visible=!PREF.blood;});for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.setAttribute('aria-checked',String(PREF[k]));}$('#soundBtn').setAttribute('aria-pressed',String(!PREF.sound));AUDIO.setOn(PREF.sound);AUDIO.setVolumes({music:PREF.musicVolume,effects:PREF.effectsVolume,voice:PREF.voiceVolume});
+ for(const k of ['music','effects','voice']){const v=Math.round(PREF[k+'Volume']*100);$('#vol-'+k).value=v;$('#vol-'+k).disabled=!PREF.sound;$('#volume-'+k).textContent=v+'%';}
+}
+for(const k of ['music','effects','voice'])$('#vol-'+k).addEventListener('input',e=>{PREF[k+'Volume']=Number(e.target.value)/100;savePrefs();syncPrefs();});
 function toggle(k){PREF[k]=!PREF[k];savePrefs();syncPrefs();}
 for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.addEventListener('click',()=>{AUDIO.unlock();toggle(k);});}
 $('#soundBtn').addEventListener('click',()=>{AUDIO.unlock();toggle('sound');});
@@ -9676,6 +9754,7 @@ function retortAndRestart(){
 }
 $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAndRestart();});
 function startFightFromSubmit(){
+ if(G.mode!=='submit'||G.time<G.submitReadyAt)return;
  if(G.mode!=='submit')return;
  AUDIO.unlock();AUDIO.stop();clearTalk();clearPointers();
  SUBMISSION.reset();CROWD.reset();
@@ -9714,6 +9793,7 @@ $('#offerPaper').addEventListener('click',e=>{
 });
 /* ---- 라운드 ---- */
 function startRound(mode){
+ G.fastStory=false;$('#fastStory').hidden=true;$('#fastStory').setAttribute('aria-pressed','false');$('#fastStory').textContent='연출 빨리 보기';
  TROPHIES.close(false);
  G.round++;
  SUBMISSION.reset();
@@ -9729,7 +9809,7 @@ function startRound(mode){
  const E=G.E;
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,retorting:false});
+Object.assign(G,{mode,submitReadyAt:0,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,retorting:false});
  setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
@@ -9753,8 +9833,8 @@ if(mode==='fight'){
  E.idleT=1e6;G.inputLocked=true;
  SUBMISSION.begin(G.result);setFrame('congregation',true);
  canvas.setAttribute('aria-label','운세를 두 손에 들고 추종자들 사이에서 멀리 있는 천지신명의 설교를 듣고 있습니다.');
- $('#submitDock').hidden=false;
- requestAnimationFrame(()=>$('#submitFight').focus({preventScroll:true}));
+ G.submitReadyAt=G.time+4;
+ $('#submitDock').hidden=true;
 }
 
  last=performance.now();
@@ -9806,7 +9886,12 @@ function frame(now){
  const raw=(now-last)/1000;last=now;const dt=clamp(raw,0,.05);
  // 느린 기기: 1단계 해상도·그림자 낮춤, 2단계 금속 반사 끔
  if(raw<.25){perfT+=raw;perfN++;}if(perfT>2.5){if(perfT/perfN>.045&&lite<2){lite++;if(lite===1){renderer.setPixelRatio(1);renderer.shadowMap.enabled=false;allMats(m=>m.needsUpdate=true);fitView();}else{allMats(m=>{if(m.envMap){m.envMap=null;m.needsUpdate=true;}});}}perfT=0;perfN=0;}
- step(dt);render();
+ const fast=G.fastStory&&replaySceneActive();
+ step(dt);
+ // Substeps retain the normal simulation step and event order; active fighting is never sped up.
+ if(fast)for(let i=0;i<2&&replaySceneActive();i++)step(dt);
+ $('#fastStory').hidden=G.paused||!replaySceneActive();
+ render();
 }
 function pause(){G.running=false;cancelAnimationFrame(G.raf);clearPointers();AUDIO.stop();}
 function enter(result,mode='fight'){
@@ -9841,6 +9926,7 @@ window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
+
 
 
 
