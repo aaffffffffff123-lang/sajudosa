@@ -449,6 +449,15 @@ function capsuleGeo(r,len,seg=16){
  pts[0].x=0.0001;pts[pts.length-1].x=0.0001;
  return new THREE.LatheGeometry(pts,seg);
 }
+// 다시 자랄 때 뼈를 감싸는 날살 한 마디: 알약 모양이 아니라 가운데가 불룩한 근육 덩어리 둘이 겹친 모양(양끝은 가늘게)
+function muscleGeo(r,len,seg=18){
+ const pts=[],n=22;
+ for(let i=0;i<=n;i++){const t=i/n,y=-len/2+t*len;
+  const belly=.64+.36*Math.sin(PI*t),twin=1+.1*Math.sin(TAU*t*2+.9),tip=1-Math.pow(1-Math.sin(PI*t),8)*.75;
+  pts.push([Math.max(.0001,r*belly*twin*tip),y]);}
+ pts[0][0]=.0001;pts[n][0]=.0001;
+ return latheGeo(pts,seg);
+}
 function latheGeo(prof,seg=28){return new THREE.LatheGeometry(prof.map(p=>new THREE.Vector2(Math.max(.0001,p[0]),p[1])),seg);}
 /* 부분 구(눈꺼풀 등) */
 function capGeo(r,thetaStart,thetaLen,seg=24){return new THREE.SphereGeometry(r,seg,Math.max(6,Math.round(seg/2)),0,TAU,thetaStart,thetaLen);}
@@ -1567,6 +1576,10 @@ const AUDIO=(()=>{
   const s=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain(),am=ctx.createOscillator(),ag=ctx.createGain();s.buffer=noise;f.type='bandpass';f.Q.value=7;f.frequency.setValueAtTime(320,t);f.frequency.exponentialRampToValueAtTime(1300,t+.55);
   am.frequency.value=17;ag.gain.value=.5;const ga=ctx.createGain();ga.gain.value=.5;am.connect(ag);ag.connect(ga.gain);env(g.gain,t,.8*p,.06,.55,'lin');s.connect(f);f.connect(ga);ga.connect(g);g.connect(o);s.start(t,Math.random());s.stop(t+.7);am.start(t);am.stop(t+.7);track(s);track(am);
   osc(o,t,{f0:85,f1:150,dur:.5,peak:.36*p,a:.05,type:'triangle'});}
+ // 뼈가 뚜둑 뻗어 나옴: 뼈 꺾이는 딸깍 + 젖은 둔탁함
+ function boneOut(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.2,.2),.15);bone(o,t,p*1.1);osc(o,t,{f0:150,f1:62,dur:.1,peak:.4*p});nz(o,t+.01,{dur:.13,peak:.22*p,f:520,f1:1500,q:2.2});}
+ // 비늘이 돋아 굳음: 마른 자잘한 바스락
+ function scaleSet(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.2,.2),.12);clicks(o,t,9,.24,3300,.2*p);nz(o,t,{dur:.2,peak:.09*p,f:6000,type:'highpass',q:.5,curve:'lin'});}
  function pop(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.2,.2),.14);osc(o,t,{f0:420,f1:1300,dur:.06,peak:.4*p});nz(o,t,{dur:.012,peak:.3*p,f:2600,q:1});ring(o,t+.03,[2700,4050],.12,.05*p);}
  function unmask(p=1){if(!ready())return;const t=ctx.currentTime,o=out(0,.25),d=drive(o,1.8);
   tearNoise(d,t,.38,2100,.6*p,R(40,52));tearNoise(d,t+.12,.26,3200,.4*p,R(70,85));osc(d,t,{f0:110,f1:45,dur:.25,peak:.7*p});nz(d,t,{dur:.012,peak:.6*p,f:3800,type:'highpass',q:.5});
@@ -1846,7 +1859,7 @@ const AUDIO=(()=>{
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
  return {unlock,hold,murmur,cheer,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
-  whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
+  whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
   render(name,args,dur){if(!ctx)return Promise.resolve(null);const api=this;return bakeOne(()=>api[name](...(args||[])),dur||1,true);}};
@@ -2462,6 +2475,7 @@ const LINES={
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
 const REV_SHIFT=2.7;
+const REV_MUSIC_FADE=2.6; // 되살리기: 무너지기 시작해서 추종자들이 뛰어오기까지 음악이 꺼지는 시간
 /* 목소리: 사람마다 늘 같은 목소리(pitch 높이 Hz · formant 클수록 가늘다 · speed 클수록 빨리 말한다 · gain 크기, 없으면 1.2) */
 const VOICE={
  crowd:[{pitch:470,formant:1.2,speed:1},{pitch:560,formant:1.32,speed:1.05},{pitch:395,formant:1.1,speed:.96},{pitch:520,formant:1.27,speed:1},{pitch:430,formant:1.15,speed:.98},{pitch:610,formant:1.38,speed:1.06}],
@@ -4212,6 +4226,27 @@ const REPTILE_MAPS=(()=>{
  return (kind,u=1,v=1)=>{const key=kind+u+'x'+v;if(cache[key])return cache[key];const t=maps[kind].clone();t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(u,v);t.anisotropy=4;t.needsUpdate=true;if(kind!=='color')t.encoding=THREE.LinearEncoding;return cache[key]=t;};
 })();
 const LIZ_TEX=(u,v)=>REPTILE_MAPS('color',u,v);
+// 다시 자랄 때 뼈를 감싸는 파란 날살: 세로 결(근섬유)·얼룩·가는 핏줄. 같은 그림을 요철로도 써서 젖은 굴곡이 생긴다
+let RAW_FLESH_TEX=null;
+function rawFleshTex(){
+ if(RAW_FLESH_TEX)return RAW_FLESH_TEX;
+ const rng=(()=>{let x=91711;return()=>{x=(x*16807)%2147483647;return x/2147483647;};})();
+ RAW_FLESH_TEX=canvasTex(256,256,(g,w,h)=>{
+  g.fillStyle='#223a58';g.fillRect(0,0,w,h);
+  // 얼룩: 어두운 덩어리와 푸른 덩어리가 섞여 고르지 않다
+  for(let i=0;i<80;i++){const x=rng()*w,y=rng()*h,r=12+rng()*36;const o=g.createRadialGradient(x,y,0,x,y,r);const dark=rng()<.5;
+   o.addColorStop(0,dark?'rgba(12,20,44,.7)':'rgba(58,104,200,.55)');o.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=o;g.beginPath();g.arc(x,y,r,0,TAU);g.fill();}
+  // 세로 결(근섬유): 가늘고 긴 밝은 줄과 어두운 줄이 촘촘히
+  for(let i=0;i<420;i++){const x=rng()*w,y0=rng()*h,len=30+rng()*120,light=rng()<.45;g.strokeStyle=light?'rgba(110,160,235,.3)':'rgba(6,12,30,.45)';g.lineWidth=.5+rng()*1.5;
+   g.beginPath();g.moveTo(x,y0);g.quadraticCurveTo(x+(rng()-.5)*7,y0+len*.5,x+(rng()-.5)*6,y0+len);g.stroke();}
+  // 핏줄: 구불구불한 밝은 파란 선 몇 가닥(이 천지신명의 피 색)
+  for(let i=0;i<11;i++){let x=rng()*w,y=rng()*h;g.strokeStyle='rgba(70,120,255,.75)';g.lineWidth=1+rng()*1.6;g.beginPath();g.moveTo(x,y);
+   for(let k=0;k<7;k++){x+=(rng()-.5)*34;y+=16+rng()*26;g.lineTo(x,y);}g.stroke();}
+  // 젖은 광택 점
+  for(let i=0;i<50;i++){const x=rng()*w,y=rng()*h,r=1+rng()*2.6;g.fillStyle='rgba(190,215,255,.4)';g.beginPath();g.ellipse(x,y,r,r*2.4,0,0,TAU);g.fill();}
+ },{repeat:[1,1]});
+ return RAW_FLESH_TEX;
+}
 function reptileProjection(mat,density=3.2){
  const damage=mat.onBeforeCompile,cacheKey=mat.customProgramCacheKey();
  mat.onBeforeCompile=sh=>{
@@ -4703,6 +4738,9 @@ class Emperor{
    tablet:S('#ffffff',{roughness:.22}),
    // 사람 가죽 밑: 도마뱀 살(비늘)·발톱·파란 속
    liz:S('#ffffff',{map:LIZ_TEX(3,1),roughness:.4}),lizHand:S('#ffffff',{map:LIZ_TEX(1,1),roughness:.4}),lizIn:S('#9fd06a',{roughness:.5,side:THREE.DoubleSide}),
+   // 다시 자랄 때: 뻗어 나오는 뼈, 뼈를 감싸는 파란 날살(젖어서 번들거린다)
+   regBone:S('#e2dcc4',{roughness:.3}),rawFlesh:S('#ffffff',{map:rawFleshTex(),bumpMap:rawFleshTex(),bumpScale:.0034,roughness:.3,emissive:col('#0a1c5c'),emissiveIntensity:.18}),
+   rawVessel:S('#3f6fe0',{roughness:.2,emissive:col('#10287a'),emissiveIntensity:.3}),
    claw:S('#f3ebd2',{roughness:.22}),blueCore:S('#1b45c4',{roughness:.2,emissive:col('#0a1c66'),emissiveIntensity:.35,side:THREE.DoubleSide}),
    lizEye:S('#ffffff',{map:REP_IRIS_TEX,roughness:.12,emissive:col('#ffffff'),emissiveMap:REP_IRIS_TEX,emissiveIntensity:.45}),lizEyeBall:S('#3a4a12',{roughness:.3}),
    // 배 속(돼지저금통): 갈라진 천 가장자리
@@ -6653,6 +6691,18 @@ const CUT_OUTER={uarmMid:'robe',farmMid:'robe',wrist:'skin',thighMid:'trouser',s
 const CUT_OFF_BODY={thighMid:.003,shinMid:.003,ankle:.003};
 const CUT_OFF_PIECE={wrist:.031,thighMid:.004,shinMid:.002,ankle:.051},CUT_OFF_PIECE_LIZ={wrist:.018,ankle:.02};
 // 다시 자랄 때 만드는 뼈 줄(이름, 부모 기준 자리)
+// 다시 자라는 시간표(초): 뼈는 마디마다 .13초 간격으로 .17초에 뻗고, 날살은 .32초부터 마디마다 .28초 간격으로 내려오며(.22초에 길이, .55초에 굵기),
+// 비늘은 마지막 날살 마디 뒤 .2초부터 마디마다 .2초 간격으로 .3초에 덮는다. 손·발은 각 단계의 끝에 붙는다. 깨어남 .45초
+const REGROW={boneStep:.13,boneDur:.17,boneHandDur:.22,rawStart:.32,rawStep:.28,rawLen:.22,rawThick:.55,rawHandDur:.4,scLag:.2,scStep:.2,scDur:.3,scHandDur:.35,wakeDur:.45};
+// 마디 수 n(손·발 제외)에 따른 시간표. 다리는 12% 느리다. 손·발은 각 단계의 마지막 마디 뒤에 붙는다
+function regrowTimeline(n,arm){
+ const RG=REGROW,kk=arm?1:1.12,T={bone:[],raw:[],sc:[]};
+ for(let j=0;j<n;j++){T.bone[j]=j*RG.boneStep*kk;T.raw[j]=(RG.rawStart+j*RG.rawStep)*kk;}
+ T.boneHand=((n-1)*RG.boneStep+RG.boneDur)*kk;T.rawHand=(RG.rawStart+n*RG.rawStep)*kk;
+ const scStart=RG.rawStart+n*RG.rawStep+RG.scLag;for(let j=0;j<n;j++)T.sc[j]=(scStart+j*RG.scStep)*kk;
+ T.scHand=(scStart+n*RG.scStep)*kk;T.wake=T.scHand+RG.scHandDur*kk;T.dur=T.wake+RG.wakeDur*kk;
+ return T;
+}
 const ARM_CHAIN=[['uarmMid',[0,-.118,0]],['elbow',[0,-.117,0]],['farmMid',[0,-.108,0]],['wrist',[0,-.107,0]]];
 const LEG_CHAIN=[['thighMid',[0,-.145,0]],['knee',[0,-.145,0]],['shinMid',[0,-.128,0]],['ankle',[0,-.127,0]]];
 // 도마뱀 팔다리 굵기: 마디 공(ball), 원기둥(위 r0·아래 r1·길이·가운데 c), 돌기 수
@@ -7160,44 +7210,87 @@ legFall(){
 // 다리가 떨어져 있거나 아직 다 자라지 않았으면 일어나지 못한다
 legsMissing(){return this.legs.some(l=>l.hip.userData.detached||l.tm.userData.detached||l.knee.userData.detached||l.sm.userData.detached||l.ank.userData.detached)||!!(this.regrowQ&&this.regrowQ.some(r=>!r.arm));},
 
- /* ===== 다시 자라나는 도마뱀 팔다리 =====
-  * 잘린 자리에서 2초쯤 뒤 초록 비늘 팔다리가 자라 나온다. 뼈 이름이 같아서 자세·IK가 그대로 움직인다.
-  * 연출: 통째로 부풀리지 않는다. 단면 안에서 가느다란 싹이 나와 마디(윗팔→팔꿈치→팔뚝→손목)를 따라 길이가 뻗고,
-  * 끝은 가늘고 뒤쪽부터 굵어지다가 다 뻗은 뒤 전체가 제 굵기로 차오른다. 손·발은 끝에 봉오리로 맺혔다가 손가락·발가락이 차례로 돋는다.
-  * 뼈 자리는 건드리지 않고(IK·자세용) 마디마다 살 메시를 묶은 그룹(sg)과 마디 공 그룹(bg)의 크기만 바꾸며, 다음 마디 뼈는 뻗은 만큼만 내려간다. */
+ /* ===== 다시 자라나는 도마뱀 팔다리: 뼈 → 살 → 비늘 =====
+  * 잘린 자리에서 1~2초 뒤, 단면이 몇 번 꿈틀한 다음
+  * 1) 뼈: 단면 한가운데서 하얀 뼈가 마디마다 뚜둑 뻗어 나와 손가락뼈까지 만든다(해골 팔)
+  * 2) 살: 파란 날살이 몸 쪽에서 손끝 쪽으로 뼈를 감싸며 내려온다(소매를 끼우듯). 맥박처럼 꿀렁이고 끝에서 피가 떨어진다. 손·발은 봉오리로 맺힌다
+  * 3) 비늘: 초록 비늘 살(진짜 팔다리 메시)이 몸 쪽부터 손끝까지 날살 위를 덮어 내려오고, 손가락이 봉오리를 뚫고 나온다
+  * 4) 깨어남: 움찔하고 손가락(발가락)을 한 번 쥐었다 편다. 그 뒤 새 손을 들여다본다
+  * 뼈 자리는 건드리지 않고(IK·자세용) 마디마다 묶어 둔 그룹의 크기만 바꾼다. 다음 마디 뼈는 뼈가 뻗은 만큼만 내려간다.
+  * 뼈·날살은 피 끄기(PREF.blood=false)에서는 보이지 않고 비늘만 덮어 내려온다. */
 updateRegrow(dt){
  const Q=this.regrowQ;if(!Q||!Q.length)return;
  for(let k=Q.length-1;k>=0;k--){const r=Q[k];
   if(r.parent.userData.detached||(r.root&&r.root.userData.detached)||(!r.built&&(this.state==='dead'||(this.down&&this.down.type==='final')))){Q.splice(k,1);continue;}
   r.t+=dt;
-  if(!r.built){if(r.t<0)continue;this.buildLizardLimb(r);r.built=true;r.t=0;AUDIO.squelch(1);}
-  if(!r.segs){Q.splice(k,1);continue;}
-  const u=sat(r.t/r.dur),n=r.segs.length,F=u*(n*.8+1.1);
-  const fill=smooth(sat((F-(n*.8+.3))/.8)); // 끝: 전체가 제 굵기로 차오른다
-  let tipSeg=null;
-  for(let j=0;j<n;j++){const S=r.segs[j],a=F-j*.8;
-   const g=a<=0?0:1-(1-sat(a))*(1-sat(a));          // 길이: 처음엔 빨리, 끝은 천천히
-   const w=.2+.5*smooth(sat((a-.2)/1.2))+.3*fill;   // 굵기: 끝은 가늘고 뒤쪽부터 굵어진다
-   if(a>0&&!S.started){S.started=true;if(j>0)AUDIO.squelch(.45);}
-   S.sg.scale.set(w,Math.max(.015,g),w);
-   const sway=(1-g)*(1-g)*.16*Math.sin(r.t*7.3+j*1.9);S.sg.rotation.set(sway*.5,0,sway*(r.side==='L'?1:-1)); // 자라는 끝이 더듬듯 흔들린다
-   S.bg.scale.setScalar(Math.max(.03,w*(.55+.45*g)));
-   const nxt=j+1<n?r.segs[j+1].b:r.tip;nxt.position.copy(r.rest[j+1]).multiplyScalar(g); // 다음 마디는 뻗은 만큼 내려간다
-   if(g>0&&g<1)tipSeg=S;
+  if(!r.built){
+   // 자라기 직전 1초: 단면 속(뼈 고리·혈관)이 맥박처럼 꿈틀거린다
+   if(r.t>-1&&r.cap&&r.cap.userData.cap&&PREF.blood){const c=r.cap.userData.cap,beat=Math.pow(Math.max(0,Math.sin(TAU*1.8*(r.t+1))),10);
+    for(const ch of r.cap.children){if(!ch.isMesh)ch.scale.setScalar(c.r*(1+.14*beat));else if(ch.userData.gore)ch.scale.setScalar(c.r*(1+.07*beat));}}
+   if(r.t<0)continue;
+   if(r.cap&&r.cap.userData.cap){const c=r.cap.userData.cap;for(const ch of r.cap.children)if(!ch.isMesh||ch.userData.gore)ch.scale.setScalar(c.r);}
+   this.buildLizardLimb(r);r.built=true;r.t=0;
+   continue;
   }
-  // 손·발: 마지막 마디가 거의 다 뻗으면 봉오리로 맺혀 커지고, 손가락(발가락)이 차례로 돋는다
-  const ah=F-(n*.8-.15),h=ah<=0?0:1-(1-sat(ah))*(1-sat(ah));
-  if(ah>0&&!r.tipStarted){r.tipStarted=true;AUDIO.squelch(.4);}
-  r.tip.scale.setScalar(ah<=0?.02:Math.max(.02,.14+.86*h));
-  for(let i=0;i<r.digits.length;i++)r.digits[i].scale.setScalar(Math.max(.02,smooth(sat((h-.3-i*.09)/.42))));
-  // 피: 잘린 자리에서, 그리고 자라는 끝에서 떨어진다
-  r.goo-=dt;if(r.goo<=0&&u<1&&PREF.blood){r.goo=rnd(.07,.16);r.parent.updateWorldMatrix(true,false);const p=r.parent.localToWorld(r.pos.clone());BLOOD.emit('blood',p,V3(rnd(-.3,.3),rnd(-.1,.4),rnd(0,.4)),rnd(.003,.006),1);}
-  r.drip-=dt;if(r.drip<=0&&u<1&&PREF.blood){r.drip=rnd(.1,.22);const S=tipSeg||r.segs[n-1];if(S){S.sg.updateWorldMatrix(true,false);const p=S.sg.localToWorld(V3(rnd(-.01,.01),-S.len,rnd(-.01,.01)));BLOOD.emit('blood',p,V3(rnd(-.2,.2),rnd(-.3,.1),rnd(0,.3)),rnd(.002,.004),1);}}
-  if(u>=1){Q.splice(k,1);this.onRegrown(r);}
+  if(!r.segs){Q.splice(k,1);continue;}
+  const t=r.t,T=r.T,n=r.segs.length,RG=REGROW,arm=r.arm,s=r.side==='L'?-1:1;
+  const easeOut=x=>1-(1-sat(x))*(1-sat(x))*(1-sat(x));
+  let bloodAt=null;
+  for(let j=0;j<n;j++){const S=r.segs[j];
+   // 1) 뼈: 마디마다 차례로 뚜둑 뻗는다. 다음 마디는 뻗은 만큼 내려간다
+   const gB=easeOut((t-T.bone[j])/RG.boneDur);
+   if(gB>0&&!S.boneOut){S.boneOut=true;AUDIO.boneOut(j===0?.8:.5);
+    if(j===0&&PREF.blood){r.parent.updateWorldMatrix(true,false);const p=r.parent.localToWorld(r.pos.clone()),d=V3(0,-1,0).applyQuaternion(r.parent.getWorldQuaternion(new THREE.Quaternion()));BLOOD.spray(p,d,9,{min:.8,max:2.4,spread:1});}}
+   S.cg.scale.set(1,Math.max(.001,gB),1);
+   const nxt=j+1<n?r.segs[j+1].b:r.tip;nxt.position.copy(r.rest[j+1]).multiplyScalar(gB);
+   // 2) 살: 날살 소매가 뼈를 타고 내려오며 굵어지고, 꿀렁인다
+   const uL=sat((t-T.raw[j])/RG.rawLen),uT=sat((t-T.raw[j])/RG.rawThick);
+   if(uL>0&&!S.rawOut){S.rawOut=true;AUDIO.squelch(j===0?.65:.4);if(j===0)this.openCutCap(r);}
+   const L=smooth(uL),throb=.07*Math.pow(Math.max(0,Math.sin((t-T.raw[j])*11+j*1.3)),5)*(1-uT*.5),thick=(.5+.5*smooth(uT))*(1+throb);
+   S.fg.scale.set(.9*thick,Math.max(.001,L),.9*thick);
+   if(S.rb){const q=Math.max(.001,.9*thick*sat(uL*4));S.rb.scale.set(S.rbDim[0]*q,S.rbDim[1]*q,S.rbDim[2]*q);}
+   if(uL>0&&uL<1)bloodAt=S;
+   // 3) 비늘: 진짜 비늘 살이 날살 위를 덮어 내려온다(조금 더 굵어지며 덮으니 날살이 안 비친다)
+   const uS=sat((t-T.sc[j])/RG.scDur),g=smooth(uS);
+   if(uS>0&&!S.scOut){S.scOut=true;AUDIO.scaleSet(j===0?.7:.4);}
+   S.sg.scale.set(.93+.07*g,Math.max(.001,g),.93+.07*g);S.sg.rotation.set(0,0,0);
+   S.bg.scale.setScalar(Math.max(.001,sat(uS*5)*(.92+.08*g)));
+   if(uS>=1&&!S.covered){S.covered=true;S.cg.visible=false;S.fg.visible=false;if(S.rb)S.rb.visible=false;}
+  }
+  // 손·발: 뼈 → 봉오리 → 비늘 손가락이 봉오리를 뚫고 나온다
+  const H=r.hand;
+  const gH=easeOut((t-T.boneHand)/RG.boneHandDur);
+  if(gH>0&&!H.boneOut){H.boneOut=true;AUDIO.boneOut(.45);}
+  H.hb.scale.set(1,Math.max(.001,gH),1);
+  for(const m of H.mirror)m.b.rotation.copy(m.a.rotation);
+  const uM=sat((t-T.rawHand)/RG.rawHandDur);
+  if(uM>0&&!H.rawOut){H.rawOut=true;AUDIO.squelch(.45);if(!n)this.openCutCap(r);}
+  const mT=(.55+.45*smooth(uM))*(1+.08*Math.pow(Math.max(0,Math.sin((t-T.rawHand)*10)),5)*(1-uM*.5));
+  const uH=sat((t-T.scHand)/RG.scHandDur),gh=smooth(uH);
+  if(uH>0&&!H.scOut){H.scOut=true;AUDIO.scaleSet(.5);}
+  H.hr.scale.set(.9*mT*(1-.78*gh),Math.max(.001,smooth(uM)*(1-.85*gh)),.9*mT*(1-.78*gh));
+  H.hg.scale.set(.93+.07*gh,Math.max(.001,gh),.93+.07*gh);
+  if(uH>=1&&!H.covered){H.covered=true;H.hb.visible=false;H.hr.visible=false;}
+  // 4) 깨어남: 움찔, 손가락(발가락)을 한 번 쥐었다 편다
+  const uW=sat((t-T.wake)/RG.wakeDur);
+  if(uW>0){
+   if(!r.woke){r.woke=true;AUDIO.hiss(.8);if(this.state!=='dead')this.flickTongue(true);}
+   const d=(1-uW)*(1-uW),jolt=Math.sin(uW*38)*d;
+   if(r.jolt){r.jolt.rotation.z+=s*.09*jolt;r.jolt.rotation.x+=.05*Math.sin(uW*29+1)*d;}
+   const c=1.15*smooth(uW/.35)*(1-smooth((uW-.45)/.5));
+   if(arm){const a=this.arms[r.side==='L'?0:1];if(a.hand===r.tip.userData.hand)this.setCurl(a,c);}
+   else if(H.toeBase)r.digits.forEach((toe,ti)=>{toe.rotation.x=H.toeBase[ti]-c*.55;});
+  }
+  // 피: 잘린 자리에서, 그리고 날살이 내려오는 끝에서 떨어진다
+  if(PREF.blood&&t<T.scHand){
+   r.goo-=dt;if(r.goo<=0){r.goo=rnd(.08,.18);r.parent.updateWorldMatrix(true,false);const p=r.parent.localToWorld(r.pos.clone());BLOOD.emit('blood',p,V3(rnd(-.3,.3),rnd(-.1,.4),rnd(0,.4)),rnd(.003,.006),1);}
+   r.drip-=dt;if(r.drip<=0&&bloodAt){r.drip=rnd(.1,.2);const S=bloodAt;S.b.updateWorldMatrix(true,false);const p=S.b.localToWorld(V3(rnd(-.01,.01),(S.c-S.len*.5)*S.fg.scale.y,rnd(-.01,.01)));BLOOD.emit('blood',p,V3(rnd(-.2,.2),rnd(-.3,.1),rnd(0,.3)),rnd(.002,.004),1);}
+  }
+  if(t>=r.dur){Q.splice(k,1);this.onRegrown(r);}
  }
 },
 buildLizardLimb(r){
- const s=r.side==='L'?-1:1,nm=r.side,chain=r.arm?ARM_CHAIN:LEG_CHAIN;
+ const s=r.side==='L'?-1:1,nm=r.side,chain=r.arm?ARM_CHAIN:LEG_CHAIN,M=this.M;
  const k0=chain.findIndex(c=>c[0]===r.base);if(k0<0)return;
  let parent=r.parent;const made=[];
  for(let k=k0;k<chain.length;k++){
@@ -7211,41 +7304,83 @@ buildLizardLimb(r){
  else{const l=this.legs[i];for(const b of made){const n=b.userData.bone.slice(0,-1);if(n==='hip')l.hip=b;else if(n==='thighMid')l.tm=b;else if(n==='knee')l.knee=b;else if(n==='shinMid')l.sm=b;else if(n==='ankle')l.ank=b;}}
  for(const b of made)this.detached.delete(b.userData.bone);
  r.root.updateMatrixWorld(true);for(const b of made)mergeChildren(b);
- // 자라는 연출 준비: 마디마다 살 메시는 sg에, 마디 공은 bg에 묶는다(뼈 자리는 그대로). 마지막 뼈(손목·발목)는 손·발째 봉오리에서 자란다
+ // 연출용 묶음: 마디마다 비늘 살은 sg, 마디 공은 bg, 뼈는 cg, 날살 소매는 fg(+ 날살 공 rb). 뼈 자리는 그대로.
+ const gore=m=>{m.userData.noHit=true;m.userData.gore=true;m.visible=PREF.blood;this.goreMeshes.push(m);return m;};
  r.segs=[];r.rest=made.map(b=>b.position.clone());
- for(let k=0;k<made.length-1;k++){const b=made[k],sg=new THREE.Group(),bg=new THREE.Group();
+ for(let k=0;k<made.length-1;k++){const b=made[k],sg=new THREE.Group(),bg=new THREE.Group(),cg=new THREE.Group(),fg=new THREE.Group();
   for(const ch of [...b.children]){if(!ch.isMesh)continue;(ch.userData.lizBall?bg:sg).add(ch);}
-  b.add(sg);b.add(bg);
-  const D=LIZ_DIM[b.userData.bone.slice(0,-1)]||{};r.segs.push({b,sg,bg,len:D.len||.1,started:false});
+  b.add(sg);b.add(bg);b.add(cg);b.add(fg);
+  const name=b.userData.bone.slice(0,-1),D=LIZ_DIM[name]||{},len=D.len||.1,c=D.c||-len/2,r0=D.r0||.05,r1=D.r1||.045;
+  // 뼈: 가는 뼈대 + 위쪽 관절 머리(단면의 뼈 고리 굵기에 맞춘다)
+  const key='regBone:'+name;
+  mk(GEO[key]||(GEO[key]=cylGeo(r0*.27,r1*.25,len*1.02,12)),M.regBone,cg,{p:[0,c,0],cast:false});
+  mk(sphereGeo(14),M.regBone,cg,{p:[0,c+len*.5,0],s:D.ball?[D.ball[0]*.6,D.ball[1]*.52,D.ball[2]*.6]:[r0*.5,r0*.36,r0*.5],cast:false});
+  mergeChildren(cg);for(const m of cg.children)gore(m);
+  // 날살 소매: 비늘 살보다 조금 가늘어서 비늘이 덮으면 안 비친다
+  const rk='rawSeg:'+name;
+  gore(mk(GEO[rk]||(GEO[rk]=muscleGeo((r0+r1)*.5*1.08,len*1.12)),M.rawFlesh,fg,{p:[0,c,0],r:[0,k*1.7,0],cast:false}));
+  // 뼈 옆을 따라 내려가는 힘줄 두 가닥(뼈와 같이 뻗는다)
+  const vk='regVein:'+name;
+  for(const [ax,az] of [[.72,.4],[-.5,-.6]])gore(mk(GEO[vk]||(GEO[vk]=cylGeo(r0*.075,r0*.06,len*.98,6)),M.rawVessel,cg,{p:[ax*r0*.3,c,az*r0*.3],cast:false}));
+  let rb=null;if(D.ball){rb=gore(mk(sphereGeo(16),M.rawFlesh,b,{cast:false}));rb.scale.setScalar(.001);}
+  r.segs.push({b,sg,bg,cg,fg,rb,rbDim:D.ball||null,len,c,boneOut:false,rawOut:false,scOut:false,covered:false});
   if(k>0)b.position.set(0,0,0);
-  sg.scale.set(.2,.015,.2);bg.scale.setScalar(.03);
+  sg.scale.set(.93,.001,.93);bg.scale.setScalar(.001);cg.scale.set(1,.001,1);fg.scale.set(.45,.001,.45);
  }
- const tip=made[made.length-1];r.tip=tip;tip.scale.setScalar(.02);
- const hand=tip.userData.hand,foot=tip.userData.foot;
+ // 손·발: 진짜 손 메시는 hg로 묶고, 손가락뼈(hb)는 진짜 손가락 회전을 매 프레임 따라간다. 날살 봉오리(hr)는 손목에서 맺힌다
+ const tip=made[made.length-1];r.tip=tip;if(made.length>1)tip.position.copy(r.rest[made.length-1]).multiplyScalar(.001);
+ // 깨어날 때 움찔하는 뼈: 자세가 매 프레임 회전을 새로 쓰는 마디(팔꿈치·손목·무릎·발목·어깨·엉덩이)여야 움찔임이 쌓이지 않는다
+ r.jolt=made.find(b=>/^(elbow|wrist|knee|ankle|hip|shoulder)/.test(b.userData.bone))||null;
+ const hand=tip.userData.hand,foot=tip.userData.foot,hg=new THREE.Group(),hb=new THREE.Group(),hr=new THREE.Group(),mirror=[];
+ for(const ch of [...tip.children])hg.add(ch);
+ tip.add(hg);tip.add(hb);tip.add(hr);
  r.digits=hand?[...hand.fingers.map(f=>f.f),hand.thumb.t]:foot?foot.toes:[];
- for(const d of r.digits)d.scale.setScalar(.02);
- r.tipStarted=false;r.drip=0;
+ if(hand){
+  gore(mk(sphereGeo(12),M.regBone,hb,{p:[0,-.036,.004],s:[.014,.022,.02],cast:false}));
+  for(let i=0;i<4;i++){const F=hand.fingers[i],len=i===3?.03:.042;
+   const bf=grp(hb,[F.f.position.x,F.f.position.y,F.f.position.z]);gore(mk(capsuleGeo(.0042,len*.86,8),M.regBone,bf,{p:[0,-len/2-.004,0],cast:false}));
+   const bf2=grp(bf,[F.f2.position.x,F.f2.position.y,F.f2.position.z]);gore(mk(capsuleGeo(.0036,len*.66,8),M.regBone,bf2,{p:[0,-len*.4,0],cast:false}));
+   mirror.push({a:F.f,b:bf},{a:F.f2,b:bf2});}
+  const T=hand.thumb,bt=grp(hb,[T.t.position.x,T.t.position.y,T.t.position.z]);gore(mk(capsuleGeo(.0046,.026,8),M.regBone,bt,{p:[0,-.018,0],cast:false}));
+  const bt2=grp(bt,[T.t2.position.x,T.t2.position.y,T.t2.position.z]);gore(mk(capsuleGeo(.004,.02,8),M.regBone,bt2,{p:[0,-.014,0],cast:false}));
+  mirror.push({a:T.t,b:bt},{a:T.t2,b:bt2});
+  gore(mk(GEO.rawMitt||(GEO.rawMitt=capsuleGeo(.027,.09,16)),M.rawFlesh,hr,{p:[0,-.072,.004],cast:false}));
+ }else if(foot){
+  gore(mk(sphereGeo(12),M.regBone,hb,{p:[0,-.018,.04],s:[.036,.022,.08],cast:false}));
+  for(const g of foot.toes){const bg=grp(hb,[g.position.x,g.position.y,g.position.z]);gore(mk(capsuleGeo(.0068,.052,8),M.regBone,bg,{p:[0,0,.03],r:[PI/2,0,0],cast:false}));mirror.push({a:g,b:bg});}
+  gore(mk(sphereGeo(16),M.rawFlesh,hr,{p:[0,-.02,.052],s:[.052,.034,.1],cast:false}));
+ }
+ hg.scale.set(.93,.001,.93);hb.scale.set(1,.001,1);hr.scale.set(.5,.001,.5);
+ r.hand={hg,hb,hr,mirror,toeBase:foot?foot.toes.map(g=>g.rotation.x):null,boneOut:false,rawOut:false,scOut:false,covered:false};
+ // 시간표: 마디 수에 따라 늘어난다(다리는 조금 느리게)
+ r.T=regrowTimeline(r.segs.length,r.arm);r.dur=r.T.dur;
+ r.goo=0;r.drip=0;r.woke=false;
  r.root.traverse(o=>{if(!o.isMesh)return;o.userData.seg=this.segOf(o);if(o.userData.part&&!o.userData.noHit)this.parts.push(o);if(o.userData.flow){(this.flow[o.userData.seg]||(this.flow[o.userData.seg]=[])).push(o);FASTRAY.grid(o.geometry);}});
  this._flowAll=null;
- // 잘린 면 마개는 옷(살) 테만 남겨 새 팔다리가 그 속에서 나오게 한다
- const cap=r.cap;if(cap&&cap.userData.cap){const c=cap.userData.cap,inner=(CUT_R_LIZ[r.base]||.05)*.98;
-  for(const ch of [...cap.children])ch.removeFromParent();this.goreMeshes=this.goreMeshes.filter(m=>m.parent);
-  if(inner<c.r*.95){const m=mk(new THREE.RingGeometry(inner,c.r,28),c.outer,cap,{p:[0,c.s*.001,0],r:[c.rx,0,0],cast:false});m.userData.noHit=true;this.disposables.push(m.geometry);}}
  if(this.state==='stand'&&!r.arm)this.doFlinch('shock',.8);
 },
+// 날살이 덮기 시작할 때: 잘린 면 마개는 옷(살) 테만 남겨 새 팔다리가 그 속에서 나오게 한다
+openCutCap(r){
+ const cap=r.cap;if(!cap||!cap.userData.cap||cap.userData.opened)return;cap.userData.opened=true;
+ const c=cap.userData.cap,inner=(CUT_R_LIZ[r.base]||.05)*.98;
+ for(const ch of [...cap.children])ch.removeFromParent();this.goreMeshes=this.goreMeshes.filter(m=>m.parent);
+ if(inner<c.r*.95){const m=mk(new THREE.RingGeometry(inner,c.r,28),c.outer,cap,{p:[0,c.s*.001,0],r:[c.rx,0,0],cast:false});m.userData.noHit=true;this.disposables.push(m.geometry);}
+},
 onRegrown(r){
- // 다 자람: 연출용 변형을 전부 제자리로 돌린다
- if(r.segs){for(const S of r.segs){S.sg.scale.set(1,1,1);S.sg.rotation.set(0,0,0);S.bg.scale.setScalar(1);}
-  for(let j=1;j<r.rest.length;j++)(j<r.segs.length?r.segs[j].b:r.tip).position.copy(r.rest[j]);
-  r.tip.scale.setScalar(1);for(const d of r.digits)d.scale.setScalar(1);}
- AUDIO.pop(.7);const key=(r.arm?'arm':'leg')+r.side,i=r.side==='L'?0:1;this.limbCut[key]={hits:0,last:null};if(r.arm)this.armLimp[i]=0;else{this.legLimp[i]=0;this.limp[i]=0;}
+ // 다 자람: 연출용 메시를 걷어내고 변형을 전부 제자리로 돌린다
+ const drop=new Set();
+ if(r.segs){for(const S of r.segs){S.sg.scale.set(1,1,1);S.sg.rotation.set(0,0,0);S.bg.scale.setScalar(1);
+   for(const g of [S.cg,S.fg,S.rb]){if(!g)continue;g.traverse(o=>{if(o.isMesh)drop.add(o);});g.removeFromParent();}}
+  for(let j=1;j<r.rest.length;j++)(j<r.segs.length?r.segs[j].b:r.tip).position.copy(r.rest[j]);}
+ if(r.hand){const H=r.hand;H.hg.scale.set(1,1,1);for(const g of [H.hb,H.hr]){g.traverse(o=>{if(o.isMesh)drop.add(o);});g.removeFromParent();}
+  if(H.toeBase)r.digits.forEach((toe,ti)=>{toe.rotation.x=H.toeBase[ti];});}
+ if(drop.size)this.goreMeshes=this.goreMeshes.filter(m=>!drop.has(m));
+ this.openCutCap(r);
+ const key=(r.arm?'arm':'leg')+r.side,i=r.side==='L'?0:1;this.limbCut[key]={hits:0,last:null};if(r.arm)this.armLimp[i]=0;else{this.legLimp[i]=0;this.limp[i]=0;}
  // 잘린 자리에서 나던 피는 멎는다
  r.parent.updateWorldMatrix(true,false);BLOOD.stopNear(r.parent,r.parent.localToWorld(r.pos.clone()),.09);
- r.root.updateWorldMatrix(true,false);const p=r.root.getWorldPosition(V3());
- FX.add('glint',p,{size:.12,life:.25,start:.4,grow:1.4,color:'#c8ff9a'});
  if(r.arm){this.armHurt[i]=.4;if(this.state==='stand'&&!this.act)this.doAct('look',{side:r.side,dur:1.6});}
  else if(this.state==='down'&&this.down&&!this.legsMissing())this.down.stay=Math.min(this.down.stay,.35);
- if(this.state!=='dead'&&Math.random()<.6)this.flickTongue();
 },
 // 도마뱀 팔다리 한 마디: 비늘 원기둥 + 마디 공 + 돌기
 lizSeg(name,b,s,nm){
@@ -8732,6 +8867,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  const firstStrike=!G.started;
  if(firstStrike){G.started=true;G.t0=G.time;}
  G.lastHit=G.time;
+ if(G.revived&&!G.musicStarted)G.musicStarted=true; // 되살아난 뒤 첫 타격: 꺼 두었던 음악이 함께 다시 시작한다
  if(!extra.through&&!extra.quiet)AUDIO.duck();
  const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,strokeId:extra.strokeId,through:extra.through});
  if(firstStrike)firstStrikeLine();
@@ -8835,7 +8971,8 @@ function warnCrowd(){ // 10%: 넷이 설계자 앞을 막아선다
 }
 /* 5%: 되살리기 컷씬
  * 카메라는 족칠 때 자리 그대로 둔다(다가가거나 물러서지 않는다).
- * 0.0 마지막 타격, 멈춤 → 천지신명이 무너진다(2.4초). 사람들은 제자리에서 지켜만 본다
+ * 0.0 마지막 타격, 멈춤 → 천지신명이 무너진다(2.4초). 사람들은 제자리에서 지켜만 본다. 음악은 여기서부터 2.6초에 걸쳐 꺼진다
+ *     (되살아난 뒤 첫 타격과 함께 처음부터 다시 시작)
  * 2.7 (REV_SHIFT) 사람들이 뛰어와 꿇고 운다 → 이 뒤 시각은 전부 REV_SHIFT만큼 밀린 것
  * 3.0 천지신명이 손을 든다 / 사람들이 손을 모은다
  * 3.5 소원의 불씨가 손바닥으로 모인다(2.3초)
@@ -8850,6 +8987,8 @@ function beginRevival(){
  $('#fight .gauge').style.visibility='hidden';clearTalk();
  if(E.tabletHeld)E.dropTablet(V3(-2.4,.45,.7));
  E.startFall('final');E.haloStage(4);G.hitstop=Math.max(G.hitstop,.3);G.slow=Math.max(G.slow,.5);flash(.3);
+ // 음악: 무너지는 동안 천천히 꺼져서 추종자들이 뛰어올 때는 조용하다. 되살아난 뒤 첫 타격에 처음부터 다시 시작한다
+ G.musicStarted=false;AUDIO.stopMusic(true,REV_MUSIC_FADE);
  G.revival={at:G.time,raised:false,cam1:false,gather:false,chest:false,impact:false,swapped:false,released:false,stamped:false,cheered:false,home:false,spoken:false};
  CROWD.reviveStart(G.time,E);
  return true;
