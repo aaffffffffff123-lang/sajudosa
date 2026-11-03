@@ -1115,7 +1115,7 @@ else if(this._refitRay(verts)){
  * 손상 값(aDmg.y)을 매겨서 살 셰이더가 결 있는 단면으로 칠하게 한다. dist(p)=n·p-d 가 0보다 크면 잘려 나가는 쪽. */
 const SLICE=(()=>{
  const RINGS=[[1,.1],[.95,.28],[.88,.46],[.74,.78],[.5,1],[.22,1.1],[0,1.15]];
- function slice(geo,n,d){
+ function slice(geo,n,d,close=true){
   const A=geo.attributes,P=A.position.array,N=A.normal?A.normal.array:null,UV=A.uv?A.uv.array:null,C=A.color?A.color.array:null,Dm=A.aDmg?A.aDmg.array:null;
   const idx=geo.index?geo.index.array:null,nv=P.length/3,T=(idx?idx.length:nv)/3;
   const dist=new Float32Array(nv);for(let i=0;i<nv;i++)dist[i]=n.x*P[i*3]+n.y*P[i*3+1]+n.z*P[i*3+2]-d;
@@ -1154,7 +1154,7 @@ const SLICE=(()=>{
    for(let g=0;g<20000;g++){const nb=adj.get(cur).filter(x=>x!==prev&&(!used.has(x)||(x===st&&loop.length>2)));if(!nb.length)break;const nx=nb.find(x=>!used.has(x))||nb[0];if(nx===st)break;loop.push(nx);used.add(nx);prev=cur;cur=nx;}
    if(loop.length>=3)loops.push(loop.map(q=>pk.get(q)));}
   // 단면 막기: 두 쪽에 각각(남는 쪽은 +n, 떨어지는 쪽은 -n을 본다)
-  for(const loop of loops)for(const s of [0,1])cap(B[s],loop,s===0?n.clone():n.clone().negate());
+  if(close)for(const loop of loops)for(const s of [0,1])cap(B[s],loop,s===0?n.clone():n.clone().negate());
   return {keep:build(B[0]),cut:build(B[1]),loops:loops.length};
   function cap(b,loop,nn){
    const U=Math.abs(nn.x)>.8?V3(0,1,0):V3(1,0,0);U.addScaledVector(nn,-U.dot(nn)).normalize();const Vv=V3().crossVectors(nn,U);
@@ -4286,23 +4286,61 @@ function reptileMaterial(m,u,v,depth=.0022){
  m.map=LIZ_TEX(u,v);m.bumpMap=REPTILE_MAPS('height',u,v);m.bumpScale=depth;
  m.roughnessMap=REPTILE_MAPS('rough',u,v);m.roughness=.94;m.metalness=0;m.envMapIntensity=.48;m.needsUpdate=true;
 }
-// Shared curved cut surfaces. The rim and recessed interior have thickness and
-// separate normals; the blue interior remains fictional and respects blood-off.
+// Cut ends are layered solids, with recessed muscle bundles and an open bone canal.
+// Geometry is shared across cuts; no extra texture download or per-frame rebuild.
 const CUT_DETAIL=(()=>{
  const cache={};
- // The detailed tissue bitmap is authored once, not regenerated per page load.
- const tissue=canvasTex(2,2,g=>{g.fillStyle='#304b59';g.fillRect(0,0,2,2);});
- new THREE.TextureLoader().load('assets/cut-tissue-v1.webp',tex=>{tissue.image=tex.image;tissue.needsUpdate=true;tex.dispose();},undefined,()=>{});
-
  function geometry(part,variant=0){
-  const key=part+variant;if(cache[key])return cache[key];const N=64,P=[],uv=[],idx=[];
-  const rings=part==='rim'?[[.84,.075],[.92,.15],[1,.10],[1,-.08]]:[[0,.025],[.22,.038],[.48,.005],[.72,.05],[.85,.075]];
-  rings.forEach(([radius,z],row)=>{for(let i=0;i<=N;i++){const a=i/N*TAU,wobble=1+.026*Math.sin(a*7+variant)+.012*Math.sin(a*13),rr=radius*wobble;P.push(Math.cos(a)*rr,Math.sin(a)*rr,z+(radius?Math.sin(a*9+variant)*.015:0)+(part==='inside'?.045*Math.sin(radius/.85*PI)*(1+Math.cos(a*13))*.5:0));if(part==='rim')uv.push(i/N,row*.06);else uv.push(.5+Math.cos(a)*radius*.5,.5+Math.sin(a)*radius*.5);}});
-  for(let r=0;r<rings.length-1;r++)for(let i=0;i<N;i++){const a=r*(N+1)+i,b=a+N+1;idx.push(a,b,a+1,a+1,b,b+1);}
+  const key=part+variant;if(cache[key])return cache[key];
+  const N=64,P=[],uv=[],idx=[];
+  const rings=part==='rim'?[[.88,-.09],[.91,.012],[.975,.025],[1,-.025],[1,-.22]]:
+   part==='bone'?[[.12,-.24],[.12,.018],[.205,.045],[.235,.005],[.225,-.25]]:
+   [[0,-.22],[.24,-.22],[.48,-.18],[.72,-.14],[.89,-.09]];
+  rings.forEach(([radius,z],row)=>{for(let i=0;i<=N;i++){
+   const a=i/N*TAU,wobble=1+.035*Math.sin(a*5+variant)+.018*Math.sin(a*11+variant*.7),rr=radius*wobble;
+   P.push(Math.cos(a)*rr,Math.sin(a)*rr,z+(radius?.012*Math.sin(a*9+variant):0));
+   uv.push(.5+Math.cos(a)*radius*.5,.5+Math.sin(a)*radius*.5);
+  }});
+  for(let row=0;row<rings.length-1;row++)for(let i=0;i<N;i++){const a=row*(N+1)+i,b=a+N+1;idx.push(a,b,a+1,a+1,b,b+1);}
+  return save(key,P,uv,idx);
+ }
+ function save(key,P,uv,idx){
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(P,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();g.computeBoundingSphere();GEO['cutDetail:'+key]=g;return cache[key]=g;
  }
- return {geometry,tissue};
+ function muscle(variant=0){
+  const key='muscle'+variant;if(cache[key])return cache[key];const P=[],uv=[],idx=[];
+  // Separate, unequal bundles: the dark trough remains visible between them.
+  const angles=[0,.82,1.95,3.02,4.15,5.28,TAU];
+  for(let k=0;k<6;k++){
+   const base=P.length/3,A=18,R=7;
+   for(let j=0;j<=R;j++)for(let i=0;i<=A;i++){
+    const u=i/A,v=j/R,a=angles[k]+.025+(angles[k+1]-angles[k]-.05)*u;
+    const inner=.25+.045*Math.sin(a*3+variant),outer=.875+.014*Math.sin(a*7+variant),r=lerp(inner,outer,v);
+    const hump=Math.pow(Math.sin(PI*u)*Math.sin(PI*v),.65),fiber=.008*Math.sin(u*PI*22+k)*Math.sin(PI*v);
+    P.push(Math.cos(a)*r,Math.sin(a)*r,-.155+.105*hump+fiber+.02*Math.sin(k*2));uv.push(u*.6+k*.13,v);
+   }
+   for(let j=0;j<R;j++)for(let i=0;i<A;i++){const a=base+j*(A+1)+i,b=a+A+1;idx.push(a,b,a+1,a+1,b,b+1);}
+  }
+  return save(key,P,uv,idx);
+ }
+ return {geometry,muscle};
 })();
+// Reveal tissue at its final proportions. Each layer advances from the neck to
+// the crown along an uneven edge; nothing inflates from a miniature finished head.
+function headGrowthMaterial(base,offset=0){
+ const m=base.clone(),previous=base.onBeforeCompile,key=base.customProgramCacheKey();
+ const growth={value:-.3},covered={value:-1};m.userData.headGrowth=growth;m.userData.headCovered=covered;
+ m.onBeforeCompile=sh=>{
+  previous.call(m,sh);sh.uniforms.uHeadGrowth=growth;sh.uniforms.uHeadCovered=covered;
+  sh.vertexShader='varying vec3 vHeadGrowth;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvHeadGrowth=position;');
+  sh.fragmentShader='varying vec3 vHeadGrowth;uniform float uHeadGrowth;uniform float uHeadCovered;\n'+sh.fragmentShader;
+  sh.fragmentShader=sh.fragmentShader.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
+   float growY=vHeadGrowth.y+${offset.toFixed(3)}+.010*sin(vHeadGrowth.x*113.)+.007*sin(vHeadGrowth.z*137.+vHeadGrowth.x*61.);
+   if(growY>uHeadGrowth||growY<uHeadCovered)discard;
+  `);
+ };
+ m.customProgramCacheKey=()=>key+'-head-growth-v2-'+offset;m.needsUpdate=true;return m;
+}
 /* 바지: 상아색 비단 + 바깥·안쪽 솔기를 따라 보라 줄(금테) */
 const TROUSER_TEX=canvasTex(256,256,(g,w,h)=>{
  const gr=g.createLinearGradient(0,0,w,0);gr.addColorStop(0,'#f4ecdb');gr.addColorStop(.5,'#efe5d0');gr.addColorStop(1,'#f4ecdb');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -4777,7 +4815,8 @@ class Emperor{
   M.lizHead=S('#ffffff',{vertexColors:true});
   reptileMaterial(M.liz,1.6,1.1);reptileMaterial(M.lizHand,.8,.85,.0014);reptileMaterial(M.lizHead,2.2,1.7,.0028);
   M.lizIn.color.set('#7c8970');M.claw.color.set('#bcb395');M.lizEye.emissiveIntensity=.025;M.lizEyeBall.color.set('#292e16');
-  M.cutTissue=S('#ffffff',{map:CUT_DETAIL.tissue,bumpMap:CUT_DETAIL.tissue,bumpScale:.0011,roughness:.43,side:THREE.DoubleSide});
+  M.cutTissue=S('#96a7ad',{map:rawFleshTex(),bumpMap:rawFleshTex(),bumpScale:.0018,roughness:.67,side:THREE.DoubleSide});
+  M.cutDepth=S('#0d1b29',{roughness:.83,side:THREE.DoubleSide});M.cutFascia=S('#839b9c',{roughness:.72,side:THREE.DoubleSide});
   M.cutSafe=S('#465847',{roughness:.9,side:THREE.DoubleSide});
   M.cutBone=S('#c3c2a4',{roughness:.62});M.cutMarrow=S('#1c3347',{roughness:.42});M.cutVessel=S('#27466a',{roughness:.28});
   // 빈 안와 바닥(어두운 속), 찢어져 피에 젖은 눈꺼풀, 드러난 뇌(젖은 결), 눈알에 딸려 나가는 시신경
@@ -6062,36 +6101,92 @@ Object.assign(Emperor.prototype,{
  },
  // 목 윗면(그루터기) 막기: 겉 살 → 비늘 → 파란 속
  capNeck(neck,jointW,upW){
-  if(this.neckCap){const old=new Set();this.neckCap.traverse(o=>old.add(o));this.goreMeshes=this.goreMeshes.filter(o=>!old.has(o));this.neckCap.removeFromParent();this.neckCap=null;}
+  if(this.neckCap){this.neckCap.removeFromParent();this.releaseLoose(this.neckCap);this.neckCap=null;}
   neck.updateWorldMatrix(true,false);
   const q=new THREE.Quaternion().setFromUnitVectors(V3(0,1,0),upW);
   const g=grp(neck);g.position.copy(neck.worldToLocal(jointW.clone())).add(V3(0,-.012,0));
   g.quaternion.copy(neck.getWorldQuaternion(new THREE.Quaternion()).invert().multiply(q));
+  this.trimCutEnd(neck,g,.108,1);
   this.detailCutCap(g,.108,this.headKind==='rep'?this.M.liz:this.M.skin,-PI/2,1);
   this.neckCap=g;
+ },
+ buildHeadRegrowth(r){
+  const M=this.M,rg=this.repFaceG;
+  this.repHead.scale.setScalar(1);
+  r.mats=[];r.skin=[];
+  const reveal=(mesh,offset)=>{const old=mesh.material,m=headGrowthMaterial(old,offset);mesh.material=m;r.mats.push(m);this.disposables.push(m);return {mesh,old,m,shadow:mesh.castShadow};};
+  r.skin.push(reveal(this.repSkull,0),reveal(this.repJaw,-.07));
+  for(const layer of r.skin)layer.mesh.castShadow=false;
+  r.frame=grp(rg);r.raw=grp(rg);
+  const stage=(mesh,parent,base,offset=0)=>{
+   const m=headGrowthMaterial(base,offset);mesh.material=m;r.mats.push(m);this.disposables.push(m);
+   mesh.userData.noHit=true;mesh.userData.gore=true;mesh.visible=PREF.blood;mesh.castShadow=false;this.goreMeshes.push(mesh);parent.add(mesh);return mesh;
+  };
+  const skull=GEO.regrowSkull||(GEO.regrowSkull=SCULPT.star(HEADGEO.rep,V3(0,0,.02),48,36,.34,{smooth:0}));
+  const jaw=GEO.regrowJaw||(GEO.regrowJaw=SCULPT.star(HEADGEO.repJaw,V3(0,-.075,.12),40,24,.2,{smooth:0}));
+  r.boneMeshes=[stage(new THREE.Mesh(skull),r.frame,M.regBone),stage(new THREE.Mesh(jaw),r.frame,M.regBone)];
+  r.boneMeshes[0].scale.set(.88,.91,.9);r.boneMeshes[1].scale.set(.9,.9,.9);
+  r.rawMeshes=[stage(new THREE.Mesh(skull),r.raw,M.rawFlesh),stage(new THREE.Mesh(jaw),r.raw,M.rawFlesh)];
+  r.rawMeshes[0].scale.set(.96,.96,.96);r.rawMeshes[1].scale.set(.96,.96,.96);
+  // Short vertebral column bridges the cut neck to the skull base.
+  for(let i=0;i<3;i++){
+   const m=mk(GEO.regrowVertebra||(GEO.regrowVertebra=new THREE.TorusGeometry(.036,.012,8,18)),M.regBone,r.frame,{p:[0,-.14+i*.037,-.032],r:[PI/2,0,0],s:[1,.9,1],cast:false});
+   r.boneMeshes.push(stage(m,r.frame,M.regBone,-.14+i*.037));
+  }
+  // Paired cheek muscles pull the lower jaw into place before skin covers them.
+  for(const side of [-1,1]){
+   const key='regrowCheek'+side;
+   const geo=GEO[key]||(GEO[key]=SCULPT.tube(V3(side*.12,.032,.02),V3(side*.074,-.09,.13),t=>.013+.012*Math.sin(PI*t),12,12,{cap:2}));
+   r.rawMeshes.push(stage(new THREE.Mesh(geo),r.raw,M.rawFlesh));
+  }
+  r.lids=[];
+  for(const e of this.repEyes){
+   for(const sign of [1,-1]){const key='regrowLid'+sign;
+    const geo=GEO[key]||(GEO[key]=new THREE.SphereGeometry(1,20,10,0,TAU,sign>0?0:PI/2,PI/2));
+    const lid=mk(geo,M.liz,e.socket,{p:[0,0,.006],s:[.044,.032,.032],cast:false});lid.userData.noHit=true;lid.userData.sign=sign;r.lids.push(lid);
+   }e.root.visible=false;
+  }
+  r.extras=rg.children.filter(o=>o!==this.repSkull&&o!==this.repJawBone&&o!==r.frame&&o!==r.raw&&!this.repEyes.some(e=>o===e.eg||o===e.socket));
+  r.teeth=this.repJawBone.children.filter(o=>o!==this.repJaw&&o!==this.repFork.g);
+  for(const o of [...r.extras,...r.teeth])o.visible=false;
+ },
+ finishHeadRegrowth(r){
+  for(const layer of r.skin){layer.mesh.material=layer.old;layer.mesh.castShadow=layer.shadow;}
+  for(const o of [r.frame,r.raw,...r.lids]){o.removeFromParent();this.releaseLoose(o);}
+  for(const m of r.mats){m.dispose();const i=this.disposables.indexOf(m);if(i>=0)this.disposables.splice(i,1);}
  },
  updateHeadRegrow(dt){
   const r=this.regrowHead;if(!r)return;
   r.t+=dt;
   if(!r.built){
    if(r.t<0)return;
-   this.buildRepHead();r.built=true;r.t=0;AUDIO.squelch(1.1);
+   this.buildRepHead();this.buildHeadRegrowth(r);r.built=true;r.t=0;AUDIO.boneOut(.9);
    if(this.onHeadRegrow)this.onHeadRegrow();
   }
-  const u=sat(r.t/r.dur);
-  // 목 단면에서 가늘게 위로 밀고 올라온 뒤(세로가 먼저) 두개골 폭으로 벌어진다(가로가 뒤따른다). 부풀림·튕김 없음
-  const up=1-(1-sat(u/.6))*(1-sat(u/.6)),wide=smooth(sat((u-.2)/.62));
-  this.repHead.scale.set(Math.max(.03,.16+.84*wide),Math.max(.03,.05+.95*up),Math.max(.03,.16+.84*(wide*.85+up*.15)));
-  // 올라오는 동안 앞으로 숙였다가 편다
-  this.repHead.rotation.x=.38*(1-smooth(sat((u-.25)/.55)));
-  // 턱은 끝에 가서 앞으로 뻗고, 눈알은 빈 안와에 마지막으로 차오른다
-  if(this.repJawBone){const j=Math.max(.03,smooth(sat((u-.55)/.3)));this.repJawBone.scale.set(.85+.15*j,j,j);}
-  if(this.repEyes)for(const e of this.repEyes){if(!e.ejected)e.root.scale.setScalar(Math.max(.02,smooth(sat((u-.62)/.3))));}
-  if(!r.late&&u>.62){r.late=true;AUDIO.squelch(.5);}
-  r.goo-=dt;if(r.goo<=0&&u<1&&PREF.blood){r.goo=rnd(.07,.15);const neck=this.bones.neck;neck.updateWorldMatrix(true,false);const p=neck.localToWorld(V3(rnd(-.04,.04),.12,.02));BLOOD.emit('blood',p,V3(rnd(-.3,.3),rnd(.1,.5),rnd(0,.4)),rnd(.004,.007),1);}
+  const u=sat(r.t/r.dur),reveal=(list,k)=>{for(const o of list)o.material.userData.headGrowth.value=lerp(-.24,.25,smooth(k));};
+  // 0–42%: skull and jaw; 24–69%: muscle; 50–88%: scales; 80–97%: eyes open.
+  reveal(r.boneMeshes,sat(u/.42));reveal(r.rawMeshes,sat((u-.24)/.45));
+  for(const layer of r.skin)layer.m.userData.headGrowth.value=lerp(-.24,.25,smooth(sat((u-.50)/.38)));
+  // Retire covered tissue behind the advancing edge; no overlapping shells flicker.
+  for(const m of r.boneMeshes)m.material.userData.headCovered.value=r.rawMeshes[0].material.userData.headGrowth.value-.012;
+  for(const m of r.rawMeshes)m.material.userData.headCovered.value=r.skin[0].m.userData.headGrowth.value-.012;
+  r.frame.visible=u<.88;r.raw.visible=u<.89;
+  if(this.neckCap&&u>.12)this.neckCap.visible=false;
+  this.repHead.rotation.x=.15*(1-smooth(sat((u-.46)/.45)));
+  this.repJawBone.rotation.x=.26*(1-smooth(sat((u-.38)/.34)));
+  for(const o of r.extras)o.visible=u>.60;
+  for(const o of r.teeth)o.visible=u>.43;
+  for(let i=0;i<this.repEyes.length;i++){
+   const e=this.repEyes[i],open=smooth(sat((u-.80-i*.025)/.15));
+   e.socket.visible=u>.28;e.root.visible=u>.79;
+   for(let j=i*2;j<i*2+2;j++){const lid=r.lids[j];lid.visible=u>.67&&open<.999;lid.scale.y=.032*Math.max(.001,1-open);lid.position.y=lid.userData.sign*.032*open;}
+  }
+  if(!r.rawSound&&u>.24){r.rawSound=true;AUDIO.squelch(.8);}
+  if(!r.skinSound&&u>.5){r.skinSound=true;AUDIO.scaleSet(.8);}
+  r.goo-=dt;if(r.goo<=0&&u<.84&&PREF.blood){r.goo=rnd(.10,.18);const neck=this.bones.neck;neck.updateWorldMatrix(true,false);const p=neck.localToWorld(V3(rnd(-.04,.04),.12,.02));BLOOD.emit('blood',p,V3(rnd(-.3,.3),rnd(.1,.5),rnd(0,.4)),rnd(.003,.006),1);}
   if(u>=1){
-   this.repHead.scale.setScalar(1);this.repHead.rotation.x=0;if(this.repJawBone)this.repJawBone.scale.setScalar(1);
-   if(this.repEyes)for(const e of this.repEyes)if(!e.ejected)e.root.scale.setScalar(1);
+   this.finishHeadRegrowth(r);this.repHead.rotation.x=0;this.repJawBone.rotation.x=0;
+   for(const e of this.repEyes)if(!e.ejected){e.root.visible=true;e.root.scale.setScalar(1);}
    this.regrowHead=null;
    this.headGone=false;this.headTear=0;this.headGunHits=0;this.headDone={};this.repEyeHits=[0,0];
    this.repFull=true;this.deadStare=1;AUDIO.hiss(1);if(this.neckCap)this.neckCap.visible=false;
@@ -7131,24 +7226,48 @@ cutJointAt(seg,pW){
  return best;
 },
 // 잘린 면: 바깥은 옷(살), 안은 비늘, 가운데는 파란 속
-makeCutCap(parent,pos,q,r,distal,outer,lizard,offset=0){
+makeCutCap(parent,pos,q,r,distal,outer,lizard,offset=0,trim=true){
  const g=grp(parent);g.position.copy(pos);g.quaternion.copy(q);g.translateY((distal?1:-1)*offset);
  const s=distal?1:-1,rx=distal?-PI/2:PI/2;
+ if(trim)this.trimCutEnd(parent,g,r,s);
  this.detailCutCap(g,r,outer,rx,s);
  g.userData.cap={r,outer,rx,s};
  return g;
 },
+// Remove the original closed/rounded mesh end. Otherwise it occludes the
+// recessed tissue, leaving exactly the old balloon-like surface over the detail.
+trimCutEnd(root,cap,r,sign){
+ root.updateWorldMatrix(true,true);cap.updateWorldMatrix(true,false);
+ const q=cap.getWorldQuaternion(new THREE.Quaternion()),nW=V3(0,sign,0).applyQuaternion(q),pW=cap.getWorldPosition(V3()).addScaledVector(nW,-r*.25);
+ const visit=o=>{
+  if(o===cap||o!==root&&o.userData.bone)return;
+  if(o.isMesh&&!o.userData.noHit&&!o.userData.gore&&o.geometry&&o.geometry.attributes.position){
+   const inv=o.matrixWorld.clone().invert(),n=nW.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(o.matrixWorld).transpose()).normalize(),p=pW.clone().applyMatrix4(inv),d=n.dot(p),f=o.userData.flesh;
+   if(f)f.bake();const a=o.geometry.attributes.position;let lo=Infinity,hi=-Infinity;
+   for(let i=0;i<a.count;i++){const v=n.x*a.getX(i)+n.y*a.getY(i)+n.z*a.getZ(i)-d;lo=Math.min(lo,v);hi=Math.max(hi,v);}
+   if(lo<0&&hi>0){
+    const clipped=SLICE.slice(o.geometry,n,d,false);
+    if(clipped.keep){const old=o.geometry;o.geometry=clipped.keep;if(f){f.setGeometry(clipped.keep,true);if(o.userData.detached)f.disposeWork();}this.disposables.push(clipped.keep);this.releaseGeometry(old);}
+    if(clipped.cut)clipped.cut.dispose();
+   }
+  }
+  for(const child of o.children)visit(child);
+ };
+ visit(root);
+},
 detailCutCap(g,r,outer,rx,s){
  const v=Math.round(r*100)%3;
  const rim=mk(CUT_DETAIL.geometry('rim',v),outer,g,{r:[rx,0,0],s:r,cast:false});rim.userData.noHit=true;
- const inside=mk(CUT_DETAIL.geometry('inside',v),this.M.cutTissue,g,{r:[rx,0,0],s:r,cast:false});inside.userData.noHit=true;inside.userData.gore=true;inside.visible=PREF.blood;this.goreMeshes.push(inside);
  const detail=grp(g);detail.rotation.x=rx;detail.scale.setScalar(r);detail.userData.gore=true;detail.visible=PREF.blood;this.goreMeshes.push(detail);
- const boneGeo=GEO.cutBone||(GEO.cutBone=new THREE.TorusGeometry(.145,.042,8,24));
- mk(boneGeo,this.M.cutBone,detail,{p:[.043,-.06,.10],s:[.82,1,.72],cast:false}).userData.noHit=true;
- mk(GEO.cutMarrow||(GEO.cutMarrow=new THREE.CircleGeometry(.118,20)),this.M.cutMarrow,detail,{p:[.043,-.06,.083],s:[.82,1,1],cast:false}).userData.noHit=true;
- const vessels=GEO.cutVessel||(GEO.cutVessel=new THREE.TorusGeometry(.029,.014,6,12));
- for(const [x,y] of [[-.35,.18],[.3,-.38],[-.14,-.49]])mk(vessels,this.M.cutVessel,detail,{p:[x,y,.073],s:[1,.78,1],cast:false}).userData.noHit=true;
- mergeChildren(detail);detail.traverse(o=>{if(o.isMesh)o.userData.gore=true;});
+ mk(CUT_DETAIL.geometry('inside',v),this.M.cutDepth,detail,{cast:false});
+ mk(CUT_DETAIL.muscle(v),this.M.cutTissue,detail,{cast:false});
+ // A thin connective layer sits inside the outer lip, not a glossy balloon rim.
+ mk(GEO.cutFascia||(GEO.cutFascia=new THREE.RingGeometry(.859,.901,64)),this.M.cutFascia,detail,{p:[0,0,-.073],cast:false});
+ mk(CUT_DETAIL.geometry('bone',v),this.M.cutBone,detail,{p:[.022,-.032,0],s:[.84,1,1],cast:false});
+ mk(GEO.cutMarrow||(GEO.cutMarrow=new THREE.CircleGeometry(.12,24)),this.M.cutMarrow,detail,{p:[.022,-.032,-.205],s:[.84,1,1],cast:false});
+ const vessels=GEO.cutVessel||(GEO.cutVessel=new THREE.TorusGeometry(.029,.011,6,12));
+ for(const [x,y] of [[-.35,.18],[.3,-.38],[-.14,-.49]])mk(vessels,this.M.cutVessel,detail,{p:[x,y,-.067],s:[1,.78,1],cast:false});
+ mergeChildren(detail);detail.traverse(o=>{if(o.isMesh){o.userData.gore=true;o.userData.noHit=true;}});
  const safe=mk(CUT_DETAIL.geometry('inside',v),this.M.cutSafe,g,{r:[rx,0,0],s:r,cast:false});safe.userData.noHit=true;safe.userData.cutSafe=true;safe.visible=!PREF.blood;
  return g;
 },
@@ -7179,7 +7298,7 @@ detachLimb(joint,hitN,dir){
  for(const k in this.limbCaps){let inside=false;for(let n=this.limbCaps[k];n;n=n.parent)if(n===bone){inside=true;break;}if(inside)delete this.limbCaps[k];}
  const oldCap=this.limbCaps[joint];
  if(oldCap){oldCap.removeFromParent();this.releaseLoose(oldCap);}
- const capBody=this.makeCutCap(parent,pLocal,qLocal,r,false,outer,lizard,offB);this.limbCaps[joint]=capBody;
+ const capBody=this.makeCutCap(parent,pLocal,qLocal,r,false,outer,lizard,offB,base!=='wrist');this.limbCaps[joint]=capBody;
  this.makeCutCap(bone,V3(),new THREE.Quaternion(),r,true,outer,lizard,offP);
  if(arm){if(this.act&&(this.act.side===side||this.act.both||this.act.name==='beg'))this.endAct();this.releaseIK(side,20);}
  if(this.tabletHeld)this.dropTablet();
@@ -7387,7 +7506,7 @@ buildLizardLimb(r){
 openCutCap(r){
  const cap=r.cap;if(!cap||!cap.userData.cap||cap.userData.opened)return;cap.userData.opened=true;
  const c=cap.userData.cap,inner=(CUT_R_LIZ[r.base]||.05)*.98;
- for(const ch of [...cap.children])ch.removeFromParent();this.goreMeshes=this.goreMeshes.filter(m=>m.parent);
+ for(const ch of [...cap.children]){ch.removeFromParent();this.releaseLoose(ch);}this.goreMeshes=this.goreMeshes.filter(m=>m.parent);
  if(inner<c.r*.95){const m=mk(new THREE.RingGeometry(inner,c.r,28),c.outer,cap,{p:[0,c.s*.001,0],r:[c.rx,0,0],cast:false});m.userData.noHit=true;this.disposables.push(m.geometry);}
 },
 onRegrown(r){
