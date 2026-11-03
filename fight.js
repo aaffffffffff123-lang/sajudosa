@@ -1313,7 +1313,7 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadQuipVoice();loadMusic();
+  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadQuipVoice();loadRetortVoice();loadMusic();
  }
  function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
@@ -1324,6 +1324,7 @@ const AUDIO=(()=>{
  let openingBuffer=null,openingLoad=null;
  let greetingBuffer=null,greetingLoad=null;
  let quipBuffer=null,quipLoad=null;
+ let retortBuffer=null,retortLoad=null;
  function loadBackVoice(){
   if(!ctx)return Promise.resolve(null);
   if(!backLoad){const ac=ctx;
@@ -1348,6 +1349,12 @@ const AUDIO=(()=>{
   if(!quipLoad){const ac=ctx;quipLoad=fetch('assets/fate-best-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>quipBuffer=b).catch(()=>null);}
   return quipLoad;
  }
+ // 「뭘 꼬라봐 씨발아」: 엔딩의 그 눈에 대고 뱉는 내 한마디. 내 인사와 같은 목소리로 미리 녹음한 것
+ function loadRetortVoice(){
+  if(!ctx)return Promise.resolve(null);
+  if(!retortLoad){const ac=ctx;retortLoad=fetch('assets/player-retort-ko.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>retortBuffer=b).catch(()=>null);}
+  return retortLoad;
+ }
  function speakTTS(text){
   if(!on)return null;
   if(tts)tts.stop();
@@ -1361,7 +1368,8 @@ const AUDIO=(()=>{
   const fallback=()=>{
    if(!busy||!on)return;
    if(!synth||!Utterance){finish();return;}
-   const u=new Utterance(text);u.lang='ko-KR';u.rate=text==='죽어!'?1.15:.9;u.pitch=text==='죽어!'?1:.75;u.volume=1;
+   const sharp=text==='죽어!'||text==='뭘 꼬라봐 씨발아'; // 내 외침은 빠르고 높게, 설계자 말은 느리고 낮게
+   const u=new Utterance(text);u.lang='ko-KR';u.rate=sharp?1.15:.9;u.pitch=sharp?1:.75;u.volume=1;
    const voices=(synth.getVoices?synth.getVoices():[]).filter(v=>/^ko(?:[-_]|$)/i.test(v.lang));
    const v=voices.find(v=>/남성|남자|\bmale\b|Minho|InJoon|BongJin|Hyunsu|Hyunwoo|Hyun-Woo/i.test(v.name))||voices[0];if(v)u.voice=v;
    native=true;u.onstart=()=>{started=true;};u.onend=u.onerror=finish;
@@ -1377,6 +1385,7 @@ const AUDIO=(()=>{
   else if(text==='넌 뭐야?'&&ctx){if(openingBuffer)play(openingBuffer);else loadOpeningVoice().then(play);}
   else if(text==='천지신명이시여...'&&ctx){if(greetingBuffer)play(greetingBuffer);else loadGreetingVoice().then(play);}
   else if(text==='운명 최고'&&ctx){if(quipBuffer)play(quipBuffer);else loadQuipVoice().then(play);}
+  else if(text==='뭘 꼬라봐 씨발아'&&ctx){if(retortBuffer)play(retortBuffer);else loadRetortVoice().then(play);}
   else fallback();
   return handle;
  }
@@ -2453,14 +2462,16 @@ const BEYOND=(()=>{
  * 말은 머리 위 말풍선(BUB)으로 한다. */
 
 /* 대사: 여기서 고치면 된다. [몇 번 사람(0~5), 말(\n은 말풍선 안 줄바꿈), 장면이 시작되고 몇 초 뒤에 말하는지]
- * 0번 평생 재물운 · 1번 집안복 대길 · 2번 자녀운 상승 · 3번 小吉 큰 탈은 없음 · 4번 윗자리 대길 · 5번 平 지금 이대로 (팔 붙잡기는 0·1번) */
+ * 0번 평생 재물운 · 1번 집안복 대길 · 2번 자녀운 상승 · 3번 小吉 큰 탈은 없음 · 4번 윗자리 대길 · 5번 平 지금 이대로 (팔 붙잡기는 0·1번)
+ * 추종자들이 나한테 하는 말(grab·wall)은 전부 반말. 천지신명한테 하는 말(wail·pray·cheer)은 그대로 존댓말 */
 const LINES={
  greeting:'천지신명이시여...',
  opening:'넌 뭐야?',
  firstHit:'죽어!',
  victory:'운명좁밥ㅋ',
- grab:[[0,'잠깐만요!\n제 재물운은요?',.25],[1,'우리 애 대학은\n어떡해요!',.85]],
- wall:[[2,'억울하면\n다음 생에 잘 태어나!',.75],[4,'남의 복까지\n건드리지 마요!',1.55],[5,'그냥 순응하고\n사세요!',2.35]],
+ retort:'뭘 꼬라봐 씨발아', // 엔딩: 「후임 천지신명도 족치러 가기」를 누르면 그 눈에 대고 내가 뱉는 한마디(미리 녹음한 목소리), 끝나면 다음 판
+ grab:[[0,'잠깐만!\n내 재물운은?',.25],[1,'우리 애 대학은\n어떡해!',.85]],
+ wall:[[2,'억울하면\n다음 생에 잘 태어나!',.75],[4,'남의 복까지\n건드리지 마!',1.55],[5,'그냥 순응하고\n살아!',2.35]],
  wail:[[0,'천지신명님!\n눈 좀 떠 보세요!',1.2],[3,'제 팔자는\n어떡해요!',2.05]],
  pray:[[2,'제 것만은\n지켜 주세요!',3.3],[5,'지금 이대로면\n돼요!',4.3]],
  cheer:[[1,'살아나셨다!',0],[4,'천지신명님 만세!',.45]],
@@ -2502,7 +2513,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.back+LINES.submit.map(x=>x[0]).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -9055,6 +9066,8 @@ function updateStory(){
   if(G.time>=G.omenAt+1.6&&(!G.prepAt||G.time>=G.beyondAt+1.5)){G.beyondAt=0;BEYOND.begin();G.againAt=G.time+BEYOND.DUR+1.2;}
  }
  if(G.againAt&&G.time>=G.againAt){G.againAt=0;showAgain();}
+ // 그 눈에 대고 한마디 다 뱉었으면(글자·목소리·읽을 틈까지) 후임 천지신명한테 간다
+ if(G.retorting&&!talkBusy()){G.retorting=false;startRound('fight');}
 }
 function damageBar(d,o={},fromStand=false){
  if(G.mode!=='fight'||G.ended||!G.E)return;
@@ -9463,7 +9476,13 @@ const TROPHIES=(()=>{
 // 끝: 누적 처치 수와 후임 천지신명으로 넘어가는 버튼.
 function showAgain(){const w=$('#again');w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));}
 function hideAgain(){const w=$('#again');w.classList.remove('on');w.hidden=true;}
-$('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();startRound('fight');});
+// 후임 족치러 가기: 버튼이 사라지고, 나를 내려다보는 그 눈에 대고 한마디 뱉는다(말풍선 + 녹음한 목소리). 다 뱉고 나면 updateStory()가 다음 판을 연다
+function retortAndRestart(){
+ if(G.retorting||!G.ended)return;
+ G.retorting=true;hideAgain();clearPointers();
+ queueTalk([['player',LINES.retort,1.6,.1,1.4,LINES.retort]],true);
+}
+$('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAndRestart();});
 function startFightFromSubmit(){
  if(G.mode!=='submit')return;
  AUDIO.unlock();AUDIO.stop();clearTalk();clearPointers();
@@ -9518,7 +9537,7 @@ function startRound(mode){
  const E=G.E;
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0});
+Object.assign(G,{mode,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,retorting:false});
  setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
@@ -9606,7 +9625,7 @@ function leave(home){
  TROPHIES.close(false);
  pause();
  SUBMISSION.reset();CROWD.reset();
- clearTalk();hideAgain();$('#settingsModal').hidden=true;$('#fight').hidden=true;
+ clearTalk();hideAgain();G.retorting=false;$('#settingsModal').hidden=true;$('#fight').hidden=true;
  const face=$('#arcadeFace');if(face){face.target='_top';face.removeAttribute('rel');}
  if(home&&window.__paljaRestart)window.__paljaRestart();else if(window.__paljaLeave)window.__paljaLeave();
 }
