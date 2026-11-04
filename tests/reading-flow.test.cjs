@@ -23,7 +23,7 @@ const ALL=(()=>{let seed=20261104;const rnd=()=>{seed=(seed*1103515245+12345)>>>
 const dom=(v,id)=>v.domains.find(x=>x.id===id);
 const fatesOf=v=>[v.origin.fate,v.core.fate,...v.domains.flatMap(x=>x.fates)];
 const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,...(x.rule?[x.rule]:[])]),...v.domains.map(x=>x.basis).filter(Boolean),
- v.yearRule,v.luck.end,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
+ v.yearRule,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
 const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
 function bossOf(r){
@@ -38,7 +38,7 @@ test('the screen widens its scope in order: family, self, work·money·body, par
   'id="luck-graph"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fight-fate"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
  assert(!/id="judge"|자리 판정|id="countdown"/.test(view));
- for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home office');
+ for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home family office');
 });
 
 test('the direction is written where the next editor sees it, and the screen copy comes only from v5Reading',()=>{
@@ -120,8 +120,8 @@ test('quiet withdrawal is not rewritten as overwork or lack of money',()=>{
 test('officer strength is one value shared by the element line, work, office and commands',()=>{
  for(const {r,v} of ALL){
   const b=bossOf(r),office=dom(v,'office'),work=dom(v,'work');
-  assert.equal(/표 한 장/.test(office.fates.join(' ')),b.officeLow);
-  assert.equal(/직원이 다섯 명도 안 되는/.test(work.fates.join(' ')),b.officeLow);
+  assert.equal(/부당한 줄 알면서도 당장 벌 돈/.test(office.fates.join(' ')),b.officeLow);
+  assert.equal(work.fates.length,1);assert(!/직원이|작은 회사를 전전/.test(work.fates.join(' ')));
   assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
   assert.equal(office.head==='맡는 일은 늘어도 결정할 수 있는 일은 늘지 않습니다.',v.keys.officer==='high');
   assert.equal(office.detail==='일정과 기준은 다른 사람이 정합니다. 그 안에서 결과를 내는 책임은 당신에게 돌아옵니다.',v.keys.officer==='high');
@@ -133,14 +133,14 @@ test('officer strength is one value shared by the element line, work, office and
 
 test('life-stage lines appear only when the chart and the person allow them',()=>{
  for(const {r,v,y,male,unknown} of ALL){
-  const age=THIS_YEAR-y,home=dom(v,'home').fates.join(' '),office=dom(v,'office').fates.join(' ');
+  const home=dom(v,'family').fates.join(' '),office=dom(v,'office').fates.join(' ');
   const parentWork=!male&&hi(r,'식상'),workConflict=r.a.structure.failure.some(x=>x.id==='hurt_officer');
   assert.equal(/경력이 끊기/.test(home),parentWork&&workConflict);
   assert.equal(/일하는 몫에 돌보는 몫까지/.test(home),parentWork&&!workConflict);
-  assert.equal(/나라에 내준 시간/.test(office),male&&age>=22&&r.fate.officer.present);
-  assert.equal(/관재수/.test(office),r.a.interactions.some(x=>['형','자형'].includes(x.kind)));
-  if(unknown)assert(!/아이의 자리를 사 주느라|아이에게 넘길 몫|자식에게 그대로/.test(home));
-  if(/집값이 다 오른 뒤에 태어나/.test(home))assert(y>=1985);
+  assert.equal(dom(v,'office').fates.length,1);
+  assert(!/나라에 내준 시간|관재수/.test(office));
+  if(unknown)assert(!/아이의 교육비와 독립할 돈|아이에게 물려줄 돈|자식에게 그대로/.test(home));
+  assert(!/집값이 다 오른 뒤에 태어나/.test(dom(v,'home').fates.join(' ')));
  }
 });
 
@@ -161,17 +161,17 @@ test('element absence includes hidden stems and uses the same facts as the perce
 
 test('unknown time omits hour-pillar claims while retaining family copy supported by known pillars',()=>{
  for(const {v} of [make(1990,1,1,{unknown:true}),make(2001,6,21,{unknown:true,male:false}),...ALL.filter(x=>x.unknown)]){
-  const home=dom(v,'home'),future=v.luck.cycles.map(x=>x.stage).join(' ');
-  assert(!/아이의 자리를 사 주느라|아이에게 넘길 몫|자식에게 그대로|당신의 말년은 아이의 자리에/.test(home.fates.join(' ')+' '+future));
+  const home=dom(v,'family'),future=v.luck.cycles.map(x=>x.stage).join(' ');
+  assert(!/아이의 교육비와 독립할 돈|아이에게 물려줄 돈|자식에게 그대로|당신의 말년은 아이의 자리에/.test(home.fates.join(' ')+' '+future));
  }
  const example=make(2001,6,21,{unknown:true,male:false});
  assert(hi(example.r,'식상'));
- assert.match(dom(example.v,'home').fates.join(' '),/아이를 낳으면 일하는 몫에 돌보는 몫까지/);
- assert.match(dom(example.v,'home').rule,/아이를 키우는 몫은 일하는 몫에서 빼 주지 않습니다/);
+ assert.match(dom(example.v,'family').fates.join(' '),/아이를 낳으면 일하는 몫에 돌보는 몫까지/);
+ assert.match(dom(example.v,'family').rule,/아이를 키우는 몫은 일하는 몫에서 빼 주지 않습니다/);
 });
 
 test('productive expression keeps both responsibilities while career loss requires an unresolved work conflict',()=>{
- const supported=make(1985,9,14,{h:14,male:false}),home=dom(supported.v,'home');
+ const supported=make(1985,9,14,{h:14,male:false}),home=dom(supported.v,'family');
  assert(supported.r.a.structure.success.includes('식상생재'));
  assert.equal(supported.r.a.structure.failure.length,0);
  assert.match(home.fates.join(' '),/일하는 몫에 돌보는 몫까지/);
@@ -179,7 +179,7 @@ test('productive expression keeps both responsibilities while career loss requir
  assert.match(home.rule,/둘 다 감당해야/);
  const conflicts=ALL.filter(x=>!x.male&&hi(x.r,'식상')&&x.r.a.structure.failure.some(f=>f.id==='hurt_officer'));
  assert(conflicts.length>0);
- for(const {v} of conflicts){assert.match(dom(v,'home').fates.join(' '),/경력이 끊기/);assert.match(dom(v,'home').rule,/비우는 쪽은 처음부터/);}
+ for(const {v} of conflicts){assert.match(dom(v,'family').fates.join(' '),/경력이 끊기/);assert.match(dom(v,'family').rule,/비운 쪽은 처음부터/);}
 });
 
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
@@ -194,8 +194,8 @@ test('every fate line is one sentence in the agreed form and no line uses the ba
 
 test('sections retain their rule except the redundant small-comfort money rule',()=>{
  for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){if(d.id==='money'&&d.cause==='comfort')assert.equal(d.rule,'');else assert(d.rule,d.id);}}
- for(const k of ['복은 집에서 내려옵니다','재물은 재물이 있는 자리로 모입니다','돈이 돈을 버는 것이 재물의 이치','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
-  '정해진 날에 표를 넣는 것으로 나랏일과 이어지고','관재수','나라 사이에서도 큰 기운이 작은 기운을 누르는','자리에 맞게 살면 탈이 없습니다','운을 묻는 것은 아래 자리의 일'])assert(V5_SRC.includes(k),k);
+ for(const k of ['복은 집에서 내려옵니다','그 돈을 받는 사람에게는 매달 들어올 수입','임대료와 이자를 받는 사람은 쉬는 동안에도 돈을 법니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
+  '항의하는 당신에게는 비운 날의 생활비','나라 사이에서도 큰 기운이 작은 기운을 누르는','지시받은 만큼만 하면 탈이 없습니다','남의 결정에 따라 사는 사람은 운을 묻습니다'])assert(V5_SRC.includes(k),k);
 });
 
 test('readings differ from person to person and only the agreed lines are shared',()=>{
@@ -206,7 +206,31 @@ test('readings differ from person to person and only the agreed lines are shared
   yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,caution0:v=>v.cautions[0],caution2:v=>v.cautions[2]};
  for(const [k,f] of Object.entries(slots)){const m=count(f);assert(m.size>=2,k);assert(Math.max(...m.values())/n<=0.75,k);}
  const verdicts=count(v=>v.verdict);assert(verdicts.size>=n*0.5,String(verdicts.size));assert(Math.max(...verdicts.values())/n<=0.05);
- for(const f of [v=>v.cautions[1],v=>v.luck.end,v=>v.footNote,v=>v.lastLine,v=>v.fixedNote])assert.equal(count(f).size,1);
+ for(const f of [v=>v.cautions[1],v=>v.footNote,v=>v.lastLine,v=>v.fixedNote])assert.equal(count(f).size,1);
+});
+
+test('subjects stay explicit and each card keeps its own cause',()=>{
+ const core=make(1991,3,13,{h:2,mi:30}).v.core;
+ assert.equal(core.cause,'speech');assert.match(core.title,/옳은 말/);
+ assert.match(core.body.join(' '),/어떻게 말했는지/);assert.match(core.fate,/말한 방식까지 인정/);
+ assert(!/확인하다가|퇴근하지 못/.test(core.fate));
+ const money=ALL.map(({v})=>dom(v,'money'));
+ for(const m of money)assert(!/받는 자리|기다릴 돈이 있는 자리|일하는 자리|재물 자리가/.test(JSON.stringify(m)));
+ for(const {v} of ALL){
+  assert.equal(dom(v,'home').fates.length,1);assert.equal(dom(v,'family').fates.length,1);
+  assert(!/아이에게|자식에게|노후|부양|경력이 끊기/.test(dom(v,'home').fates.join(' ')));
+  assert(!/세상을 바꾸러|기다릴 돈이 있는|남들이 서른에|마흔이 넘어서도|직원이 다섯/.test(JSON.stringify(v)));
+  assert(!Object.hasOwn(v.luck,'end'));
+ }
+ assert(!slice('function renderResult(R){','function cycleAgeLabel(').includes('v.luck.end'));
+});
+
+test('supported core traits keep the matching cause instead of the largest element',()=>{
+ let n=0,groups=new Set;
+ for(const {r,v} of ALL)if(r.dominant.key==='supported_structure'){
+  assert.equal(v.core.cause,r.fate.support.group);groups.add(v.core.cause);n++;
+ }
+ assert(n>10);assert(groups.size>=3);
 });
 
 test('the ten-year ruling follows the computed scores',()=>{
@@ -256,3 +280,4 @@ test('current month changes at the solar-term boundary and retains its own expla
  const ordinary=months.find(m=>!r.years.some(y=>y.worstMonths.includes(m)));
  assert(ordinary);assert.equal(api.currentMonthView(r.years,ordinary.start).end,ordinary.end);
 });
+
