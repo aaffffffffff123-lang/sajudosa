@@ -1,13 +1,13 @@
 // 풀이 화면(자리 문서 V5)의 방향을 지키는 검사.
 // 방향은 사용자가 정했다(2026-11-04): 첫 글줄부터 꺾고, 내려갈수록 범위를 넓히고, 독한 줄은 전부 사주 조건에 묶는다.
 // 이 검사가 깨지면 문장을 순하게 되돌리지 말고 조건과 근거를 맞춘다.
-// 엔진 문장(r.sections·r.verdict·r.cautions)은 reading-evidence.test.cjs가 따로 검사한다. 엔진 문장은 화면에 나가지 않는다.
+// 엔진 판정은 reading-evidence.test.cjs가 따로 검사한다. V5는 생활 설명을 가져오거나 풀어 쓰되 제목·팔자의 원인을 일치시킨다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a);assert(i>=0,a);const j=html.indexOf(b,i);assert(j>i,b);return html.slice(i,j);};
 const V5_SRC=slice('/* ---------- 자리 문서(V5)','/* 다음 나쁜 달까지');
 const api=vm.runInNewContext(slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+V5_SRC+slice('function luckGraph(','/* ---------- 입력 받기 ---------- */')
- +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS})',{Intl,Date});
+ +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2})',{Intl,Date});
 const NOW=Date.UTC(2026,10,4),THIS_YEAR=2026;
 const PLACE={seoul:{name:'서울',lon:126.978,tz:'KR',std:9},busan:{name:'부산',lon:129.07,tz:'KR',std:9}};
 function make(y,m,d,{h=12,mi=0,unknown=false,male=true,pk='seoul',name=''}={}){
@@ -22,7 +22,7 @@ const ALL=(()=>{let seed=20261104;const rnd=()=>{seed=(seed*1103515245+12345)>>>
  return out;})();
 const dom=(v,id)=>v.domains.find(x=>x.id===id);
 const fatesOf=v=>[v.origin.fate,v.core.fate,...v.domains.flatMap(x=>x.fates)];
-const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,...v.elements,v.core.rule,...v.domains.map(x=>x.rule),...v.domains.map(x=>x.basis).filter(Boolean),
+const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,x.rule]),...v.domains.map(x=>x.basis).filter(Boolean),
  v.yearRule,v.luck.end,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.judge.role,v.judge.reason,...v.judge.vessel,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
 const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
@@ -68,6 +68,52 @@ test('wealth hidden in secondary stems is never read as an empty inheritance',()
  assert(!/물려받을 것 없이/.test(JSON.stringify(v)));
  const none=make(1970,9,15);assert.equal(none.r.fate.wealth.present,false);
  assert.equal(none.v.origin.key,'absent');assert.match(none.v.origin.fate,/물려받을 것 없이/);
+});
+
+test('every element explains its role for this day master, not a fixed personality type',()=>{
+ const names={비겁:'내 뜻·사람',식상:'말·결과물',재성:'돈·살림',관성:'기준·책임',인성:'배움·받침'};
+ for(const {r,v} of ALL){
+  assert.equal(Object.keys(v.elementRoles).length,5);
+  for(const k of Object.keys(r.shares))assert.equal(v.elementRoles[k],names[api.elementFamilyV2(r.a,k)]);
+  assert(!/나무은|쇠은|평생 남에게서 빌려/.test(v.elements[0]));
+ }
+ const water=ALL.find(x=>x.r.a.dayEl==='수'),wood=ALL.find(x=>x.r.a.dayEl==='목');
+ assert(water&&wood);assert.equal(water.v.elementRoles.화,'돈·살림');assert.equal(wood.v.elementRoles.화,'말·결과물');
+ const notWeak=ALL.filter(({r})=>{const el=Object.keys(r.shares).sort((a,b)=>r.shares[a]-r.shares[b])[0];return Object.values(r.counts).every(n=>n>0)&&!['weak','absent'].includes(r.a.families[api.elementFamilyV2(r.a,el)].level);});
+ assert(notWeak.length);for(const {v} of notWeak)assert.match(v.elements[0],/비중이 작아도 없는 힘은 아닙니다/);
+});
+
+test('small comforts retain the chosen line without turning every money problem into that habit',()=>{
+ const m=dom(make(2001,6,21,{unknown:true,male:false}).v,'money');
+ assert.equal(m.cause,'comfort');assert.match(m.head,/작은 편의/);assert.match(m.detail,/한 달 치/);assert.match(m.note.value,/편의·작은 보상/);
+ assert.equal(m.fates[0],'당신은 오늘을 덜 힘들게 넘기려고 쓴 돈을 내일의 품으로 메우는 팔자입니다.');
+ const money=ALL.map(({v})=>dom(v,'money')),kinds=new Set(money.map(x=>x.cause));
+ for(const key of ['comfort','burden','share','holding','paper','reserve'])assert(kinds.has(key),key);
+ assert(money.filter(x=>x.cause==='comfort').length<ALL.length/2);
+ for(const m of money){assert(m.detail&&m.note.value);assert(!/세금과 회비와 윗사람/.test(m.fates.join(' ')));}
+});
+
+test('an actual money conflict takes priority over a generic consumption habit',()=>{
+ const cases={wealth_weak_self:['burden',/고정비·관리/],weak_wealth:['burden',/고정비·관리/],peer_robs_wealth:['share',/정산/],wealth_breaks_resource:['interrupted',/준비/],peer_unchecked:['holding',/정리/],strong_peer:['holding',/정리/]};
+ let checked=0;
+ for(const {r,v} of ALL){const f=r.ziping.findings.find(x=>(x.domains||[]).includes('money'));if(!f||!cases[f.key])continue;
+  const m=dom(v,'money'),[key,note]=cases[f.key];assert.equal(m.cause,key);assert.match(m.note.value,note);checked++;
+ }
+ assert(checked>20);
+});
+
+test('self-driven overwork stays self-driven in the displayed fate',()=>{
+ const expected={'내일 확인해도':/마음 편히 쉬려고/,'빈 시간이 생기면':/누가 시키지 않아도/,'쉬는 간격 없이':/흐름이 끊기는 게 아까워/,'집에 와서도':/끝낸 일의 걱정/,'불편을 넘기며':/아직 할 만하다고/};
+ let n=0;for(const {r,v} of ALL){const o=r.observations.find(x=>x.id==='body'),d=dom(v,'body');
+  for(const [prefix,want] of Object.entries(expected))if(o.body[0].includes(prefix)){assert.match(d.fates[0],want);assert(!/요구를 받아|눈치를 보며|쉬겠다는 말을 꺼내지/.test(d.fates[0]));n++;}
+ }
+ assert(n>30);
+});
+
+test('quiet withdrawal is not rewritten as overwork or lack of money',()=>{
+ const home=dom(make(1970,9,15).v,'home');assert.match(home.head,/싸운 적이 없어도/);assert.match(home.detail,/답장을 늦춥니다/);
+ assert.match(home.fates[0],/서운한 마음을 꺼내.*답장을 미루다가/);assert(!/일하다가|형편이 안 돼서/.test(home.fates[0]));
+ const core=make(1990,1,1,{unknown:true}).v.core;assert.match(core.title,/맞는 말을/);assert.match(core.fate,/맞는 말을 하고 손해/);
 });
 
 test('officer strength is one value shared by the element line, work, office and commands',()=>{
