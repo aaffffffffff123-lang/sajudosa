@@ -1335,7 +1335,7 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadQuipVoice();loadRetortVoice();loadMusic();
+  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadFirstHitVoice();loadVictoryVoice();loadQuipVoice();loadRetortVoice();loadMusic();
  }
  function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
@@ -1345,6 +1345,8 @@ const AUDIO=(()=>{
  let tts=null,backBuffer=null,backLoad=null;
  let openingBuffer=null,openingLoad=null;
  let greetingBuffer=null,greetingLoad=null;
+ let firstHitBuffer=null,firstHitLoad=null;
+ let victoryBuffer=null,victoryLoad=null;
  let quipBuffer=null,quipLoad=null;
  let retortBuffer=null,retortLoad=null;
  function loadBackVoice(){
@@ -1364,6 +1366,17 @@ const AUDIO=(()=>{
   if(!ctx)return Promise.resolve(null);
   if(!greetingLoad){const ac=ctx;greetingLoad=fetch('assets/player-greeting-ko.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>greetingBuffer=b).catch(()=>null);}
   return greetingLoad;
+ }
+ // 플레이어의 첫 타격과 승리 대사도 기기 TTS 대신 고정 남성 음성을 쓴다.
+ function loadFirstHitVoice(){
+  if(!ctx)return Promise.resolve(null);
+  if(!firstHitLoad){const ac=ctx;firstHitLoad=fetch('assets/player-die-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>firstHitBuffer=b).catch(()=>{firstHitLoad=null;return null;});}
+  return firstHitLoad;
+ }
+ function loadVictoryVoice(){
+  if(!ctx)return Promise.resolve(null);
+  if(!victoryLoad){const ac=ctx;victoryLoad=fetch('assets/player-victory-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>victoryBuffer=b).catch(()=>{victoryLoad=null;return null;});}
+  return victoryLoad;
  }
  // 「운명 최고」: 암백과 같은 목소리로 미리 녹음한 한마디
  function loadQuipVoice(){
@@ -1389,6 +1402,8 @@ const AUDIO=(()=>{
   // 파일을 읽지 못한 경우에도 영문 발음으로 돌아가지 않는다.
   const fallback=()=>{
    if(!busy||!on)return;
+   // 고정 플레이어 음성을 못 읽어도 기기 기본 여성 목소리로 바뀌지 않는다.
+   if(text==='죽어!'||text==='운명 좁밥'){finish();return;}
    if(!synth||!Utterance){finish();return;}
    const sharp=text==='죽어!'||text==='뭘 꼬라봐 씨발아'; // 내 외침은 빠르고 높게, 설계자 말은 느리고 낮게
    const u=new Utterance(text);u.lang='ko-KR';u.rate=sharp?1.15:.9;u.pitch=sharp?1:.75;u.volume=volumes.voice;
@@ -1412,6 +1427,8 @@ const AUDIO=(()=>{
   if(text==='암백'&&ctx){if(backBuffer)play(backBuffer);else loadBackVoice().then(play);}
   else if(text==='넌 뭐야?'&&ctx){if(openingBuffer)play(openingBuffer);else loadOpeningVoice().then(play);}
   else if(text==='천지신명이시여...'&&ctx){if(greetingBuffer)play(greetingBuffer);else loadGreetingVoice().then(play);}
+  else if(text==='죽어!'&&ctx){if(firstHitBuffer)play(firstHitBuffer);else loadFirstHitVoice().then(play);}
+  else if(text==='운명 좁밥'&&ctx){if(victoryBuffer)play(victoryBuffer);else loadVictoryVoice().then(play);}
   else if(text==='운명 최고'&&ctx){if(quipBuffer)play(quipBuffer);else loadQuipVoice().then(play);}
   else if(text==='뭘 꼬라봐 씨발아'&&ctx){if(retortBuffer)play(retortBuffer);else loadRetortVoice().then(play);}
   else fallback();

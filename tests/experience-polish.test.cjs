@@ -8,7 +8,7 @@ test('music, effects and voice have separate dry and reverb gain paths',()=>{
  const param=()=>({value:0,setTargetAtTime(v){this.value=v}});
  const node=()=>{const n={edges:[],gain:param(),connect(other){this.edges.push(other);return other},threshold:param(),knee:param(),ratio:param(),attack:param(),release:param()};nodes.push(n);return n};
  class AC{constructor(){this.currentTime=0;this.sampleRate=10;this.destination=node()}createGain(){return node()}createDynamicsCompressor(){return node()}createConvolver(){return node()}createBuffer(c,n){return {getChannelData:()=>new Float32Array(n)}}createPeriodicWave(){return {}}}
- const scope={window:{AudioContext:AC},clamp,makeIR(){return {}},makeFallbackVoice(){},loadSoundBank(){},loadBackVoice(){},loadOpeningVoice(){},loadGreetingVoice(){},loadQuipVoice(){},loadRetortVoice(){},loadMusic(){}};
+ const scope={window:{AudioContext:AC},clamp,makeIR(){return {}},makeFallbackVoice(){},loadSoundBank(){},loadBackVoice(){},loadOpeningVoice(){},loadGreetingVoice(){},loadFirstHitVoice(){},loadVictoryVoice(){},loadQuipVoice(){},loadRetortVoice(){},loadMusic(){}};
  const api=vm.runInNewContext(slice(' let ctx=null,master,',' // 한 번만 받아')+slice(' function init(){',' function unlock(){')+slice(' function out(pan=0',' // 살짝 찌그러뜨려')+'let tts=null;({init,setVolumes,out,get buses(){return {bus,vbus,mbus,verb,vverb,comp}}})',scope);
  api.setVolumes({music:.2,effects:.6,voice:0});api.init();const {bus,vbus,mbus,verb,vverb,comp}=api.buses;
  assert.equal(mbus.gain.value,.2);assert.equal(bus.gain.value,.6);assert.equal(vbus.gain.value,0);

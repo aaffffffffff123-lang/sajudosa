@@ -1,0 +1,18 @@
+Player dialogue files added 2026-11-04
+
+Provider: Microsoft Edge online neural speech, generated with edge-tts.
+Voice: ko-KR-HyunsuMultilingualNeural (Male, Korean).
+
+player-die-ko-male.mp3
+  Transcript: 죽어!
+  Rate: +12%; default pitch and synthesis volume.
+  Postprocessing: trim 0.12-0.72 seconds; +2 dB; mono 24 kHz, MP3 128 kbps.
+
+player-victory-ko-male.mp3
+  Transcript: 운명 좁밥.
+  Rate: +4%; default pitch and synthesis volume.
+  Postprocessing: trim 0.12-1.15 seconds; +3.5 dB; mono 24 kHz, MP3 128 kbps.
+  The visible game caption remains 운명좁밥ㅋ.
+
+Existing player-greeting-ko.mp3 and player-retort-ko.mp3 were retained.
+Their original provider and voice identifier were not recorded in the repository.
