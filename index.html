@@ -2978,9 +2978,12 @@ const V5={
   壬:'흘러드는 것을 다 받아 주고 버려진 것까지 받아 주는 상징입니다.',
   癸:'가장 낮은 곳으로 스며들어 남의 뿌리를 적시는 상징입니다.'
  },
- lack:(names,missing)=>(missing?'당신에게는 '+names+' 기운이 없습니다.':'당신은 '+names+' 기운이 가장 적습니다.')+' 모자란 기운은 평생 남에게서 빌려 쓰고 빌린 것은 늘 더 얹어서 갚습니다.',
+ lack:(names,missing,unknown)=>(missing?(unknown?'태어난 시간을 뺀 여섯 글자에는 ':'당신의 여덟 글자에는 ')+names+' 기운이 없습니다.':'당신은 '+names+' 기운이 가장 적습니다.')+' 모자란 기운은 평생 남에게서 빌려 쓰고 빌린 것은 늘 더 얹어서 갚습니다.',
+ hiddenElements:names=>names+' 기운은 아래 글자 속에만 있습니다.',
+ hiddenCost:'겉에 드러나지 않은 몫은 내 것임을 밝히는 데도 품이 듭니다.',
  // 나를 부리는 기운: 화면의 비율 막대와 어긋나지 않게 비율로 고른다
  boss:{
+  absent:(me,b)=>me+' 기운을 부리는 기운은 '+b+'입니다. 확인한 글자에는 그 기운이 없어 당신은 시키는 사람이 없어도 스스로를 부리는 사주입니다.',
   hidden:(me,b)=>me+' 기운을 부리는 기운은 '+b+'입니다. 겉에 드러나지 않은 기운이 당신을 부리니 누가 부리는지도 모른 채 평생 부려지는 사주입니다.',
   high:(me,b)=>me+' 기운을 부리는 기운은 '+b+'입니다. '+b+' 기운이 당신보다 세고 센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리입니다.',
   mid:(me,b)=>me+' 기운을 부리는 기운은 '+b+'입니다. 부리는 기운과 당신의 힘이 비슷해서 평생 그 밑에서 버틸 만큼만 버티는 사주입니다.',
@@ -3073,7 +3076,7 @@ const V5={
   absent:'당신은 받은 것을 당신 대에서 다 쓰고 아이에게 넘길 몫은 남기지 못하는 팔자입니다.'
  },
  parents:{
-  old:'당신은 부모의 말년을 당신 자리에 얹고 당신의 말년은 아이의 자리에 얹을 팔자입니다.',
+  old:'당신은 부모의 말년을 당신 자리에 얹고 당신의 말년을 마련할 틈은 남지 않는 팔자입니다.',
   young:'당신은 부모의 자리에서 시작해 그 자리를 벗어나는 데 부모가 쓴 것보다 더 쓰는 팔자입니다.'
  },
  pairRule:{
@@ -3113,15 +3116,6 @@ const V5={
   nation:'해의 큰 기운은 누구의 사정도 묻지 않습니다. 나라 사이에서도 큰 기운이 작은 기운을 누르는 해에는 작은 쪽이 비켜서고 사람 사이는 더 그렇습니다.',
   vessel:'좋은 운이 와도 받을 그릇이 없으면 지나갑니다. 기회는 재물이 있는 자리에 먼저 보이고 잡을 재물이 없는 자리는 보고만 있습니다.'
  },
- // 앞으로 올 10년: 그 10년의 가운데 나이로 고른다
- stage:[
-  [30,'학자금을 갚는 동안 모을 돈이 없고 모을 때쯤 집값이 먼저 오르는 10년입니다.'],
-  [40,'집 한 칸을 두고 흐르는 10년입니다. 모은 돈이 집값을 따라가지 못합니다.'],
-  [50,'부모의 말년이 당신 자리에 얹히는 10년입니다. 얹을 자리가 넉넉한 집과 아닌 집이 여기서 갈립니다.'],
-  [60,'자리를 내주고 같은 일을 절반 값에 다시 하는 10년입니다.'],
-  [75,'말년의 자리는 젊어서 모은 재물의 자리입니다. 모으지 못한 사람의 말년은 자식의 자리에 얹히거나 거리에 놓입니다.'],
-  [999,'얹힌 말년은 얹힌 자리를 같이 끌어내립니다. 그래서 자식의 자리도 한 칸 내려갑니다.']
- ],
  luckEnd:'직장은 여러 번 바뀌어도 하는 일과 받는 대우는 늘 비슷한 자리를 맴도는 팔자입니다.',
  ruling:{peak:['지금보다 나은 10년','보이지 않음'],support:['좋은 운이 들어오면','그만큼 더 감당할 것'],flat:['운이 달라져도','맡은 몫은 그대로']},
  role:{income:'계속 성과를 내야 하는 사람',skill:'남의 위기를 수습하는 사람',speech:'허락된 방식으로 말하는 사람',backing:'받은 도움을 갚아야 하는 사람',self:'스스로 감당해야 하는 사람',outlet:'남는 힘까지 내놓는 사람',order:'정해진 순서를 지키는 사람'},
@@ -3182,6 +3176,13 @@ function v5Origin(r){
  return 'absent';
 }
 function v5Child(r){const p=r.P[3];if(!p||!p.known)return null;return v5PillarHas(r.a,p,'재성')?'shown':'absent';}
+function v5ElementLine(r,unknown){
+ const absent=ORDER.filter(k=>r.shares[k]===0),hidden=ORDER.filter(k=>r.counts[k]===0&&r.shares[k]>0);
+ const names=ks=>ks.map(k=>ELEMENTS[k].name).join('·'),least=ORDER.slice().sort((x,y)=>r.shares[x]-r.shares[y])[0];
+ if(absent.length)return (hidden.length?V5.hiddenElements(names(hidden))+' ':'')+V5.lack(names(absent),true,unknown);
+ if(hidden.length)return V5.hiddenElements(names(hidden))+' '+V5.hiddenCost;
+ return V5.lack(ELEMENTS[least].name,false,unknown);
+}
 function v5WorkKey(r){
  const a=r.a,f=(r.ziping&&r.ziping.findings||[]).find(x=>x.domains&&x.domains.includes('work')&&!['month_structure','supported_structure'].includes(x.key)),sup=r.fate&&r.fate.support;
  if(f){
@@ -3196,7 +3197,6 @@ function v5WorkKey(r){
 }
 function v5Love(r){const o=(r.observations||[]).find(s=>s.id==='love');const head=o?o.head:'';return V5.love.find(x=>head.indexOf(x.key)>=0)||null;}
 function v5Provincial(inp){const pk=inp.placeKey,pn=inp.place&&inp.place.name;return PLACES.some(g=>V5.provinces.includes(g[0])&&g[1].some(p=>p[0]===pk||p[1]===pn));}
-function v5Stage(age){const mid=age+5;return (V5.stage.find(s=>mid<s[0])||V5.stage[V5.stage.length-1])[1];}
 // 화면에 나갈 글을 전부 여기서 만든다. 화면 그리기(renderResult)는 이 결과만 쓴다.
 function v5Reading(R,now){
  now=now||Date.now();
@@ -3209,12 +3209,12 @@ function v5Reading(R,now){
  // 상징
  out.symbol=V5.symbol[a.dayStem];
  // 다섯 기운
- const meEl=STEMS[a.dayStem].el,boss=CONTROLLED_BY[meEl],missing=ORDER.filter(k=>r.counts[k]===0),least=ORDER.slice().sort((x,y)=>r.shares[x]-r.shares[y])[0];
- const ms=r.shares[meEl],bs=r.shares[boss],bossKey=r.counts[boss]===0?'hidden':bs>=ms?'high':bs>=ms*0.6?'mid':'low';
+ const meEl=STEMS[a.dayStem].el,boss=CONTROLLED_BY[meEl];
+ const ms=r.shares[meEl],bs=r.shares[boss],bossKey=bs===0?'absent':r.counts[boss]===0?'hidden':bs>=ms?'high':bs>=ms*0.6?'mid':'low';
  // 관운의 세기는 이 한 값으로만 정한다. 다섯 기운 줄·일 칸·관운 칸·돈 칸·조심할 일이 같은 값을 본다.
  // 겉에 없는 관성(hidden)은 '쓰이는 관운'으로 본다: 일은 하고 이름은 드러나지 않는다.
  const offK=(fate.officer&&!fate.officer.present)||bossKey==='low'?'low':bossKey==='high'?'high':'mid';
- out.elements=[V5.lack(missing.length?missing.map(k=>ELEMENTS[k].name).join('·'):ELEMENTS[least].name,!!missing.length),V5.boss[bossKey](ELEMENTS[meEl].name,ELEMENTS[boss].name)];
+ out.elements=[v5ElementLine(r,inp.unknown),V5.boss[bossKey](ELEMENTS[meEl].name,ELEMENTS[boss].name)];
  out.keys={officer:offK,boss:bossKey};
  // 타고난 성향
  const M=V5.mind[V5.mindKey[top]||'patience'];
@@ -3240,10 +3240,10 @@ function v5Reading(R,now){
    doms.push({id:'body',title:'몸',head:o.head,fates:[hit?hit[1]:V5.bodyFallback],rule:st==='weak'?V5.bodyRule.weak:V5.bodyRule.strong}); }
  { const o=obs('love'),fates=[];
    if(love)fates.push(love.house?(born>=1985?love.fate:love.alt):love.fate);
-   if(!male&&hi('식상'))fates.push(V5.careerCut);
+   if(child&&!male&&hi('식상'))fates.push(V5.careerCut);
    else if(child)fates.push(child==='shown'?V5.child.shown:ok==='absent'?V5.child.absentPoor:V5.child.absent);
    else fates.push(age>=35?V5.parents.old:V5.parents.young);
-   const pr=!male&&hi('식상')?'career':love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':'base';
+   const pr=child&&!male&&hi('식상')?'career':love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':'base';
    doms.push({id:'home',title:'집안과 짝',head:o.head,fates:unique(fates).slice(0,2),rule:V5.pairRule[pr]}); }
  { const k=offK,fates=[k==='low'?V5.office.vote:k==='mid'?V5.office.used:V5.office.ruled];
    if(a.interactions.some(x=>['형','자형'].includes(x.kind)))fates.push(V5.office.law);
@@ -3257,7 +3257,8 @@ function v5Reading(R,now){
  const L=r.luck,at=L.cycles.findIndex(c=>c.i===L.current),cyc=L.cycles.slice(Math.max(0,at),Math.max(0,at)+3),cur=cyc.find(c=>c.i===L.current),later=cyc.filter(c=>!cur||c.i>cur.i);
  const worst=cyc.slice().sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||x.i-y.i)[0];
  const peak=!!cur&&later.length>0&&later.every(c=>c.score>cur.score),supportLater=later.some(c=>(c.evidence||[]).some(e=>e.valence==='support'));
- out.luck={cycles:cyc.map(c=>({c:c,now:!!cur&&c.i===cur.i,stage:cur&&c.i===cur.i?'':v5Stage(c.age)})),worst:worst&&worst.score>=45?worst.i:-1,ruling:peak?V5.ruling.peak:supportLater?V5.ruling.support:V5.ruling.flat,rulingKey:peak?'peak':supportLater?'support':'flat',end:V5.luckEnd};
+ // 앞으로의 본문도 제목·그래프와 같은 대운 계산을 따른다. 나이만으로 사건을 덧붙이지 않는다.
+ out.luck={cycles:cyc.map(c=>({c:c,now:!!cur&&c.i===cur.i,stage:cur&&c.i===cur.i?'':c.text})),worst:worst&&worst.score>=45?worst.i:-1,ruling:peak?V5.ruling.peak:supportLater?V5.ruling.support:V5.ruling.flat,rulingKey:peak?'peak':supportLater?'support':'flat',end:V5.luckEnd};
  // 판정
  out.judge={role:(sup&&V5.role[sup.group])||V5.roleFam[top],reason:sup?V5.reason[sup.group]:V5.reason[st],vessel:V5.vessel[a.strength.label]||V5.vessel.중화};
  // 전체 풀이
@@ -3318,7 +3319,7 @@ function renderResult(R){
  // 다섯 기운
  const E=$('elements');E.replaceChildren();
  ORDER.forEach(k=>{const e=ELEMENTS[k],n=r.counts[k];let dots='';for(let i=0;i<Math.max(4,n);i++)dots+='<i class="'+(i<n?'':'off')+'" style="--c:'+e.color+'"></i>';
-  E.append(el('div','elem'+(n===0?' zero':''),icon(e.icon)+'<div class="nm">'+esc(e.name)+'</div><div class="dots">'+dots+'</div><div class="cnt">'+(n===0?'없음':n+'개')+'</div>'));});
+  E.append(el('div','elem'+(n===0?' zero':''),icon(e.icon)+'<div class="nm">'+esc(e.name)+'</div><div class="dots">'+dots+'</div><div class="cnt">'+(n===0?'겉에 없음':n+'개')+'</div>'));});
  $('share').innerHTML=ORDER.map(k=>'<i style="--c:'+ELEMENTS[k].color+';width:'+(r.shares[k]*100).toFixed(1)+'%"></i>').join('');
  $('share-leg').innerHTML='<em>계절과 숨은 기운까지 반영한 비율</em>'+ORDER.map(k=>'<span style="--c:'+(ELEMENTS[k].labelColor||ELEMENTS[k].color)+'">'+ELEMENTS[k].name+' '+pct(r.shares[k])+'%</span>').join('');
  $('elem-lines').innerHTML=v.elements.map(t=>'<p>'+esc(t)+'</p>').join('');

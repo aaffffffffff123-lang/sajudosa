@@ -28,7 +28,7 @@ const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
 function bossOf(r){
  const me=api.STEMS[r.a.dayStem].el,boss=api.CONTROLLED_BY[me],ms=r.shares[me],bs=r.shares[boss];
- const key=r.counts[boss]===0?'hidden':bs>=ms?'high':bs>=ms*0.6?'mid':'low';
+ const key=bs===0?'absent':r.counts[boss]===0?'hidden':bs>=ms?'high':bs>=ms*0.6?'mid':'low';
  return {me,boss,ms,bs,key,officeLow:!r.fate.officer.present||key==='low'};
 }
 
@@ -75,7 +75,7 @@ test('officer strength is one value shared by the element line, work, office and
   const b=bossOf(r),office=dom(v,'office'),work=dom(v,'work');
   assert.equal(/표 한 장/.test(office.fates.join(' ')),b.officeLow);
   assert.equal(/직원이 다섯 명도 안 되는/.test(work.fates.join(' ')),b.officeLow);
-  assert.match(v.elements[1],{hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
+  assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
   if(r.fate.officer.present)assert(office.basis.includes(api.ELEMENTS[b.boss].name+' '+Math.round(b.bs*100)+'%'),office.basis);
  }
 });
@@ -83,11 +83,33 @@ test('officer strength is one value shared by the element line, work, office and
 test('life-stage lines appear only when the chart and the person allow them',()=>{
  for(const {r,v,y,male,unknown} of ALL){
   const age=THIS_YEAR-y,home=dom(v,'home').fates.join(' '),office=dom(v,'office').fates.join(' ');
-  assert.equal(/경력이 끊기/.test(home),!male&&hi(r,'식상'));
+  assert.equal(/경력이 끊기/.test(home),!unknown&&!male&&hi(r,'식상'));
   assert.equal(/스물에 두 해를 나라에/.test(office),male&&age>=22&&r.fate.officer.present);
   assert.equal(/관재수/.test(office),r.a.interactions.some(x=>['형','자형'].includes(x.kind)));
-  if(unknown)assert(!/아이의 자리를 사 주느라|아이에게 넘길 몫|자식에게 그대로/.test(home));
+  if(unknown)assert(!/아이|자식|자녀/.test(home+' '+dom(v,'home').rule));
   if(/집값이 다 오른 뒤에 태어나/.test(home))assert(y>=1985);
+ }
+});
+
+test('element absence includes hidden stems and uses the same facts as the percentage bar',()=>{
+ const examples=[make(1990,1,1,{unknown:true}),make(1980,4,29),make(2001,6,21,{unknown:true,male:false})];
+ for(const {r,v,unknown} of examples.concat(ALL)){
+  const keys=Object.keys(r.shares),hidden=keys.filter(k=>r.counts[k]===0&&r.shares[k]>0),absent=keys.filter(k=>r.shares[k]===0),line=v.elements[0];
+  const names=ks=>ks.map(k=>api.ELEMENTS[k].name).join('·');
+  if(hidden.length)assert(line.includes(names(hidden)+' 기운은 아래 글자 속에만 있습니다.'),line);
+  if(absent.length){assert(line.includes(names(absent)+' 기운이 없습니다.'),line);assert(line.includes(unknown?'태어난 시간을 뺀 여섯 글자에는':'당신의 여덟 글자에는'),line);}
+  else assert(!line.includes('기운이 없습니다.'),line);
+  const b=bossOf(r);assert.equal(/겉에 드러나지 않은 기운/.test(v.elements[1]),r.counts[b.boss]===0&&b.bs>0);
+ }
+ assert.match(examples[0].v.elements[0],/쇠 기운은 아래 글자 속에만/);
+ assert.match(examples[1].v.elements[0],/나무 기운은 아래 글자 속에만/);
+ assert.match(examples[2].v.elements[0],/흙 기운은 아래 글자 속에만.*물 기운이 없습니다/);
+});
+
+test('unknown time cannot leak child predictions through fallback family or future paragraphs',()=>{
+ for(const {v} of [make(1990,1,1,{unknown:true}),make(2001,6,21,{unknown:true,male:false}),...ALL.filter(x=>x.unknown)]){
+  const home=dom(v,'home'),future=v.luck.cycles.map(x=>x.stage).join(' ');
+  assert(!/아이|자식|자녀/.test(home.fates.join(' ')+' '+home.rule+' '+future));
  }
 });
 
@@ -123,7 +145,7 @@ test('the ten-year ruling follows the computed scores',()=>{
   const cur=v.luck.cycles.find(x=>x.now),later=v.luck.cycles.filter(x=>!x.now&&(!cur||x.c.i>cur.c.i));
   assert.equal(v.luck.rulingKey==='peak',!!cur&&later.length>0&&later.every(x=>x.c.score>cur.c.score));
   if(v.luck.rulingKey==='support')assert(later.some(x=>(x.c.evidence||[]).some(e=>e.valence==='support')));
-  for(const x of later)assert(x.stage);
+  for(const x of later){assert(x.stage);assert.equal(x.stage,x.c.text);}
  }
 });
 
