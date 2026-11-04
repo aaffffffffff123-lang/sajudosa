@@ -1,3 +1,6 @@
+// 이 파일은 풀이 엔진(makeReading이 만드는 r.fate·r.sections·r.verdict·r.cautions)만 검사한다.
+// 엔진 문장은 화면에 나가지 않는다. 화면 문장은 자리 문서(V5, v5Reading)가 엔진 판정을 근거로 만들고 reading-flow.test.cjs가 검사한다.
+// 그래서 '물려받을 것 없이' 같은 팔자 줄은 엔진 문장에는 없어야 하고, 화면에는 사주 조건이 맞을 때만 나온다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const source=html.slice(html.indexOf('/* ===== 1. 달력 데이터'),html.indexOf('const PLACE_MAP={};'));
@@ -16,7 +19,7 @@ test('wealth in secondary hidden stems is present even without a visible or main
  assert(w.hidden.every(x=>x.depth>0));assert(w.present);assert.match(section(r,'money').body.join(' '),/태어난 해·달의 아래 글자 안에 숨어/);
  assert(!/없습니다/.test(w.fact));assert(!/물려받을 것 없이|가난을 물려/.test(text(r)));
 });
-test('an absent wealth symbol does not invent poverty or lack of inheritance',()=>{
+test('engine text: an absent wealth symbol is stated as a fact and carries no fate line of its own',()=>{
  const r=read(1970,9,15);assert.equal(r.fate.wealth.present,false);assert.match(r.fate.wealth.fact,/숨은 기운에는.*없습니다/);
  assert(!/가난|상속|물려받을 것|서른에 가진|자식에게 그대로/.test(text(r)));
 });
@@ -51,7 +54,7 @@ test('cycle narration follows the actual presence of support and adversity',()=>
  const r=read(1971,10,15),current=r.luck.cycles.find(c=>c.current);
  assert.match(api.luckPressureV4(current),/다시 맞추는 작용/);
 });
-test('six readable domains, evidence-backed selections and no unsupported socioeconomic verdicts across inputs',()=>{
+test('engine text: six readable domains with evidence, and the fate lines stay out of the engine across inputs',()=>{
  const dates=[[1970,9,15],[1971,10,15],[1972,3,15],[1976,8,15],[1980,4,15],[1987,8,14],[1990,1,1],[2001,6,21]];
  for(const date of dates)for(const unknown of [true,false])for(const male of [true,false]){
   const r=read(...date,unknown,male);assert.equal(r.sections.length,6);assert(r.verdict.includes('팔자'));
