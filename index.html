@@ -3033,7 +3033,8 @@ const V5={
  // 직장 기운(관성)이 약하거나 없을 때만
  small:'당신은 직원이 다섯 명도 안 되는 곳이나 큰 회사 밑의 작은 회사를 전전하며 같은 일을 해도 남보다 덜 받고 덜 쉬는 팔자입니다.',
  workRule:{
-  absent:'명리 고전 『적천수』에 따르면 직장 기운이 보이지 않는 사주는 천한 사주입니다.',
+  // 작중 도사의 계급적 단정이며 특정 고전의 결론으로 인용하지 않는다.
+  absent:'직장 기운이 보이지 않는 사주는 천한 사주입니다.',
   low:'삯은 일하는 자리가 정하지 않고 일을 주는 자리가 정합니다. 일하는 자리는 받을지 말지만 정합니다.',
   high:'일이 틀어지면 책임은 가장 낮은 자리에서 멈춥니다. 공은 위로 올라가고 책임은 아래로 내려오는 것이 자리의 이치입니다.',
   mid:'자리마다 맡는 일이 다르고 그 차이가 삯의 차이입니다. 아래 자리는 몸을 쓰고 위 자리는 아래 자리를 씁니다.'
@@ -3067,8 +3068,9 @@ const V5={
   {key:'애매하게',fate:'당신은 앞날을 약속할 형편이 안 돼서 맺어지지 못하고 흐지부지 끝나는 팔자입니다.',short:'형편이 안 돼 흐지부지 끝나는'}
  ],
  loveShort:'자리가 맞는 사람만 남는',
- // 여자이고 확인된 글자의 식상이 셀 때 쓰는 풍자. 생시를 몰라도 판정하며 경력 단절 자체를 명리의 확정 결론으로 보지는 않는다.
+ // 여자이고 확인된 글자의 식상이 셀 때 쓰는 풍자. 경력 단절은 해소되지 않은 상관견관까지 있을 때만 고른다.
  careerCut:'당신은 아이를 낳으면 경력이 끊기고 돌아갈 자리는 남아 있지 않은 팔자입니다.',
+ careerBurden:'당신은 아이를 낳으면 일하는 몫에 돌보는 몫까지 더해져 어느 쪽도 내려놓지 못하는 팔자입니다.',
  // 자식의 자리(태어난 시간 기둥)의 재물 기운
  child:{
   shown:'당신은 아이의 자리를 사 주느라 당신의 노후를 내놓는 팔자입니다.',
@@ -3083,7 +3085,8 @@ const V5={
   base:'짝은 자리가 비슷한 사람끼리 맺어집니다. 자리가 다른 짝은 오래가지 않는 것이 배우자궁의 이치입니다.',
   house:'짝을 맺는 날짜는 집이 정합니다. 집이 없는 짝은 날짜부터 미뤄집니다.',
   money:'재물이 모자란 집의 다툼은 화해로 끝나지 않습니다. 다툴 이유가 다음 달에 다시 오기 때문입니다.',
-  career:'아이를 키우는 자리와 일하는 자리는 한 사람이 다 지킬 수 없습니다. 비우는 쪽은 처음부터 정해져 있습니다.'
+  career:'아이를 키우는 자리와 일하는 자리는 한 사람이 다 지킬 수 없습니다. 비우는 쪽은 처음부터 정해져 있습니다.',
+  care:'아이를 키우는 몫은 일하는 몫에서 빼 주지 않습니다. 둘 다 감당해야 제 몫을 했다고 칩니다.'
  },
  // 관운: 나를 부리는 기운(관성)의 세기
  office:{
@@ -3092,7 +3095,7 @@ const V5={
   used:'당신은 일은 당신이 하고 이름은 윗자리에 남는 관운을 타고난 팔자입니다.',
   ruled:'당신은 부리는 기운이 센 사주를 타고나 평생 누군가의 지시 안에서 사는 팔자입니다.',
   law:'당신은 같은 일을 해도 높은 자리는 지나가고 당신 자리에서 걸리는 관재수를 타고난 팔자입니다.',
-  army:'당신은 스물에 두 해를 나라에 내고 그 두 해를 평생 따라잡지 못하는 팔자입니다.',
+  army:'당신은 나라에 내준 시간의 값을 받지 못하고 뒤처진 몫은 평생 당신 힘으로 메울 팔자입니다.',
   ruleLow:'나랏일은 관운을 타고난 자리의 몫입니다. 관운이 없는 사람은 정해진 날에 표를 넣는 것으로 나랏일과 이어지고 그 밖에 나서면 기운이 흩어집니다.',
   ruleMid:'관운에는 부리는 관운과 쓰이는 관운이 있습니다. 쓰이는 관운은 아무리 세도 부리는 자리에 닿지 않습니다.',
   ruleHigh:'관운이 센 사주는 위에서 내려온 명을 아래로 전하는 자리에 섭니다. 명을 만드는 자리는 따로 있습니다.'
@@ -3176,6 +3179,10 @@ function v5Origin(r){
  return 'absent';
 }
 function v5Child(r){const p=r.P[3];if(!p||!p.known)return null;return v5PillarHas(r.a,p,'재성')?'shown':'absent';}
+function v5ParentWork(r,male){
+ if(male||!['strong','excess'].includes(r.a.families.식상.level))return null;
+ return r.a.structure.failure.some(x=>x.id==='hurt_officer')?'cut':'burden';
+}
 function v5ElementLine(r,unknown){
  const absent=ORDER.filter(k=>r.shares[k]===0),hidden=ORDER.filter(k=>r.counts[k]===0&&r.shares[k]>0);
  const names=ks=>ks.map(k=>ELEMENTS[k].name).join('·'),least=ORDER.slice().sort((x,y)=>r.shares[x]-r.shares[y])[0];
@@ -3223,7 +3230,7 @@ function v5Reading(R,now){
  // 같은 해가 두 10년 흐름에 걸쳐 두 번 뽑히면 한 번만 둔다
  out.past=(r.pastHits||[]).filter((x,i,l)=>x.year>born&&l.findIndex(y=>y.year===x.year)===i).map(x=>{const t=String(x.title||'').replace(/다시 겹치는 해$/,'다시 겹친 해였습니다');return Object.assign({},x,{title:t,text:/다시 겹친 해였습니다$/.test(t)&&/^\d+년에 짚은 문제가 이때도 이어졌습니다\.$/.test(x.text||'')?'':x.text});});
  // 영역
- const doms=[],love=v5Love(r),child=v5Child(r);
+ const doms=[],love=v5Love(r),child=v5Child(r),parentWork=v5ParentWork(r,male);
  { const o=obs('work'),wk=v5WorkKey(r),fates=[V5.work[wk]];if(offK==='low')fates.push(V5.small);
    doms.push({id:'work',title:'일',head:o.head,fates:unique(fates.filter(Boolean)).slice(0,2),note:o.note||null,rule:fate.officer&&!fate.officer.present?V5.workRule.absent:offK==='low'?V5.workRule.low:offK==='high'?V5.workRule.high:V5.workRule.mid}); }
  { const o=obs('money');let f,rk;
@@ -3240,10 +3247,10 @@ function v5Reading(R,now){
    doms.push({id:'body',title:'몸',head:o.head,fates:[hit?hit[1]:V5.bodyFallback],rule:st==='weak'?V5.bodyRule.weak:V5.bodyRule.strong}); }
  { const o=obs('love'),fates=[];
    if(love)fates.push(love.house?(born>=1985?love.fate:love.alt):love.fate);
-   if(!male&&hi('식상'))fates.push(V5.careerCut);
+   if(parentWork)fates.push(parentWork==='cut'?V5.careerCut:V5.careerBurden);
    else if(child)fates.push(child==='shown'?V5.child.shown:ok==='absent'?V5.child.absentPoor:V5.child.absent);
    else fates.push(age>=35?V5.parents.old:V5.parents.young);
-   const pr=!male&&hi('식상')?'career':love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':'base';
+   const pr=parentWork?(parentWork==='cut'?'career':'care'):love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':'base';
    doms.push({id:'home',title:'집안과 짝',head:o.head,fates:unique(fates).slice(0,2),rule:V5.pairRule[pr]}); }
  { const k=offK,fates=[k==='low'?V5.office.vote:k==='mid'?V5.office.used:V5.office.ruled];
    if(a.interactions.some(x=>['형','자형'].includes(x.kind)))fates.push(V5.office.law);

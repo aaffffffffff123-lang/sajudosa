@@ -83,8 +83,10 @@ test('officer strength is one value shared by the element line, work, office and
 test('life-stage lines appear only when the chart and the person allow them',()=>{
  for(const {r,v,y,male,unknown} of ALL){
   const age=THIS_YEAR-y,home=dom(v,'home').fates.join(' '),office=dom(v,'office').fates.join(' ');
-  assert.equal(/경력이 끊기/.test(home),!male&&hi(r,'식상'));
-  assert.equal(/스물에 두 해를 나라에/.test(office),male&&age>=22&&r.fate.officer.present);
+  const parentWork=!male&&hi(r,'식상'),workConflict=r.a.structure.failure.some(x=>x.id==='hurt_officer');
+  assert.equal(/경력이 끊기/.test(home),parentWork&&workConflict);
+  assert.equal(/일하는 몫에 돌보는 몫까지/.test(home),parentWork&&!workConflict);
+  assert.equal(/나라에 내준 시간/.test(office),male&&age>=22&&r.fate.officer.present);
   assert.equal(/관재수/.test(office),r.a.interactions.some(x=>['형','자형'].includes(x.kind)));
   if(unknown)assert(!/아이의 자리를 사 주느라|아이에게 넘길 몫|자식에게 그대로/.test(home));
   if(/집값이 다 오른 뒤에 태어나/.test(home))assert(y>=1985);
@@ -113,8 +115,20 @@ test('unknown time omits hour-pillar claims while retaining family copy supporte
  }
  const example=make(2001,6,21,{unknown:true,male:false});
  assert(hi(example.r,'식상'));
- assert.match(dom(example.v,'home').fates.join(' '),/아이를 낳으면 경력이 끊기/);
- assert.match(dom(example.v,'home').rule,/아이를 키우는 자리와 일하는 자리/);
+ assert.match(dom(example.v,'home').fates.join(' '),/아이를 낳으면 일하는 몫에 돌보는 몫까지/);
+ assert.match(dom(example.v,'home').rule,/아이를 키우는 몫은 일하는 몫에서 빼 주지 않습니다/);
+});
+
+test('productive expression keeps both responsibilities while career loss requires an unresolved work conflict',()=>{
+ const supported=make(1985,9,14,{h:14,male:false}),home=dom(supported.v,'home');
+ assert(supported.r.a.structure.success.includes('식상생재'));
+ assert.equal(supported.r.a.structure.failure.length,0);
+ assert.match(home.fates.join(' '),/일하는 몫에 돌보는 몫까지/);
+ assert(!/경력이 끊기|돌아갈 자리/.test(home.fates.join(' ')));
+ assert.match(home.rule,/둘 다 감당해야/);
+ const conflicts=ALL.filter(x=>!x.male&&hi(x.r,'식상')&&x.r.a.structure.failure.some(f=>f.id==='hurt_officer'));
+ assert(conflicts.length>0);
+ for(const {v} of conflicts){assert.match(dom(v,'home').fates.join(' '),/경력이 끊기/);assert.match(dom(v,'home').rule,/비우는 쪽은 처음부터/);}
 });
 
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
