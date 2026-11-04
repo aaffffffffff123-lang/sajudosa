@@ -8330,44 +8330,76 @@ const VM=(()=>{
  function handSeg(parent,mat,a,b,r0,r1){const d=_hv.subVectors(b,a),len=d.length();if(len<1e-5)return;const m=mk(cylGeo(r1,r0,len,14,false),mat,parent,{p:[(a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2]});m.quaternion.setFromUnitVectors(UP,d.divideScalar(len));return m;}
  function handBall(parent,mat,p,r){return mk(sphereGeo(16),mat,parent,{p:[p.x,p.y,p.z],s:r,cast:false});}
  // 손톱: 끝마디 등쪽에 납작하게. d=끝마디 방향, n=그 등쪽 방향
- function handNail(parent,tip,d,n,r){const p=tip.clone().addScaledVector(d,-r*.55).addScaledVector(n,r*.72);const m=mk(sphereGeo(10),M.nail,parent,{p:[p.x,p.y,p.z],s:[r*.62,r*.22,r*.82],cast:false});m.quaternion.setFromUnitVectors(UP,n.clone().normalize());return m;}
+ function handNail(parent,tip,d,n,r,aligned=false){const p=tip.clone().addScaledVector(d,-r*.55).addScaledVector(n,r*(aligned?.94:.72));const m=mk(sphereGeo(10),M.nail,parent,{p:[p.x,p.y,p.z],s:[r*.62,r*.22,r*.82],cast:false});
+  if(aligned){const z=d.clone().normalize(),y=n.clone().addScaledVector(z,-n.dot(z)).normalize(),x=V3().crossVectors(y,z).normalize();m.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(x,y,z));}
+  else m.quaternion.setFromUnitVectors(UP,n.clone().normalize());return m;
+ }
+ // 무기 손가락은 마디별 원통을 겹치지 않고 하나의 곡면으로 잇는다. 관절 위치와 파지 간격은 유지한다.
+ function gripFinger(parent,pts,radii){
+  const endDir=pts[pts.length-1].clone().sub(pts[pts.length-2]).normalize(),tipR=radii[radii.length-1];
+  const path=pts.map(p=>p.clone());path.push(path[path.length-1].clone().addScaledVector(endDir,tipR));
+  const curve=new THREE.CatmullRomCurve3(path),segments=32,sides=16;
+  const geo=new THREE.TubeGeometry(curve,segments,1,sides,false),pos=geo.attributes.position;
+  const lengths=[0];for(let i=1;i<path.length;i++)lengths.push(lengths[i-1]+path[i].distanceTo(path[i-1]));
+  const total=lengths[lengths.length-1],capAt=lengths[lengths.length-2];
+  for(let i=0;i<=segments;i++){
+   const t=i/segments,dist=t*total,center=curve.getPointAt(t);let radius;
+   if(dist>=capAt)radius=tipR*Math.sqrt(Math.max(.00001,1-((dist-capAt)/tipR)**2));
+   else{let j=0;while(j<pts.length-2&&dist>lengths[j+1])j++;radius=lerp(radii[j],radii[j+1],smooth((dist-lengths[j])/(lengths[j+1]-lengths[j])));}
+   for(let j=0;j<=sides;j++){const k=i*(sides+1)+j;pos.setXYZ(k,center.x+(pos.getX(k)-center.x)*radius,center.y+(pos.getY(k)-center.y)*radius,center.z+(pos.getZ(k)-center.z)*radius);}
+  }
+  pos.needsUpdate=true;geo.computeVertexNormals();
+  const normal=geo.attributes.normal;
+  for(let i=0;i<=segments;i++){const t=i/segments,q=(t*total-capAt)/tipR;if(q<0)continue;const center=curve.getPointAt(t),tangent=curve.getTangentAt(t),k=Math.sqrt(Math.max(0,1-q*q));
+   for(let j=0;j<=sides;j++){const id=i*(sides+1)+j,n=V3().fromBufferAttribute(pos,id).sub(center).normalize().multiplyScalar(k).addScaledVector(tangent,q).normalize();normal.setXYZ(id,n.x,n.y,n.z);}
+  }
+  normal.needsUpdate=true;geo.computeBoundingSphere();mk(geo,M.skin,parent,{cast:false});
+ }
+
  // 손바닥 덩어리(한 번 빚어 두고 복사): 납작한 둥근 상자에 엄지 두덩이·새끼 쪽 두덩이를 녹여 붙인다. 손목 쪽이 조금 좁다
- const PALM_GEO=(s=>{const {ell,smin}=SCULPT;const box=(x,y,z,cx,cy,cz,bx,by,bz,r)=>{const qx=Math.abs(x-cx)-bx,qy=Math.abs(y-cy)-by,qz=Math.abs(z-cz)-bz;return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-r;};
+ const PALM_GEO=((s,wrist,thumb)=>{const {ell,cap,smin}=SCULPT;const box=(x,y,z,cx,cy,cz,bx,by,bz,r)=>{const qx=Math.abs(x-cx)-bx,qy=Math.abs(y-cy)-by,qz=Math.abs(z-cz)-bz;return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-r;};
   const sdf=(x,y,z)=>{const taper=1-.1*Math.max(0,(-.012-z)/.03);let d=box(x/taper,y,z,0,-.002,-.012,.03,.0055,.017,.013);
-   d=smin(d,ell(x,y,z,-s*.031,-.012,-.008,.021,.017,.028),.02);d=smin(d,ell(x,y,z,s*.027,-.008,-.022,.015,.015,.03),.016);return d;};
+   d=smin(d,ell(x,y,z,-s*.031,-.012,-.008,.021,.017,.028),.02);d=smin(d,ell(x,y,z,s*.027,-.008,-.022,.015,.015,.03),.016);
+   if(wrist){d=smin(d,ell(x,y,z,wrist.x,wrist.y,wrist.z,.029,.027,.03),.016);
+    const kx=[-.033,-.011,.011,.033],ky=[.012,.013,.012,.01],kz=[.025,.027,.025,.02],kr=[.0152,.0158,.0146,.0126];
+    for(let i=0;i<4;i++)d=smin(d,ell(x,y,z,kx[i]*s,ky[i],kz[i],kr[i]*1.06,kr[i],kr[i]*1.1),.009);
+    if(thumb)d=smin(d,cap(x,y,z,-s*.031,-.012,-.008,thumb.x,thumb.y,thumb.z,.017,.018),.014);
+   }return d;};
   return SCULPT.star(sdf,V3(0,-.003,-.012),44,32,.1,{smooth:1});});
  const PALM_R=PALM_GEO(1),PALM_L=mirrorX(PALM_GEO(1).clone());
  function buildHand(s,P,Mx){
   const g=new THREE.Group();const T=p=>Mx?p.applyMatrix4(Mx):p;const Td=d=>Mx?d.transformDirection(Mx):d;
   // 손등·손바닥 덩어리
-  {const pg=(s<0?PALM_L:PALM_R).clone();if(Mx)pg.applyMatrix4(Mx);mk(pg,M.skin,g);}
+  {const wrist=P.smoothGrip?V3(...P.wristHand).applyMatrix4(Mx.clone().invert()):null;const thumb=wrist?V3(...P.thumb[0]).applyMatrix4(Mx.clone().invert()):null;const pg=wrist?PALM_GEO(s,wrist,thumb):(s<0?PALM_L:PALM_R).clone();if(Mx)pg.applyMatrix4(Mx);mk(pg,M.skin,g);}
   // 손목(도구를 쥘 때는 소매가 이어지는 자리를 따로 두므로 짧게)
   {if(P.wristHand){
     // 무기 손은 손바닥 아래의 실제 접점에서 팔뚝으로 잇는다. 옆으로 돌린 주먹 손목을 남기지 않는다.
-    const a=V3(...P.wristHand);handBall(g,M.skin,a,.029);g.userData.wrist=a;
+    const a=V3(...P.wristHand);if(!P.smoothGrip)handBall(g,M.skin,a,.029);g.userData.wrist=a;
    }else{const a=T(V3(0,-.004,-.038)),b=T(V3(0,-.005,P.wristLen==null?-.125:-.038-P.wristLen));handSeg(g,M.skin,a,b,.029,.034);}}
   // 마디 네 개와 손가락
   const KX=[-.033,-.011,.011,.033],KR=[.0152,.0158,.0146,.0126],KY=[.012,.013,.012,.01],KZ=[.025,.027,.025,.02];
   for(let i=0;i<4;i++){
    const F=P.fingers[i],B=V3(KX[i]*s,KY[i],KZ[i]);
-   handBall(g,M.skin,T(B.clone()),KR[i]*1.06);
+   if(!P.smoothGrip)handBall(g,M.skin,T(B.clone()),KR[i]*1.06);
    const rads=[KR[i]*.95,KR[i]*.86,KR[i]*.78,KR[i]*.68];
    let pts;
    if(F.pts){pts=[T(B.clone()),...F.pts.map(p=>V3(p[0],p[1],p[2]))];}
    else{pts=[B.clone()];let ang=0,p=B.clone();
     for(let k=0;k<3;k++){ang+=F.a[k]*DEG;const d=V3(s*(F.side||0),-Math.sin(ang),Math.cos(ang)).normalize();p=p.clone().addScaledVector(d,F.L[k]);pts.push(p);}
     pts=pts.map(p=>T(p));}
-   for(let k=0;k<3;k++){handSeg(g,M.skin,pts[k],pts[k+1],rads[k],rads[k+1]);handBall(g,M.skin,pts[k+1],rads[k+1]);}
+   if(P.smoothGrip)gripFinger(g,pts,rads);
+   else for(let k=0;k<3;k++){handSeg(g,M.skin,pts[k],pts[k+1],rads[k],rads[k+1]);handBall(g,M.skin,pts[k+1],rads[k+1]);}
    if(F.nail!==false){const d=V3().subVectors(pts[3],pts[2]).normalize();let n;
-    if(F.pts){n=Td(V3(0,1,0));n.addScaledVector(d,-n.dot(d)).normalize();}
+    if(F.pts){n=F.nailNormal?V3(...F.nailNormal):Td(V3(0,1,0));n.addScaledVector(d,-n.dot(d)).normalize();}
     else{const ang=(F.a[0]+F.a[1]+F.a[2])*DEG;n=Td(V3(0,Math.cos(ang),Math.sin(ang)));}
-    handNail(g,pts[3],d,n,rads[3]);}
+    handNail(g,pts[3],d,n,rads[3],P.smoothGrip);}
   }
   // 엄지: 두덩이에서 시작하는 세 점(뿌리·마디·끝). 주먹 좌표 또는 손 좌표(P.thumbHand)로 준다
   {const pts=P.thumbHand?P.thumb.map(p=>V3(p[0],p[1],p[2])):P.thumb.map(p=>T(V3(p[0]*s,p[1],p[2])));const R=P.thumbR;
-   for(let k=0;k<pts.length-1;k++){handSeg(g,M.skin,pts[k],pts[k+1],R[k],R[k+1]);handBall(g,M.skin,pts[k+1],R[k+1]*(k===pts.length-2?1:1.02));}
+   if(P.smoothGrip)gripFinger(g,pts,R);
+   else for(let k=0;k<pts.length-1;k++){handSeg(g,M.skin,pts[k],pts[k+1],R[k],R[k+1]);handBall(g,M.skin,pts[k+1],R[k+1]*(k===pts.length-2?1:1.02));}
    const n=pts.length-1,d=V3().subVectors(pts[n],pts[n-1]).normalize(),nn=P.thumbNail?(P.thumbHand?V3(...P.thumbNail):Td(V3(P.thumbNail[0]*s,P.thumbNail[1],P.thumbNail[2]))):null;
-   if(nn){nn.addScaledVector(d,-nn.dot(d)).normalize();handNail(g,pts[n],d,nn,R[n]);}}
+   if(nn){nn.addScaledVector(d,-nn.dot(d)).normalize();handNail(g,pts[n],d,nn,R[n],P.smoothGrip);}}
   g.updateMatrixWorld(true);mergeChildren(g);
   return g;
  }
@@ -8386,8 +8418,9 @@ const VM=(()=>{
  sleeveTex.wrapS=THREE.RepeatWrapping;
  const sleeveMat=S('#ffffff',{map:sleeveTex,roughness:.82});
  const sleeveGeo=(()=>{const g=cylGeo(.064,.047,1,20,true);g.translate(0,.5,0);return g;})();
+ const forearmGeo=cylGeo(.028,.034,.14,16),gripForearmGeo=new THREE.LatheGeometry([[0,-.025],[.014,-.018],[.024,-.006],[.028,.015],[.031,.045],[.029,.09],[.028,.125],[0,.125]].map(p=>new THREE.Vector2(...p)),20);
  function arm(){const g=grp(root);const sl=grp(g,[0,.108,0]);mk(sleeveGeo,sleeveMat,sl,{cast:false});
-  mk(cylGeo(.028,.034,.14,16),M.skin,g,{p:[0,.055,0]});const cf=mk(cylGeo(.05,.05,.034,20),M.cuff,g,{p:[0,.116,0]});return {g,sl,cf};}
+  const skin=mk(forearmGeo,M.skin,g,{p:[0,.055,0]});const cf=mk(cylGeo(.05,.05,.034,20),M.cuff,g,{p:[0,.116,0]});return {g,sl,cf,skin};}
  const R={hand:grp(root),arm:arm()},L={hand:grp(root),arm:arm()};
  // orient() points local +z away from the camera, reversing local x on screen.
  // Mirror the anatomical models so each thumb faces inward, toward the other hand.
@@ -8436,15 +8469,22 @@ const VM=(()=>{
   const x=lat.clone().normalize(),y=dorsal.clone().addScaledVector(x,-dorsal.dot(x)).normalize(),z=V3().crossVectors(x,y);
   const m=new THREE.Matrix4().makeBasis(x,y,z);const c=V3(0,-.03,.028).applyMatrix4(m);m.setPosition(center.clone().sub(c));return m;
  }
- const GRIP_FINGERS=[{a:[50,52,56],L:[.043,.029,.022]},{a:[48,52,56],L:[.045,.03,.023]},{a:[50,54,56],L:[.043,.029,.022]},{a:[52,54,52],L:[.036,.025,.019]}];
+ // 손잡이 표면과 손가락 살의 두께를 기준으로 감싼다. 짧은 새끼손가락도 자루 안을 통과하지 않는다.
+ const KNIFE_FINGERS=[.021,-.001,-.023,-.045].map((z,i)=>{
+  const r=[.0152,.0158,.0146,.0126][i],r1=r*.86,r2=r*.78,r3=r*.68;
+  return {pts:[[.013+r1,.006,z],[.006,.018+r2,z],[-.011-r3*.9,.017+r3*.8,z]],nailNormal:[0,1,0]};
+ });
+ const GUN_FINGERS=[{pts:[[-.03,-.003,-.003],[-.017,-.004,.012],[-.004,-.003,.02]],nailNormal:[-1,.2,0]},
+  ...[-.026,-.046,-.066].map((y,i)=>{const r=[.0158,.0146,.0126][i],front=-.02+y*.25;
+   return {pts:[[-.018,y,front+r*.86+.002],[.014,y,front+r*.78+.002],[.012+r*.68+.002,y,front-.014]],nailNormal:[1,0,0]};})];
  // 오른손 식칼: 검지는 칼날 쪽(+z), 새끼는 자루 끝 쪽(-z). 손바닥 안쪽과 엄지가 눈에 보이도록 감싼다.
  const KNIFE_M=gripFrame(V3(0,0,1),V3(.3,-.954,0),V3(0,.004,-.012));
- const knifeGrip=buildHand(-1,{fingers:GRIP_FINGERS,wristHand:[-.045,-.04,-.032],
+ const knifeGrip=buildHand(-1,{smoothGrip:true,fingers:KNIFE_FINGERS,wristHand:[-.045,-.04,-.032],
   thumbHand:true,thumb:[[-.022,-.01,.028],[.012,.025,.028],[.033,.015,.008]],thumbR:[.017,.015,.0125],thumbNail:[.5,.8,-.3]},KNIFE_M);
  knifeGrip.name='knife-grip';R.hand.add(knifeGrip);
  // 오른손 권총: 검지는 총 오른쪽(-x)에서 방아쇠로, 엄지는 왼쪽(+x)으로. 뿌리는 손바닥 엄지 두덩이에 잇는다.
- const GUN_M=gripFrame(V3(0,.86,.51),V3(-.8,.6,0),V3(0,-.035,-.04));
- const gunGrip=buildHand(-1,{fingers:[{pts:[[-.03,-.003,-.003],[-.017,-.004,.012],[-.004,-.003,.02]]},GRIP_FINGERS[1],GRIP_FINGERS[2],GRIP_FINGERS[3]],wristHand:[0,-.035,-.087],
+ const GUN_M=gripFrame(V3(0,.97,.24),V3(-.8,.6,0),V3(.012,-.039,-.046));
+ const gunGrip=buildHand(-1,{smoothGrip:true,fingers:GUN_FINGERS,wristHand:[0,-.035,-.087],
   thumbHand:true,thumb:[[-.004,.006,-.067],[.022,-.002,-.045],[.023,.002,-.012]],thumbR:[.016,.0145,.0125],thumbNail:[.8,.6,0]},GUN_M);
  gunGrip.name='pistol-grip';R.hand.add(gunGrip);
  R.fist.userData.wrist=V3(0,0,-.1);L.fist.userData.wrist=V3(0,0,-.1);
@@ -8477,14 +8517,14 @@ const VM=(()=>{
   h.p.copy(gripTarget).sub(gripOffset);
  }
  // 도구칸 위쪽 끝(화면 좌표 -1~1)
- function dockY(){const el=$('#tools');if(!el||!el.offsetParent)return -1;return 1-2*el.getBoundingClientRect().top/innerHeight;}
+ function dockY(){const box=measureDock();return box?1-2*box.top/innerHeight:-1;}
 
  /* ---- 상태 ---- */
  let gripPoint=null;
  function grip(x,y){gripPoint=x==null?null:{x,y};}
  const st={tool:'hand',acts:[],nextHand:'R',time:0,ammo:8,reload:0,recoil:0,slide:0,flash:0,aim:V3(0,0,-1),aimGoal:V3(0,0,-1),lastShot:-9,slash:null,bloody:{},swapT:1,guardLift:1,guardRaising:false};
  function lowerHands(){st.guardLift=0;st.guardRaising=false;st.acts.length=0;st.slash=null;}
- function raiseHands(){st.guardRaising=true;}
+ function raiseHands(){computeRest();st.guardRaising=true;}
  function updateGuard(dt){if(st.guardRaising)st.guardLift=Math.min(1,st.guardLift+dt/.55);}
  const rest={R:{p:V3(),q:new THREE.Quaternion()},L:{p:V3(),q:new THREE.Quaternion()}};
  const KN_DIR=V3(-.5,.55,-1).normalize(),KN_UP=V3(.35,1,0);
@@ -8575,6 +8615,7 @@ const VM=(()=>{
  const tmpP=V3(),tmpQ=new THREE.Quaternion(),tmpQ2=new THREE.Quaternion(),tv=V3(),tv2=V3(),tv3=V3();
  function placeArm(side){
   const h=side==='R'?R:L,ar=h.arm;h.hand.updateMatrix();
+  const weaponWrist=side==='R'&&st.tool!=='hand';ar.skin.geometry=weaponWrist?gripForearmGeo:forearmGeo;ar.skin.position.y=weaponWrist?0:.055;
   const k=h.hand.scale.x;
   // 소매가 이어지는 손목 자리: 들고 있는 도구의 손마다 다르다
   const wp=side==='L'&&grabHand.visible?grabHand.userData.wrist:side==='R'&&st.tool==='knife'?knifeGrip.userData.wrist:side==='R'&&st.tool==='gun'?gunGrip.userData.wrist:h.fist.userData.wrist;
@@ -8685,7 +8726,7 @@ const VM=(()=>{
   for(const k of ['R','L']){const h=k==='R'?R:L;h.hand.position.copy(H[k].p);h.hand.quaternion.copy(H[k].q);h.hand.scale.setScalar(lerp(H[k].scale,1,GR[k]));if(h.hand.visible)placeArm(k);}
   knife.userData.blood.visible=!!st.bloody.knife&&PREF.blood;
  }
- function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
+ function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;st.guardLift=1;st.guardRaising=false;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
  return {root,st,grip,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,lowerHands,raiseHands,KREST,setGrab,shakeOff,handPos,anchorPos,at:(nx,ny,d)=>at(nx,ny,d),get busy(){return st.acts.length>0;}};
 })();
@@ -9125,7 +9166,7 @@ function finishEncounter(){
  if(!G.opening)return;
  G.opening=false;G.encounterRaising=false;clearPointers();
  if(G.mode!=='fight'||G.ended||G.revival)return;
- G.inputLocked=false;$('#dock').hidden=false;
+ G.inputLocked=false;$('#dock').hidden=false;VM.computeRest();
  hint(HINTS[G.tool],4.5);focusCanvas();
 }
 function firstStrikeLine(){

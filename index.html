@@ -3012,7 +3012,7 @@ function loadOne(srcs,ok,done,i){
 }
 function preloadFight(){
  if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';
- const bust=/^https?:/.test(location.protocol)?'?v=20261104-right-weapon-grips-1':'';
+ const bust=/^https?:/.test(location.protocol)?'?v=20261104-grip-layout-2':'';
  loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
   if(!ok){FIGHT.state='failed';fightFailed();return;}
   loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{
