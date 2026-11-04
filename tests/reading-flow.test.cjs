@@ -22,7 +22,7 @@ const ALL=(()=>{let seed=20261104;const rnd=()=>{seed=(seed*1103515245+12345)>>>
  return out;})();
 const dom=(v,id)=>v.domains.find(x=>x.id===id);
 const fatesOf=v=>[v.origin.fate,v.core.fate,...v.domains.flatMap(x=>x.fates)];
-const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,x.rule]),...v.domains.map(x=>x.basis).filter(Boolean),
+const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,...(x.rule?[x.rule]:[])]),...v.domains.map(x=>x.basis).filter(Boolean),
  v.yearRule,v.luck.end,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
 const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
@@ -87,7 +87,7 @@ test('every element explains its role for this day master, not a fixed personali
 test('small comforts retain the chosen line without turning every money problem into that habit',()=>{
  const m=dom(make(2001,6,21,{unknown:true,male:false}).v,'money');
  assert.equal(m.cause,'comfort');assert.match(m.head,/작은 편의/);assert.match(m.detail,/한 달 치/);assert.match(m.note.value,/편의·작은 보상/);
- assert.equal(m.fates[0],'당신은 오늘을 덜 힘들게 넘기려고 쓴 돈을 내일의 품으로 메우는 팔자입니다.');
+ assert.equal(m.fates[0],'당신은 오늘을 덜 힘들게 넘기려고 쓴 돈을 내일의 품으로 메우는 팔자입니다.');assert.equal(m.rule,'');
  const money=ALL.map(({v})=>dom(v,'money')),kinds=new Set(money.map(x=>x.cause));
  for(const key of ['comfort','burden','share','holding','paper','reserve'])assert(kinds.has(key),key);
  assert(money.filter(x=>x.cause==='comfort').length<ALL.length/2);
@@ -123,6 +123,10 @@ test('officer strength is one value shared by the element line, work, office and
   assert.equal(/표 한 장/.test(office.fates.join(' ')),b.officeLow);
   assert.equal(/직원이 다섯 명도 안 되는/.test(work.fates.join(' ')),b.officeLow);
   assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
+  assert.equal(office.head==='맡는 일은 늘어도 결정할 수 있는 일은 늘지 않습니다.',v.keys.officer==='high');
+  assert.equal(office.detail==='일정과 기준은 다른 사람이 정합니다. 그 안에서 결과를 내는 책임은 당신에게 돌아옵니다.',v.keys.officer==='high');
+  assert.equal(office.fates[0]==='당신은 책임지는 일은 늘어도 그 일을 정할 권한은 남의 손에 있는 팔자입니다.',v.keys.officer==='high');
+  assert.equal(work.rule==='해 보겠다고 한 말은 약속으로 남고, 그 말을 지키느라 쓴 휴일은 기록에 남지 않습니다.',work.cause==='식상');
   if(r.fate.officer.present)assert(office.basis.includes(api.ELEMENTS[b.boss].name+' '+Math.round(b.bs*100)+'%'),office.basis);
  }
 });
@@ -188,8 +192,8 @@ test('every fate line is one sentence in the agreed form and no line uses the ba
  assert.match(make(1991,7,9,{h:14,mi:30,name:'민수'}).v.verdict,/^민수 님은 /);
 });
 
-test('every section keeps one rule line that states the injustice as the natural order',()=>{
- for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains)assert(d.rule,d.id);}
+test('sections retain their rule except the redundant small-comfort money rule',()=>{
+ for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){if(d.id==='money'&&d.cause==='comfort')assert.equal(d.rule,'');else assert(d.rule,d.id);}}
  for(const k of ['복은 집에서 내려옵니다','재물은 재물이 있는 자리로 모입니다','돈이 돈을 버는 것이 재물의 이치','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
   '정해진 날에 표를 넣는 것으로 나랏일과 이어지고','관재수','나라 사이에서도 큰 기운이 작은 기운을 누르는','자리에 맞게 살면 탈이 없습니다','운을 묻는 것은 아래 자리의 일'])assert(V5_SRC.includes(k),k);
 });
