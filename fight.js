@@ -8316,7 +8316,8 @@ const VM=(()=>{
  function setClip(T,dir){clip.normal.copy(dir).negate();clip.constant=dir.dot(T);clipOn=true;}
 
  /* ---- 내 손 만들기 ----
-  * 손 좌표(주먹 기준): +z 손가락 마디가 향하는 쪽(주먹이 나가는 쪽), +y 손등, 엄지는 -s·x 쪽(오른손 s=1이면 왼쪽).
+  * 손 좌표(주먹 기준): +z 손가락 마디가 향하는 쪽, +y 손등, 엄지는 -s·x 쪽.
+  * +z를 화면 안으로 돌려 쓰므로 해부학적 오른손은 s=-1, 왼손은 s=1이다.
   * 손등(둥근 상자) + 마디 네 개 + 세 마디 손가락 네 개 + 두 마디 엄지 + 손목. 손가락은 마디(기준점)에서 시작해
   * 주어진 각도만큼 안으로 꺾이며 이어지므로, 도구를 쥘 때는 각도만 바꿔 자루를 감싸게 한다.
   * M을 주면 주먹 좌표를 그 행렬로 옮겨 그린다(칼·총은 자루 축에 맞춰 돌려 둔다). */
@@ -8341,7 +8342,10 @@ const VM=(()=>{
   // 손등·손바닥 덩어리
   {const pg=(s<0?PALM_L:PALM_R).clone();if(Mx)pg.applyMatrix4(Mx);mk(pg,M.skin,g);}
   // 손목(도구를 쥘 때는 소매가 이어지는 자리를 따로 두므로 짧게)
-  {const a=T(V3(0,-.004,-.038)),b=T(V3(0,-.005,P.wristLen==null?-.125:-.038-P.wristLen));handSeg(g,M.skin,a,b,.029,.034);}
+  {if(P.wristHand){
+    // 무기 손은 손바닥 아래의 실제 접점에서 팔뚝으로 잇는다. 옆으로 돌린 주먹 손목을 남기지 않는다.
+    const a=V3(...P.wristHand);handBall(g,M.skin,a,.029);g.userData.wrist=a;
+   }else{const a=T(V3(0,-.004,-.038)),b=T(V3(0,-.005,P.wristLen==null?-.125:-.038-P.wristLen));handSeg(g,M.skin,a,b,.029,.034);}}
   // 마디 네 개와 손가락
   const KX=[-.033,-.011,.011,.033],KR=[.0152,.0158,.0146,.0126],KY=[.012,.013,.012,.01],KZ=[.025,.027,.025,.02];
   for(let i=0;i<4;i++){
@@ -8426,23 +8430,23 @@ const VM=(()=>{
   g.name='pistol';
  }
  /* 도구를 쥔 손: 주먹과 같은 손이지만 손가락이 자루 둘레를 따라 덜 말리고, 엄지는 자루 위에 얹는다.
-  * gripFrame: 주먹 좌표를 손 좌표로 보내는 행렬. lat=새끼손가락 쪽(=자루 축) 방향, dorsal=손등이 향할 대략 방향,
+  * gripFrame: 주먹 좌표를 무기 좌표로 보내는 회전행렬. lat=손의 +x축(오른손의 검지 쪽), dorsal=손등 방향,
   * center=자루 가운데(손 좌표). 주먹 좌표에서 손가락이 감싸는 빈 자리의 가운데(0,-.03,.028)가 center에 오게 옮긴다 */
  function gripFrame(lat,dorsal,center){
   const x=lat.clone().normalize(),y=dorsal.clone().addScaledVector(x,-dorsal.dot(x)).normalize(),z=V3().crossVectors(x,y);
   const m=new THREE.Matrix4().makeBasis(x,y,z);const c=V3(0,-.03,.028).applyMatrix4(m);m.setPosition(center.clone().sub(c));return m;
  }
  const GRIP_FINGERS=[{a:[50,52,56],L:[.043,.029,.022]},{a:[48,52,56],L:[.045,.03,.023]},{a:[50,54,56],L:[.043,.029,.022]},{a:[52,54,52],L:[.036,.025,.019]}];
- // 식칼: 자루(z축)를 감싸 쥐고 엄지를 자루 등(칼등 쪽) 위에 얹어 칼날 쪽으로 뻗는다. 손등은 위·왼쪽(내 눈 쪽)을 본다
- const KNIFE_M=gripFrame(V3(0,0,-1),V3(-.5,.866,0),V3(0,.004,-.012));
- const knifeGrip=buildHand(1,{fingers:GRIP_FINGERS,wristLen:.03,
-  thumb:[[-.04,-.006,-.012],[-.058,-.009,.016],[-.074,-.007,.04]],thumbR:[.017,.015,.0125],thumbNail:[0,.87,.5]},KNIFE_M);
- knifeGrip.name='knife-grip';knifeGrip.userData.wrist=V3(.02,-.008,-.045).applyMatrix4(KNIFE_M);R.hand.add(knifeGrip);
- // 권총: 기울어진 손잡이를 감싸고, 검지는 방아쇠울 안으로 뻗고, 엄지는 몸체 왼쪽을 따라 앞으로 눕는다
- const GUN_M=gripFrame(V3(0,-.86,-.51),V3(.8,.6,0),V3(0,-.035,-.04));
- const gunGrip=buildHand(1,{fingers:[{pts:[[.03,-.003,-.003],[.017,-.004,.012],[.004,-.003,.02]]},GRIP_FINGERS[1],GRIP_FINGERS[2],GRIP_FINGERS[3]],wristLen:.03,
-  thumbHand:true,thumb:[[-.016,-.012,-.06],[-.021,-.004,-.034],[-.02,.0,-.006]],thumbR:[.016,.0145,.0125],thumbNail:[-.8,.6,0]},GUN_M);
- gunGrip.name='pistol-grip';gunGrip.userData.wrist=V3(0,-.006,-.045).applyMatrix4(GUN_M);R.hand.add(gunGrip);
+ // 오른손 식칼: 검지는 칼날 쪽(+z), 새끼는 자루 끝 쪽(-z). 손바닥 안쪽과 엄지가 눈에 보이도록 감싼다.
+ const KNIFE_M=gripFrame(V3(0,0,1),V3(.3,-.954,0),V3(0,.004,-.012));
+ const knifeGrip=buildHand(-1,{fingers:GRIP_FINGERS,wristHand:[-.045,-.04,-.032],
+  thumbHand:true,thumb:[[-.022,-.01,.028],[.012,.025,.028],[.033,.015,.008]],thumbR:[.017,.015,.0125],thumbNail:[.5,.8,-.3]},KNIFE_M);
+ knifeGrip.name='knife-grip';R.hand.add(knifeGrip);
+ // 오른손 권총: 검지는 총 오른쪽(-x)에서 방아쇠로, 엄지는 왼쪽(+x)으로. 뿌리는 손바닥 엄지 두덩이에 잇는다.
+ const GUN_M=gripFrame(V3(0,.86,.51),V3(-.8,.6,0),V3(0,-.035,-.04));
+ const gunGrip=buildHand(-1,{fingers:[{pts:[[-.03,-.003,-.003],[-.017,-.004,.012],[-.004,-.003,.02]]},GRIP_FINGERS[1],GRIP_FINGERS[2],GRIP_FINGERS[3]],wristHand:[0,-.035,-.087],
+  thumbHand:true,thumb:[[-.004,.006,-.067],[.022,-.002,-.045],[.023,.002,-.012]],thumbR:[.016,.0145,.0125],thumbNail:[.8,.6,0]},GUN_M);
+ gunGrip.name='pistol-grip';R.hand.add(gunGrip);
  R.fist.userData.wrist=V3(0,0,-.1);L.fist.userData.wrist=V3(0,0,-.1);
  // 멱살잡이 손(왼손): 네 손가락을 함께 말고 엄지가 검지 옆에서 옷깃을 누른다.
  const GRAB_POSE={fingers:[{a:[56,82,48],L:[.042,.028,.022]},{a:[58,84,50],L:[.044,.029,.023]},{a:[60,82,48],L:[.042,.028,.022]},{a:[58,78,46],L:[.034,.023,.019]}],
