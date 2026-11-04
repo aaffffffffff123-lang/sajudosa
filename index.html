@@ -347,7 +347,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .fate-end{position:relative}
 .fate-end::before{content:"";position:absolute;left:50%;top:50%;width:250px;height:232px;margin:-120px 0 0 -125px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-14 -16 268 248'%3E%3Cg stroke='%23261f3d' stroke-width='3.2' stroke-linecap='round' opacity='.6'%3E%3Cpath d='M120.0 14.0L120.0 -8.0'/%3E%3Cpath d='M137.1 40.9L139.4 28.1'/%3E%3Cpath d='M148.8 58.9L156.3 38.2'/%3E%3Cpath d='M157.7 72.6L164.2 61.4'/%3E%3Cpath d='M165.2 84.2L179.3 67.3'/%3E%3Cpath d='M171.7 94.6L181.7 86.3'/%3E%3Cpath d='M177.7 104.7L196.8 93.7'/%3E%3Cpath d='M183.6 114.9L195.8 110.4'/%3E%3Cpath d='M189.5 125.7L211.2 121.9'/%3E%3Cpath d='M196.0 138.0L209.0 138.0'/%3E%3Cpath d='M203.7 152.8L225.4 156.6'/%3E%3Cpath d='M214.0 172.2L226.2 176.6'/%3E%3Cpath d='M227.4 200.0L246.4 211.0'/%3E%3Cpath d='M195.3 201.1L205.2 209.5'/%3E%3Cpath d='M173.8 202.1L188.0 219.0'/%3E%3Cpath d='M157.5 202.9L164.0 214.2'/%3E%3Cpath d='M143.8 203.5L151.4 224.2'/%3E%3Cpath d='M131.6 203.9L133.9 216.7'/%3E%3Cpath d='M120.0 204.0L120.0 226.0'/%3E%3Cpath d='M108.4 203.9L106.1 216.7'/%3E%3Cpath d='M96.2 203.5L88.6 224.2'/%3E%3Cpath d='M82.5 202.9L76.0 214.2'/%3E%3Cpath d='M66.2 202.1L52.0 219.0'/%3E%3Cpath d='M44.7 201.1L34.8 209.5'/%3E%3Cpath d='M12.6 200.0L-6.4 211.0'/%3E%3Cpath d='M26.0 172.2L13.8 176.6'/%3E%3Cpath d='M36.3 152.8L14.6 156.6'/%3E%3Cpath d='M44.0 138.0L31.0 138.0'/%3E%3Cpath d='M50.5 125.7L28.8 121.9'/%3E%3Cpath d='M56.4 114.9L44.2 110.4'/%3E%3Cpath d='M62.3 104.7L43.2 93.7'/%3E%3Cpath d='M68.3 94.6L58.3 86.3'/%3E%3Cpath d='M74.8 84.2L60.7 67.3'/%3E%3Cpath d='M82.3 72.6L75.8 61.4'/%3E%3Cpath d='M91.2 58.9L83.7 38.2'/%3E%3Cpath d='M102.9 40.9L100.6 28.1'/%3E%3C/g%3E%3Cpath d='M120 22L222 196H18Z' fill='none' stroke='%23261f3d' stroke-width='5.4' stroke-linejoin='round'/%3E%3Cpath d='M120 46L201 184H39Z' fill='none' stroke='%23261f3d' stroke-width='1.8' stroke-linejoin='round' opacity='.6'/%3E%3Cpath d='M66 142Q120 96 174 142Q120 188 66 142Z' fill='%23fffbe8' stroke='%23261f3d' stroke-width='4.6' stroke-linejoin='round'/%3E%3Ccircle cx='120' cy='142' r='22' fill='%23f2bf1a' stroke='%237a3e00' stroke-width='2.4'/%3E%3Ccircle cx='120' cy='142' r='15' fill='none' stroke='%23c97a00' stroke-width='2' opacity='.7'/%3E%3Cpath d='M120 121C114 129 114 155 120 163C126 155 126 129 120 121Z' fill='%23120c1a'/%3E%3Ccircle cx='128' cy='133' r='4.2' fill='%23fff'/%3E%3Cpath d='M68 135Q120 90 172 135' fill='none' stroke='%23261f3d' stroke-width='2' opacity='.55'/%3E%3C/svg%3E") center/contain no-repeat;opacity:var(--doomEye,0);z-index:-1;pointer-events:none}
 
-/* 자리 문서: 이치 줄, 자리 판정, 카운트다운, 없음 카드, 마지막 줄 */
+/* 풀이 문서: 이치 줄, 월운 기간, 없음 카드, 마지막 줄 */
 .rules{list-style:none;margin:12px 0 0;padding:0;display:grid;gap:7px}
 .rules li{position:relative;padding-left:13px;font-size:13.5px;line-height:1.65;color:var(--muted);word-break:keep-all}
 .rules li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--line-2)}
@@ -356,27 +356,22 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .reading .rule{margin-top:-2px}
 .pillar .pl{margin-bottom:2px}
 .pillar.unknown .pl{color:var(--muted)}
-.judge{background:var(--card);border:2.5px solid var(--ink);border-radius:22px;padding:18px 16px 16px;box-shadow:0 6px 0 var(--ink)}
-.assignment b{display:block;font-size:13px;color:var(--muted)}
-.assignment h3{margin:6px 0 0;font-family:var(--serif);font-size:25px;line-height:1.4}
-.assignment p{margin:10px 0 0;font-size:16px;line-height:1.75;word-break:keep-all}
 .reading .pressure{margin:14px 0 0;padding-top:12px;border-top:1px dashed var(--line-2);color:var(--ink-2)}
 .ladder svg{display:block;width:118px;height:auto}
 .ladder .cap{min-width:0}
 .ladder .cap b{display:block;font-size:13px;color:var(--muted);font-weight:600}
 .ladder .cap strong{display:block;margin-top:4px;font-family:var(--serif);font-size:clamp(23px,6.6vw,28px);line-height:1.3;letter-spacing:-.03em;color:var(--ink)}
 .ladder .cap small{display:block;margin-top:6px;font-size:13px;line-height:1.55;color:var(--ink-2);word-break:keep-all}
-.jrows{margin-top:16px;display:grid;gap:8px}
-.jrow{display:block;padding:10px 12px;border-radius:12px;background:var(--inset);border:1.5px solid var(--line-2)}
-.jrow b{display:block;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:3px}
-.jrow strong{display:block;font-family:var(--serif);font-size:19px;line-height:1.3;color:var(--ink)}
-.jrow strong.none{color:var(--red-d)}
-.jrow small{display:block;margin-top:3px;font-size:13px;line-height:1.55;color:var(--ink-2);word-break:keep-all}
 .year .rule{margin:12px 0 0;padding-top:10px;border-top:2px dashed var(--line-2)}
-.countdown{margin-top:14px;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:14px 16px 13px;display:grid;gap:3px}
-.countdown b{font-size:13px;color:var(--red-d)}
-.countdown .num{font-family:var(--serif);font-size:clamp(24px,7.2vw,30px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.2}
-.countdown small{font-size:13.5px;line-height:1.5;color:var(--muted);word-break:keep-all}
+.month-reading{margin-top:20px;background:var(--card);border:2px solid var(--ink);border-radius:16px;padding:16px}
+.month-reading .month-label{font-size:13px;font-weight:700;color:var(--red-d)}
+.month-reading h3{margin:6px 0 10px;font-family:var(--serif);font-size:23px;font-weight:700;line-height:1.45;word-break:keep-all}
+.month-reading .month-text{margin:0;font-size:16px;line-height:1.75;word-break:keep-all;color:var(--ink-2)}
+.month-period{margin:15px 0 0;padding-top:12px;border-top:1px solid var(--line-2);font-size:13.5px;line-height:1.65}
+.month-period>div{display:grid;grid-template-columns:65px minmax(0,1fr);column-gap:10px;margin-top:5px}
+.month-period dt{color:var(--muted)}
+.month-period dd{margin:0;font-weight:600;color:var(--ink-2);word-break:keep-all;overflow-wrap:break-word}
+.month-reading .month-note{display:block;margin-top:9px;font-size:12px;line-height:1.5;color:var(--muted)}
 .none-card{margin-top:12px;border:2px dashed var(--ink);background:var(--empty);border-radius:16px;padding:13px 14px;text-align:center}
 .none-card b{display:block;font-size:13.5px;color:var(--muted);margin-bottom:3px}
 .none-card span{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--red-d)}
@@ -390,9 +385,6 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .core .core-rule{margin:16px 0 8px;padding-top:12px;border-top:2px dashed var(--line-2)}
 .core #core-body p{margin:0 0 10px}
 .core #core-body p:last-child{margin-bottom:0}
-.jrows{grid-template-columns:1fr 1fr}
-.jrow.wide{grid-column:1/-1}
-@media (max-width:370px){.jrows{grid-template-columns:1fr}}
 #result-screen .block{margin-top:32px}
 .reading p,.txt p{font-size:16px;line-height:1.78}
 .year p,.luck p{line-height:1.7}
@@ -721,10 +713,9 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <section class="block" id="past-block" hidden><h2 class="sec-label">지나온 흐름</h2><p class="past-intro">지나온 해 가운데 사주에서 마찰 신호가 겹친 해입니다.</p><div class="past-hits" id="past-hits"></div></section>
   <div id="sections"></div>
 
-  <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div><p class="rule year-rule" id="year-rule"></p><div class="countdown" id="countdown" hidden></div></section>
+  <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div><p class="rule year-rule" id="year-rule"></p><article class="month-reading" id="month-reading" aria-label="현재 월운" hidden></article></section>
   <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol><div class="none-card" id="cycle-ruling"></div></section>
 
-  <section class="block judge-block"><h2 class="sec-label">자리 판정</h2><div class="judge" id="judge"></div></section>
   <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">자</text><text x="42" y="30">리</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><p class="fixed-note" id="fixed-note"></p><div class="caution" id="caution"></div></section>
   <p class="foot-note" id="foot-note"></p>
   <p class="last-line" id="last-line"></p>
@@ -2009,7 +2000,7 @@ function readYearV2(Y,a,P,cycleInput){
  const g=gz(yearIdx(Y)),rawMonths=monthsOfYear(Y),monthDataComplete=rawMonths.length===12,monthDefs=monthDataComplete?rawMonths:[],bounds=sajuYearBoundsV2(Y,rawMonths),ys=bounds.start,ye=bounds.end,all=(Array.isArray(cycleInput)?cycleInput:[cycleInput]).filter(Boolean),overlap=all.filter(c=>c.start==null||c.end==null||c.end>ys&&c.start<ye);
  const duration=c=>c.start==null?ye-ys:Math.max(0,Math.min(ye,c.end)-Math.max(ys,c.start)),segments=overlap.length?overlap.map((c,i)=>{const weight=duration(c)/(ye-ys),ctx={cycle:{kind:'대운:'+(c.i==null?i:c.i),label:c.g?uiGzName(c.g)+' 10년 흐름':'10년 흐름',g:c.g||c,weight:weight}};return {c:c,weight:weight,r:composeTransitV2(g,a,P,'해',Y+'년',ctx)};}):[{c:null,weight:1,r:composeTransitV2(g,a,P,'해',Y+'년',{})}],primary=segments.slice().sort((x,y)=>y.weight-x.weight)[0],r=Object.assign({},primary.r);
  if(segments.length>1){const ordered=segments.slice().sort((x,y)=>(x.c.start||0)-(y.c.start||0)),next=ordered[1],d=new Date(next.c.start+9*HOUR),seen={},evidence=[],hitSeen={},mergedHits=[];segments.forEach(s=>{s.r.evidence.forEach(e=>{const k=e.id+'|'+e.fact;if(!seen[k]){seen[k]=1;evidence.push(e);}});s.r.hits.forEach(h=>{const k=h.type+':'+h.pos+':'+h.branch+(h.partial?':partial':'');if(!hitSeen[k]){hitSeen[k]=1;mergedHits.push(h);}});});const weightSum=segments.reduce((n,s)=>n+s.weight,0)||1,nextFact=next.r.evidence.filter(e=>e.valence==='adverse').sort((x,y)=>y.level-x.level)[0]||next.r.evidence.filter(e=>e.valence==='mixed').sort((x,y)=>y.level-x.level)[0],prior=new Set(sentenceListV2(r.text)),nextDetail=nextFact?sentenceListV2(nextFact.effect).filter(x=>!prior.has(x)).join(' '):'',transition=(d.getUTCMonth()+1)+'월 '+d.getUTCDate()+'일 무렵부터 같은 해라도 앞뒤 사정이 달라집니다.'+(nextDetail?' 그 뒤에는 '+nextDetail:'');r.evidence=evidence;r.hits=mergedHits;r.score=Math.round(segments.reduce((n,s)=>n+s.r.score*s.weight,0)/weightSum);if(evidence.some(e=>e.valence==='adverse'))r.score=Math.max(15,r.score);r.riskUnits=Math.round(segments.reduce((n,s)=>n+s.r.riskUnits*s.weight,0)/weightSum*10)/10;r.text=mergeSentencesV2([r.text,transition]);}
- const months=monthDefs.map(m=>{const mid=(m.start+m.end)/2,cy=all.find(c=>c.start==null||c.end==null||mid>=c.start&&mid<c.end),mctx={year:{kind:'세운',label:Y+'년',g:g}};if(cy)mctx.cycle={kind:'대운',label:cy.g?uiGzName(cy.g)+' 10년 흐름':'10년 흐름',g:cy.g||cy};const mg=gz(m.idx),mr=composeTransitV2(mg,a,P,'달','',mctx);return {start:m.start,end:m.end,g:mg,score:mr.score,riskUnits:mr.riskUnits,title:mr.title,hits:mr.hits,cycle:cy?cy.i:null};});
+ const months=monthDefs.map(m=>{const mid=(m.start+m.end)/2,cy=all.find(c=>c.start==null||c.end==null||mid>=c.start&&mid<c.end),mctx={year:{kind:'세운',label:Y+'년',g:g}};if(cy)mctx.cycle={kind:'대운',label:cy.g?uiGzName(cy.g)+' 10년 흐름':'10년 흐름',g:cy.g||cy};const mg=gz(m.idx),mr=composeTransitV2(mg,a,P,'달','',mctx);return {start:m.start,end:m.end,g:mg,score:mr.score,riskUnits:mr.riskUnits,title:mr.title,text:mr.text,endTerm:JIE_NAMES[(m.k+1)%12],hits:mr.hits,cycle:cy?cy.i:null};});
  return Object.assign(r,{year:Y,g:g,months:months,periodStart:ys,periodEnd:ye,cycleChange:overlap.length>1,monthDataComplete:monthDataComplete});
 }
 
@@ -2557,7 +2548,7 @@ function modernizeReadingDisplay(r){
  if(work){work.head='문제를 고치러 갔다가 태도를 지적받습니다.';work.body[0]='일이 잘못된 이유를 설명하러 갔다가, 누구 허락을 받고 말했느냐는 질문을 받습니다.';}
  r.sinsal.forEach(x=>{x.name=f(x.name);x.where=f(x.where);x.text=f(x.text);});
  (r.pastHits||[]).forEach(x=>{x.title=f(x.title);x.text=f(x.text);});
- r.years.forEach(x=>{x.title=f(x.title);x.text=f(x.text);(x.worstMonths||[]).forEach(m=>m.title=f(m.title).replace('말과 규정이 다시 부딪히는 달','보고·평가에서 말이 문제가 되는 시기'));});
+ r.years.forEach(x=>{x.title=f(x.title);x.text=f(x.text);(x.months||[]).forEach(m=>{m.title=f(m.title).replace('말과 규정이 다시 부딪히는 달','보고·평가에서 말이 문제가 되는 시기');m.text=f(m.text);});});
  r.luck.cycles.forEach(x=>{x.title=f(x.title);x.text=f(x.text);if(x.worstYear)x.worstYear.title=f(x.worstYear.title).replace('말과 규정이 다시 부딪히는 해','보고·평가 마찰 집중');});
  r.loop=arr(r.loop);r.verdict=f(r.verdict);r.secondary=arr(r.secondary);
  if(r.dominant){r.dominant.title=f(r.dominant.title);r.dominant.core=f(r.dominant.core);r.dominant.verdict=f(r.dominant.verdict);r.dominant.tags=arr(r.dominant.tags);r.dominant.loop=arr(r.dominant.loop);}
@@ -2736,7 +2727,7 @@ window.addEventListener('popstate',()=>{
 });
 const screens=['input-screen','loading-screen','result-screen'];
 let current=null,resultScroll=0;
-function showScreen(id){screens.forEach(s=>$(s).hidden=s!==id);document.body.style.overflow='';window.scrollTo(0,0);}
+function showScreen(id){screens.forEach(s=>$(s).hidden=s!==id);if(id!=='result-screen')clearTimeout(MONTH_VIEW.timer);document.body.style.overflow='';window.scrollTo(0,0);}
 function formError(msg){$('form-error').textContent=msg;$('form-error').hidden=false;$('form-error').scrollIntoView({block:'center',behavior:'smooth'});}
 /* ---------- 계산 중 화면 ----------
  * 3.3초. 도사가 왼눈을 눈꺼풀로 감아 윙크한 채 사주를 푼다.
@@ -2947,7 +2938,7 @@ function doomRun(){
 }
 // 진행 정도: 맨 위 0, 전체 풀이 칸 윗부분이 화면 위쪽 40%에 오면 1 (페이지가 그보다 짧으면 맨 아래에서 1)
 function doomProg(){
- const first=document.querySelector('#result-screen .core'),last=document.querySelector('#result-screen .judge-block'),H=window.innerHeight;
+ const first=document.querySelector('#result-screen .core'),last=document.querySelector('#result-screen .verdict'),H=window.innerHeight;
  if(!first||!last||!H)return 0;
  const start=first.getBoundingClientRect().top+window.scrollY-H*.55;
  const end=last.getBoundingClientRect().top+window.scrollY-H*.35;
@@ -3239,21 +3230,6 @@ const V5={
  },
  luckEnd:'직장은 여러 번 바뀌어도 하는 일과 받는 대우는 늘 비슷한 자리를 맴도는 팔자입니다.',
  ruling:{peak:['지금보다 나은 10년','보이지 않음'],support:['좋은 운이 들어오면','그만큼 더 감당할 것'],flat:['운이 달라져도','맡은 몫은 그대로']},
- role:{income:'계속 성과를 내야 하는 사람',skill:'남의 위기를 수습하는 사람',speech:'허락된 방식으로 말하는 사람',backing:'받은 도움을 갚아야 하는 사람',self:'스스로 감당해야 하는 사람',outlet:'남는 힘까지 내놓는 사람',order:'정해진 순서를 지키는 사람'},
- roleFam:{비겁:'끝까지 남아 책임지는 사람',식상:'결과를 만들어 내는 사람',재성:'생활과 비용을 감당하는 사람',관성:'정해진 몫을 지키는 사람',인성:'남의 일을 받쳐 주는 사람'},
- reason:{
-  income:'벌 힘을 받았으니 충분하다는 판단은 당신이 내릴 일이 아닙니다.',
-  skill:'수습할 힘을 받았으니 남의 위기도 당신 일로 칩니다.',
-  speech:'말할 힘을 받았으니 언제 무엇을 말할지는 허락을 받고 정합니다.',
-  backing:'받쳐 주는 힘을 받았으니 받은 만큼 갚는 것이 순서입니다.',
-  self:'혼자 감당할 힘을 받았으니 남에게 넘길 사유는 없습니다.',
-  outlet:'남는 힘을 받았으니 쉬는 데 쓰기 전에 쓸모부터 보여야 합니다.',
-  order:'힘을 받았어도 정해진 순서는 건너뛸 수 없습니다.',
-  weak:'감당하기 어렵다는 사정은 확인했고 맡은 몫을 줄일 사유로는 인정되지 않습니다.',
-  strong:'버틸 힘을 받았으니 남은 힘도 당신 몫에 들어갑니다.',
-  mid:'해낼 수 있는 일이고 하기 싫다는 사정은 사주가 받아 주지 않습니다.'
- },
- vessel:{극약:['아주 작음','넘친 것은 늘 남이 가져갑니다'],신약:['작음','넘친 것은 늘 남이 가져갑니다'],중화:['보통','채우는 데 평생이 듭니다'],신강:['큰 편','남의 것까지 담으라고 받은 그릇입니다'],극강:['큼','남의 것까지 담으라고 받은 그릇입니다']},
  // 전체 풀이: "당신은 [집안] [일] 인연은 [짝] 팔자입니다."
  sumOrigin:{absent:'물려받은 것 없이 시작해서',hidden:'집안의 복은 만져 보지도 못하고',shown:'물려받은 것은 지키는 데 다 쓰고'},
  sumWork:{
@@ -3406,8 +3382,6 @@ function v5Reading(R,now){
  const peak=!!cur&&later.length>0&&later.every(c=>c.score>cur.score),supportLater=later.some(c=>(c.evidence||[]).some(e=>e.valence==='support'));
  // 앞으로의 본문도 제목·그래프와 같은 대운 계산을 따른다. 나이만으로 사건을 덧붙이지 않는다.
  out.luck={cycles:cyc.map(c=>({c:c,now:!!cur&&c.i===cur.i,stage:cur&&c.i===cur.i?'':c.text})),worst:worst&&worst.score>=45?worst.i:-1,ruling:peak?V5.ruling.peak:supportLater?V5.ruling.support:V5.ruling.flat,rulingKey:peak?'peak':supportLater?'support':'flat',end:V5.luckEnd};
- // 판정
- out.judge={role:(sup&&V5.role[sup.group])||V5.roleFam[top],reason:sup?V5.reason[sup.group]:V5.reason[st],vessel:V5.vessel[a.strength.label]||V5.vessel.중화};
  // 전체 풀이
  // 일 부분은 일 칸의 첫 팔자 줄을 따른다. 작은 회사 줄은 일 칸에만 둔다(여기까지 쓰면 전체 풀이가 한쪽으로 몰린다).
  const wk=v5WorkKey(r),ws=V5.sumWork[wk]||V5.sumWork[top]||V5.sumWork.small;
@@ -3421,25 +3395,31 @@ function v5Reading(R,now){
  out.footNote=V5.footNote;out.lastLine=V5.lastLine;
  return out;
 }
-/* 다음 나쁜 달까지 남은 시간: 결과 화면이 보이는 동안 1초마다 */
-const CD={t:0,label:'',sub:'',tm:0,shown:false};
-function v4Countdown(years,now){
- const box=$('countdown');clearInterval(CD.tm);CD.tm=0;CD.shown=false;
- let target=null;
- years.forEach((y,i)=>(y.worstMonths||[]).forEach(m=>{if(m.end>now&&(!target||m.start<target.start))target={start:m.start,end:m.end,title:m.title};}));
- if(target){
-  if(target.start<=now){CD.t=target.end;CD.label='지금 지나는 나쁜 달이 끝날 때까지';CD.sub=target.title;}
-  else{CD.t=target.start;CD.label='다음 나쁜 달까지';CD.sub=target.title;}
- }else if(years[1]&&years[1].periodStart>now){CD.t=years[1].periodStart;CD.label='내년의 기운이 들어오는 날까지';CD.sub='해가 바뀌는 날은 1월 1일이 아니라 입춘입니다.';}
- else{box.hidden=true;return;}
- box.hidden=false;
- const tick=()=>{
-  const hid=$('result-screen').hidden;if(!hid)CD.shown=true;if(hid&&CD.shown){clearInterval(CD.tm);CD.tm=0;CD.shown=false;return;}
-  let ms=Math.max(0,CD.t-Date.now());const d=Math.floor(ms/DAY);ms-=d*DAY;const h=Math.floor(ms/HOUR);ms-=h*HOUR;const mi=Math.floor(ms/MIN);ms-=mi*MIN;const s=Math.floor(ms/1000);
-  box.innerHTML='<b>'+esc(CD.label)+'</b><div class="num">'+d+'일 '+h+'시간 '+mi+'분 '+String(s).padStart(2,'0')+'초</div><small>'+esc(CD.sub)+'</small>';
- };
- tick();CD.tm=setInterval(tick,1000);
+/* 현재 월운: 풀이와 적용 기간, 다음 절기 전환일 */
+function currentMonthView(years,now){
+ const m=years.flatMap(y=>y.months||[]).find(x=>x.start<=now&&now<x.end);
+ if(!m)return null;
+ const local=t=>new Date(t+9*HOUR),start=local(m.start),end=local(m.end);
+ const date=(d,year)=>(year?d.getUTCFullYear()+'년 ':'')+(d.getUTCMonth()+1)+'월 '+d.getUTCDate()+'일';
+ return {title:m.title,text:m.text||'',end:m.end,
+  period:date(start,true)+' ~ '+date(end,start.getUTCFullYear()!==end.getUTCFullYear()),
+  transition:date(end,true)+' '+end.getUTCHours()+':'+String(end.getUTCMinutes()).padStart(2,'0')+(m.endTerm?' · '+m.endTerm:'')};
 }
+const MONTH_VIEW={years:[],timer:0};
+function renderCurrentMonth(years,now){
+ clearTimeout(MONTH_VIEW.timer);MONTH_VIEW.timer=0;MONTH_VIEW.years=years;
+ const box=$('month-reading'),m=currentMonthView(years,now);
+ box.hidden=!m;if(!m){box.replaceChildren();return;}
+ box.innerHTML='<div class="month-label">현재 월운</div><h3>'+plainEsc(m.title)+'</h3>'
+  +(m.text?'<p class="month-text">'+plainEsc(m.text)+'</p>':'')
+  +'<dl class="month-period"><div><dt>적용 기간</dt><dd>'+esc(m.period)+'</dd></div><div><dt>다음 전환</dt><dd>'+esc(m.transition)+'</dd></div></dl>'
+  +'<small class="month-note">월운은 절기를 기준으로 바뀝니다. 날짜·시간은 양력·한국시간 기준입니다.</small>';
+ // 초 단위 카운트 없이 절기가 바뀔 때만 다음 월운으로 갱신한다.
+ MONTH_VIEW.timer=setTimeout(()=>{if(!$('result-screen').hidden)renderCurrentMonth(years,Date.now());},Math.min(2147483647,Math.max(1,m.end-now+50)));
+}
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&!$('result-screen').hidden&&MONTH_VIEW.years.length)renderCurrentMonth(MONTH_VIEW.years,Date.now());
+});
 function renderResult(R){
  const inp=R.input,r=R.reading,c=R.chart,now=Date.now(),v=v5Reading(R,now);
  $('r-title').textContent=inp.name?inp.name+'님의 사주':'나의 사주';
@@ -3497,7 +3477,7 @@ function renderResult(R){
   Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')));
  });
  $('year-rule').innerHTML='<b>이치</b>'+esc(v.yearRule);
- v4Countdown(r.years,now);
+ renderCurrentMonth(r.years,now);
  // 10년
  const L=r.luck,currentCycle=L.cycles.find(cy=>cy.i===L.current),fd=localYmd(inp.place,L.start);
  $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년'+(inp.unknown?' 무렵':(' '+fd.m+'월'))+'**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':''))+' '+esc(v.luck.end);
@@ -3508,9 +3488,6 @@ function renderResult(R){
   LL.append(el('li',(x.now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+cycleAgeLabel(cy,inp.unknown)+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')+'</div>'));
  });
  $('cycle-ruling').innerHTML='<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>';
- // 판정
- const J=v.judge;
- $('judge').innerHTML='<div class="assignment"><b>당신에게 정해진 몫</b><h3>'+esc(J.role)+'</h3><p>'+esc(J.reason)+'</p></div><div class="jrows"><div class="jrow wide"><b>그릇</b><strong>'+esc(J.vessel[0])+'</strong><small>'+esc(J.vessel[1])+'</small></div><div class="jrow"><b>오를 칸</b><strong class="none">없음</strong></div><div class="jrow"><b>거절할 사유</b><strong class="none">인정되지 않음</strong></div></div>';
  // 전체 풀이
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;

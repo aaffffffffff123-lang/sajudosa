@@ -5,9 +5,9 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a);assert(i>=0,a);const j=html.indexOf(b,i);assert(j>i,b);return html.slice(i,j);};
-const V5_SRC=slice('/* ---------- 자리 문서(V5)','/* 다음 나쁜 달까지');
-const api=vm.runInNewContext(slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+V5_SRC+slice('function luckGraph(','/* ---------- 입력 받기 ---------- */')
- +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2})',{Intl,Date});
+const V5_SRC=slice('/* ---------- 자리 문서(V5)','/* 현재 월운:');
+const api=vm.runInNewContext(slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+V5_SRC+slice('function currentMonthView(','const MONTH_VIEW=')+slice('function luckGraph(','/* ---------- 입력 받기 ---------- */')
+ +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2})',{Intl,Date});
 const NOW=Date.UTC(2026,10,4),THIS_YEAR=2026;
 const PLACE={seoul:{name:'서울',lon:126.978,tz:'KR',std:9},busan:{name:'부산',lon:129.07,tz:'KR',std:9}};
 function make(y,m,d,{h=12,mi=0,unknown=false,male=true,pk='seoul',name=''}={}){
@@ -23,7 +23,7 @@ const ALL=(()=>{let seed=20261104;const rnd=()=>{seed=(seed*1103515245+12345)>>>
 const dom=(v,id)=>v.domains.find(x=>x.id===id);
 const fatesOf=v=>[v.origin.fate,v.core.fate,...v.domains.flatMap(x=>x.fates)];
 const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,x.rule]),...v.domains.map(x=>x.basis).filter(Boolean),
- v.yearRule,v.luck.end,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.judge.role,v.judge.reason,...v.judge.vessel,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
+ v.yearRule,v.luck.end,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
 const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
 function bossOf(r){
@@ -34,9 +34,10 @@ function bossOf(r){
 
 test('the screen widens its scope in order: family, self, work·money·body, partner, state, world, ruling, commands',()=>{
  const view=slice('<main id="result-screen"','</main>');
- const order=['id="pillars"','id="origin"','id="me-card"','id="elem-lines"','id="core-body"','id="past-hits"','id="sections"','id="years"','id="year-rule"','id="countdown"',
-  'id="luck-graph"','id="cycle-ruling"','id="judge"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fight-fate"'];
+ const order=['id="pillars"','id="origin"','id="me-card"','id="elem-lines"','id="core-body"','id="past-hits"','id="sections"','id="years"','id="year-rule"','id="month-reading"',
+  'id="luck-graph"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fight-fate"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
+ assert(!/id="judge"|자리 판정|id="countdown"/.test(view));
  for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home office');
 });
 
@@ -198,7 +199,7 @@ test('readings differ from person to person and only the agreed lines are shared
  const slots={origin:v=>v.origin.fate,symbol:v=>v.symbol,boss:v=>v.elements[1].replace(/^.*?입니다\. /,''),mind:v=>v.core.fate,
   work:v=>dom(v,'work').fates[0],money:v=>dom(v,'money').fates[0],body:v=>dom(v,'body').fates[0],home:v=>dom(v,'home').fates[0],office:v=>dom(v,'office').fates[0],
   workRule:v=>dom(v,'work').rule,moneyRule:v=>dom(v,'money').rule,bodyRule:v=>dom(v,'body').rule,homeRule:v=>dom(v,'home').rule,officeRule:v=>dom(v,'office').rule,
-  yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,role:v=>v.judge.role,reason:v=>v.judge.reason,vessel:v=>v.judge.vessel[0],caution0:v=>v.cautions[0],caution2:v=>v.cautions[2]};
+  yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,caution0:v=>v.cautions[0],caution2:v=>v.cautions[2]};
  for(const [k,f] of Object.entries(slots)){const m=count(f);assert(m.size>=2,k);assert(Math.max(...m.values())/n<=0.75,k);}
  const verdicts=count(v=>v.verdict);assert(verdicts.size>=n*0.5,String(verdicts.size));assert(Math.max(...verdicts.values())/n<=0.05);
  for(const f of [v=>v.cautions[1],v=>v.luck.end,v=>v.footNote,v=>v.lastLine,v=>v.fixedNote])assert.equal(count(f).size,1);
@@ -232,4 +233,22 @@ test('the graph follows changing scores, including a better future, instead of f
  const cycles=[{i:0,age:20,startYear:2020,score:30},{i:1,age:30,startYear:2030,score:80},{i:2,age:40,startYear:2040,score:10}];
  const svg=api.luckGraph({current:0},cycles,1),ys=Array.from(svg.matchAll(/<circle cx="[^"]+" cy="([^"]+)"/g),m=>+m[1]);
  assert.equal(ys.length,3);assert(ys[1]>ys[0]);assert(ys[2]<ys[0]);
+});
+
+test('current month changes at the solar-term boundary and retains its own explanation',()=>{
+ const {r}=make(1991,3,13,{h:2,mi:30}),months=r.years.flatMap(y=>y.months);
+ const current=months.find(m=>m.start<=NOW&&NOW<m.end);
+ const shown=api.currentMonthView(r.years,NOW);
+ assert.equal(shown.title,current.title);assert.equal(shown.text,current.text);
+ assert(current.text);assert.match(shown.period,/2026년/);assert.match(shown.transition,/입동/);
+ assert.equal(api.currentMonthView(r.years,current.end-1).title,current.title);
+ const next=months.find(m=>m.start===current.end),changed=api.currentMonthView(r.years,current.end);
+ assert.equal(changed.title,next.title);assert.equal(changed.text,next.text);assert.equal(changed.end,next.end);
+ const january=months.find(m=>new Date(m.start+9*3600000).getUTCFullYear()!==new Date(m.end+9*3600000).getUTCFullYear());
+ assert(january);assert.match(api.currentMonthView(r.years,january.start).period,/2026년.*2027년/);
+ assert.equal(api.currentMonthView([],NOW),null);
+ assert.equal(api.currentMonthView(r.years,months[months.length-1].end),null);
+ // The current month is shown even when it was not selected as one of the year's worst.
+ const ordinary=months.find(m=>!r.years.some(y=>y.worstMonths.includes(m)));
+ assert(ordinary);assert.equal(api.currentMonthView(r.years,ordinary.start).end,ordinary.end);
 });
