@@ -137,7 +137,6 @@ const FIGHT_CSS = `
 #fight .trophy-actions{padding:12px;display:flex;gap:9px;flex:none}
 #fight .trophy-actions .btn{flex:1;min-width:0;min-height:46px;font-size:14px;text-decoration:none;box-shadow:none;border:1px solid #65513b;border-radius:9px;background:#30271f;color:#f3e8cf}
 #fight .trophy-actions .btn.danger{background:#c63b2b;border-color:#c63b2b;color:#fff6e5}
-#fight .trophy-actions .btn:disabled{opacity:.45;cursor:wait}
 #fight #trophyStatus{min-height:18px;margin:0;padding:0 14px 12px;text-align:center;font-size:11px;color:#b9aa94;line-height:1.5}
 #fight #trophyPages{display:flex;align-items:center;justify-content:center;gap:12px;padding-top:10px;font-size:12px;color:#cbbba1}
 #fight #trophyPages button{padding:5px 12px;border:1px solid #65513b;border-radius:6px;background:#30271f;color:#f3e8cf}
@@ -286,13 +285,13 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록 공유</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
    <div class="trophy-view"><img id="trophyImage" alt="처치한 천지신명의 랩틸리언 머리 전리품" hidden></div>
    <nav id="trophyPages" aria-label="전리품 이미지 페이지" hidden><button type="button" id="trophyPrev" aria-label="이전 이미지">←</button><span id="trophyPageLabel"></span><button type="button" id="trophyNext" aria-label="다음 이미지">→</button></nav>
-   <div class="trophy-actions"><button type="button" class="btn danger" id="trophyShare" disabled>공유하기</button><a class="btn" id="trophySave" hidden>이미지 저장</a></div>
+   <div class="trophy-actions"><a class="btn danger" id="trophySave" hidden>이미지 저장</a></div>
    <p id="trophyStatus" role="status" aria-live="polite"></p>
   </section>
  </div>
@@ -1417,8 +1416,8 @@ const AUDIO=(()=>{
    if(!buffer){fallback();return;}
    try{
     source=ctx.createBufferSource();source.buffer=buffer;
-    // 엔딩의 내 한마디만 약 +8 dB. 음성 설정과 기존 출력 리미터를 그대로 거친다.
-    if(text==='뭘 꼬라봐 씨발아'){voiceGain=ctx.createGain();voiceGain.gain.value=2.5;source.connect(voiceGain);voiceGain.connect(vbus);}
+    // 엔딩의 내 한마디만 기존 2.5배에서 5배로 증폭(+6 dB). 음성 설정과 기존 출력 리미터를 그대로 거친다.
+    if(text==='뭘 꼬라봐 씨발아'){voiceGain=ctx.createGain();voiceGain.gain.value=5;source.connect(voiceGain);voiceGain.connect(vbus);}
     else source.connect(vbus);
     source.onended=finish;source.start();started=true;
    }catch(_){finish();}
@@ -9695,8 +9694,8 @@ function trophyLayout(total,page=0){
  return {count,page:index,pages,start,n,heads};
 }
 const TROPHIES=(()=>{
- let sprites=null,blob=null,url='',serial=0,total=0,page=0,opened=false,wasPaused=false,returnFocus=null,sharing=false;
- const modal=$('#trophyModal'),img=$('#trophyImage'),status=$('#trophyStatus'),share=$('#trophyShare'),save=$('#trophySave');
+ let sprites=null,url='',serial=0,total=0,page=0,opened=false,wasPaused=false,returnFocus=null;
+ const modal=$('#trophyModal'),img=$('#trophyImage'),status=$('#trophyStatus'),save=$('#trophySave');
  const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  let headsLoading=null;
  function loadHeads(){
@@ -9728,9 +9727,9 @@ const TROPHIES=(()=>{
   if(layout.pages>1)g.fillText((layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages,540,1270);
   return c;
  }
- function release(){if(url)URL.revokeObjectURL(url);url='';blob=null;img.removeAttribute('src');save.removeAttribute('href');}
+ function release(){if(url)URL.revokeObjectURL(url);url='';img.removeAttribute('src');save.removeAttribute('href');}
  async function prepare(){
-  const ticket=++serial;release();share.disabled=true;save.hidden=true;img.hidden=true;status.textContent='전리품 사진 만드는 중…';
+  const ticket=++serial;release();save.hidden=true;img.hidden=true;status.textContent='전리품 사진 만드는 중…';
   const layout=trophyLayout(total,page);page=layout.page;
   $('#trophyPages').hidden=layout.pages===1;$('#trophyPrev').disabled=page===0;$('#trophyNext').disabled=page===layout.pages-1;
   $('#trophyPageLabel').textContent=(page+1)+' / '+layout.pages;
@@ -9741,9 +9740,9 @@ const TROPHIES=(()=>{
    await loadHeads();if(!opened||ticket!==serial)return;
    const canvas=drawCard(layout);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
    if(!opened||ticket!==serial)return;
-   blob=result;url=URL.createObjectURL(blob);img.src=url;img.hidden=false;
+   url=URL.createObjectURL(result);img.src=url;img.hidden=false;
    img.alt='족친 천지신명 '+total+'명. 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
-   save.href=url;save.download='족친천지신명_'+total+'명'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;share.disabled=false;status.textContent='';
+   save.href=url;save.download='족친천지신명_'+total+'명'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;status.textContent='';
   }catch(error){if(opened&&ticket===serial){status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Trophy image failed',error);}}
  }
  function open(){
@@ -9755,18 +9754,7 @@ const TROPHIES=(()=>{
   if(!opened)return;opened=false;serial++;release();modal.hidden=true;G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();
   if(focus&&returnFocus&&returnFocus.isConnected)returnFocus.focus({preventScroll:true});
  }
- async function send(){
-  if(!blob||sharing)return;
-  const ticket=serial;let file;
-  try{file=new File([blob],save.download,{type:'image/png'});}catch(_){}
-  let canShare=false;try{canShare=!!(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]}));}catch(_){}
-  if(!canShare){save.click();status.textContent='저장한 이미지를 공유해 주세요.';return;}
-  sharing=true;share.disabled=true;
-  try{await navigator.share({files:[file],title:'족친 천지신명',text:'족친 천지신명 '+total+'명\nhttps://aaffffffffff123-lang.github.io/sajudosa/'});}
-  catch(error){if(error.name!=='AbortError'&&opened&&ticket===serial)status.textContent='공유가 열리지 않았어요. 이미지 저장을 눌러 주세요.';}
-  finally{sharing=false;if(opened&&ticket===serial)share.disabled=false;}
- }
- $('#trophyBtn').addEventListener('click',open);$('#trophyClose').addEventListener('click',()=>close());share.addEventListener('click',send);
+ $('#trophyBtn').addEventListener('click',open);$('#trophyClose').addEventListener('click',()=>close());
  $('#trophyPrev').addEventListener('click',()=>{page--;prepare();});$('#trophyNext').addEventListener('click',()=>{page++;prepare();});
  modal.addEventListener('click',e=>{if(e.target===modal)close();});
  modal.addEventListener('keydown',e=>{

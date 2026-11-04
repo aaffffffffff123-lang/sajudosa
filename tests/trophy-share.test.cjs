@@ -23,13 +23,13 @@ test('every defeated boss has one trophy, including paginated totals',()=>{
  }
  assert.equal(h.trophyLayout(-9).n,0);assert.equal(h.trophyLayout(NaN).n,0);assert.equal(h.trophyLayout(121,999).page,1);
 });
-test('sharing stays unavailable before the completed reveal and before a final kill',async()=>{
+test('the record stays unavailable before the completed reveal and before a final kill',async()=>{
  const h=setup();h.$('#again').hidden=true;await h.open();assert(h.$('#trophyModal').hidden);assert.equal(h.calls.images,0);
  h.$('#again').hidden=false;h.G.ended=false;await h.open();assert(h.$('#trophyModal').hidden);
  h.G.ended=true;h.PROGRESS.defeated=0;await h.open();assert(h.$('#trophyModal').hidden);
 });
 test('the card contains the exact count; close releases its blob and restores focus/pause',async()=>{
- const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.deepEqual(h.calls.texts,['족친 천지신명','7명']);assert.equal(h.calls.images,6);assert(h.G.paused);assert(!h.$('#trophyShare').disabled);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'족친천지신명_7명.png');
+ const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.deepEqual(h.calls.texts,['족친 천지신명','7명']);assert.equal(h.calls.images,6);assert(h.G.paused);assert(!h.$('#trophySave').hidden);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'족친천지신명_7명.png');
  h.$('#trophyClose').click();assert(!h.G.paused);assert(h.$('#trophyModal').hidden);assert.deepEqual(h.calls.revoked,['blob:1']);assert.equal(h.document.activeElement,h.$('#trophyBtn'));
  await h.open();assert.equal(h.calls.images,6,'reuse the six decoded portraits');h.TROPHIES.close(false);
 });
@@ -37,13 +37,14 @@ test('closing during creation cannot reopen the panel or attach a stale image',a
  const h=setup();h.$('#trophyBtn').click();h.$('#trophyClose').click();await h.flush();assert(h.$('#trophyModal').hidden);assert.equal(h.$('#trophyImage').src,undefined);assert.equal(h.calls.images,0);
 });
 test('failed asset loading remains closable and can be retried',async()=>{
- const h=setup();h.calls.failImages=true;await h.open();assert.match(h.$('#trophyStatus').textContent,/만들지 못했어요/);assert(h.$('#trophyShare').disabled);
- h.$('#trophyClose').click();h.calls.failImages=false;await h.open();assert(!h.$('#trophyShare').disabled);h.TROPHIES.close(false);
+ const h=setup();h.calls.failImages=true;await h.open();assert.match(h.$('#trophyStatus').textContent,/만들지 못했어요/);assert(h.$('#trophySave').hidden);
+ h.$('#trophyClose').click();h.calls.failImages=false;await h.open();assert(!h.$('#trophySave').hidden);h.TROPHIES.close(false);
 });
-test('unsupported native sharing downloads the PNG; cancellation does not',async()=>{
- const h=setup();await h.open();await h.$('#trophyShare').click();assert.equal(h.calls.download,1);
- h.navigator.canShare=()=>true;let sent;h.navigator.share=async data=>{sent=data;throw Object.assign(new Error('cancel'),{name:'AbortError'})};h.$('#trophyStatus').textContent='';
- await h.$('#trophyShare').click();assert.equal(h.calls.download,1);assert.equal(sent.files[0].type,'image/png');assert.match(sent.text,/7명/);assert.equal(h.$('#trophyStatus').textContent,'');assert(!h.$('#trophyShare').disabled);h.TROPHIES.close(false);
+test('the record offers a PNG download without any native sharing action',async()=>{
+ const h=setup();h.navigator.canShare=h.navigator.share=()=>assert.fail('native sharing must not be used');
+ await h.open();const save=h.$('#trophySave');assert(!save.hidden);assert.match(save.href,/^blob:/);assert.equal(save.download,'족친천지신명_7명.png');
+ await save.click();assert.equal(h.calls.download,1);assert.equal(h.$('#trophyStatus').textContent,'');
+ assert.doesNotMatch(source,/trophyShare|navigator\.(?:canShare|share)|족친 기록 공유/);h.TROPHIES.close(false);
 });
 test('paging preserves the total, shows the remaining head, and revokes the previous image',async()=>{
  const h=setup(121);await h.open();assert.equal(h.calls.draws.length,120);assert(!h.$('#trophyPages').hidden);assert(h.$('#trophyPrev').disabled);
