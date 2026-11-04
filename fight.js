@@ -8478,7 +8478,10 @@ const VM=(()=>{
  /* ---- 상태 ---- */
  let gripPoint=null;
  function grip(x,y){gripPoint=x==null?null:{x,y};}
- const st={tool:'hand',acts:[],nextHand:'R',time:0,ammo:8,reload:0,recoil:0,slide:0,flash:0,aim:V3(0,0,-1),aimGoal:V3(0,0,-1),lastShot:-9,slash:null,bloody:{},swapT:1};
+ const st={tool:'hand',acts:[],nextHand:'R',time:0,ammo:8,reload:0,recoil:0,slide:0,flash:0,aim:V3(0,0,-1),aimGoal:V3(0,0,-1),lastShot:-9,slash:null,bloody:{},swapT:1,guardLift:1,guardRaising:false};
+ function lowerHands(){st.guardLift=0;st.guardRaising=false;st.acts.length=0;st.slash=null;}
+ function raiseHands(){st.guardRaising=true;}
+ function updateGuard(dt){if(st.guardRaising)st.guardLift=Math.min(1,st.guardLift+dt/.55);}
  const rest={R:{p:V3(),q:new THREE.Quaternion()},L:{p:V3(),q:new THREE.Quaternion()}};
  const KN_DIR=V3(-.5,.55,-1).normalize(),KN_UP=V3(.35,1,0);
  const BLADE=t=>t==='knife';
@@ -8579,9 +8582,13 @@ const VM=(()=>{
   // 총 반동·칼 긋기는 멈춤(히트스톱)과 상관없이 실제 시간으로 움직인다(쏘는 순간 바로 튀어야 하니까)
   rdt=rdt==null?dt:rdt;
   st.time+=dt;fireCool=Math.max(0,fireCool-rdt);st.swapT=Math.min(1,st.swapT+rdt*4);
+  updateGuard(rdt);
   clipOn=false;
   const sway=Math.sin(st.time*1.6)*.004,sway2=Math.cos(st.time*1.1)*.003,dropIn=(1-easeOut3(st.swapT))*.25;
   for(const k of ['R','L']){H[k].scale=SC;H[k].p.copy(rest[k].p);H[k].p.y+=sway*(k==='R'?1:-1)-dropIn;H[k].p.x+=sway2;H[k].q.copy(rest[k].q);H[k].anch.copy(ANCH[k]);}
+  // 인사를 마칠 때까지 손목을 화면 아래에 두고, 그 뒤 두 주먹을 함께 올린다.
+  const guardDrop=(1-smoother(st.guardLift))*TAN*.56*1.15;
+  for(const k of ['R','L'])H[k].p.y-=guardDrop;
   // 밟을 때 두 손은 조금 들어 균형을 잡고, 발이 팔 위로 치솟아 보이지 않게 한다.
   if(COMBAT.foot&&st.tool==='hand'){
    const t=COMBAT.foot.t+dt,w=smooth(t/.16)*(1-smooth((t-.34)/.23));
@@ -8676,7 +8683,7 @@ const VM=(()=>{
  }
  function reset(){st.acts.length=0;st.slash=null;st.nextHand='R';st.time=0;st.ammo=8;st.reload=0;st.bloody={};st.recoil=0;st.slide=0;st.flash=0;st.lastShot=-9;st.swapT=1;fireCool=0;st.aimGoal.set(0,0,-1);st.aim.set(0,0,-1);gun.userData.slide.position.z=0;gun.userData.flash.visible=false;gun.userData.light.intensity=0;for(const s of shells){s.life=0;s.m.visible=false;}}
  setTool('hand');
- return {root,st,grip,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,KREST,setGrab,shakeOff,handPos,anchorPos,at:(nx,ny,d)=>at(nx,ny,d),get busy(){return st.acts.length>0;}};
+ return {root,st,grip,setTool,setScale,attack,fire,reload,slashStart,slashMove,slashEnd,update,reset,computeRest,lowerHands,raiseHands,KREST,setGrab,shakeOff,handPos,anchorPos,at:(nx,ny,d)=>at(nx,ny,d),get busy(){return st.acts.length>0;}};
 })();
 onCamUnit=VM.setScale;VM.setScale(CAM.unit);
 const _fz=V3(0,0,1),_aimRest=V3(-.04,.12,-1).normalize();
@@ -9077,7 +9084,6 @@ function updateTalk(dt){
    b.voice.stop(); // A missing device voice must not leave the revival locked.
   }
   if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;
-  if(G.opening&&!TALK.q.length)finishEncounter();
   if(c.text===LINES.firstHit&&c.who==='player'&&!G.ended)G.musicStarted=true;
   return;
  }
@@ -9095,7 +9101,8 @@ function updateTalk(dt){
 }
 
 function startEncounter(){
- G.opening=true;G.inputLocked=true;clearPointers();
+ G.opening=true;G.encounterRaising=false;G.inputLocked=true;clearPointers();
+ VM.lowerHands();VM.update(0,false,0);
  $('#dock').hidden=true;$('#hint').classList.add('off');
  queueTalk([
   ['boss',LINES.opening,2,.15,1.2,LINES.opening],
@@ -9103,9 +9110,16 @@ function startEncounter(){
  ],true);
  if(G.E)G.E.idleT=6.5;
 }
+function updateEncounter(){
+ if(!G.opening||G.mode!=='fight'||G.ended||G.revival)return;
+ // 특정 말풍선의 종료 분기 한 번에 의존하지 않는다. 입력이 없어도 전환을 마친다.
+ if(TALK.cur||TALK.q.length)return;
+ if(!G.encounterRaising){G.encounterRaising=true;VM.raiseHands();}
+ if(VM.st.guardLift>=1)finishEncounter();
+}
 function finishEncounter(){
  if(!G.opening)return;
- G.opening=false;clearPointers();
+ G.opening=false;G.encounterRaising=false;clearPointers();
  if(G.mode!=='fight'||G.ended||G.revival)return;
  G.inputLocked=false;$('#dock').hidden=false;
  hint(HINTS[G.tool],4.5);focusCanvas();
@@ -9589,7 +9603,8 @@ function finishLimb(p){
 const ptrs=new Map();let bladePointer=null;
 function clearPointers(){combatCancel();for(const p of ptrs.values()){if(p.slashing)VM.slashEnd();try{if(canvas.hasPointerCapture&&canvas.hasPointerCapture(p.id))canvas.releasePointerCapture(p.id);}catch(_){}}ptrs.clear();bladePointer=null;}
 canvas.addEventListener('pointerdown',e=>{
- if(G.paused||G.inputLocked||(e.pointerType==='mouse'&&e.button!==0))return;AUDIO.unlock();
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ if(G.paused||G.inputLocked||G.opening){e.preventDefault();return;}AUDIO.unlock();
  if(G.mode!=='fight')return;
  const tool=G.tool;if(tool==='knife'&&bladePointer!=null)return;
  try{canvas.setPointerCapture(e.pointerId);}catch(_){}
@@ -9777,14 +9792,13 @@ function retortAndRestart(){
 $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAndRestart();});
 function startFightFromSubmit(){
  if(G.mode!=='submit'||G.time<G.submitReadyAt)return;
- if(G.mode!=='submit')return;
  AUDIO.unlock();AUDIO.stop();clearTalk();clearPointers();
  SUBMISSION.reset();CROWD.reset();
- G.mode='fight';G.inputLocked=false;G.opening=false;
+ G.mode='fight';G.submitReadyAt=0;G.inputLocked=true;G.opening=false;
  $('#fight').classList.remove('accepting-fate');
  canvas.setAttribute('aria-label','천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.');
  $('#dock').hidden=false;$('#submitDock').hidden=true;$('#fight .gauge').style.visibility='';
- VM.root.visible=true;VM.setTool(G.tool);
+ VM.reset();VM.root.visible=true;VM.setTool(G.tool);
  setCombatStage(true);if(G.E){G.E.endAct();combatInit(G.E,true);}
  startEncounter();
  fitView();setFrame('stand',true);focusCanvas();
@@ -9880,7 +9894,7 @@ function step(dt){
  BLOOD.update(sim);COINS.update(sim);CHUNKS.update(sim);VM.update(sim,G.hitstop>0,dt);
 combatEffects(sim);
 FX.update(dt);
-updateTalk(dt);BUB.step();
+updateTalk(dt);updateEncounter();BUB.step();
 AUDIO.updateMusic(G.mode==='fight'&&!!G.musicStarted&&!G.ended&&!document.hidden,!!G.inputLocked||talkBusy());
 BEYOND.update(dt);
 updateCamera(dt);SBLOOD.update(dt);updateLag(dt);

@@ -41,6 +41,16 @@ test('knife cancel never commits a pending cut; gun hold stops on release',()=>{
  h=inputs('knife');h.event('pointerdown');h.event('pointerup');assert.deepEqual(h.calls,['stab']);
  h=inputs('gun');h.event('pointerdown');h.G.time=.2;h.pollPointers();h.event('pointerup');h.G.time=1;h.pollPointers();assert.deepEqual(h.calls,['shot','shot']);
 });
+test('touches during the encounter cannot survive the unlock or block the next tap',()=>{
+ for(const tool of ['hand','knife','gun']){
+  const h=inputs(tool);h.G.inputLocked=true;h.G.opening=true;
+  h.event('pointerdown');h.G.time=8;h.pollPointers();assert.equal(h.ptrs.size,0);assert.deepEqual(h.calls,[]);
+  h.clearPointers();h.G.opening=false;h.G.inputLocked=false;
+  h.event('pointerup');h.event('lostpointercapture');assert.deepEqual(h.calls,[]);
+  h.event('pointerdown');h.event('pointerup');
+  assert.deepEqual(h.calls,[tool==='hand'?'jab':tool==='knife'?'stab':'shot']);
+ }
+});
 
 test('followers only spray after the wall, with a bounded pool during sustained hits',()=>{
  const scene=new THREE.Scene(),root=new THREE.Group(),people=Array.from({length:6},(_,i)=>{const root=new THREE.Group(),head=new THREE.Group();root.position.set(i-3,0,0);head.position.y=1;root.add(head);scene.add(root);return {root,head}});

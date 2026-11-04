@@ -7,17 +7,21 @@ function setup({voice=false}={}){
  const elements=new Map(),shown=[],calls={clears:0,focus:0,omen:0,beyond:0,again:0};
  const $=s=>{if(!elements.has(s))elements.set(s,{hidden:false,style:{},classList:{add(){},remove(){}}});return elements.get(s)};
  const BUB={cut(b){b.voice?.stop()},say(anchor,text,dur,options){const b={anchor,text,until:G.time+dur,voice:voice?{busy:true,started:true,stop(){this.busy=false}}:null};shown.push(b);return b}};
- const scope={G,$,BUB,PROGRESS:{add(){calls.defeated=(calls.defeated||0)+1}},updateDefeatCount(){},AUDIO:{stopMusic(){}},VOICE:{player:{},boss:{}},HINTS:{hand:'tap'},typeTime:()=>.2,V3:()=>({}),hint(){},focusCanvas(){calls.focus++},clearPointers(){calls.clears++},BEYOND:{DUR:10.4,prepare:()=>true,omen(){calls.omen++},begin(){calls.beyond++}},showAgain(){calls.again++}};
+ const st={guardLift:1,guardRaising:false,acts:[],slash:null};
+ const VM=vm.runInNewContext(slice(' function lowerHands(){',' const rest=')+';({st,lowerHands,raiseHands,updateGuard,update(){}})',{st});
+ const scope={G,$,BUB,VM,PROGRESS:{add(){calls.defeated=(calls.defeated||0)+1}},updateDefeatCount(){},AUDIO:{stopMusic(){}},VOICE:{player:{},boss:{}},HINTS:{hand:'tap'},typeTime:()=>.2,V3:()=>({}),hint(){},focusCanvas(){calls.focus++},clearPointers(){calls.clears++},BEYOND:{DUR:10.4,prepare:()=>true,omen(){calls.omen++},begin(){calls.beyond++}},showAgain(){calls.again++}};
  const script=slice('const LINES={','// 되살림 컷씬:')+slice('const TALK=','/* ---- 추임새:')+slice('function onDead(){','/* ---- 게이지 ---- */')+slice('function updateStory(){','function damageBar(');
- const api=vm.runInNewContext(script+';({startEncounter,updateTalk,talkBusy,clearTalk,firstStrikeLine,onDead,updateStory,TALK,LINES})',scope);
- function advance(seconds){for(let i=0;i<seconds*60;i++){G.time+=1/60;api.updateStory();api.updateTalk(1/60)}}
- return {...api,G,shown,calls,$,advance};
+ const api=vm.runInNewContext(script+';({startEncounter,updateEncounter,updateTalk,talkBusy,clearTalk,firstStrikeLine,onDead,updateStory,TALK,LINES})',scope);
+ function advance(seconds){for(let i=0;i<seconds*60;i++){G.time+=1/60;api.updateStory();VM.updateGuard(1/60);api.updateTalk(1/60);api.updateEncounter()}}
+ return {...api,G,VM,shown,calls,$,advance};
 }
 test('opening keeps controls locked through both lines, then unlocks once',()=>{
  const h=setup();h.startEncounter();assert(h.G.inputLocked);assert(h.$('#dock').hidden);
  h.advance(.5);assert.equal(h.shown[0].text,'넌 뭐야?');assert(h.G.inputLocked);
  h.advance(2.3);assert.equal(h.shown[1].text,'천지신명이시여...');assert(h.G.inputLocked);
- h.advance(2);assert(!h.G.inputLocked);assert(!h.$('#dock').hidden);assert.equal(h.calls.focus,1);
+ h.advance(1.6);assert(h.G.inputLocked);assert.equal(h.VM.st.guardLift,0,'hands stay down during greeting');
+ h.advance(.4);assert(h.G.inputLocked);assert(h.VM.st.guardLift>0&&h.VM.st.guardLift<1,'hands rise after greeting');
+ h.advance(.5);assert(!h.G.inputLocked);assert.equal(h.VM.st.guardLift,1);assert(!h.$('#dock').hidden);assert.equal(h.calls.focus,1);
  h.advance(2);assert.equal(h.calls.focus,1);
  h.firstStrikeLine();h.advance(.1);assert.equal(h.shown.at(-1).text,'죽어!');assert(!h.G.musicStarted);h.advance(1.5);assert(h.G.musicStarted);
 });
@@ -25,12 +29,18 @@ test('a playing greeting stays locked; unavailable speech eventually releases th
  const h=setup({voice:true});h.startEncounter();h.advance(.5);h.shown[0].voice.stop();h.advance(2.3);
  const greeting=h.shown[1];assert.equal(greeting.text,'천지신명이시여...');
  h.advance(2);assert(h.G.inputLocked,'audio still playing');
- h.advance(2.5);assert(!h.G.inputLocked);assert(!greeting.voice.busy);
+ h.advance(2.5);assert(!greeting.voice.busy);h.advance(.6);assert(!h.G.inputLocked);
 });
 test('restart cancels old audio and starts the locked opening from the first line',()=>{
  const h=setup({voice:true});h.startEncounter();h.advance(.5);const old=h.shown[0];
  h.startEncounter();assert(!old.voice.busy);assert(h.G.inputLocked);h.advance(.5);
  assert.equal(h.shown.at(-1).text,'넌 뭐야?');assert.equal(h.calls.focus,0);
+});
+test('an empty dialogue queue cannot strand the encounter input lock',()=>{
+ const h=setup();h.startEncounter();h.advance(.5);h.clearTalk();
+ h.advance(.3);assert(h.G.inputLocked);assert(h.VM.st.guardLift>0&&h.VM.st.guardLift<1);
+ h.advance(.3);assert(!h.G.inputLocked);assert.equal(h.calls.focus,1);
+ h.startEncounter();assert.equal(h.VM.st.guardLift,0);h.advance(.5);assert.equal(h.VM.st.guardLift,0);
 });
 test('final victory is the player line, once, and completes before the sky reveal',()=>{
  const h=setup({voice:true});h.onDead();h.onDead();assert(h.G.ended);assert(h.G.inputLocked);assert.equal(h.calls.defeated,1);
