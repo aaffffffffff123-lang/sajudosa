@@ -3067,7 +3067,7 @@ const V5={
   {key:'애매하게',fate:'당신은 앞날을 약속할 형편이 안 돼서 맺어지지 못하고 흐지부지 끝나는 팔자입니다.',short:'형편이 안 돼 흐지부지 끝나는'}
  ],
  loveShort:'자리가 맞는 사람만 남는',
- // 여자이고 표현·결과(식상) 기운이 셀 때: 자식 기운이 직장 기운을 치는 구조
+ // 여자이고 확인된 글자의 식상이 셀 때 쓰는 풍자. 생시를 몰라도 판정하며 경력 단절 자체를 명리의 확정 결론으로 보지는 않는다.
  careerCut:'당신은 아이를 낳으면 경력이 끊기고 돌아갈 자리는 남아 있지 않은 팔자입니다.',
  // 자식의 자리(태어난 시간 기둥)의 재물 기운
  child:{
@@ -3240,10 +3240,10 @@ function v5Reading(R,now){
    doms.push({id:'body',title:'몸',head:o.head,fates:[hit?hit[1]:V5.bodyFallback],rule:st==='weak'?V5.bodyRule.weak:V5.bodyRule.strong}); }
  { const o=obs('love'),fates=[];
    if(love)fates.push(love.house?(born>=1985?love.fate:love.alt):love.fate);
-   if(child&&!male&&hi('식상'))fates.push(V5.careerCut);
+   if(!male&&hi('식상'))fates.push(V5.careerCut);
    else if(child)fates.push(child==='shown'?V5.child.shown:ok==='absent'?V5.child.absentPoor:V5.child.absent);
    else fates.push(age>=35?V5.parents.old:V5.parents.young);
-   const pr=child&&!male&&hi('식상')?'career':love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':'base';
+   const pr=!male&&hi('식상')?'career':love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':'base';
    doms.push({id:'home',title:'집안과 짝',head:o.head,fates:unique(fates).slice(0,2),rule:V5.pairRule[pr]}); }
  { const k=offK,fates=[k==='low'?V5.office.vote:k==='mid'?V5.office.used:V5.office.ruled];
    if(a.interactions.some(x=>['형','자형'].includes(x.kind)))fates.push(V5.office.law);

@@ -83,10 +83,10 @@ test('officer strength is one value shared by the element line, work, office and
 test('life-stage lines appear only when the chart and the person allow them',()=>{
  for(const {r,v,y,male,unknown} of ALL){
   const age=THIS_YEAR-y,home=dom(v,'home').fates.join(' '),office=dom(v,'office').fates.join(' ');
-  assert.equal(/경력이 끊기/.test(home),!unknown&&!male&&hi(r,'식상'));
+  assert.equal(/경력이 끊기/.test(home),!male&&hi(r,'식상'));
   assert.equal(/스물에 두 해를 나라에/.test(office),male&&age>=22&&r.fate.officer.present);
   assert.equal(/관재수/.test(office),r.a.interactions.some(x=>['형','자형'].includes(x.kind)));
-  if(unknown)assert(!/아이|자식|자녀/.test(home+' '+dom(v,'home').rule));
+  if(unknown)assert(!/아이의 자리를 사 주느라|아이에게 넘길 몫|자식에게 그대로/.test(home));
   if(/집값이 다 오른 뒤에 태어나/.test(home))assert(y>=1985);
  }
 });
@@ -106,11 +106,15 @@ test('element absence includes hidden stems and uses the same facts as the perce
  assert.match(examples[2].v.elements[0],/흙 기운은 아래 글자 속에만.*물 기운이 없습니다/);
 });
 
-test('unknown time cannot leak child predictions through fallback family or future paragraphs',()=>{
+test('unknown time omits hour-pillar claims while retaining family copy supported by known pillars',()=>{
  for(const {v} of [make(1990,1,1,{unknown:true}),make(2001,6,21,{unknown:true,male:false}),...ALL.filter(x=>x.unknown)]){
   const home=dom(v,'home'),future=v.luck.cycles.map(x=>x.stage).join(' ');
-  assert(!/아이|자식|자녀/.test(home.fates.join(' ')+' '+home.rule+' '+future));
+  assert(!/아이의 자리를 사 주느라|아이에게 넘길 몫|자식에게 그대로|당신의 말년은 아이의 자리에/.test(home.fates.join(' ')+' '+future));
  }
+ const example=make(2001,6,21,{unknown:true,male:false});
+ assert(hi(example.r,'식상'));
+ assert.match(dom(example.v,'home').fates.join(' '),/아이를 낳으면 경력이 끊기/);
+ assert.match(dom(example.v,'home').rule,/아이를 키우는 자리와 일하는 자리/);
 });
 
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
