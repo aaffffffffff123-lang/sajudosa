@@ -66,8 +66,8 @@ test('the opening follows the natal pattern, keeps body details conditional, and
  const scenes=new Map(),balanced=ALL.filter(({r})=>r.a.strength.label==='중화');
  for(const {r,v} of ALL){
   const {god,exposed}=r.a.structure,key=god+':'+exposed;
-  assert.equal(v.portrait.length,2);
-  assert(v.portrait.every(p=>typeof p==='string'&&p.length>12&&!/팔자|복은 집에서|undefined/.test(p)));
+  assert.equal(v.portrait.length,3);
+  assert(v.portrait.every(p=>typeof p==='string'&&p.length>=65&&!/팔자|복은 집에서|undefined/.test(p)));
   if(scenes.has(key))assert.equal(v.portrait[0],scenes.get(key));
   scenes.set(key,v.portrait[0]);
  }
@@ -75,8 +75,9 @@ test('the opening follows the natal pattern, keeps body details conditional, and
  assert(balanced.length>0);
  for(const {v} of balanced)assert.doesNotMatch(v.portrait[1],/푸근한 편|턱선이|키순으로|한쪽 다리|눈썹이|호리호리/);
  const child=make(2021,3,12,{unknown:true}).v;
- assert.equal(child.portrait.length,1);
- assert.match(child.portrait[0],/아이입니다/);
+ assert.equal(child.portrait.length,3);
+ assert(child.portrait.every(p=>p.length>=65));
+ assert.doesNotMatch(child.portrait.join(' '),/어릴 때|아이였습니다|했었습니다/);
  assert.deepEqual(make(1990,1,1,{unknown:true,male:false,name:'가명'}).v.portrait,make(1990,1,1,{unknown:true}).v.portrait);
 });
 
