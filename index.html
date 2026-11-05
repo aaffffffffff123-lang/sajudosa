@@ -3647,7 +3647,7 @@ function loadOne(srcs,ok,done,i){
 }
 function preloadFight(){
  if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';fateKick();
- const bust=/^https?:/.test(location.protocol)?'?v=20261105-paper-entry-1':'';
+ const bust=/^https?:/.test(location.protocol)?'?v=20261105-trophy-font-1':'';
  loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
   if(!ok){FIGHT.state='failed';fateKick();return;}
   loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{

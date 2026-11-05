@@ -9960,14 +9960,34 @@ const TROPHIES=(()=>{
   }))).then(images=>{sprites=images;return images;}).finally(()=>{headsLoading=null;});
   return headsLoading;
  }
- function drawCard(layout){
+ function cardText(layout){
+  return {title:'족친 천지신명',count:layout.count.toLocaleString('ko-KR')+'명',footer:layout.pages>1?(layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages:''};
+ }
+ async function loadCardFonts(text){
+  const fallback={title:'700 76px sans-serif',count:'700 96px sans-serif',footer:'20px sans-serif'};
+  if(!document.fonts||!document.fonts.load)return fallback;
+  // Korean webfonts are split into Unicode subsets. Load every character before baking the PNG.
+  // If loading fails or times out, use one system face for the whole card, never a partial webfont.
+  let timer;
+  try{
+   const requests=[['76px "Black Han Sans"',text.title+' '+text.count]];
+   if(text.footer)requests.push(['20px "IBM Plex Sans KR"',text.footer]);
+   const ready=Promise.all(requests.map(async ([font,copy])=>{
+    const faces=await document.fonts.load(font,copy);
+    return faces.length>0&&document.fonts.check(font,copy);
+   })).then(results=>results.every(Boolean),()=>false);
+   const loaded=await Promise.race([ready,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),5000);})]);
+   return loaded?{title:'76px "Black Han Sans",sans-serif',count:'96px "Black Han Sans",sans-serif',footer:'20px "IBM Plex Sans KR",sans-serif'}:fallback;
+  }catch(_){return fallback;}finally{clearTimeout(timer);}
+ }
+ function drawCard(layout,text,fonts){
   const heads=sprites,c=document.createElement('canvas');c.width=1080;c.height=1350;const g=c.getContext('2d');
   const bg=g.createLinearGradient(0,0,1080,1350);bg.addColorStop(0,'#eee3c8');bg.addColorStop(.55,'#d5c5a1');bg.addColorStop(1,'#b8a483');g.fillStyle=bg;g.fillRect(0,0,1080,1350);
   // Dry paper grain, deliberately deterministic so reopening does not rearrange the trophy.
   let seed=7419;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   for(let i=0;i<12500;i++){g.fillStyle=i%2?'rgba(70,49,27,.045)':'rgba(255,251,222,.16)';g.fillRect(random()*1080,random()*1350,1+random()*3,1);}
   g.strokeStyle='rgba(76,52,29,.35)';g.lineWidth=2;g.strokeRect(28,28,1024,1294);g.strokeStyle='rgba(76,52,29,.14)';g.strokeRect(38,38,1004,1274);
-  g.textAlign='center';g.fillStyle='#251d16';g.font='76px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText('족친 천지신명',540,205);
+  g.textAlign='center';g.fillStyle='#251d16';g.font=fonts.title;g.fillText(text.title,540,205);
   g.fillStyle='rgba(133,42,29,.065)';g.beginPath();g.arc(540,690,335,0,TAU);g.fill();
   const ground=g.createRadialGradient(540,1002,15,540,1002,465);ground.addColorStop(0,'rgba(48,32,17,.35)');ground.addColorStop(1,'rgba(48,32,17,0)');g.save();g.translate(0,795);g.scale(1,.22);g.fillStyle=ground;g.fillRect(40,400,1000,1200);g.restore();
   for(const h of layout.heads){
@@ -9977,9 +9997,9 @@ const TROPHIES=(()=>{
    g.drawImage(heads[h.ordinal%heads.length],-h.size/2,-h.size/2,h.size,h.size);g.restore();
   }
   g.strokeStyle='rgba(83,54,29,.3)';g.lineWidth=1;g.beginPath();g.moveTo(130,1085);g.lineTo(950,1085);g.stroke();
-  g.save();g.translate(540,1205);g.rotate(-.035);g.fillStyle='#a43225';g.font='96px "Black Han Sans","Noto Sans KR",sans-serif';g.fillText(layout.count.toLocaleString('ko-KR')+'명',0,0);g.restore();
-  g.fillStyle='#6e5841';g.font='20px "IBM Plex Sans KR",sans-serif';
-  if(layout.pages>1)g.fillText((layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages,540,1270);
+  g.save();g.translate(540,1205);g.rotate(-.035);g.fillStyle='#a43225';g.font=fonts.count;g.fillText(text.count,0,0);g.restore();
+  g.fillStyle='#6e5841';g.font=fonts.footer;
+  if(text.footer)g.fillText(text.footer,540,1270);
   return c;
  }
  function release(){if(url)URL.revokeObjectURL(url);url='';img.removeAttribute('src');save.removeAttribute('href');}
@@ -9990,10 +10010,9 @@ const TROPHIES=(()=>{
   $('#trophyPageLabel').textContent=(page+1)+' / '+layout.pages;
   try{
    await nextFrame();if(!opened||ticket!==serial)return;
-   if(document.fonts){let timer;try{await Promise.race([document.fonts.load('122px "Black Han Sans"'),new Promise(resolve=>{timer=setTimeout(resolve,1200);})]);}finally{clearTimeout(timer);}}
+   const text=cardText(layout),[fonts]=await Promise.all([loadCardFonts(text),loadHeads()]);
    if(!opened||ticket!==serial)return;
-   await loadHeads();if(!opened||ticket!==serial)return;
-   const canvas=drawCard(layout);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
+   const canvas=drawCard(layout,text,fonts);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
    if(!opened||ticket!==serial)return;
    url=URL.createObjectURL(result);img.src=url;img.hidden=false;
    img.alt='족친 천지신명 '+total+'명. 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
