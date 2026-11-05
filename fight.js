@@ -105,7 +105,7 @@ const FIGHT_CSS = `
 #fight .ftop{transition:opacity .4s ease-out}
 /* 순응 장면 안내: 종이를 꾹 눌러 구기면 걸어 나간다 */
 #fight #crumpleHint{position:absolute;left:50%;bottom:calc(16px + var(--safe-b));z-index:7;transform:translateX(-50%);max-width:calc(100vw - 24px);padding:9px 15px;border-radius:999px;background:rgba(12,20,21,.86);border:1px solid #6c624b;color:#efe5cb;font-size:13.5px;font-weight:600;line-height:1.35;text-align:center;white-space:nowrap;pointer-events:none;transition:opacity .45s ease-out,transform .45s ease-out}
-#fight #crumpleHint.off{opacity:0;transform:translate(-50%,10px)}
+#fight #crumpleHint.off{visibility:hidden;opacity:0;transform:translate(-50%,10px)}
 @media(prefers-reduced-motion:reduce){#fight #crumpleHint{transition:none}}
 #fight .modal{position:absolute;inset:0;z-index:20;background:rgba(36,28,58,.48);display:flex;align-items:center;justify-content:center;padding:16px}
 #fight .msheet{width:min(100%,400px);max-height:calc(100% - 24px);overflow:auto;background:#fff;border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.28);padding:18px 18px 16px}
@@ -2641,13 +2641,13 @@ const LINES={
  // 설교 중에 종이를 구기기 시작하면(설교를 끊으면) 천지신명이 하는 말, 손을 놓고 물러서면 하는 말
  interrupt:'윗사람한테 대드는 사주는 화가 백 가지라 하였느니라.',
  yield:'이제야 제 팔자를 아는구나.',
- /* 설교를 끊는 순간 돌아본 군중의 수군거림. 판마다 두 쌍만 고른다: 한 사람이 출신으로 깔보면 옆사람이 사주로 맞장구친다.
+ /* 설교를 끊는 순간 돌아본 군중의 수군거림. 걸을 때 한 쌍만 고른다: 한 사람이 출신으로 깔보면 옆사람이 사주로 맞장구친다.
   * mark가 있는 쌍은 그 사람 사주에 정말 그게 있을 때(풀이 화면이 넘겨준 paper.marks) 맞장구가 종이를 보고 하는 말(seen)로 바뀐다 */
  whisper:[
   {say:'고졸인가?',reply:'사주에 공부 기운이 없잖아',mark:'noStudy',seen:'종이 봐. 공부 기운이 없네'},
   {say:'가정교육을 안 받았나?',reply:'부모복 없는 사주라 보고 배운 게 없지'},
   {say:'임대 사나?',reply:'돈 기운 없는 사주라 가난하게 컸겠지',mark:'noMoney',seen:'종이 봐. 돈 기운이 없네'},
-  {say:'중소 다니겠지',reply:'역마살 껴서 한 군데 붙어 있지도 못해',mark:'yeokma',seen:'종이 봐. 역마살이 꼈네'}
+  {say:'저런 것까지 일일이 가르쳐야 돼?',reply:'신명님도 참 피곤하시겠다.'}
  ],
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
@@ -3705,7 +3705,7 @@ const SUBMISSION=(()=>{
  }
  function resetCrowd(){
   PART.on=false;stareReset();if(!crowd||!crowd.userData.place)return;
-  for(const list of crowd.userData.place)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;v.look=0;v.yaw=v.turn;v.goal=null;v.busy=0;}
+  for(const list of crowd.userData.place)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;v.look=0;v.yaw=v.turn;v.goal=null;}
   writeCrowd();
  }
  function part(endZ,endFov){
@@ -3716,7 +3716,7 @@ const SUBMISSION=(()=>{
    v.tx=ax<reach?(v.x<0||(v.x===0&&v.z%2<1)?-1:1)*(need+ax*(reach-need)/reach):v.x;
    v.delay=clamp((6.9-v.z)*.1,0,.7)+rnd(0,.1);v.dur=rnd(.5,.68);
   }
-  PART.on=true;PART.t0=G.time;AUDIO.crowdShuffle();
+  PART.on=true;PART.t0=G.time;planWhispers();AUDIO.crowdShuffle();
  }
  function updatePart(){
   const turning=updateStare();
@@ -3732,10 +3732,10 @@ const SUBMISSION=(()=>{
  /* ---- 설교를 끊으면 돌아보는 군중 ----
   * 종이를 구기기 시작하면 내 옆사람부터 앞줄까지 물결처럼 몸을 돌려 나를 본다(얼굴은 흘겨보는 얼굴로 구워 두었다).
   * 걸어가는 동안에도 얼굴이 나를 따라 돌아가고, 손을 놓고 물러서면 천지신명이 「이제야 제 팔자를 아는구나」 할 때 다시 돌아선다.
-  * 그사이 두 쌍이 수군거린다: 한 사람이 출신으로 깔보면 옆사람이 사주로 맞장구친다(LINES.whisper) */
- const STARE={on:false,t0:0,talk:[],used:new Set(),pick:[],anchors:[],ai:0};
+  * 걸어가는 동안 한 쌍이 수군거린다: 한 사람이 출신으로 깔보면 옆사람이 사주로 맞장구친다(LINES.whisper) */
+ const STARE={on:false,t0:0,talk:[],used:new Set(),anchors:[]};
  const HEAD_Y=.763; // 사람 기준 단위로 발에서 머리 가운데까지(몸 .215 + 목 위 .548)
- function stareReset(){STARE.on=false;STARE.talk.length=0;STARE.pick.length=0;}
+ function stareReset(){STARE.on=false;STARE.talk.length=0;}
  function forPlaces(fn){if(crowd&&crowd.userData.place)for(const list of crowd.userData.place)for(const v of list)fn(v);}
  // 몸을 돌리는 각: 가장 짧은 쪽으로 돌되, 거의 정반대일 때는 정해 둔 쪽(side)으로 돈다(걸어가는 동안 방향이 뒤집히지 않게)
  function turnBy(base,goal,side){let d=goal-base;d=((d+PI)%TAU+TAU)%TAU-PI;if(Math.abs(d)>PI-.3)d=side*Math.abs(d);return d;}
@@ -3749,65 +3749,52 @@ const SUBMISSION=(()=>{
    v.ld=on?.02+d*.085+rnd(0,.12):.45+rnd(0,.5);v.ldur=on?rnd(.36,.52):rnd(.55,.8);
    if(on||v.side==null)v.side=Math.abs(v.x-cx)<.15?(Math.random()<.5?-1:1):Math.sign(v.x-cx);
   });
-  if(on){AUDIO.crowdTurn();planWhispers();}
+  if(on)AUDIO.crowdTurn();
   else{STARE.talk.length=0;AUDIO.crowdShuffle(.5);}
  }
- // 판마다 두 쌍. 그 사람 사주에 정말 있는 쌍이 있으면 하나는 그걸로(맞장구가 종이를 보고 하는 말로 바뀐다)
+ // Choose the two faces for where the reader will be at the END of each line.
+ // The speakers leave the aisle in turn; everyone else parts as soon as we start walking.
+ function walkSpeaker(side,until,replyTo){
+  const e=walkProgress(until/WALK.dur),cx=lerp(WALK.p0.x,WALK.p1.x,e),cz=lerp(WALK.p0.z,WALK.p1.z,e);
+  const aimX=lerp(WALK.l0.x,WALK.l1.x,e),aimZ=lerp(WALK.l0.z,WALK.l1.z,e);
+  const tanH=Math.tan(lerp(WALK.f0,WALK.f1,e)*PI/360)*camera.aspect;
+  let best=null,bestScore=Infinity;
+  forPlaces(v=>{
+   const depth=cz-v.z;
+   if(depth<=.15||side*v.x<=0||(replyTo&&v.z<=replyTo.z+.3))return;
+   const axis=cx+(aimX-cx)*depth/(cz-aimZ),screenX=side*(v.x-axis)/(depth*tanH);
+   const row=replyTo?Math.abs(v.z-replyTo.z-1.05):Math.abs(depth-1.55);
+   const score=Math.abs(screenX-.62)+row*.32+Math.max(0,Math.abs(screenX)-.85)*8;
+   if(score<bestScore){bestScore=score;best=v;}
+  });
+  return best;
+ }
  function planWhispers(){
-  const marks=(lastResult&&lastResult.paper&&lastResult.paper.marks)||{};
-  let pool=LINES.whisper.filter(w=>!STARE.used.has(w));if(pool.length<2){STARE.used.clear();pool=LINES.whisper.slice();}
-  const real=pool.filter(w=>w.mark&&marks[w.mark]),pickOne=a=>a[Math.floor(Math.random()*a.length)];
-  const a=real.length?pickOne(real):pickOne(pool),b=pickOne(pool.filter(w=>w!==a));
-  const order=Math.random()<.5?[a,b]:[b,a],side=Math.random()<.5?-1:1;
-  STARE.talk.length=0;STARE.pick.length=0;
-  order.forEach((w,k)=>{
-   STARE.used.add(w);const t=STARE.t0+.5+k*1.05,s=k?-side:side;
-   STARE.talk.push({t,k,side:s,text:w.say});
-   STARE.talk.push({t:t+.6,k,side:s,text:w.mark&&marks[w.mark]?w.seen:w.reply,reply:true});
-  });
+  const marks=lastResult?.paper?.marks||{};
+  if(STARE.used.size===LINES.whisper.length)STARE.used.clear();
+  const pool=LINES.whisper.filter(w=>!STARE.used.has(w));
+  const marked=pool.filter(w=>w.mark&&marks[w.mark]);
+  const pair=pick(pool.concat(marked)),reply=pair.mark&&marks[pair.mark]?pair.seen:pair.reply;
+  const side=Math.random()<.5?-1:1;
+  // Allow for the slowest of the six voices, plus time to read the completed line.
+  const readSpan=text=>Math.max(1.5,typeTime(text,1.13)+.68);
+  const firstAt=.36,secondAt=firstAt+readSpan(pair.say)+.12,end=secondAt+readSpan(reply);
+  const responder=walkSpeaker(side,end,null),speaker=walkSpeaker(side,secondAt,responder);
+  if(!speaker||!responder)return;
+  STARE.used.add(pair);
+  speaker.delay=secondAt;responder.delay=end;
+  STARE.talk=[{at:firstAt,who:speaker,text:pair.say,slot:0},{at:secondAt,who:responder,text:reply,slot:1}];
  }
- // 말할 사람: 카메라 앞 1.1~3.4m, 정해진 쪽에서 머리가 화면 안에 보이는 사람. 가운데(천지신명 말풍선 밑)보다 가장자리 쪽을 고른다.
- // 맞장구는 그 바로 옆사람. 화면 폭(세로·가로)에 따라 '가장자리 쪽'이 몇 m인지가 달라서 카메라 화각으로 잰다
- function camAxes(){
-  const cx=CAM.pos.x,cz=CAM.pos.z,lx=CAM.look.x-cx,lz=CAM.look.z-cz,l=Math.hypot(lx,lz)||1;
-  return {cx,cz,fx:lx/l,fz:lz/l,tn:Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.aspect};
- }
- function rel(A,v){const rx=v.cx-A.cx,rz=v.z-A.cz;return {dep:rx*A.fx+rz*A.fz,lat:-rx*A.fz+rz*A.fx};}
- function pickSpeaker(side){
-  const A=camAxes();let best=null,bs=1e9,any=null,as=1e9;
-  forPlaces(v=>{
-   if(v.busy>G.time)return;
-   const {dep,lat}=rel(A,v);
-   if(dep<1.1||dep>3.4||Math.sign(lat)!==side)return;
-   const half=dep*A.tn,al=Math.abs(lat),s=Math.abs(dep-1.9)*.6+Math.abs(al-half*.6)/Math.max(half,.2)*1.2+Math.random()*.2;
-   if(al<=half*.9){if(s<bs){bs=s;best=v;}}else if(s<as){as=s;any=v;}
-  });
-  return best||any;
- }
- function pickNeighbor(of,side){
-  if(!of)return pickSpeaker(side);
-  const A=camAxes(),od=rel(A,of).dep;let best=null,bs=1e9;
-  forPlaces(v=>{
-   if(v===of||v.busy>G.time)return;
-   // 맞장구치는 옆사람도 화면 안, 가운데 띠(천지신명 말풍선 밑)는 빼고
-   const {dep,lat}=rel(A,v),half=dep*A.tn,al=Math.abs(lat);
-   if(dep<.9||Math.abs(dep-od)>.9||Math.sign(lat)!==side||al>half*.95||al<half*.3)return;
-   const d=Math.hypot(v.cx-of.cx,v.z-of.z);if(d>.25&&d<bs){bs=d;best=v;}
-  });
-  return best||pickSpeaker(side);
- }
- function anchorOf(v){
-  let a=STARE.anchors[STARE.ai%4];if(!a){a=new THREE.Object3D();STARE.anchors[STARE.ai%4]=a;}STARE.ai++;
+ function anchorOf(v,slot){
+  let a=STARE.anchors[slot];if(!a){a=new THREE.Object3D();STARE.anchors[slot]=a;}
   if(a.parent!==crowd)crowd.add(a);a.userData.v=v;placeAnchor(a);return a;
  }
  function placeAnchor(a){const v=a.userData.v;if(v)a.position.set(v.cx,HEAD_Y*v.scale+(v.cy||0),v.z);}
  function updateWhispers(){
-  while(STARE.on&&STARE.talk.length&&G.time>=STARE.talk[0].t){
-   const w=STARE.talk.shift(),who=w.reply?pickNeighbor(STARE.pick[w.k],w.side):pickSpeaker(w.side);
-   if(!who)continue;STARE.pick[w.k]=who;
-   const A=camAxes(),lat=-(who.cx-A.cx)*A.fz+(who.z-A.cz)*A.fx,V=VOICE.crowd[who.pi%VOICE.crowd.length];
-   const b=BUB.say({obj:anchorOf(who),off:ZERO3,top:.13*who.scale,cam:'main'},w.text,0,{voice:{formant:V.formant,speed:V.speed*1.18},whisper:true,size:.86,read:[.5,.03],pan:clamp(lat*.6,-.8,.8)});
-   who.busy=b.until+.3;
+  while(WALK.on&&STARE.talk.length&&WALK.t>=STARE.talk[0].at){
+   const {who,text,slot}=STARE.talk.shift(),v=VOICE.crowd[who.pi%VOICE.crowd.length];
+   BUB.say({obj:anchorOf(who,slot),off:ZERO3,top:.13*who.scale,cam:'main'},text,0,
+    {voice:{formant:v.formant,speed:v.speed*1.18},whisper:true,size:.95,read:[.68,0],pan:clamp(who.x*.6,-.8,.8)});
   }
  }
  // 매 프레임: 몸 돌리기·얼굴로 나를 따라보기·말할 자리 따라가기. 움직인 게 있으면 true
@@ -9656,6 +9643,9 @@ function updateTalk(dt){
    b.voice.stop(); // A missing device voice must not leave the revival locked.
   }
   if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;
+  if(G.mode==='submit'&&c.text===LINES.submit[0][0]&&!INTRO.sermonHeard){
+   INTRO.sermonHeard=true;$('#crumpleHint').classList.remove('off');
+  }
   if(c.text===LINES.firstHit&&c.who==='player'&&!G.ended)G.musicStarted=true;
   return;
  }
@@ -10591,15 +10581,15 @@ $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAnd
  * 가만히 있으면 추종자들 사이에서 설교를 듣는 순응이고, 종이를 꾹 눌러 구기면 떨어뜨리고
  * 앞사람들이 비켜선 길로 옥좌 앞까지 곧장 걸어가 지금과 같은 「넌 뭐야?」로 족치기가 시작된다.
  * INTRO.stage: off(쓰지 않음) · behind(풀이 화면 밑에 깔려 있음) · arrived(종이를 들고 서 있음) */
-const INTRO={stage:'off',pull:0,hintAt:0,previewDirty:true};
+const INTRO={stage:'off',pull:0,hintAt:0,sermonHeard:false,previewDirty:true};
 const CRUMPLE={c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0};
 const CRUMPLE_SECONDS=.8;// 끝까지 구기는 데 꾹 누르고 있어야 하는 시간
 // 설교를 끊음(spoke: 꾸짖음까지 나옴) · 물러섬(back: 「이제야 제 팔자를 아는구나」가 나오면 군중이 돌아선다)
 const INTERRUPT={spoke:false,back:false};
-const WALK={on:false,t:0,dur:2.35,p0:V3(),p1:V3(),l0:V3(),l1:V3(),f0:52,f1:44,step:0,met:false};
+const WALK={on:false,t:0,dur:4.35,p0:V3(),p1:V3(),l0:V3(),l1:V3(),f0:52,f1:44,step:0,met:false};
 const FIGHT_LABEL='천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.';
-function crumpleReset(){Object.assign(CRUMPLE,{c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0});WALK.on=false;WALK.met=false;G.walking=false;INTERRUPT.spoke=INTERRUPT.back=false;}
-function crumpleReady(){return G.mode==='submit'&&INTRO.stage==='arrived'&&!CRUMPLE.done&&!G.paused&&!$('#fight').hidden;}
+function crumpleReset(){INTRO.sermonHeard=false;Object.assign(CRUMPLE,{c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0});WALK.on=false;WALK.met=false;G.walking=false;INTERRUPT.spoke=INTERRUPT.back=false;}
+function crumpleReady(){return G.mode==='submit'&&INTRO.stage==='arrived'&&INTRO.sermonHeard&&!CRUMPLE.done&&!G.paused&&!$('#fight').hidden;}
 function crumplePress(){
  if(!crumpleReady())return false;
  AUDIO.unlock();CRUMPLE.holding=true;CRUMPLE.started=true;
@@ -10680,12 +10670,19 @@ function walkStart(){
  WALK.on=true;WALK.t=0;WALK.step=0;WALK.met=false;CAM.frame='walk';
 }
 // 카메라: 걸어가는 동안은 옥좌 쪽으로 곧장(좌우로 돌지 않는다). 풀이 화면 밑에 깔려 있을 때는 종이가 줄어드는 만큼 뒤로 물러선다
+function walkProgress(k){
+  // A short acceleration and braking step, with an even pace through the crowd.
+  k=sat(k);const ramp=.12;
+  if(k<ramp)return k*k/(2*ramp*(1-ramp));
+  if(k>1-ramp)return 1-(1-k)*(1-k)/(2*ramp*(1-ramp));
+  return (k-ramp/2)/(1-ramp);
+}
 function introCamera(dt){
  if(WALK.on){
-  WALK.t+=dt;const k=clamp(WALK.t/WALK.dur,0,1),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+  WALK.t+=dt;const k=clamp(WALK.t/WALK.dur,0,1),e=walkProgress(k);
   CAM.pos.lerpVectors(WALK.p0,WALK.p1,e);CAM.look.lerpVectors(WALK.l0,WALK.l1,e);CAM.fovBase=lerp(WALK.f0,WALK.f1,e);
-  const n=Math.floor((WALK.t+.12)/.42);if(n>WALK.step&&k<.96){WALK.step=n;AUDIO.footstep(.55+.45*Math.sin(PI*k));}
-  if(!WALK.met&&k>=.7){WALK.met=true;walkMeet();}
+  const n=Math.floor((WALK.t+.12)/.49);if(n>WALK.step&&k<.96){WALK.step=n;AUDIO.footstep(.55+.45*Math.sin(PI*k));}
+  if(!WALK.met&&k>=.96){WALK.met=true;walkMeet();}
   if(k>=1){WALK.on=false;walkArrive();}
   return true;
  }
@@ -10791,8 +10788,8 @@ if(mode==='fight'){
  E.idleT=1e6;G.inputLocked=true;
  const behind=INTRO.stage==='behind';if(!behind)INTRO.stage='arrived';
  SUBMISSION.begin(G.result,behind);setFrame('congregation',true);
- canvas.setAttribute('aria-label','운세 종이를 두 손에 들고 추종자들 사이에서 천지신명의 설교를 듣고 있습니다. 꾹 누르면 종이를 구겨 천지신명 앞으로 걸어갑니다.');
- if(!behind){INTRO.hintAt=G.time+1.6;SUBMISSION.sermonSoon(.6);}
+ canvas.setAttribute('aria-label','운세 종이를 두 손에 들고 추종자들 사이에서 천지신명의 설교를 듣고 있습니다.');
+ if(!behind)SUBMISSION.sermonSoon(.6);
 }
 
  last=performance.now();
@@ -10893,7 +10890,7 @@ function arrive(){
  const f=$('#fight');f.hidden=false;f.classList.remove('behind');
  SUBMISSION.hands.visible=true;SUBMISSION.showPaper(true);setFrame('congregation',true);
  try{speechSynthesis.cancel();}catch(_){}
- AUDIO.unlock();SUBMISSION.sermonSoon(.5);INTRO.hintAt=G.time+1.5;
+ AUDIO.unlock();SUBMISSION.sermonSoon(.5);
  const face=$('#arcadeFace');if(face){face.target='_blank';face.rel='noopener';}
  if(!G.running){G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
  focusCanvas();return true;

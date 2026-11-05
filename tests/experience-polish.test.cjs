@@ -65,11 +65,18 @@ test('followers only spray after the wall, with a bounded pool during sustained 
  rev.on=false;G.ended=true;api.updateTears(.1,G.time);assert.equal(api.tearMesh.visible,false);
 });
 
-test('submission reveals its choice at four seconds and rejects early activation',()=>{
- const G={time:3.99,mode:'submit',submitReadyAt:4},dock={hidden:true};
- const api=vm.runInNewContext(slice('function updateStory(){','function damageBar(')+slice('function startFightFromSubmit(){',"$('#submitFight').addEventListener")+';({updateStory,startFightFromSubmit})',{G,$:()=>dock});
- api.updateStory();assert.equal(dock.hidden,true);api.startFightFromSubmit();
- G.time=4;api.updateStory();assert.equal(dock.hidden,false);assert.equal(G.submitReadyAt,0);
+test('paper input and its hint open together only when the first sermon finishes',()=>{
+ const first='opening sermon',G={time:100,mode:'submit',E:{}};
+ const INTRO={stage:'arrived',sermonHeard:false},CRUMPLE={done:false};
+ const hint={hidden:true,classList:{remove(name){assert.equal(name,'off');hint.hidden=false}}};
+ const line={text:first,who:'boss',b:{until:104},voiceUntil:104};
+ const TALK={cur:line,q:[],gap:0};
+ const api=vm.runInNewContext(slice('function updateTalk(dt){','function startEncounter(){')+
+  slice('function crumpleReady(){','function crumplePress(){')+';({updateTalk,crumpleReady})',
+  {G,INTRO,CRUMPLE,TALK,LINES:{submit:[[first]]},$:s=>s==='#fight'?{hidden:false}:hint});
+ api.updateTalk(.016);assert(!api.crumpleReady());assert(hint.hidden);
+ G.time=104;api.updateTalk(.016);assert(api.crumpleReady());assert(!hint.hidden);
+ G.paused=true;assert(!api.crumpleReady());
 });
 test('low-quality ending keeps a visual omen when shadows are disabled',()=>{
  const shade={style:{}},G={time:.95},renderer={shadowMap:{enabled:false}},key={position:V3(1,6,2),target:{position:V3()},shadow:{camera:new THREE.OrthographicCamera(-1,1,1,-1)}},caster=new THREE.Mesh();caster.visible=false;let sounds=0;
