@@ -5,7 +5,7 @@ const V3=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=(v,a,b)=>Math.max(a,Math.
 const throne=new THREE.Group();throne.position.z=-.86;throne.updateMatrixWorld(true);
 const ctx={THREE,V3,PI:Math.PI,TAU:Math.PI*2,clamp,lerp,smooth,WORLD:{throne},COMBAT_STAGE:{root:{visible:true},throne},G:{mode:'fight',time:0},damp:(a,b,k,dt)=>lerp(a,b,1-Math.exp(-k*dt))};
 for(let i=1;i<=6;i++)ctx['_bv'+i]=V3();
-const api=vm.runInNewContext(section('const SCULPT=','/* ===== 3. 소리')+section('const BELLY_C=','/* 신발(흑화)')+section('const ARM_CLEARANCE=','class Emperor{')+section('function solveTwoBone(','/* 여러 메시')+section('const _down=V3','/* ===== 6-4.')+section("const POSE_KEYS=","Object.assign(Emperor.prototype,{")+section('function combatSeatPose(', 'function combatInit(')+section('function combatPose(', 'function combatFloor(')+';({BODYGEO,ARM_CLEARANCE,STAND,P,combatSeatPose,resetSeatedEncounter,combatPose,methods:{'+section(' applyPose(p){',' setCurl(a,')+section(' solveArm(a,',' /* ---- 홀')+section(' updateActions(out,',' // 얼굴 좌표(face')+'}})',ctx);
+const api=vm.runInNewContext(section('const SCULPT=','/* ===== 3. 소리')+section('const BELLY_C=','/* 신발(흑화)')+section('const ARM_CLEARANCE=','class Emperor{')+section('function solveTwoBone(','/* 여러 메시')+section('const _down=V3','/* ===== 6-4.')+section("const POSE_KEYS=","Object.assign(Emperor.prototype,{")+section('function combatSeatPose(', 'function combatInit(')+section('function combatPose(', 'function combatFloor(')+';({BODYGEO,ARM_CLEARANCE,STAND,P,combatSeatPose,resetSeatedEncounter,combatPose,methods:{'+section(' applyPose(p){',' setCurl(a,')+section(' solveArm(a,',' placeTablet(){')+section(' updateActions(out,',' // 얼굴 좌표(face')+'}})',ctx);
 const bone=(p,v)=>{const o=new THREE.Group();o.position.set(...v);p.add(o);return o};
 function rig(){
  const root=new THREE.Group(),pelvis=bone(root,[0,.665,0]),spine=bone(pelvis,[0,.06,0]),chest=bone(spine,[0,.24,-.01]),neck=bone(chest,[0,.265,0]),head=bone(neck,[0,.06,.03]);
@@ -35,8 +35,8 @@ function legPenetration(E){let deepest=0;const samples=[[E.bones.pelvis,'seat']]
  return deepest;
 }
 let worst=0,worstLeg=0,maxStep=0,exitPenetration=0;
-for(const fps of [30,60,120])for(const route of ['direct','submit']){
- const E=rig(),dt=1/fps;E.tabletHeld=route==='direct';
+for(const fps of [30,60,120])for(const route of ['direct','submit','empty']){
+ const E=rig(),dt=1/fps;E.tabletHeld=route!=='empty';
  // The old start pose has straight legs inside the cushion and front board.
  E.pose.tz=-.62;E.applyPose(E.pose);E.root.updateMatrixWorld(true);
  assert(legPenetration(E)>.04,'fixture reproduces the old chair penetration');
@@ -62,7 +62,7 @@ for(const fps of [30,60,120])for(const route of ['direct','submit']){
   for(const a of E.arms){
    const shoulder=a.sh.getWorldPosition(V3()),elbow=a.el.getWorldPosition(V3()),wrist=a.wr.getWorldPosition(V3());
    assert(Math.abs(shoulder.distanceTo(elbow)-.235)<1e-6);assert(Math.abs(elbow.distanceTo(wrist)-.215)<1e-6);
-   if(route==='submit')assert(elbow.y<shoulder.y-.12,'resting elbows stay below shoulders instead of spreading horizontally');
+   if(route==='empty')assert(elbow.y<shoulder.y-.12,'resting elbows stay below shoulders instead of spreading horizontally');
   }
   for(const l of E.legs){const knee=l.knee.getWorldPosition(V3()),ank=l.ank.getWorldPosition(V3());assert(knee.y>ank.y+.24,'shins hang downward');assert(knee.z>-.4&&ank.z>-.4,'knees and shins stay in front of the chair');}
  }

@@ -7,7 +7,7 @@ const ctx={THREE,V3,PI:Math.PI,TAU:Math.PI*2,lerp:(a,b,t)=>a+(b-a)*t,sat,clamp:(
 const api=vm.runInNewContext(
  slice('function mk(geo,','/* 굵기가 변하는 관')+slice('const _mgM=','/* 빠른 짧은 광선 검사')+
  slice('const SLICE=','/* ===== 3. 소리')+slice('const CUT_DETAIL=','/* 바지:')+
- slice('const HEADGEO=','const BELLY_C=')+slice('function eyeCapGeo(','function makeTabletTex(')+
+ slice('const HEADGEO=','const BELLY_C=')+slice('function eyeCapGeo(','\n}')+'\n}\n'+
  slice('const REP_TOOTH=','Object.assign(Emperor.prototype,')+
  'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice('makeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
 function makeRig(){
