@@ -3260,6 +3260,16 @@ const V5={
    rule:'여럿을 맡은 사람이 한 사람의 사정에 흔들리면 나머지에게 본이 서지 않습니다. 권한을 받은 사람은 사사로운 마음부터 거두는 법입니다.',
    caution:'사람을 거느리려면 사정마다 기준을 바꾸지 마세요. 아래 사람의 편의를 봐주다가 위에서 받은 신임부터 잃습니다.'}
  },
+ /* 귀인: 사주 앱이면 다 있는 '도와줄 사람' 칸(2026-11-05). 사람들이 기대하는 귀인을 윗사람의 깔봄으로 뒤집는다.
+  * 태어난 날의 위 글자로 찾는 귀인 글자(천을귀인)가 확인된 글자 가운데 있는지로만 고른다. 학력·출신 같은 직접적인 말은 순응 장면의 군중이 맡는다 */
+ gwiin:{
+  absent:{head:'도와줄 사람보다 따지는 사람을 먼저 만납니다.',detail:'처음 가는 곳에서 모르는 것을 물으면 답보다 표정이 먼저 돌아옵니다. 그다음부터는 묻지 않고 눈치로 익힙니다.',
+   fate:'당신은 아무도 알려 주지 않은 것을 눈치로 익히는 동안 기본이 없는 사람으로 먼저 기억되는 팔자입니다.',
+   rule:'귀인은 귀한 집에 먼저 듭니다. 귀한 집에서 자란 사람은 집에서 배운 것을 원래 아는 것으로 압니다.'},
+  present:{head:'도움에는 가르침이 붙어 옵니다.',detail:'끌어 주는 윗사람이 생깁니다. 도움을 받을 때마다 당신에게 무엇이 모자란지도 함께 듣습니다.',
+   fate:'당신은 귀인을 만나도 도움보다 훈계를 먼저 받고 그 훈계까지 고맙다고 해야 하는 팔자입니다.',
+   rule:'도움은 위에서 아래로 내려옵니다. 내려온 도움은 고개를 숙이고 받는 것이 예입니다.'}
+ },
  // 몸: 몸과 생활 풀이의 첫 문장으로 고른다
  body:[
   ['불편을 넘기며','당신은 아직 할 만하다고 미룬 휴식을 나중에 비워야 할 날로 몰아서 받는 팔자입니다.'],
@@ -3395,6 +3405,14 @@ function v5Office(r){
  }
  return Object.assign({key,basis:[o.fact,reason].filter(Boolean).join(' '),evidenceIds},V5.office[key]);
 }
+// 귀인 글자(천을귀인): 태어난 날의 위 글자로 정해지는 아래 글자 둘
+const V5_GWIIN={甲:['丑','未'],戊:['丑','未'],庚:['丑','未'],乙:['子','申'],己:['子','申'],丙:['亥','酉'],丁:['亥','酉'],辛:['寅','午'],壬:['卯','巳'],癸:['卯','巳']};
+function v5Gwiin(r){
+ const t=V5_GWIIN[r.a.dayStem]||[],names=t.map(uiBranchName).join('·'),known=r.P.filter(p=>p&&p.known),hit=known.filter(p=>t.includes(p.branch));
+ const key=hit.length?'present':'absent',where=hit.map(p=>PLACE_KO[p.pos]+'의 아래 글자').join('와 ');
+ const basis='태어난 날의 글자로 찾는 귀인 글자(천을귀인)는 '+names+'입니다. '+(hit.length?where+'가 그 글자입니다.':(known.length<4?'태어난 시간을 뺀 여섯 글자':'여덟 글자')+' 어디에도 그 글자가 없습니다.');
+ return Object.assign({key,basis},V5.gwiin[key]);
+}
 function v5Love(r){const o=(r.observations||[]).find(s=>s.id==='love');const head=o?o.head:'';return V5.love.find(x=>head.indexOf(x.key)>=0)||null;}
 function v5Provincial(inp){const pk=inp.placeKey,pn=inp.place&&inp.place.name;return PLACES.some(g=>V5.provinces.includes(g[0])&&g[1].some(p=>p[0]===pk||p[1]===pn));}
 // 화면에 나갈 글을 전부 여기서 만든다. 화면 그리기(renderResult)는 이 결과만 쓴다.
@@ -3444,8 +3462,12 @@ function v5Reading(R,now){
  { const key=parentWork?(parentWork==='cut'?'cut':'care'):child?(child==='shown'?'shown':ok==='absent'?'absentPoor':'absent'):age>=35?'old':'young',scene=V5.familyScene[key];
    const f=parentWork?(parentWork==='cut'?V5.careerCut:V5.careerBurden):child?V5.child[key]:V5.parents[key];
    doms.push({id:'family',title:'가족과 부양',cause:key,head:scene.head,detail:scene.detail,fates:[f],rule:V5.pairRule[scene.rule]||scene.rule}); }
+ { const gw=v5Gwiin(r);doms.push({id:'gwiin',title:'귀인 · 도와줄 사람',cause:gw.key,head:gw.head,detail:gw.detail,fates:[gw.fate],rule:gw.rule,basis:gw.basis}); }
  doms.push({id:'office',title:'관운 · 권한과 책임',cause:office.key,head:office.head,detail:office.detail,fates:[office.fate],rule:office.rule,basis:office.basis,evidenceIds:office.evidenceIds});
  out.domains=doms;
+ // 순응 장면의 군중이 「종이 봐」 하고 말할 근거: 그 사람 사주에 정말 있을 때만 true
+ { const P2=P.slice(0,2).filter(p=>p&&p.known);
+   out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent',yeokma:(r.sinsal||[]).some(x=>x.key==='yeokma')}; }
  // 올해·내년
  const y0=r.years[0],adverse=!!(y0&&(y0.evidence||[]).some(e=>e.valence==='adverse'));
  out.yearRule=adverse?V5.yearRule.nation:V5.yearRule.vessel;
@@ -3567,7 +3589,7 @@ function renderResult(R){
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
- R.paper={verdict:v.verdict,fixed:v.fixedNote};
+ R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
  $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
@@ -3657,7 +3679,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261105-reading-edge-1';
+  const v='?v=20261105-crowd-stare-1';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))
