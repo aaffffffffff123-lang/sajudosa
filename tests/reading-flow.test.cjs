@@ -1,5 +1,5 @@
 // 풀이 화면(자리 문서 V5)의 방향을 지키는 검사.
-// 방향은 사용자가 정했다(2026-11-04): 첫 글줄부터 꺾고, 내려갈수록 범위를 넓히고, 독한 줄은 전부 사주 조건에 묶는다.
+// 첫 문단에서 독자의 모습을 짚고, 집안 판정부터 범위를 넓힌다. 독한 줄은 사주 조건에 묶는다.
 // 이 검사가 깨지면 문장을 순하게 되돌리지 말고 조건과 근거를 맞춘다.
 // 엔진 판정은 reading-evidence.test.cjs가 따로 검사한다. V5는 생활 설명을 가져오거나 풀어 쓰되 제목·팔자의 원인을 일치시킨다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
@@ -32,10 +32,10 @@ function bossOf(r){
  return {me,boss,ms,bs,key,officeLow:!r.fate.officer.present||key==='low'};
 }
 
-test('the screen widens its scope in order: family, self, work·money·body, partner, state, world, ruling, commands',()=>{
+test('a personal portrait opens the reading before the family verdict and wider judgments',()=>{
  const view=slice('<main id="result-screen"','</main>');
- const order=['id="pillars"','id="origin"','id="me-card"','id="elem-lines"','id="core-body"','id="past-hits"','id="sections"','id="years"','id="year-rule"','id="month-reading"',
-  'id="luck-graph"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fight-fate"'];
+ const order=['id="pillars"','id="reading-portrait"','id="origin"','id="me-card"','id="elem-lines"','id="core-body"','id="past-hits"','id="sections"','id="years"','id="year-rule"','id="month-reading"',
+  'id="luck-graph"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fate-go"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
  assert(!/id="judge"|자리 판정|id="countdown"/.test(view));
  for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home family gwiin office');
@@ -43,13 +43,13 @@ test('the screen widens its scope in order: family, self, work·money·body, par
 
 test('the direction is written where the next editor sees it, and the screen copy comes only from v5Reading',()=>{
  const head=slice('/* ---------- 자리 문서(V5)','const V5=');
- for(const k of ['첫 글줄부터 꺾는다','사주 조건에 묶는다','이치 줄','당신은 …팔자입니다','사람마다 다르게'])assert(head.includes(k),k);
+ for(const k of ['집안 판정부터 꺾고','사주 조건에 묶는다','이치 줄','당신은 …팔자입니다','사람마다 다르게'])assert(head.includes(k),k);
  const render=slice('function renderResult(R){','function cycleAgeLabel(');
  assert(render.includes('v5Reading(R'));
  assert(!/\br\.(sections|verdict|cautions|observations)\b/.test(render));
 });
 
-test('the first prose line strikes at once and follows the wealth in the ancestor and parent pillars',()=>{
+test('the family verdict that follows the opening still uses only the ancestor and parent pillars',()=>{
  const seen=new Set;
  for(const {r,v} of ALL){
   const P=r.P.slice(0,2).filter(p=>p&&p.known);
@@ -60,6 +60,24 @@ test('the first prose line strikes at once and follows the wealth in the ancesto
   assert.match(v.origin.fact,{shown:/위 글자에 재물 기운이 드러나/,hidden:/아래 글자 속에 숨어/,absent:/어디에도 재물 기운이 없습니다/}[want]);
  }
  assert.equal(seen.size,3);
+});
+
+test('the opening follows the natal pattern, keeps body details conditional, and treats children separately',()=>{
+ const scenes=new Map(),balanced=ALL.filter(({r})=>r.a.strength.label==='중화');
+ for(const {r,v} of ALL){
+  const {god,exposed}=r.a.structure,key=god+':'+exposed;
+  assert.equal(v.portrait.length,2);
+  assert(v.portrait.every(p=>typeof p==='string'&&p.length>12&&!/팔자|복은 집에서|undefined/.test(p)));
+  if(scenes.has(key))assert.equal(v.portrait[0],scenes.get(key));
+  scenes.set(key,v.portrait[0]);
+ }
+ assert(new Set(scenes.values()).size>=18);
+ assert(balanced.length>0);
+ for(const {v} of balanced)assert.doesNotMatch(v.portrait[1],/푸근한 편|턱선이|키순으로|한쪽 다리|눈썹이|호리호리/);
+ const child=make(2021,3,12,{unknown:true}).v;
+ assert.equal(child.portrait.length,1);
+ assert.match(child.portrait[0],/아이입니다/);
+ assert.deepEqual(make(1990,1,1,{unknown:true,male:false,name:'가명'}).v.portrait,make(1990,1,1,{unknown:true}).v.portrait);
 });
 
 test('wealth hidden in secondary stems is never read as an empty inheritance',()=>{
