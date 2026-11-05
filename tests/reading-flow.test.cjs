@@ -84,10 +84,10 @@ test('every element explains its role for this day master, not a fixed personali
  assert(notWeak.length);for(const {v} of notWeak){assert.match(v.elements[0],/여기서 .+입니다\.$/);assert(!/비중이 작아도 없는 힘|아래 생활 풀이에 드러납니다/.test(v.elements[0]));}
 });
 
-test('small comforts retain the chosen line without turning every money problem into that habit',()=>{
+test('small comforts retain their own cause and a rule without taking over other money cases',()=>{
  const m=dom(make(2001,6,21,{unknown:true,male:false}).v,'money');
  assert.equal(m.cause,'comfort');assert.match(m.head,/작은 편의/);assert.match(m.detail,/한 달 치/);assert.match(m.note.value,/편의·작은 보상/);
- assert.equal(m.fates[0],'당신은 오늘을 덜 힘들게 넘기려고 쓴 돈을 내일의 품으로 메우는 팔자입니다.');assert.equal(m.rule,'');
+ assert.match(m.fates[0],/오늘.*내일/);assert.match(m.rule,/남의 수고.*값을 치러야/);
  const money=ALL.map(({v})=>dom(v,'money')),kinds=new Set(money.map(x=>x.cause));
  for(const key of ['comfort','burden','share','holding','paper','reserve'])assert(kinds.has(key),key);
  assert(money.filter(x=>x.cause==='comfort').length<ALL.length/2);
@@ -117,18 +117,51 @@ test('quiet withdrawal is not rewritten as overwork or lack of money',()=>{
  const core=make(1990,1,1,{unknown:true}).v.core;assert.match(core.title,/맞는 말을/);assert.match(core.fate,/맞는 말을 하고 손해/);
 });
 
-test('officer strength is one value shared by the element line, work, office and commands',()=>{
+test('element balance stays consistent while office follows the specific structure',()=>{
  for(const {r,v} of ALL){
   const b=bossOf(r),office=dom(v,'office'),work=dom(v,'work');
-  assert.equal(/부당한 줄 알면서도 당장 벌 돈/.test(office.fates.join(' ')),b.officeLow);
   assert.equal(work.fates.length,1);assert(!/직원이|작은 회사를 전전/.test(work.fates.join(' ')));
   assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
-  assert.equal(office.head==='맡는 일은 늘어도 결정할 수 있는 일은 늘지 않습니다.',v.keys.officer==='high');
-  assert.equal(office.detail==='일정과 기준은 다른 사람이 정합니다. 그 안에서 결과를 내는 책임은 당신에게 돌아옵니다.',v.keys.officer==='high');
-  assert.equal(office.fates[0]==='당신은 책임지는 일은 늘어도 그 일을 정할 권한은 남의 손에 있는 팔자입니다.',v.keys.officer==='high');
+  assert.equal(office.cause,v.keys.officeCase);assert(office.basis.startsWith(r.fate.officer.fact));
   assert.equal(work.rule==='해 보겠다고 한 말은 약속으로 남고, 그 말을 지키느라 쓴 휴일은 기록에 남지 않습니다.',work.cause==='식상');
-  if(r.fate.officer.present)assert(office.basis.includes(api.ELEMENTS[b.boss].name+' '+Math.round(b.bs*100)+'%'),office.basis);
+  assert(office.evidenceIds.length);assert(!/표 한 장|투표|선거|항의가 끝날 때까지 월급/.test(JSON.stringify(office)));
  }
+});
+
+test('seven office cases select different predicaments from real chart evidence',()=>{
+ const fixtures=[
+  ['weak',1978,10,1,{h:3,mi:30}],['hidden',1960,1,22,{h:6,mi:30,male:false}],
+  ['regular',1971,1,10,{unknown:true}],['pressure',2004,12,7,{h:13,mi:30}],
+  ['mixed',2002,9,21,{h:16,mi:30}],['challenge',1974,5,2,{h:1,mi:30}],
+  ['supported',1984,2,5,{h:7,mi:30}]
+ ];
+ const seen=new Set;
+ for(const [key,y,m,d,opts] of fixtures){
+  const {r,v}=make(y,m,d,opts),office=dom(v,'office');assert.equal(office.cause,key);
+  seen.add(office.fates[0]);assert(office.head&&office.detail&&office.rule&&office.basis);
+  if(key==='mixed'){assert(r.a.structure.failure.some(f=>f.id==='mixed_officer'));assert(r.a.structure.success.includes('관인상생'));}
+  if(key==='challenge')assert(r.a.structure.failure.some(f=>f.id==='hurt_officer'));
+  if(key==='hidden'){assert(r.fate.officer.hidden.length);assert.equal(r.fate.officer.visible.length,0);assert(!['weak','absent'].includes(r.a.families.관성.level));}
+  if(key==='supported'){assert(r.a.structure.success.includes('관인상생'));assert(!['신약','극약'].includes(r.a.strength.label));assert.match(office.fates[0],/얻은 권한을 지키려고/);assert.match(v.cautions[2],/사람을 거느리려면/);assert(!/정할 권한까지 바라면/.test(v.cautions.join(' ')));}
+ }
+ assert.equal(seen.size,7);
+});
+
+test('resolved officer combinations are not narrated as unresolved mixed demands',()=>{
+ let supported=0,weak=0;
+ for(const {r,v} of ALL){
+  const office=dom(v,'office'),fail=r.a.structure.failure;
+  if(office.cause==='mixed')assert(fail.some(f=>f.id==='mixed_officer'));
+  if(office.cause==='challenge')assert(fail.some(f=>f.id==='hurt_officer'));
+  if(office.cause==='supported'){
+   supported++;assert(r.fate.officer.visible.length);
+   assert(office.evidenceIds.some(e=>e.startsWith('success:')));
+   assert(!fail.some(f=>['mixed_officer','hurt_officer','officer_overload','killer_unchecked'].includes(f.id)));
+   assert(!['신약','극약'].includes(r.a.strength.label));
+  }
+  if(office.cause==='weak'){weak++;assert(['weak','absent'].includes(r.a.families.관성.level));}
+ }
+ assert(supported>0&&weak>0);
 });
 
 test('life-stage lines appear only when the chart and the person allow them',()=>{
@@ -192,10 +225,14 @@ test('every fate line is one sentence in the agreed form and no line uses the ba
  assert.match(make(1991,7,9,{h:14,mi:30,name:'민수'}).v.verdict,/^민수 님은 /);
 });
 
-test('sections retain their rule except the redundant small-comfort money rule',()=>{
- for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){if(d.id==='money'&&d.cause==='comfort')assert.equal(d.rule,'');else assert(d.rule,d.id);}}
- for(const k of ['복은 집에서 내려옵니다','그 돈을 받는 사람에게는 매달 들어올 수입','임대료와 이자를 받는 사람은 쉬는 동안에도 돈을 법니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
-  '항의하는 당신에게는 비운 날의 생활비','나라 사이에서도 큰 기운이 작은 기운을 누르는','지시받은 만큼만 하면 탈이 없습니다','남의 결정에 따라 사는 사람은 운을 묻습니다'])assert(V5_SRC.includes(k),k);
+test('every life domain keeps a distinct rule and uses the common reading order',()=>{
+ for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){assert(d.rule,d.id);assert(!d.fates.includes(d.rule));}}
+ const render=slice('function renderResult(R){','function cycleAgeLabel(');
+ assert(!/sec.id==='money'/.test(render));
+ assert(render.includes('+fates+note+rule+basis'));
+ for(const k of ['복은 집에서 내려옵니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
+  '계약한 비용은 약속한 날에 치르는 법','먼저 재물을 내놓은 대가','나라 사이에서도 큰 기운이 작은 기운을 누르는',
+  '지시받은 만큼만 하면 탈이 없습니다','남의 결정에 따라 사는 사람은 운을 묻습니다'])assert(V5_SRC.includes(k),k);
 });
 
 test('readings differ from person to person and only the agreed lines are shared',()=>{
@@ -280,4 +317,5 @@ test('current month changes at the solar-term boundary and retains its own expla
  const ordinary=months.find(m=>!r.years.some(y=>y.worstMonths.includes(m)));
  assert(ordinary);assert.equal(api.currentMonthView(r.years,ordinary.start).end,ordinary.end);
 });
+
 
