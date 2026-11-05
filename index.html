@@ -3664,7 +3664,7 @@ function sizeRunway(){
  $('fate-runway').style.height=(FATE.peekH+(seam.open?FATE.pullH:0))+'px';
 }
 function closeSeam(){
- seam.open=false;seam.at=-1;seam.touch=null;seam.wheelEligible=false;seam.wheelTravel=0;sizeRunway();
+ seam.open=false;seam.at=-1;seam.touch=null;seam.wheelEligible=false;seam.wheelTravel=seam.wheelPrevious=0;seam.wheelAt=-Infinity;seam.wheelTail=false;sizeRunway();
 }
 function seamReady(){
  return !seam.open&&!FATE.arrived&&!$('result-screen').hidden&&seam.at>=0&&performance.now()-seam.at>=260&&window.scrollY>=FATE.sB-3;
@@ -3854,8 +3854,8 @@ addEventListener('wheel',e=>{
  if(dt>230){
   seam.wheelEligible=seamReady();seam.wheelTravel=0;
   // Rendering a heavy scene can space out inertial events. A diminishing tail
-  // stays with the old gesture until input strengthens again or fully settles.
-  seam.wheelTail=dt<3000&&delta>0&&delta<seam.wheelPrevious*.98;
+  // stays with the old gesture until input strengthens again or a fresh wheel notch repeats.
+  seam.wheelTail=delta>0&&delta<seam.wheelPrevious*.98;
  }else if(seam.wheelTail&&delta>=seam.wheelPrevious&&delta>0)seam.wheelTail=false;
  seam.wheelAt=e.timeStamp;seam.wheelPrevious=delta;
  if(!seam.wheelEligible||seam.open||e.ctrlKey||seam.wheelTail)return;
