@@ -9,8 +9,9 @@ test('music, effects and voice have separate dry and reverb gain paths',()=>{
  const node=()=>{const n={edges:[],gain:param(),connect(other){this.edges.push(other);return other},threshold:param(),knee:param(),ratio:param(),attack:param(),release:param()};nodes.push(n);return n};
  class AC{constructor(){this.currentTime=0;this.sampleRate=10;this.destination=node()}createGain(){return node()}createDynamicsCompressor(){return node()}createConvolver(){return node()}createBuffer(c,n){return {getChannelData:()=>new Float32Array(n)}}createPeriodicWave(){return {}}}
  const scope={window:{AudioContext:AC},clamp,makeIR(){return {}},makeFallbackVoice(){},loadSoundBank(){},loadBackVoice(){},loadOpeningVoice(){},loadGreetingVoice(){},loadFirstHitVoice(){},loadVictoryVoice(){},loadQuipVoice(){},loadRetortVoice(){},loadMusic(){}};
- const api=vm.runInNewContext(slice(' let ctx=null,master,',' // 한 번만 받아')+slice(' function init(){',' function unlock(){')+slice(' function out(pan=0',' // 살짝 찌그러뜨려')+'let tts=null;({init,setVolumes,out,get buses(){return {bus,vbus,mbus,verb,vverb,comp}}})',scope);
- api.setVolumes({music:.2,effects:.6,voice:0});api.init();const {bus,vbus,mbus,verb,vverb,comp}=api.buses;
+ const api=vm.runInNewContext(slice(' let ctx=null,master,',' // 한 번만 받아')+slice(' function init(',' function unlock(')+slice(' function out(pan=0',' // 살짝 찌그러뜨려')+'let tts=null;({init,setVolumes,out,get context(){return ctx},get buses(){return {bus,vbus,mbus,verb,vverb,comp}}})',scope);
+ const primed=new AC();api.setVolumes({music:.2,effects:.6,voice:0});api.init(primed);const {bus,vbus,mbus,verb,vverb,comp}=api.buses;
+ assert.equal(api.context,primed,'use the context unlocked by the entry gesture');
  assert.equal(mbus.gain.value,.2);assert.equal(bus.gain.value,.6);assert.equal(vbus.gain.value,0);
  for(const b of [bus,vbus,mbus])assert.deepEqual(b.edges,[comp]);
  const voice=api.out(0,.5,true),effect=api.out(0,.5,false);

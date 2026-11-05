@@ -416,15 +416,17 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .core #core-body .rule{margin:0}
 .year-rule{margin:12px 2px 0}
 
-/* 끝 문장 아래 화살표: 더 내리면 족치기 장면으로 이어진다 */
+/* 안내가 나타나도 마지막 줄과 스크롤 끝은 제자리에 둔다. */
+#edge-hint{display:grid;place-items:center;min-height:38px;margin:14px auto 0;text-align:center;color:var(--ink-2);font-size:14px;font-weight:600;visibility:hidden}
+#edge-hint>*{grid-area:1 / 1}
+#edge-hint.shown{visibility:visible}
+#edge-hint .choice-cue{margin:0}
+#edge-hint.busy .choice-cue{visibility:hidden}
 .choice-cue{display:block;width:30px;height:30px;margin:16px auto 0;color:var(--red-d);pointer-events:none;animation:choice-cue-pulse 1.6s ease-in-out infinite;transform-origin:center}
 @keyframes choice-cue-pulse{0%,58%,100%{transform:translateY(0) scale(1);opacity:.65}18%{transform:translateY(4px) scale(1.15);opacity:1}32%{transform:translateY(1px) scale(1.02);opacity:.8}44%{transform:translateY(3px) scale(1.1);opacity:1}}
 @media(prefers-reduced-motion:reduce){.choice-cue{animation:none;opacity:1}}
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 #fate-go:focus-visible{position:static!important;width:auto;height:auto;margin:14px auto 0;clip:auto;overflow:visible;display:block;padding:10px 18px;border:2px solid var(--ink);border-radius:12px;background:var(--card);font-weight:700}
-/* 풀이 끝 아래 스크롤 자리(높이는 화면 높이에 맞춰 스크립트가 정한다). 비어 있어 밑에 깔린 3D 장면이 보인다 */
-#fate-runway{position:relative;height:14vh}
-#runway-status{position:absolute;left:0;right:0;top:24px;margin:0;text-align:center;font-size:14.5px;font-weight:600;color:var(--ink-2)}
 .textbtn{display:block;margin:22px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:4px;font-size:15px;padding:8px}
 
 /* 족치기 화면을 불러오지 못했을 때 */
@@ -730,13 +732,13 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <p class="foot-note" id="foot-note"></p>
   <p class="last-line" id="last-line"></p>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
-  <svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  <button type="button" id="fate-go" class="sr-only">천지신명 앞으로 가기</button>
+  <div id="edge-hint"><span id="edge-label" role="status"></span><svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  </div>
+  <button type="button" id="fate-go" class="sr-only">다음으로</button>
  </div>
 </main>
-<!-- 풀이 끝 아래 스크롤 자리: 처음 조금은 종이 밑으로 궁전이 비치고, 그다음은 풀이 화면이 손에 든 종이로 줄어든다 -->
+<!-- 종이가 손안으로 줄어드는 동안에만 원래 문서 높이를 유지한다. -->
 <div id="fate-spacer" hidden></div>
-<div id="fate-runway" hidden><p id="runway-status" role="status" aria-live="polite" hidden></p></div>
 
 <div id="fightWait" hidden><div id="fightWaitTitle">불러오는 중…</div><small id="fightWaitDetail"></small><button type="button" class="sbtn" id="fightWaitBtn" hidden>다시 시도</button></div>
 
@@ -2741,7 +2743,7 @@ window.addEventListener('popstate',()=>{
 });
 const screens=['input-screen','loading-screen','result-screen'];
 let current=null,resultScroll=0;
-function showScreen(id){screens.forEach(s=>$(s).hidden=s!==id);$('fate-runway').hidden=id!=='result-screen';if(id!=='result-screen'){clearTimeout(MONTH_VIEW.timer);fateOff();}document.body.style.overflow='';window.scrollTo(0,0);}
+function showScreen(id){screens.forEach(s=>$(s).hidden=s!==id);if(id!=='result-screen'){clearTimeout(MONTH_VIEW.timer);fateOff();}document.body.style.overflow='';window.scrollTo(0,0);if(id==='result-screen')scheduleEdge();}
 function formError(msg){$('form-error').textContent=msg;$('form-error').hidden=false;$('form-error').scrollIntoView({block:'center',behavior:'smooth'});}
 /* ---------- 계산 중 화면 ----------
  * 3.3초. 도사가 왼눈을 눈꺼풀로 감아 윙크한 채 사주를 푼다.
@@ -2973,7 +2975,7 @@ function doomApply(){
  if(current!==DOOM.cur){DOOM.cur=current;DOOM.p=0;DOOM.full=false;}
  const P=doomBuild();
  DOOM.p=Math.max(DOOM.p,doomProg());
- const p=DOOM.p,e=Math.pow(p,2.4),bg=doomMix(DOOM.bg0,DOOM.bg1,e);
+ const p=DOOM.p,e=Math.pow(p,1.4),bg=doomMix(DOOM.bg0,DOOM.bg1,e);
  DOOM.on=true;
  if(bg!==DOOM.bg){
   DOOM.bg=bg;de.style.background=bd.style.background=bg;
@@ -3617,7 +3619,7 @@ $('birth-form').addEventListener('submit',e=>{
  }else $('occurrence-field').hidden=true;
  const inp={name:$('birth-name').value.trim().slice(0,12),cal:picked.cal,date:Object.assign({},picked.date),time:picked.time,unknown:picked.unknown,male:g.value==='1',place:place,placeKey:pk,occurrence:occurrence};
  try{current=buildResult(inp,sd);renderResult(current);}catch(err){return formError(err.message||'태어난 날짜와 시간을 다시 확인해 주세요.');}
- showScreen('loading-screen');pushNav('result');startLoading(()=>{showScreen('result-screen');preloadFight();});
+ showScreen('loading-screen');pushNav('result');startLoading(()=>showScreen('result-screen'));
 });
 function buildResult(inp,sd){
  const chart=computeChart({y:sd.y,m:sd.m,d:sd.d,h:inp.unknown?12:inp.time.h,mi:inp.unknown?0:inp.time.mi,unknown:inp.unknown,male:inp.male,place:inp.place,occurrence:inp.occurrence});
@@ -3629,84 +3631,59 @@ function resetAll(){
 }
 $('go-home').addEventListener('click',resetAll);
 
-/* ===== 5. 족치기로 이어지기 =====
- * three.min.js(3D 라이브러리)와 fight.js(족치기 화면)는 결과가 뜨면 미리 받아 두고, 한가할 때 순응 장면을 미리 만들어 둔다.
- * 풀이 끝 「당신은 그렇게 태어났습니다.」 아래로 더 내리면:
- *  ① 엿보기: 풀이(한 장의 종이) 아래 끝 밑으로 3D 궁전과 줄 선 추종자들이 조금 비친다(여기까지는 보통 스크롤)
- *  ② 줄어들기: 그다음부터 스크롤에 맞춰 지금 보던 화면이 손에 든 운세 종이 자리로 줄어든다. 되올리면 풀이로 돌아간다.
- *     끝에서 새로 한 번 더 내리면 줄어들고, 손을 놓으면 마저 줄어든다. 끝까지 가면 순응 장면(fight.js)이 된다.
- * fight.js 쪽 입구: PaljaBoot() → PaljaGame.prepare(결과) · peek(깔기) · pull(줄어든 정도) · paperRect() · arrive()
- */
-const FIGHT={state:'idle'};
+/* ===== 5. 풀이 끝에서 새로 내린 경우에만 3D 장면을 연다 ===== */
 const THREE_SRC=['three.min.js','https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'];
-function loadOne(srcs,ok,done,i){
- i=i||0;if(ok())return done(true);if(i>=srcs.length)return done(false);
- const s=document.createElement('script');let fin=false;
- const end=()=>{if(fin)return;fin=true;clearTimeout(tm);if(ok())done(true);else{s.remove();loadOne(srcs,ok,done,i+1);}};
- const tm=setTimeout(end,9000);s.src=srcs[i];s.onload=end;s.onerror=end;document.head.appendChild(s);
-}
-function preloadFight(){
- if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';fateKick();
- const bust=/^https?:/.test(location.protocol)?'?v=20261105-crowd-tears-1':'';
- loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
-  if(!ok){FIGHT.state='failed';fateKick();return;}
-  loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{
-   if(!motionOk){FIGHT.state='failed';fateKick();return;}
-   loadOne(['fight.js'+bust],()=>!!window.PaljaBoot,ok2=>{FIGHT.state=ok2?'ready':'failed';if(ok2)fateEnsure();fateKick();});
-  });
+const fclamp=(x,a,b)=>x<a?a:x>b?b:x,flerp=(a,b,t)=>a+(b-a)*t;
+const FATE={phase:'reading',serial:0,timer:0,raf:0,touching:false,drag:null,
+ wheelAt:-Infinity,wheelAmount:0,wheelDelta:0,wheelFresh:false,
+ fixed:false,fixSB:0,fixVh:0,fixVw:0,top:0,bottom:0,sB:0,crop:null,target:null,audio:null};
+let fightScripts=null;
+function loadScript(sources,ready){
+ if(ready())return Promise.resolve();
+ return new Promise((resolve,reject)=>{
+  const next=i=>{
+   if(i===sources.length){reject(new Error('화면을 불러오지 못했습니다. 인터넷 연결을 확인해 주세요.'));return;}
+   const script=document.createElement('script');
+   const finish=()=>{
+    clearTimeout(timer);script.onload=script.onerror=null;
+    if(ready()){resolve();return;}
+    script.remove();next(i+1);
+   };
+   const timer=setTimeout(finish,9000);
+   script.onload=script.onerror=finish;script.src=sources[i];document.head.appendChild(script);
+  };
+  next(0);
  });
 }
-
-const fclamp=(x,a,b)=>x<a?a:x>b?b:x,flerp=(a,b,t)=>a+(b-a)*t;
-// While reading, the document physically ends at the preview. Momentum has nowhere to go.
-const seam={open:false,at:-1,touch:null,wheelAt:-Infinity,wheelTravel:0,wheelPrevious:0,wheelTail:false,wheelEligible:false};
-function sizeRunway(){
- $('fate-runway').style.height=(FATE.peekH+(seam.open?FATE.pullH:0))+'px';
-}
-function closeSeam(){
- seam.open=false;seam.at=-1;seam.touch=null;seam.wheelEligible=false;seam.wheelTravel=seam.wheelPrevious=0;seam.wheelAt=-Infinity;seam.wheelTail=false;sizeRunway();
-}
-function seamReady(){
- return !seam.open&&!FATE.arrived&&!$('result-screen').hidden&&seam.at>=0&&performance.now()-seam.at>=260&&window.scrollY>=FATE.sB-3;
-}
-function openSeam(){
- if(!fateReady()){if(FATE.failed||FIGHT.state==='failed')fateFail();else fateEnsure();return false;}
- seam.open=true;sizeRunway();fateKick();return true;
-}
-const FATE={fixed:false,fixSB:0,fixVh:0,vh:0,vw:0,peekH:0,pullH:0,top:0,bottom:0,s0:0,sB:0,sEnd:0,p:0,on:false,arrived:false,prepared:null,preparing:false,failed:null,failShown:false,touching:false,idle:0,raf:0,crop:null,target:null};
-// 런웨이 높이(엿보기 띠 + 줄어드는 거리)는 화면 높이에 맞춘다. 주소창이 접히는 정도의 높이 변화로는 다시 정하지 않는다
-function fateMeasure(){
- const R=$('result-screen');if(R.hidden)return false;
- if(FATE.fixed)return true;// 줄어드는 동안은 풀이 화면이 붙박여 있어 잴 수 없다(재 둔 값을 쓴다)
- const vh=window.innerHeight,vw=document.documentElement.clientWidth;
- if(!FATE.vh||Math.abs(vh-FATE.vh)>120||vw!==FATE.vw){
-  FATE.vh=vh;FATE.vw=vw;FATE.peekH=Math.round(vh*.14);FATE.pullH=Math.round(vh*.9);
-  sizeRunway();FATE.crop=null;
+function loadFight(){
+ if(!fightScripts){
+  const v='?v=20261105-reading-edge-1';
+  fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
+   .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
+   .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))
+   .catch(error=>{fightScripts=null;throw error;});
  }
- FATE.top=R.offsetTop;FATE.bottom=FATE.top+R.offsetHeight;
- return true;
+ return fightScripts;
 }
-function fateReady(){const G=window.PaljaGame;return !!(G&&G.prepare&&!FATE.failed&&FATE.prepared===current);}
-function fateKick(){if(!FATE.raf)FATE.raf=requestAnimationFrame(fateUpdate);}
-// 순응 장면을 미리 만들어 둔다(무거운 일이라 스크롤이 쉴 때). 3D를 못 띄우는 기기는 그 이유를 남긴다
-function fateEnsure(){
- if(!current||$('result-screen').hidden||FATE.prepared===current||FATE.preparing)return;
- if(FIGHT.state!=='ready'){if(FIGHT.state==='idle')preloadFight();return;}
- FATE.preparing=true;
- const run=()=>{
-  FATE.preparing=false;
-  if(!current||$('result-screen').hidden||FATE.prepared===current||FATE.arrived)return;
-  try{
-   window.PaljaBoot();const game=window.PaljaGame;
-   if(!game||game.failed||!game.prepare){FATE.failed=game&&game.failed||'3D 화면을 만들지 못했습니다.';}
-   else{game.prepare(current);FATE.prepared=current;FATE.failed=null;FATE.on=false;FATE.crop=null;}
-  }catch(err){FATE.failed=String(err&&err.message||err).slice(0,160);}
-  // 준비되기 전에 런웨이로 내려와 있었다면 엿보기 자리로 부드럽게 돌려놓는다(화면이 갑자기 줄어든 채로 튀지 않게)
-  if(FATE.prepared===current&&FATE.sB&&window.scrollY>FATE.sB+2)window.scrollTo({top:FATE.sB,behavior:'smooth'});
-  fateKick();
- };
- if(window.requestIdleCallback)requestIdleCallback(run,{timeout:1500});else setTimeout(run,80);
+function atEdge(){
+ return !$('result-screen').hidden&&window.scrollY>=document.documentElement.scrollHeight-window.innerHeight-2;
 }
+function edgeHint(){
+ const hint=$('edge-hint'),busy=FATE.phase==='loading';
+ const label=busy?'불러오는 중…':'';
+ hint.classList.toggle('shown',busy||FATE.phase==='armed');hint.classList.toggle('busy',busy);
+ if($('edge-label').textContent!==label)$('edge-label').textContent=label;
+}
+function scheduleEdge(){
+ clearTimeout(FATE.timer);
+ if($('result-screen').hidden||FATE.phase!=='reading'||FATE.touching||!atEdge())return;
+ FATE.timer=setTimeout(()=>{
+  if(FATE.phase==='reading'&&!FATE.touching&&atEdge()){
+   FATE.phase='armed';edgeHint();
+  }
+ },280);
+}
+const pullThreshold=()=>fclamp(window.innerHeight*.10,52,84);
 function fateRect(el,root){let y=0,n=el;while(n&&n!==root){y+=n.offsetTop;n=n.offsetParent;}return n===root?y:null;}
 // 줄어드는 영역: 종이와 같은 비율로, 끝 문장이 종이의 끝 문장 자리(아래에서 8%)에 오게 자른다
 function fateCrop(vw,Hw,W0){
@@ -3727,7 +3704,7 @@ function fateFix(on){
   const w=R.clientWidth;
   sp.style.height=(FATE.bottom-FATE.top)+'px';sp.hidden=false;
   // 붙박는 순간의 자리를 기억한다(줄어드는 동안 주소창이 접혀 화면 높이가 바뀌어도 붙박인 화면은 그대로)
-  FATE.fixSB=FATE.sB;FATE.fixVh=window.innerHeight;
+  FATE.fixSB=FATE.sB;FATE.fixVh=window.innerHeight;FATE.fixVw=window.innerWidth;
   R.style.position='fixed';R.style.left='0';R.style.width=w+'px';R.style.top=(FATE.top-FATE.sB)+'px';
   // 맨 위 막대(sticky)는 붙박인 화면 안에서 브라우저마다 다르게 붙으므로, 자리를 차지한 채 보던 화면의 꼭대기에 직접 놓는다
   if(bar){bar.style.position='relative';bar.style.top=(FATE.fixSB-FATE.top)+'px';}
@@ -3738,7 +3715,7 @@ function fateFix(on){
   FATE.fixed=false;
  }
 }
-// p: 0(풀이 그대로) ~ 1(손에 든 종이 크기·자리). 보던 화면(엿보기 띠 위쪽)을 그대로 줄인다.
+// p: 0(풀이 그대로) ~ 1(손에 든 종이 크기·자리). 보던 화면을 그대로 줄인다.
 // 아래 끝은 처음 자리에서 종이 아래 끝으로만 움직여서, 줄어드는 내내 밑에 있는 3D 종이를 덮는다
 function fateApply(p){
  const R=$('result-screen');
@@ -3748,7 +3725,7 @@ function fateApply(p){
   fateFix(false);FATE.crop=null;return;
  }
  fateFix(true);
- const vw=parseFloat(R.style.width)||R.clientWidth,W0=FATE.fixSB-FATE.top,Hw=FATE.fixVh-FATE.peekH;
+ const vw=parseFloat(R.style.width)||R.clientWidth,W0=FATE.fixSB-FATE.top,Hw=FATE.fixVh;
  if(!FATE.crop)fateCrop(vw,Hw,W0);
  const C=FATE.crop,T=FATE.target,e=fateEase(p),s=Math.pow(T.w/C.w,e);
  const cx=C.x*e,cy=C.y*e,cw=flerp(vw,C.w,e),ch=flerp(Hw,C.h,e);
@@ -3765,125 +3742,128 @@ function fateApply(p){
  R.style.setProperty('--fb',(blank*blank*(3-2*blank)).toFixed(3));
  R.style.opacity=String(1-fade*fade*(3-2*fade));
 }
-function fateStatus(text){const st=$('runway-status');if(text){st.textContent=text;st.hidden=false;}else st.hidden=true;}
-function fateFail(){
- if(FATE.failShown)return;FATE.failShown=true;
- const load=FIGHT.state==='failed';
- $('fightWaitTitle').textContent=load?'족치기 화면을 불러오지 못했습니다.':'족치기 화면을 열지 못했습니다.';
- $('fightWaitDetail').textContent=load?'인터넷 연결을 확인하고 다시 시도해 주세요.':(FATE.failed||'');
- $('fightWaitBtn').textContent=load?'다시 시도':'돌아가기';$('fightWaitBtn').hidden=false;$('fightWait').hidden=false;
+function fateOff(){
+ ++FATE.serial;clearTimeout(FATE.timer);cancelAnimationFrame(FATE.raf);
+ FATE.phase='reading';FATE.raf=0;FATE.drag=null;FATE.touching=false;
+ FATE.wheelAt=-Infinity;FATE.wheelAmount=FATE.wheelDelta=0;FATE.wheelFresh=false;
+ if(FATE.audio){FATE.audio.close().catch(()=>{});FATE.audio=null;}
+ const game=window.PaljaGame;if(game&&game.stage==='behind')game.peek(false);
+ fateApply(0);edgeHint();$('fightWait').hidden=true;document.body.style.overflow='';
+}
+function playPaper(game,serial){
+ const R=$('result-screen');
+ FATE.top=R.offsetTop;FATE.bottom=FATE.top+R.offsetHeight;FATE.sB=window.scrollY;
+ resultScroll=FATE.sB;FATE.phase='pulling';edgeHint();fateFix(true);document.body.style.overflow='hidden';
+ game.peek(true);
+ const duration=matchMedia('(prefers-reduced-motion: reduce)').matches?200:880;
+ let elapsed=0,last=null;
+ function frame(now){
+  if(serial!==FATE.serial)return;
+  if(last!==null)elapsed+=Math.min(64,now-last);
+  last=now;
+  const p=Math.min(1,elapsed/duration);
+  if(p>0){fateApply(p);game.pull(p,fateEase(p)>=.8);}
+  if(p<1){FATE.raf=requestAnimationFrame(frame);return;}
+  if(!game.arrive()){fateOff();scheduleEdge();return;}
+  FATE.phase='arrived';FATE.raf=0;fateApply(0);stopLoading();screens.forEach(s=>$(s).hidden=true);
+  pushNav('fight');
+ }
+ FATE.raf=requestAnimationFrame(frame);
+}
+async function enterFromEdge(){
+ if(FATE.phase!=='armed'||!atEdge())return;
+ const serial=++FATE.serial;
+ FATE.phase='loading';FATE.drag=null;edgeHint();
+ try{
+  // 첫 대사의 소리는 새 스와이프의 재생 권한을 쓴다. 다운로드를 기다리면 그 권한이 끝날 수 있다.
+  if(window.PaljaGame?.unlock)window.PaljaGame.unlock();
+  else{
+   const AC=window.AudioContext||window.webkitAudioContext;
+   if(AC)try{FATE.audio=new AC();FATE.audio.resume().catch(()=>{});}catch(_){}
+  }
+  await loadFight();
+  // 캐시 적중 시에도 안내와 마지막 줄을 먼저 한 프레임 그린다.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if(serial!==FATE.serial)return;
+  if(!atEdge()){fateOff();scheduleEdge();return;}
+  window.PaljaBoot();
+  const game=window.PaljaGame;if(!game||!game.prepare)throw new Error(game&&game.failed||'3D 화면을 열지 못했습니다.');
+  game.unlock(FATE.audio);FATE.audio=null;
+  game.prepare(current);playPaper(game,serial);
+ }catch(error){
+  if(serial!==FATE.serial)return;
+  fateOff();FATE.phase='error';
+  $('fightWaitTitle').textContent='다음 화면을 열지 못했습니다.';
+  $('fightWaitDetail').textContent=String(error.message||error).slice(0,160);
+  $('fightWaitBtn').textContent=fightScripts?'돌아가기':'다시 시도';
+  $('fightWaitBtn').hidden=false;$('fightWait').hidden=false;
+ }
 }
 $('fightWaitBtn').addEventListener('click',()=>{
- $('fightWait').hidden=true;FATE.failShown=false;
- if(FIGHT.state==='failed'){FIGHT.state='idle';preloadFight();}
- if(FATE.sB)window.scrollTo({top:FATE.sB,behavior:'smooth'});
+ const retry=!fightScripts;fateOff();
+ if(retry&&atEdge()){FATE.phase='armed';enterFromEdge();}else scheduleEdge();
 });
-function fateUpdate(){
- FATE.raf=0;
- const R=$('result-screen');if(R.hidden||FATE.arrived)return;
- if(!fateMeasure())return;
- const y=window.scrollY,vh=window.innerHeight,s0=FATE.bottom-vh,sB=s0+FATE.peekH,sEnd=Math.max(sB+1,document.documentElement.scrollHeight-vh);
- FATE.s0=s0;FATE.sB=sB;FATE.sEnd=sEnd;
- if(y<sB-4){
-  if(seam.open&&FATE.p>0)closeSeam();
-  seam.at=-1;
- }else if(seam.at<0)seam.at=performance.now();
- if(y>=s0-vh*1.5)fateEnsure();
- const ready=fateReady(),game=window.PaljaGame;
- // ① 엿보기: 풀이의 아래 끝이 화면에 들어오면 밑에 3D를 깔고 그리기 시작한다
- const want=ready&&y>s0-40;
- if(want!==FATE.on){FATE.on=want&&!!game.peek(true);if(!want)game&&game.peek&&game.peek(false);}
- if(y>s0-40&&!ready){
-  if(FIGHT.state==='failed'||FATE.failed){fateStatus('');if(y>sB+8)fateFail();}
-  else fateStatus('불러오는 중…');
- }else fateStatus('');
- // ② 줄어들기
- const p=ready&&seam.open?fclamp((y-sB)/(sEnd-sB),0,1):0;
- fateApply(p);
- if(p!==FATE.p){FATE.p=p;if(ready)game.pull(p,fateEase(p)>=.8);}
- if(ready&&p>=.999)fateArrive();
+function checkEdge(){
+ if($('result-screen').hidden)return;
+ if((FATE.phase==='armed'||FATE.phase==='loading')&&!atEdge())fateOff();
+ scheduleEdge();
 }
-// 새 동작으로 경계를 넘은 뒤 멈추면 종이까지 이어 가고, 경계로 되돌리면 닫는다.
-function fateIdle(){
- FATE.idle=0;
- if(FATE.touching||FATE.arrived||$('result-screen').hidden)return;
- if(!seam.open)return;
- if(FATE.p>.005&&FATE.p<.999)window.scrollTo({top:FATE.sEnd,behavior:'smooth'});
- else if(FATE.p<=.005)closeSeam();
-}
-function fateArrive(){
- const game=window.PaljaGame;if(FATE.arrived||!game||!game.arrive())return;
- FATE.arrived=true;FATE.on=false;
- resultScroll=FATE.sB;// 뒤로 돌아오면 풀이 끝, 궁전이 살짝 비치는 자리
- fateApply(0);FATE.p=0;fateStatus('');
- stopLoading();screens.forEach(s=>$(s).hidden=true);$('fate-runway').hidden=true;$('fate-spacer').hidden=true;
- document.body.style.overflow='hidden';pushNav('fight');
-}
-// 엿보기를 걷고 원래 풀이 모습으로(입력 화면으로 갈 때 등)
-function fateOff(){
- closeSeam();
- const game=window.PaljaGame;
- if(FATE.on&&game&&game.peek)game.peek(false);
- FATE.on=false;FATE.p=0;fateApply(0);fateStatus('');
-}
-addEventListener('scroll',()=>{fateKick();clearTimeout(FATE.idle);FATE.idle=setTimeout(fateIdle,150);},{passive:true});
-// 화면 크기·방향이 바뀌면 붙박은 화면을 풀고 다시 잰다(다음 프레임에 새 크기로 다시 붙박는다)
-addEventListener('resize',()=>{FATE.crop=null;if(FATE.fixed&&Math.abs(window.innerHeight-FATE.fixVh)>120||FATE.fixed&&document.documentElement.clientWidth!==FATE.vw)fateFix(false);fateKick();});
+addEventListener('scroll',checkEdge,{passive:true});
+addEventListener('resize',()=>{
+ if(FATE.phase==='pulling'){
+  if(FATE.fixed&&(Math.abs(innerHeight-FATE.fixVh)>120||window.innerWidth!==FATE.fixVw)){
+   fateOff();scheduleEdge();
+  }
+ }else checkEdge();
+});
+try{new ResizeObserver(checkEdge).observe($('result-screen'));}catch(_){}
 addEventListener('touchstart',e=>{
- FATE.touching=true;
+ if($('result-screen').hidden)return;
+ FATE.touching=true;clearTimeout(FATE.timer);
  const t=e.touches[0];
- seam.touch=e.touches.length===1&&seamReady()?{id:t.identifier,x:t.clientX,y:t.clientY,driving:false}:null;
+ FATE.drag=e.touches.length===1&&FATE.phase==='armed'&&atEdge()?{id:t.identifier,x:t.clientX,y:t.clientY,distance:0}:null;
 },{passive:true});
-// Only a new, single-finger upward drag begun at the resting edge can expose the rest.
 addEventListener('touchmove',e=>{
- const g=seam.touch,t=e.touches[0];if(!g)return;
- if(e.touches.length!==1||t.identifier!==g.id){seam.touch=null;return;}
- const dy=g.y-t.clientY;
- if(!g.driving){
-  if(dy<0||Math.abs(t.clientX-g.x)>Math.max(16,dy)){seam.touch=null;return;}
-  if(e.cancelable)e.preventDefault();
-  if(dy<Math.max(48,Math.min(80,FATE.vh*.08))||!openSeam())return;
-  g.driving=true;
- }
- if(e.cancelable)e.preventDefault();
- window.scrollTo(0,FATE.sB+Math.max(0,dy));
+ const d=FATE.drag,t=e.touches[0];if(!d)return;
+ if(e.touches.length!==1||t.identifier!==d.id){FATE.drag=null;return;}
+ const dy=d.y-t.clientY;
+ if(dy<0||Math.abs(t.clientX-d.x)>Math.max(16,dy)||!e.cancelable){FATE.drag=null;return;}
+ e.preventDefault();d.distance=dy;
 },{passive:false});
+function endTouch(e){
+ const d=FATE.drag;FATE.drag=null;FATE.touching=e.touches.length>0;
+ const t=Array.from(e.changedTouches).find(t=>d&&t.identifier===d.id);
+ if(e.type==='touchend'&&!FATE.touching&&t&&d.distance>0&&d.y-t.clientY>=pullThreshold()&&Math.abs(t.clientX-d.x)<d.y-t.clientY)enterFromEdge();
+ else scheduleEdge();
+}
+for(const k of ['touchend','touchcancel'])addEventListener(k,endTouch,{passive:true});
 addEventListener('wheel',e=>{
- const dt=e.timeStamp-seam.wheelAt;
- const delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?FATE.vh:1);
- if(dt>230){
-  seam.wheelEligible=seamReady();seam.wheelTravel=0;
-  // Rendering a heavy scene can space out inertial events. A diminishing tail
-  // stays with the old gesture until input strengthens again or a fresh wheel notch repeats.
-  seam.wheelTail=delta>0&&delta<seam.wheelPrevious*.98;
- }else if(seam.wheelTail&&delta>=seam.wheelPrevious&&delta>0)seam.wheelTail=false;
- seam.wheelAt=e.timeStamp;seam.wheelPrevious=delta;
- if(!seam.wheelEligible||seam.open||e.ctrlKey||seam.wheelTail)return;
- if(delta<=0){seam.wheelEligible=false;return;}
+ if($('result-screen').hidden||e.ctrlKey||e.shiftKey||Math.abs(e.deltaX)>Math.abs(e.deltaY))return;
+ const dy=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?innerHeight:1),dt=e.timeStamp-FATE.wheelAt;
+ if(dt>240){
+  FATE.wheelAmount=0;
+  FATE.wheelFresh=FATE.phase==='armed'&&(dt>900||dy>=FATE.wheelDelta*.98);
+ }
+ FATE.wheelAt=e.timeStamp;FATE.wheelDelta=dy;
+ if(dy<=0){FATE.wheelFresh=false;FATE.wheelAmount=0;return;}
+ if(FATE.phase!=='armed'){scheduleEdge();return;}
+ if(!FATE.wheelFresh||!atEdge())return;
  if(e.cancelable)e.preventDefault();
- seam.wheelTravel+=delta;
- if(seam.wheelTravel>=48&&openSeam())window.scrollTo(0,FATE.sB+Math.min(seam.wheelTravel,FATE.vh*.35));
+ FATE.wheelAmount+=dy;
+ if(FATE.wheelAmount>=48)enterFromEdge();
 },{passive:false});
 addEventListener('keydown',e=>{
- if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||!['ArrowDown','PageDown','End',' '].includes(e.key)||!seamReady())return;
+ if(e.repeat||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||!['ArrowDown','PageDown','End',' '].includes(e.key)||FATE.phase!=='armed'||!atEdge())return;
  if(e.target.closest&&e.target.closest('button,input,select,textarea,[contenteditable]'))return;
- if(openSeam()){e.preventDefault();window.scrollTo({top:FATE.sB+FATE.pullH,behavior:'smooth'});}
+ e.preventDefault();enterFromEdge();
 });
-for(const k of ['touchend','touchcancel'])addEventListener(k,()=>{FATE.touching=false;seam.touch=null;clearTimeout(FATE.idle);FATE.idle=setTimeout(fateIdle,150);},{passive:true});
-// 소리는 손가락·마우스·키를 쓰는 순간에만 켤 수 있다: 엿보기 중에 화면을 만지면 미리 켜 둔다
-const fateUnlock=()=>{const game=window.PaljaGame;if(FATE.on&&game&&game.unlock)game.unlock();};
-for(const k of ['touchend','pointerup','keydown'])addEventListener(k,fateUnlock,{passive:true});
-// 키보드·화면 낭독기: 버튼 하나로 같은 길을 간다
 $('fate-go').addEventListener('click',()=>{
- fateUnlock();fateKick();
- if(openSeam())window.scrollTo({top:FATE.sB+FATE.pullH,behavior:'smooth'});else{fateEnsure();window.scrollTo({top:FATE.s0+FATE.peekH,behavior:'smooth'});}
+ if(FATE.phase==='armed'&&atEdge())enterFromEdge();
+ else if(FATE.phase==='reading'){window.scrollTo(0,document.documentElement.scrollHeight);scheduleEdge();}
 });
-try{new ResizeObserver(()=>{FATE.crop=null;fateKick();}).observe($('result-screen'));}catch(_){}
 window.__paljaLeave=()=>{
- popNav('fight');document.body.style.overflow='';
- FATE.arrived=false;FATE.on=false;FATE.prepared=null;FATE.p=0;closeSeam();
- showScreen(current?'result-screen':'input-screen');
- if(current){fateMeasure();window.scrollTo(0,resultScroll);fateEnsure();fateKick();}
+ popNav('fight');fateOff();showScreen(current?'result-screen':'input-screen');
+ if(current){window.scrollTo(0,resultScroll);scheduleEdge();}
 };
 window.__paljaRestart=resetAll;
 window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wallToUtc,gz,PLACE_MAP};

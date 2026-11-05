@@ -1318,9 +1318,9 @@ const AUDIO=(()=>{
    for(const [ms,g] of [[11,.5],[19,.35],[29,.3],[41,.22],[57,.16]]){const k=Math.floor(sr*ms/1000)+(c?37:0);if(k<len)d[k]+=g*(c?-.8:1);}}
   return b;
  }
- function init(){
+ function init(primed){
   if(ctx)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-  ctx=new AC();
+  ctx=primed||new AC();
   comp=ctx.createDynamicsCompressor();comp.threshold.value=-14;comp.knee.value=8;comp.ratio.value=5;comp.attack.value=.002;comp.release.value=.14;
   lim=ctx.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.09;
   master=ctx.createGain();master.gain.value=on?.95:0;
@@ -1334,7 +1334,7 @@ const AUDIO=(()=>{
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
   makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadFirstHitVoice();loadVictoryVoice();loadQuipVoice();loadRetortVoice();loadMusic();
  }
- function unlock(){try{init();if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
+ function unlock(primed){try{init(primed);if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
  function hold(on){try{if(tts){const s=window.speechSynthesis;if(s){if(on)s.pause();else s.resume();}}if(!ctx)return;const p=on?ctx.suspend():ctx.resume();if(p&&p.catch)p.catch(()=>{});}catch(_){}}
  function ready(){return ctx&&on&&(baking||ctx.state==='running');}
@@ -6521,8 +6521,10 @@ Object.assign(Emperor.prototype,{
    const old=this.severedHeads.shift(),bi=this.bits.findIndex(b=>b.obj===old);
    if(bi>=0)this.bits.splice(bi,1);BLOOD.forgetTree(old);old.removeFromParent();this.releaseLoose(old);
   }
-  // Detached side also has a closed, dimensional neck surface.
-  this.makeCutCap(head,V3(0,.02,0),new THREE.Quaternion(),.103,true,this.headKind==='rep'?this.M.liz:this.M.skin,this.headKind==='rep');
+  // 머리 쪽은 아래를 향한 단면이다. 위쪽을 남겨야 두개골과 얼굴이 함께 떨어진다.
+  // 턱 앞쪽으로 갈수록 낮춰 볼과 아래턱의 윤곽을 남긴다.
+  const underJaw=new THREE.Quaternion().setFromAxisAngle(V3(1,0,0),.29);
+  this.makeCutCap(head,V3(0,.005,-.012),underJaw,.103,false,this.headKind==='rep'?this.M.liz:this.M.skin,this.headKind==='rep');
   // 조각조각: 떨어진 머리에서 살점 왕창
   if(PREF.blood)CHUNKS.burst(jointW.clone().addScaledVector(upW,.05),8+(Math.random()*5|0),upW,.04,this.chunkKind({obj:(this.headKind==='rep'?this.repSkull:this.skull),part:'head'}),{speed:1.5});
   // 목 그루터기 막기 + 피
@@ -10627,8 +10629,7 @@ function render(){
 function frame(now){
  if(!G.running)return;G.raf=requestAnimationFrame(frame);
  const raw=(now-last)/1000;last=now;const dt=clamp(raw,0,.05);
- // Only a strip of the stationary congregation shows below the reading. Reuse
- // that frame until a pull or resize, so wheel/touch input gets the next frame.
+ // 첫 전환 프레임에서만 정지한 장면을 그린다. 종이가 줄어들기 시작하면 매 프레임 갱신한다.
  if(INTRO.stage==='behind'&&INTRO.pull===0){
   if(!INTRO.previewDirty)return;
   INTRO.previewDirty=false;
@@ -10696,7 +10697,7 @@ let rsT=0;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{i
 addEventListener('blur',clearPointers);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();crumpleRelease();AUDIO.stop(true);}else{last=performance.now();if(G.running){fitView();if(BEYOND.active){AUDIO.unlock();setTimeout(()=>{if(BEYOND.active&&!document.hidden)AUDIO.beyond();},250);}}}});
 
-window.PaljaGame={enter,leave,pause,prepare,peek,pull,arrive,paperRect(){return SUBMISSION.rect();},unlock(){AUDIO.unlock();},get stage(){return INTRO.stage;},fonts(){BUB.preload();},
+window.PaljaGame={enter,leave,pause,prepare,peek,pull,arrive,paperRect(){return SUBMISSION.rect();},unlock(primed){AUDIO.unlock(primed);},get stage(){return INTRO.stage;},fonts(){BUB.preload();},
  tick(dt=1/60,draw=true){step(dt);if(draw)render();},
  pick:pickAt,setTool,
  hitAt(x,y,kind){if(G.tool==='gun')return VM.fire(x,y);if(G.tool==='hand')return combatAttack(x,y,kind||'jab');return VM.attack(kind||'stab',x,y);},
