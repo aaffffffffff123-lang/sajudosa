@@ -4086,14 +4086,15 @@ const BLOOD=(()=>{
  const T={
   bruise:canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(92,30,96,.72)');r.addColorStop(.45,'rgba(130,40,86,.5)');r.addColorStop(.75,'rgba(176,58,70,.22)');r.addColorStop(1,'rgba(176,58,70,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}),
   red:canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,4,64,64,62);r.addColorStop(0,'rgba(214,52,62,.6)');r.addColorStop(.6,'rgba(220,70,70,.28)');r.addColorStop(1,'rgba(220,70,70,0)');g.fillStyle=r;g.fillRect(0,0,w,h);}),
-  // 너클 자국: 고리 네 개가 눌린 붉은 자국과 둘레 멍
-  knuckle:canvasTex(256,128,(g,w,h)=>{
-   const halo=g.createRadialGradient(128,64,10,128,64,122);halo.addColorStop(0,'rgba(150,36,66,.32)');halo.addColorStop(.7,'rgba(170,52,70,.16)');halo.addColorStop(1,'rgba(170,52,70,0)');
-   g.save();g.scale(1,.5);g.fillStyle=halo;g.beginPath();g.arc(128,128,124,0,TAU);g.fill();g.restore();
-   for(let i=0;i<4;i++){const x=50+i*52+rnd(-3,3),y=64+(i===0||i===3?6:0)+rnd(-3,3);
-    const f=g.createRadialGradient(x,y,2,x,y,22);f.addColorStop(0,'rgba(120,20,48,.55)');f.addColorStop(1,'rgba(150,30,56,0)');g.fillStyle=f;g.beginPath();g.arc(x,y,22,0,TAU);g.fill();
-    g.lineWidth=7;g.strokeStyle='rgba(176,22,40,.78)';g.beginPath();g.ellipse(x,y,18,15,0,0,TAU);g.stroke();
-    g.lineWidth=2.5;g.strokeStyle='rgba(255,170,160,.35)';g.beginPath();g.ellipse(x,y+3,17,14,0,.15*PI,.85*PI);g.stroke();}
+  // 한 번 눌린 살처럼 중심이 비껴 겹치는 얼룩. 테두리는 모두 부드럽게 사라진다.
+  knuckle:canvasTex(128,128,(g)=>{
+   const patches=[[63,65,54,32,-.16,'158,54,76',.36],[56,62,31,21,-.37,'102,42,70',.36],[80,57,22,15,.19,'137,46,64',.24]];
+   for(const [x,y,rx,ry,angle,rgb,alpha] of patches){
+    g.save();g.translate(x,y);g.rotate(angle);g.scale(rx,ry);
+    const tint=g.createRadialGradient(-.12,.06,0,0,0,1);
+    tint.addColorStop(0,'rgba('+rgb+','+alpha+')');tint.addColorStop(.52,'rgba('+rgb+','+alpha*.65+')');tint.addColorStop(1,'rgba('+rgb+',0)');
+    g.fillStyle=tint;g.fillRect(-1,-1,2,2);g.restore();
+   }
   }),
   // 총알구멍(옷): 파랗게 번진 자리 + 구멍
   hole:canvasTex(128,128,(g,w,h)=>{
@@ -7597,10 +7598,10 @@ Object.assign(Emperor.prototype,{
   const heavy=kind==='hook'||kind==='upper';
   this.hitCount=(this.hitCount||0)+1;
   const face=HEADS.test(part)&&part!=='crown'&&part!=='beard';
-  // 너클 자국: 마디 네 개가 눌린 붉은 자국. 잽은 가로, 훅은 세로로 찍힌다
+  // 타격 방향을 따라 붉은 멍이 번진다.
   if(part!=='crown'&&part!=='beard'){
    const ang=kind==='hook'?PI/2+rnd(-.25,.25):kind==='upper'?rnd(-.5,.5):rnd(-.2,.2),hitMeshes=this.flow&&this.flow[seg]&&this.flow[seg].length?this.flow[seg]:null;
-   BLOOD.decal('knuckle',seg,pt,n,face?.034:.046,{aspect:1.7,angle:ang,grid:4,meshes:hitMeshes});
+   BLOOD.decal('knuckle',seg,pt,n,face?.034:.046,{aspect:1.15,angle:ang,grid:4,meshes:hitMeshes});
    if(Math.random()<(heavy?.7:.35))BLOOD.decal('bruise',seg,pt,n,face?(heavy?.05:.04):.065,{grid:3,meshes:hitMeshes});
   }
   // 재생된 머리에는 옛 인간 얼굴·치아·코 좌표를 적용하지 않는다.
