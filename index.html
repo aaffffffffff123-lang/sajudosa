@@ -420,11 +420,18 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .year-rule{margin:12px 2px 0}
 
 /* 안내가 나타나도 마지막 줄과 스크롤 끝은 제자리에 둔다. */
-#edge-hint{display:grid;place-items:center;min-height:38px;margin:14px auto 0;text-align:center;color:var(--ink-2);font-size:14px;font-weight:600;visibility:hidden}
+#edge-hint{position:relative;display:grid;place-items:center;min-height:38px;margin:14px auto 0;text-align:center;color:var(--ink-2);font-size:14px;font-weight:600;visibility:hidden}
 #edge-hint>*{grid-area:1 / 1}
 #edge-hint.shown{visibility:visible}
 #edge-hint .choice-cue{margin:0}
 #edge-hint.busy .choice-cue{visibility:hidden}
+/* The face and label use the existing space below the verdict without moving the scroll edge. */
+.edge-dosa{display:none;position:absolute;top:0;width:49px;height:49px;transform-origin:50% 80%;pointer-events:none}
+#edge-hint.busy .edge-dosa{display:block;animation:edge-pop .28s ease-out both,edge-wink .48s step-end both}
+#edge-hint.busy #edge-label{position:absolute;top:51px;font-weight:700;line-height:1.3;color:var(--ink)}
+@keyframes edge-pop{0%{transform:translateY(7px) scale(.35);opacity:0}65%{transform:translateY(-1px) scale(1.12);opacity:1}100%{transform:none;opacity:1}}
+@keyframes edge-wink{0%,100%{--mark-open:1;--mark-wink:0}40%{--mark-open:0;--mark-wink:1}}
+@media(prefers-reduced-motion:reduce){#edge-hint.busy .edge-dosa{animation:none}}
 .choice-cue{display:block;width:30px;height:30px;margin:16px auto 0;color:var(--red-d);pointer-events:none;animation:choice-cue-pulse 1.6s ease-in-out infinite;transform-origin:center}
 @keyframes choice-cue-pulse{0%,58%,100%{transform:translateY(0) scale(1);opacity:.65}18%{transform:translateY(4px) scale(1.15);opacity:1}32%{transform:translateY(1px) scale(1.02);opacity:.8}44%{transform:translateY(3px) scale(1.1);opacity:1}}
 @media(prefers-reduced-motion:reduce){.choice-cue{animation:none;opacity:1}}
@@ -735,7 +742,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <p class="foot-note" id="foot-note"></p>
   <p class="last-line" id="last-line"></p>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
-  <div id="edge-hint"><span id="edge-label" role="status"></span><svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div id="edge-hint"><svg class="edge-dosa" viewBox="0 0 188 200" aria-hidden="true" focusable="false"><use href="#dosa-mark"/></svg><span id="edge-label" role="status"></span><svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
   </div>
   <button type="button" id="fate-go" class="sr-only">다음으로</button>
  </div>
@@ -779,11 +786,14 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
  <!-- 코 -->
  <path d="M152 136c-5 11-5 16 2 18c5 2 11 2 14-1c4-3 1-9-3-17" fill="#f0a87e" stroke="#261f3d" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
  <!-- 눈 -->
+ <g opacity="var(--mark-wink,1)">
  <path d="M121 133c5-8 15-8 21 0" fill="none" stroke="#261f3d" stroke-width="3.8" stroke-linecap="round"/>
  <path d="M118 137l-6 2M120 141l-5 5" fill="none" stroke="#261f3d" stroke-width="2.2" stroke-linecap="round"/>
- <ellipse cx="187" cy="131" rx="9.5" ry="11" fill="#fff" stroke="#261f3d" stroke-width="2.8"/>
+ </g>
+ <g id="dm-open-eye"><ellipse cx="187" cy="131" rx="9.5" ry="11" fill="#fff" stroke="#261f3d" stroke-width="2.8"/>
  <circle cx="188.6" cy="132.4" r="6" fill="#261f3d"/>
- <circle cx="191.2" cy="129.4" r="2.2" fill="#fff"/>
+ <circle cx="191.2" cy="129.4" r="2.2" fill="#fff"/></g>
+ <use href="#dm-open-eye" transform="translate(-55 2)" opacity="var(--mark-open,0)"/>
  <!-- 눈썹: 윙크 쪽은 내려가고 반대쪽은 치켜 올라감 -->
  <path d="M146 121c-9-5-21-4-29 2c-6 5-9 13-17 16c9 2 15-3 20-8c6-5 16-7 26-5z" fill="url(#dmBeard)" stroke="#261f3d" stroke-width="2.6" stroke-linejoin="round"/>
  <path d="M174 112c9-7 22-7 30-1c6 4 10 12 18 14c-8 3-14 0-19-4c-7-5-17-7-27-4z" fill="url(#dmBeard)" stroke="#261f3d" stroke-width="2.6" stroke-linejoin="round"/>
@@ -3323,7 +3333,7 @@ const V5={
   supported:{head:'당신도 남의 사정을 잘라 말하게 됩니다.',detail:'자격과 신임이 쌓이면 판단을 맡습니다. 아래에서는 사정을 봐달라 하고 위에서는 같은 기준을 지키라 합니다.',
    fate:'당신은 인정받아 얻은 권한을 지키려고 예전의 자신과 같은 사람에게 안 된다고 말하는 팔자입니다.',
    rule:'여럿을 맡은 사람이 한 사람의 사정에 흔들리면 나머지에게 본이 서지 않습니다. 권한을 받은 사람은 사사로운 마음부터 거두는 법입니다.',
-   caution:'사람을 거느리려면 사정마다 기준을 바꾸지 마세요. 아래 사람의 편의를 봐주다가 위에서 받은 신임부터 잃습니다.'}
+   caution:'사람을 쓸 때는 처음부터 손발이 맞는 이를 곁에 두세요. 일일이 일러 주지 않아도 당신 뜻을 아는 사람이라면 집에서부터 잘 배운 사람입니다.'}
  },
  /* 귀인: 사주 앱이면 다 있는 '도와줄 사람' 칸(2026-11-05). 사람들이 기대하는 귀인을 윗사람의 깔봄으로 뒤집는다.
   * 태어난 날의 위 글자로 찾는 귀인 글자(천을귀인)가 확인된 글자 가운데 있는지로만 고른다. 학력·출신 같은 직접적인 말은 순응 장면의 군중이 맡는다 */
@@ -3548,7 +3558,7 @@ function v5Reading(R,now){
  out.domains=doms;
  // 순응 장면의 군중이 「종이 봐」 하고 말할 근거: 그 사람 사주에 정말 있을 때만 true
  { const P2=P.slice(0,2).filter(p=>p&&p.known);
-   out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent',yeokma:(r.sinsal||[]).some(x=>x.key==='yeokma')}; }
+   out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent'}; }
  // 올해·내년
  const y0=r.years[0],adverse=!!(y0&&(y0.evidence||[]).some(e=>e.valence==='adverse'));
  out.yearRule=adverse?V5.yearRule.nation:V5.yearRule.vessel;
@@ -3761,7 +3771,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261105-crowd-stare-1';
+  const v='?v=20261106-crowd-walk-1';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))
@@ -3885,9 +3895,10 @@ async function enterFromEdge(){
    const AC=window.AudioContext||window.webkitAudioContext;
    if(AC)try{FATE.audio=new AC();FATE.audio.resume().catch(()=>{});}catch(_){}
   }
-  await loadFight();
-  // 캐시 적중 시에도 안내와 마지막 줄을 먼저 한 프레임 그린다.
-  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  // Load during the wink. On a slow connection the settled face stays alongside the status.
+  const winkMs=matchMedia('(prefers-reduced-motion: reduce)').matches?0:480;
+  const painted=new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>setTimeout(resolve,winkMs))));
+  await Promise.all([loadFight(),painted]);
   if(serial!==FATE.serial)return;
   if(!atEdge()){fateOff();scheduleEdge();return;}
   window.PaljaBoot();

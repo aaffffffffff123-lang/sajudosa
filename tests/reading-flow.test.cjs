@@ -160,7 +160,7 @@ test('seven office cases select different predicaments from real chart evidence'
   if(key==='mixed'){assert(r.a.structure.failure.some(f=>f.id==='mixed_officer'));assert(r.a.structure.success.includes('관인상생'));}
   if(key==='challenge')assert(r.a.structure.failure.some(f=>f.id==='hurt_officer'));
   if(key==='hidden'){assert(r.fate.officer.hidden.length);assert.equal(r.fate.officer.visible.length,0);assert(!['weak','absent'].includes(r.a.families.관성.level));}
-  if(key==='supported'){assert(r.a.structure.success.includes('관인상생'));assert(!['신약','극약'].includes(r.a.strength.label));assert.match(office.fates[0],/얻은 권한을 지키려고/);assert.match(v.cautions[2],/사람을 거느리려면/);assert(!/정할 권한까지 바라면/.test(v.cautions.join(' ')));}
+  if(key==='supported'){assert(r.a.structure.success.includes('관인상생'));assert(!['신약','극약'].includes(r.a.strength.label));assert.match(office.fates[0],/얻은 권한을 지키려고/);assert.match(v.cautions[2],/사람을 쓸 때는 처음부터 손발이 맞는 이를/);assert(!/정할 권한까지 바라면/.test(v.cautions.join(' ')));}
  }
  assert.equal(seen.size,7);
 });
