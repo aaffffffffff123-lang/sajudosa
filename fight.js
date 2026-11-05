@@ -99,10 +99,14 @@ const FIGHT_CSS = `
 #fight .audio-levels label{display:flex;justify-content:space-between;font-size:14px}
 #fight .audio-levels output{font-variant-numeric:tabular-nums;font-size:12px}
 #fight .audio-levels input{display:block;width:100%;height:28px;margin:2px 0 8px;accent-color:#8b3035}
-#fight #submitDock:not([hidden]){animation:submit-appear .35s ease-out both}
-@keyframes submit-appear{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){#fight #submitDock{animation:none}}
-#fight #submitDock .btn{box-shadow:0 4px 0 var(--ink),0 6px 18px rgba(0,0,0,.22)}
+/* 풀이 화면 밑에 깔려 있는 동안(종이로 줄어드는 중): 화면 조작은 풀이 쪽으로 넘기고 위쪽 버튼은 감춘다 */
+#fight.behind{pointer-events:none}
+#fight.behind .ftop,#fight.behind .dock,#fight.behind #crumpleHint{opacity:0;visibility:hidden}
+#fight .ftop{transition:opacity .4s ease-out}
+/* 순응 장면 안내: 종이를 꾹 눌러 구기면 걸어 나간다 */
+#fight #crumpleHint{position:absolute;left:50%;bottom:calc(16px + var(--safe-b));z-index:7;transform:translateX(-50%);max-width:calc(100vw - 24px);padding:9px 15px;border-radius:999px;background:rgba(12,20,21,.86);border:1px solid #6c624b;color:#efe5cb;font-size:13.5px;font-weight:600;line-height:1.35;text-align:center;white-space:nowrap;pointer-events:none;transition:opacity .45s ease-out,transform .45s ease-out}
+#fight #crumpleHint.off{opacity:0;transform:translate(-50%,10px)}
+@media(prefers-reduced-motion:reduce){#fight #crumpleHint{transition:none}}
 #fight .modal{position:absolute;inset:0;z-index:20;background:rgba(36,28,58,.48);display:flex;align-items:center;justify-content:center;padding:16px}
 #fight .msheet{width:min(100%,400px);max-height:calc(100% - 24px);overflow:auto;background:#fff;border-radius:20px;box-shadow:0 12px 40px rgba(0,0,0,.28);padding:18px 18px 16px}
 #fight .msheet h2{margin:0 0 6px;font-size:19px;font-weight:800}
@@ -142,8 +146,6 @@ const FIGHT_CSS = `
 #fight #trophyPages button{padding:5px 12px;border:1px solid #65513b;border-radius:6px;background:#30271f;color:#f3e8cf}
 #fight #trophyPages button:disabled{opacity:.3}
 
-#fight #submitDock{width:min(100%,420px);padding-bottom:calc(16px + var(--safe-b))}
-#fight #submitFight{font-size:16px}
 #fight.accepting-fate .ftop{padding-right:10px}
 #fight.accepting-fate .gauge{visibility:hidden}
 
@@ -194,7 +196,6 @@ const FIGHT_CSS = `
  #fight .dock#dock .hint{position:fixed;left:50%;bottom:calc(8px + var(--safe-b));transform:translateX(-50%);max-width:56vw;white-space:nowrap}
  #fight #offerScene{padding:48px 145px 10px 8px}
  #fight #offerScene .offer-stack{width:250px;height:350px;transform:scale(.74);transform-origin:center}
- #fight #submitDock{left:auto;right:10px;bottom:8px;transform:none;width:min(48vw,390px);max-height:calc(100vh - 68px);overflow:auto;padding:0 4px 6px}
 }
 @media (prefers-reduced-motion:reduce){#fight #again{transition:none}#fight .gauge.hit{animation:none}#fight .chorus{transition:none!important}#fight .chorus span,#fight .issued-paper,#fight .offer-command{animation:none!important}#fight .fate-paper,#fight .other-fate,#fight .revival-seal,#fight #goldShell{animation-duration:.01s!important;animation-delay:0s!important}#fight #offerScene.breaking .other-fate{animation:none!important;transform:rotate(-1deg) translateY(-150px) scale(1.12);opacity:1}#fight .offer-stack .scrap{display:none}}
 
@@ -264,9 +265,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="tool" type="button" data-tool="gun" aria-label="권총"><span class="card" style="--c:#6a4cc0"><svg class="art" viewBox="0 0 48 48"><use href="#fi-gun"/></svg><span class="nm">권총</span></span><span class="ammo" id="ammo" hidden>8</span></button>
   </div>
  </div>
- <div class="dock" id="submitDock" hidden>
-  <button type="button" class="btn danger" id="submitFight">다시 생각해보니까 족치기</button>
- </div>
+ <div id="crumpleHint" class="off" role="status" aria-live="polite">종이를 꾹 눌러 구기면 천지신명을 족치러 갑니다</div>
  <div class="sr" id="heldFortuneText"></div>
  <div class="modal" id="settingsModal" hidden>
   <div class="msheet" role="dialog" aria-modal="true" aria-labelledby="fSetTitle">
@@ -344,9 +343,10 @@ window.PaljaBoot=function(){
  catch(err){
   const fb=document.getElementById('fallback');if(fb){fb.hidden=false;document.getElementById('fallbackTitle').textContent='족치기 화면을 열지 못했습니다.';document.getElementById('fallbackDetail').textContent=String(err&&err.message||err).slice(0,160);}
   const leave=()=>{const f=document.getElementById('fight');if(f)f.hidden=true;if(window.__paljaLeave)window.__paljaLeave();};
-  window.PaljaGame={enter(){
+  // 3D를 띄울 수 없는 기기: 풀이 끝에서 종이로 줄어들지 않고, index.html이 이 이유를 안내창으로 보여 준다
+  window.PaljaGame={failed:String(err&&err.message||err).slice(0,160)||'3D 화면을 만들지 못했습니다.',enter(){
    const f=document.getElementById('fight');if(!f)return;f.hidden=false;
-   document.getElementById('dock').hidden=true;document.getElementById('submitDock').hidden=true;
+   document.getElementById('dock').hidden=true;
    f.querySelector('.gauge').hidden=true;document.getElementById('soundBtn').hidden=true;document.getElementById('settingsBtn').hidden=true;
    document.getElementById('fightBack').onclick=leave;fb.hidden=false;
   },leave,pause(){}};
@@ -1817,6 +1817,25 @@ const AUDIO=(()=>{
  // 종이가 찢어지는 소리: 높고 거친 찢김 두 겹 + 섬유가 뜯기는 바스락
  function paper(k=1){if(!ready())return;const t=ctx.currentTime+.005,o=out(R(-.2,.2),.12),d=drive(o,1.4);
   tearNoise(d,t,.34,3200,.85*k,R(30,42));tearNoise(d,t+.03,.26,1500,.42*k,R(55,70));clicks(o,t+.02,7,.3,5200,.18*k);}
+ // 종이 구기기: 섬유가 꺾이는 아주 짧은 딱딱 소리가 잦게 겹친다(세게 쥘수록 자주). 가끔 크게 접히는 소리
+ function crumple(k=1){if(!ready())return;const t=ctx.currentTime+.002+Math.random()*.012,o=out(R(-.3,.3),.06);
+  const n=1+(Math.random()<.45?1:0)+(Math.random()<.15?1:0);
+  for(let i=0;i<n;i++)nz(o,t+Math.random()*.018,{dur:R(.003,.011),peak:R(.3,.8)*k,f:R(1700,7600),q:R(.7,2.2)});
+  if(Math.random()<.22)nz(o,t,{dur:R(.025,.06),peak:R(.18,.4)*k,f:R(380,1100),q:R(.5,1.1)});}
+ // 다 구겨 뭉칠 때: 촘촘한 바스락 한 덩이 + 낮게 눌리는 소리
+ function crunch(k=1){if(!ready())return;const t=ctx.currentTime+.004,o=out(R(-.15,.15),.08),d=drive(o,1.3);
+  for(let i=0;i<22;i++)nz(o,t+Math.random()*.17,{dur:R(.004,.014),peak:R(.35,.85)*k,f:R(1500,7000),q:R(.8,2)});
+  nz(d,t,{dur:.14,peak:.6*k,a:.01,f:900,f1:420,q:.7});nz(d,t+.05,{dur:.09,peak:.4*k,f:2600,f1:1400,q:.9});}
+ // 종이 뭉치가 바닥에 떨어지는 소리(가볍게, 넓은 방 울림)
+ function paperDrop(k=1){if(!ready())return;const t=ctx.currentTime+.003,o=out(R(-.1,.1),.24);
+  nz(o,t,{dur:.035,peak:.45*k,f:1300,q:.8});nz(o,t+.09,{dur:.025,peak:.2*k,f:1600,q:.9});clicks(o,t+.01,4,.06,4200,.16*k);}
+ // 발소리: 돌바닥을 딛는 낮은 울림 + 신발 끌리는 소리
+ function footstep(k=1){if(!ready())return;const t=ctx.currentTime+.004,o=out(R(-.12,.12),.35);
+  osc(o,t,{f0:R(92,110),f1:48,dur:.09,peak:.45*k});nz(o,t,{dur:.045,peak:.26*k,f:R(500,700),type:'lowpass',q:.6});nz(o,t+.012,{dur:.06,peak:.08*k,f:R(2200,3200),q:.9});}
+ // 앞사람들이 비켜서는 소리: 옷 스치는 소리와 발 끄는 소리가 겹친다
+ function crowdShuffle(k=1){if(!ready())return;const t=ctx.currentTime+.01,o=out(0,.3);
+  for(let i=0;i<8;i++)nz(o,t+R(0,.75),{dur:R(.12,.26),peak:R(.08,.18)*k,a:R(.03,.07),f:R(900,2200),f1:R(500,900),q:R(.5,1),curve:'lin'});
+  for(let i=0;i<6;i++)nz(o,t+R(.05,.85),{dur:R(.05,.09),peak:R(.14,.24)*k,f:R(380,620),type:'lowpass',q:.6});}
  // 그림자가 지나갈 때: 아주 낮게 차오르는 울림
  function omen(k=1){if(!ready())return;const t=ctx.currentTime+.01,o=out(0,.5),d=drive(o,1.6);
   nz(d,t,{dur:.9,peak:.5*k,a:.7,f:150,f1:70,type:'lowpass',q:.7,curve:'lin'});osc(d,t,{f0:42,f1:30,dur:1.1,a:.6,peak:.55*k});
@@ -1912,7 +1931,7 @@ const AUDIO=(()=>{
   });
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
- return {unlock,hold,crowdSob,charge,twinkle,boom,stamp,paper,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ return {unlock,hold,crowdSob,charge,twinkle,boom,stamp,paper,crumple,crunch,paperDrop,footstep,crowdShuffle,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -2225,7 +2244,7 @@ function safeRect(){
  return {top,bot:Math.max(top+40,bot),left,right};
 }
 function frameCamera(name,outPos,outLook){
- if(name==='debug'||name==='cut')return;
+ if(name==='debug'||name==='cut'||name==='walk')return;
  if(name==='congregation'){
   CAM.fovBase=innerWidth<innerHeight?52:46;
   outPos.set(.12,1.55,6.8);outLook.set(0,1.45,-.2);return;
@@ -2255,7 +2274,7 @@ function fitView(){
  const w=innerWidth||1,h=innerHeight||1;renderer.setSize(w,h,false);
  camera.aspect=w/h;vmCam.aspect=w/h;
  frameCamera(CAM.frame,CAM.goalPos,CAM.goalLook);
- if(CAM.frame!=='cut'&&CAM.frame!=='debug'||!CAM.ready)snapCam();
+ if(CAM.frame!=='cut'&&CAM.frame!=='debug'&&CAM.frame!=='walk'||!CAM.ready)snapCam();
  camera.fov=CAM.fov;camera.updateProjectionMatrix();vmCam.updateProjectionMatrix();
  SBLOOD.resize(w,h);
 }
@@ -2265,7 +2284,8 @@ function camHit(o){
 }
 function camShake(a){camHit({shake:a});}
 function updateCamera(dt){
- if(combatCamera(dt)){}
+ if(introCamera(dt)){}
+ else if(combatCamera(dt)){}
  else if(CAM.frame==='cut'||CAM.frame==='debug'){const k=1-Math.exp(-dt*3);CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);}
  else{CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);}
  // 떨림: 프레임마다 새로 뽑은 방향으로 튄다(사인파보다 또렷하다). 빠르게 줄어든다
@@ -3262,13 +3282,16 @@ const CROWD=(()=>{
    for(const [mesh,original,reduced] of lod){mesh.geometry=original;reduced.dispose();}
    for(const list of mapped.values())chunks.push([mergeMeshes(list,inv),list[0].material]);
    for(const [geo,mat] of chunks){
-    const mesh=new THREE.InstancedMesh(geo,mat,placements[p.i].length);mesh.frustumCulled=false;mesh.castShadow=false;
+    const mesh=new THREE.InstancedMesh(geo,mat,placements[p.i].length);mesh.frustumCulled=false;mesh.castShadow=false;mesh.userData.pi=p.i;
     placements[p.i].forEach((v,j)=>{dummy.position.set(v.x,0,v.z);dummy.rotation.set(0,v.turn,0);dummy.scale.setScalar(v.scale);dummy.updateMatrix();mesh.setMatrixAt(j,dummy.matrix);});
     mesh.instanceMatrix.needsUpdate=true;congregation.add(mesh);
    }
    p.root.visible=false;
   }
   congregation.userData.count=placements.reduce((n,a)=>n+a.length,0);
+  // 족치러 걸어 나갈 때 사람마다 비켜설 수 있게 자리 목록을 남겨 둔다(SUBMISSION.part)
+  for(const list of placements)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;}
+  congregation.userData.place=placements;
   return congregation;
  }
  return {root,people,congregationView,reset,update,hide,grabStart,wallStart,witnessHit,reviveStart,gatherStart,impact,restamp,cheer,sides,handTarget,get mode(){return state.mode;},get rev(){return rev;}};
@@ -3278,10 +3301,16 @@ const CROWD=(()=>{
 const SUBMISSION=(()=>{
  const hands=grp(vmScene,null,'held-fortune');hands.visible=false;
  const paper=grp(hands,[0,0,0],'my-fortune');
- const stock=new THREE.MeshBasicMaterial({color:0xe9d8aa,toneMapped:false});
- mk(new THREE.BoxGeometry(.296,.4,.004),stock,paper,{cast:false,receive:false});
- const front=new THREE.MeshBasicMaterial({toneMapped:false});
- mk(new THREE.PlaneGeometry(.288,.392),front,paper,{p:[0,0,.003],cast:false,receive:false});
+ /* 종이 한 장: 앞면(풀이 마지막 화면)과 뒷면(종이색)이 같은 격자를 나눠 쓴다. 앞면은 앞에서만, 뒷면은 뒤에서만 그려서
+  * 구겨져 뒤집힌 자리는 종이 뒷면이 보인다. 구길 때는 격자를 움직이고 꼭짓점 색으로 주름 그늘을 칠한다 */
+ const SX=22,SY=30,HW=.148,HH=.2;
+ const sheetGeo=new THREE.PlaneGeometry(HW*2,HH*2,SX,SY);
+ const base=Float32Array.from(sheetGeo.attributes.position.array);
+ sheetGeo.setAttribute('color',new THREE.Float32BufferAttribute(new Float32Array(sheetGeo.attributes.position.count*3).fill(1),3));
+ const front=new THREE.MeshBasicMaterial({toneMapped:false,vertexColors:true});
+ const stock=new THREE.MeshBasicMaterial({color:0xe9d8aa,toneMapped:false,vertexColors:true,side:THREE.BackSide});
+ mk(sheetGeo,front,paper,{cast:false,receive:false});
+ mk(sheetGeo,stock,paper,{cast:false,receive:false});
  const skin=STD('#dca380',{roughness:.78}),nail=STD('#e5baa0',{roughness:.65}),sleeve=STD('#263d52',{roughness:.94}),cuff=STD('#203448',{roughness:.96});
  // A continuous wrist/palm silhouette. Local +x is the outside of each hand;
  // +z faces the reader. The sheet stays between the thumb and all four fingers.
@@ -3293,9 +3322,10 @@ const SUBMISSION=(()=>{
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setIndex(idx);geo.computeVertexNormals();
   return mk(geo,mat,parent,{cast:false,receive:false});
  }
+ const HANDS=[];
  for(const side of [-1,1]){
   const hand=grp(hands,[side*.148,-.12,0],side<0?'fortune-left-hand':'fortune-right-hand');
-  hand.scale.x=side;
+  hand.scale.x=side;hand.userData.side=side;HANDS.push(hand);
   handLoft(hand,sleeve,[[.071,-.28,-.035,.031,.026],[.052,-.19,-.028,.028,.023],[.035,-.10,-.021,.023,.019],[.031,-.077,-.019,.022,.018]]);
   handLoft(hand,cuff,[[.032,-.086,-.019,.023,.019],[.030,-.074,-.018,.022,.018]]);
   handLoft(hand,skin,[[.031,-.082,-.019,.017,.013],[.027,-.060,-.018,.017,.013],[.020,-.040,-.017,.023,.016],[.018,-.020,-.017,.025,.016],[.017,-.002,-.018,.022,.014],[.014,.010,-.019,.014,.010],[.012,.015,-.019,.003,.003]]);
@@ -3312,53 +3342,213 @@ const SUBMISSION=(()=>{
   mk(sphereGeo(12),nail,hand,{p:[-.0105,.002,.0206],s:[.0053,.007,.0011],r:[0,0,.45],cast:false,receive:false});
   hand.updateMatrixWorld(true);mergeChildren(hand);
  }
- let crowd=null,texture=null,next=0,line=0;
- const clean=t=>String(t||'').replace(/\*\*/g,'').replace(/<[^>]*>/g,'').trim();
+ let crowd=null,texture=null,next=0,line=0,lastResult=null,fontWait=false;
+ const clean=t=>String(t||'').replace(/\*\*/g,'').replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim();
+ /* 손에 든 종이 = 풀이 화면의 마지막: 이름, 전체 풀이 한 줄, 운명 확정 도장, 판정 안내, 「당신은 그렇게 태어났습니다.」
+  * 풀이 화면이 이 종이로 줄어들기 때문에 같은 글꼴(고운바탕·IBM Plex Sans KR)과 같은 빨강을 쓴다 */
+ const SERIF='"Gowun Batang","Noto Serif KR",serif',SANS='"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+ function wrapWords(g,text,width){
+  const rows=[];let row='';
+  for(const word of text.split(' ')){
+   const tryRow=row?row+' '+word:word;
+   if(g.measureText(tryRow).width<=width){row=tryRow;continue;}
+   if(row)rows.push(row);
+   if(g.measureText(word).width<=width){row=word;continue;}
+   row='';for(const ch of Array.from(word)){if(g.measureText(row+ch).width>width){rows.push(row);row=ch;}else row+=ch;}
+  }
+  if(row)rows.push(row);return rows;
+ }
+ function drawSeal(g,cx,cy,size){
+  g.save();g.translate(cx,cy);g.rotate(-8*PI/180);const s=size/64;g.scale(s,s);
+  const rr=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();};
+  rr(-29,-29,58,58,10);g.fillStyle='#e0402a';g.fill();g.lineWidth=2.6;g.strokeStyle='#261f3d';g.stroke();
+  rr(-23.5,-23.5,47,47,6);g.lineWidth=1.8;g.strokeStyle='#fff';g.stroke();
+  g.fillStyle='#fff';g.textAlign='center';g.textBaseline='alphabetic';g.font='19px "Black Han Sans",'+SANS;
+  g.fillText('운',-10,-2);g.fillText('명',10,-2);g.fillText('확',-10,19);g.fillText('정',10,19);
+  g.restore();
+ }
  function fortune(result){
-  const r=result&&result.reading||{},name=clean(result&&result.input&&result.input.name)||'나';
-  const pillars=(r.pillars||[]).map(p=>p.known?p.gz:'미상').join('  ');
-  const title=clean(r.core&&r.core.title),body=clean(r.core&&r.core.text);
-  $('#heldFortuneText').textContent=[name+'의 운세',pillars,title,body].filter(Boolean).join('\n');
+  if(lastResult!==result)fontWait=false;lastResult=result;
+  const P=result&&result.paper||{},r=result&&result.reading||{},name=clean(result&&result.input&&result.input.name);
+  const title=name?name+'님의 사주':'나의 사주',verdict=clean(P.verdict||r.verdict),note=clean(P.fixed)||'위 판정은 본인의 의사와 관계없이 적용됩니다.',end='당신은 그렇게 태어났습니다.';
+  $('#heldFortuneText').textContent=[title,'전체 풀이',verdict,note,end].filter(Boolean).join('\n');
   if(texture)texture.dispose();
-  texture=canvasTex(512,700,(g,w,h)=>{
-   const gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,'#fff7dc');gr.addColorStop(1,'#dfc895');g.fillStyle=gr;g.fillRect(0,0,w,h);
-   g.strokeStyle='#806338';g.lineWidth=3;g.strokeRect(15,15,w-30,h-30);g.lineWidth=1;g.strokeRect(24,24,w-48,h-48);
-   g.textAlign='center';g.fillStyle='#6f2c23';g.font='bold 28px serif';g.fillText('四 柱 命 理',w/2,74);
-   g.fillStyle='#30271d';g.font='bold 39px "Noto Serif KR",serif';g.fillText(name+'의 운세',w/2,132,440);
-   g.font='27px serif';g.fillText(pillars,w/2,186,430);
-   g.strokeStyle='#a18a5a';g.beginPath();g.moveTo(54,212);g.lineTo(458,212);g.stroke();
-   const wrap=(text,y,size,maxLines,color)=>{
-    g.textAlign='left';g.fillStyle=color;g.font=`${size}px "Noto Serif KR",serif`;
-    const rows=[];let row='';for(const c of Array.from(text)){if(c==='\n'||g.measureText(row+c).width>398){rows.push(row);row=c==='\n'?'':c;}else row+=c;}if(row)rows.push(row);
-    rows.slice(0,maxLines).forEach((t,i)=>g.fillText(t+(i===maxLines-1&&rows.length>maxLines?'…':''),57,y+i*(size*1.5),402));
-   };
-   wrap(title,264,31,2,'#6c2c25');wrap(body,378,27,6,'#3f3527');
-   g.textAlign='center';g.fillStyle='rgba(137,33,27,.65)';g.font='bold 27px serif';g.strokeStyle='rgba(137,33,27,.65)';g.lineWidth=2;g.strokeRect(380,607,67,53);g.fillText('命',413,643);
-  },{srgb:true});front.map=texture;front.needsUpdate=true;
+  texture=canvasTex(592,800,(g,w,h)=>{
+   const gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,'#fff8de');gr.addColorStop(1,'#ecd9a8');g.fillStyle=gr;g.fillRect(0,0,w,h);
+   g.strokeStyle='#806338';g.lineWidth=3;g.strokeRect(16,16,w-32,h-32);g.lineWidth=1;g.strokeRect(26,26,w-52,h-52);
+   const X=64,W=w-128;
+   g.textAlign='left';g.textBaseline='alphabetic';
+   g.fillStyle='#2a2235';g.font='700 34px '+SERIF;g.fillText(title,X,98,W-120);
+   // 「전체 풀이」 칸 이름과 삼각형 눈
+   g.save();g.translate(X+11,134);g.fillStyle='#e0402a';g.strokeStyle='#261f3d';g.lineWidth=2;g.beginPath();g.moveTo(0,-11);g.lineTo(11,8);g.lineTo(-11,8);g.closePath();g.fill();g.stroke();
+   g.fillStyle='#fff';g.beginPath();g.ellipse(0,2,4.6,2.6,0,0,TAU);g.fill();g.fillStyle='#261f3d';g.beginPath();g.arc(0,2,1.6,0,TAU);g.fill();g.restore();
+   g.fillStyle='#b52a17';g.font='700 23px '+SANS;g.fillText('전체 풀이',X+30,142);
+   drawSeal(g,w-112,104,96);
+   g.strokeStyle='#c9ac72';g.lineWidth=2;g.setLineDash([9,7]);g.beginPath();g.moveTo(X,176);g.lineTo(X+W,176);g.stroke();g.setLineDash([]);
+   // 전체 풀이: 길면 글자를 줄여 판정 안내와 끝 문장 사이에 들어가게
+   let size=37,rows;
+   for(;size>=27;size-=2){g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);if(232+rows.length*size*1.46<=600)break;}
+   g.fillStyle='#261f3d';g.font='700 '+size+'px '+SERIF;
+   let y=232;rows.forEach(t=>{g.fillText(t,X,y);y+=size*1.46;});
+   g.fillStyle='#7a7290';g.font='400 20px '+SANS;
+   y+=8;for(const t of wrapWords(g,note,W)){g.fillText(t,X,y);y+=30;}
+   g.strokeStyle='#a68b56';g.lineWidth=1.5;g.beginPath();g.moveTo(X,676);g.lineTo(X+W,676);g.stroke();
+   g.textAlign='center';g.fillStyle='#261f3d';g.font='700 33px '+SERIF;g.fillText(end,w/2,738,W);
+  },{srgb:true});
+  texture.anisotropy=8;front.map=texture;front.needsUpdate=true;
+  // 풀이 화면의 글꼴이 아직 안 받아졌으면 받아지는 대로 다시 그린다
+  try{
+   const want=['700 34px "Gowun Batang"','700 23px "IBM Plex Sans KR"','19px "Black Han Sans"'];
+   if(!fontWait&&document.fonts&&!want.every(f=>document.fonts.check(f))){
+    fontWait=true;Promise.all(want.map(f=>document.fonts.load(f))).then(()=>{if(lastResult===result&&texture)fortune(result);},()=>{});
+   }
+  }catch(_){}
  }
- function begin(result){
-  crowd=CROWD.congregationView();crowd.visible=true;
-  fortune(result);hands.visible=true;line=0;next=G.time+.6;
-  if(G.E){G.E.tabletHeld=false;G.E.tablet.visible=false;}
+
+ /* ---- 구기기 ----
+  * c=0 반듯한 종이 → c≈.5 주름지며 오그라든 종이 → c=1 손안의 종이 뭉치.
+  * 1단계는 겹친 사인 물결로 주름을, 2단계는 종이 위 자리(u,v)를 울퉁불퉁한 공 위 자리로 옮겨 뭉친다 */
+ const CR={c:-1,ph:[],drop:null};
+ function newPhases(){CR.ph=Array.from({length:10},()=>rnd(0,TAU));}
+ newPhases();
+ const _ln=V3(.25,.45,.86).normalize();
+ function shape(c){
+  if(Math.abs(c-CR.c)<.0005)return;CR.c=c;
+  const pos=sheetGeo.attributes.position,colr=sheetGeo.attributes.color,ph=CR.ph;
+  const k1=smooth(c/.55),m=smoother((c-.28)/.72),R=.052;
+  for(let i=0;i<pos.count;i++){
+   const x=base[i*3],y=base[i*3+1],u=x/HW,v=y/HH;
+   const wv=Math.sin(u*6.3+ph[0])*Math.sin(v*4.9+ph[1])+.55*Math.sin(u*12.7+v*8.3+ph[2])+.35*Math.sin(u*21.1-v*17.9+ph[3])+.22*Math.sin(u*33.4-v*29.2+ph[4]);
+   let px=x*(1-.34*k1)+.009*k1*Math.sin(v*9.1+ph[5]),py=y*(1-.3*k1)+.009*k1*Math.sin(u*8.3+ph[6]),pz=.024*k1*wv;
+   if(m>0){
+    const th=u*PI*.86,phv=v*PI*.46,cp=Math.cos(phv);
+    const lump=R*(1+.26*(.6*Math.sin(u*7.3+v*5.1+ph[7])+.4*Math.sin(u*13.1-v*11.7+ph[8])));
+    px=lerp(px,Math.sin(th)*cp*lump,m);py=lerp(py,Math.sin(phv)*lump*.94-.006,m);pz=lerp(pz,Math.cos(th)*cp*lump*.92+.01,m);
+   }
+   pos.setXYZ(i,px,py,pz);
+  }
+  pos.needsUpdate=true;
+  if(c>0){sheetGeo.computeVertexNormals();}
+  const nrm=sheetGeo.attributes.normal,sh=smooth(c*1.7);
+  for(let i=0;i<pos.count;i++){
+   let s=1;
+   if(sh>0){const d=Math.abs(nrm.getX(i)*_ln.x+nrm.getY(i)*_ln.y+nrm.getZ(i)*_ln.z);s=lerp(1,clamp(.44+.6*d,.36,1),sh);}
+   colr.setXYZ(i,s,s,s*.97);
+  }
+  colr.needsUpdate=true;sheetGeo.computeBoundingSphere();
+  paper.rotation.set(-.22*m,.12*m,.34*m);paper.position.set(0,.03*smooth(c*1.3),0);
  }
- function update(){
-  if(!hands.visible)return;
+ function flatten(){
+  CR.c=-1;CR.drop=null;newPhases();shape(0);
+  const n=sheetGeo.attributes.normal;for(let i=0;i<n.count;i++)n.setXYZ(i,0,0,1);n.needsUpdate=true;
+  paper.position.set(0,0,0);paper.rotation.set(0,0,0);paper.visible=true;
+  for(const h of HANDS){const s=h.userData.side;h.position.set(s*.148,-.12,0);h.rotation.set(0,0,0);}
+ }
+ // 다 구긴 종이 뭉치를 놓는다: 아래로 떨어져 화면 밖으로 나가고 두 손은 벌어지며 내려간다
+ function drop(){
+  if(CR.drop)return;
+  CR.drop={t:0,v:V3(rnd(-.08,.08),.3,.1),w:V3(rnd(-7,7),rnd(-5,5),rnd(-9,9)),tap:false,
+   hx:HANDS.map(h=>h.position.x),hy:HANDS.map(h=>h.position.y),hr:HANDS.map(h=>h.rotation.z)};
+ }
+ function updateDrop(dt){
+  const D=CR.drop;if(!D)return;D.t+=dt;
+  if(paper.visible){
+   D.v.y-=4.6*dt;paper.position.addScaledVector(D.v,dt);
+   paper.rotation.x+=D.w.x*dt;paper.rotation.y+=D.w.y*dt;paper.rotation.z+=D.w.z*dt;
+   if(paper.position.y<-.9)paper.visible=false;
+  }
+  if(!D.tap&&D.t>.5){D.tap=true;AUDIO.paperDrop();}
+  const k=easeIn((D.t-.06)/.5);
+  HANDS.forEach((h,i)=>{const s=h.userData.side;h.position.x=lerp(D.hx[i],s*.3,k);h.position.y=lerp(D.hy[i],-.62,k);h.rotation.z=lerp(D.hr[i],s*-.25,k);});
+  if(D.t>.75)hands.visible=false;
+ }
+ // 손 자리(화면 크기에 맞춘 크기·위치). 종이 자리를 잴 때도 쓴다
+ function layout(){
   const portrait=innerWidth<innerHeight,ratio=innerWidth/innerHeight;
   const height=portrait?.31:.34,sc=Math.min(height*2*Math.tan(PI/6)/.4,ratio*1.15*.68/.4);
   hands.scale.setScalar(sc);hands.position.set(0,-Math.tan(PI/6)*(portrait?.45:.51),-1);
   hands.rotation.set(-.09,0,-.035+Math.sin(G.time*.75)*.006);hands.position.y+=Math.sin(G.time*1.3)*.002;
-  if(!talkBusy()&&G.time>=next){
+ }
+ // 손에 든 종이가 화면 어디에 있는지(px). 풀이 화면이 정확히 이 자리로 줄어든다
+ function rect(){
+  const was=hands.visible;layout();hands.updateMatrixWorld(true);vmCam.updateMatrixWorld();
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;const v=V3();
+  for(const [x,y] of [[-HW,-HH],[HW,-HH],[HW,HH],[-HW,HH]]){
+   v.set(x,y,0).applyMatrix4(paper.matrixWorld).project(vmCam);
+   const sx=(v.x*.5+.5)*innerWidth,sy=(-v.y*.5+.5)*innerHeight;x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy);
+  }
+  hands.visible=was;return {x:x0,y:y0,w:x1-x0,h:y1-y0};
+ }
+
+ /* ---- 앞사람들이 비켜서기 ----
+  * 걸어갈 길 폭(어깨 너비)과, 옥좌 앞에 다다랐을 때 화면에 보이는 범위 밖으로 사람마다 비켜설 자리를 정한다.
+  * 길 가까운 사람일수록 많이, 먼 사람은 조금만 밀려나서(순서를 지켜 압축) 서로 뚫고 지나가지 않는다 */
+ const PART={on:false,t0:0};
+ const _dm=new THREE.Object3D();
+ function writeCrowd(){
+  if(!crowd)return;const place=crowd.userData.place;
+  for(const mesh of crowd.children){
+   const list=place&&place[mesh.userData.pi];if(!list)continue;
+   list.forEach((v,j)=>{_dm.position.set(v.cx,v.cy||0,v.z);_dm.rotation.set(0,v.turn,0);_dm.scale.setScalar(v.scale);_dm.updateMatrix();mesh.setMatrixAt(j,_dm.matrix);});
+   mesh.instanceMatrix.needsUpdate=true;
+  }
+ }
+ function resetCrowd(){
+  PART.on=false;if(!crowd||!crowd.userData.place)return;
+  for(const list of crowd.userData.place)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;}
+  writeCrowd();
+ }
+ function part(endZ,endFov){
+  if(!crowd||!crowd.userData.place)return;
+  const tanH=Math.tan(endFov*PI/360)*innerWidth/innerHeight,body=.36,lane=.66;
+  for(const list of crowd.userData.place)for(const v of list){
+   const ax=Math.abs(v.x),need=Math.max(lane,v.z<endZ-.05?(endZ-v.z)*tanH+body:0),reach=need+1.7;
+   v.tx=ax<reach?(v.x<0||(v.x===0&&v.z%2<1)?-1:1)*(need+ax*(reach-need)/reach):v.x;
+   v.delay=clamp((6.9-v.z)*.1,0,.7)+rnd(0,.1);v.dur=rnd(.5,.68);
+  }
+  PART.on=true;PART.t0=G.time;AUDIO.crowdShuffle();
+ }
+ function updatePart(){
+  if(!PART.on||!crowd||!crowd.userData.place)return;
+  const t=G.time-PART.t0;let busy=false;
+  for(const list of crowd.userData.place)for(const v of list){
+   if(v.tx===v.x)continue;const k=(t-v.delay)/v.dur;if(k<1)busy=true;
+   v.cx=lerp(v.x,v.tx,smoother(k));v.cy=Math.sin(PI*clamp(k,0,1))*.035;
+  }
+  writeCrowd();if(!busy)PART.on=false;
+ }
+
+ // behind: 풀이 화면 밑에 깔려 있을 때(손과 종이는 줄어드는 풀이 화면이 다 덮을 때까지 보이지 않는다)
+ function begin(result,behind){
+  crowd=CROWD.congregationView();crowd.visible=true;resetCrowd();
+  fortune(result);flatten();hands.visible=!behind;paper.visible=!behind;line=0;next=G.time+.6;
+  if(G.E){G.E.tabletHeld=false;G.E.tablet.visible=false;}
+ }
+ function update(dt){
+  if(!hands.visible&&!CR.drop)return;
+  layout();
+  if(CR.drop)updateDrop(dt);
+  else{
+   const c=CRUMPLE.c,k=smooth(c*1.15);
+   HANDS.forEach(h=>{const s=h.userData.side;h.position.x=s*lerp(.148,.064,k);h.position.y=lerp(-.12,-.035,k);h.rotation.z=s*.34*k;});
+   if(CRUMPLE.holding&&c>0)hands.position.x+=Math.sin(G.time*47)*.0018*k;
+   shape(c);
+  }
+  // 설교: 종이를 들고 서 있는 동안. 구기는 중에는 끊기고, 도로 펴면 잠시 뒤 다음 구절부터 이어진다
+  if(G.mode==='submit'&&INTRO.stage==='arrived'&&!CRUMPLE.done&&!CRUMPLE.holding&&CRUMPLE.c<.12&&!talkBusy()&&G.time>=next){
    const [text,dur,delay]=LINES.submit[line];queueTalk([['boss',text,dur,delay,1]]);
    line=(line+1)%LINES.submit.length;next=G.time+dur+delay+1;
   }
-  if(G.E)G.E.idleT=1e6;
+  if(G.E&&G.mode==='submit')G.E.idleT=1e6;
  }
+ function sermonSoon(delay){next=G.time+delay;}
+ function showPaper(on){if(!CR.drop)paper.visible=on;}
  function reset(){
-  hands.visible=false;if(crowd)crowd.visible=false;
+  hands.visible=false;if(crowd){resetCrowd();crowd.visible=false;}
   if(texture){texture.dispose();texture=null;front.map=null;front.needsUpdate=true;}
-  $('#heldFortuneText').textContent='';next=0;line=0;
+  $('#heldFortuneText').textContent='';next=0;line=0;flatten();hands.visible=false;
  }
- return {begin,update,reset,hands,get crowd(){return crowd;}};
+ return {begin,update,reset,hands,rect,part,updatePart,drop,sermonSoon,showPaper,get dropping(){return !!CR.drop;},get crowd(){return crowd;}};
 })();
 
 /* ===== 5. 피 =====
@@ -8814,6 +9004,12 @@ function combatInit(E,seated){
  E.rootPos.set(0,0,0);E.rootVel.set(0,0,0);E.down=null;
  E.rest.L.on=E.rest.R.on=false;
  if(seated)resetSeatedEncounter(E);
+ combatLook(E);
+}
+/* 족치기 차림(옷감·바지·장신구 색): 순응 장면부터 같은 차림으로 앉아 있게 판마다 한 번만 입힌다
+ * (걸어가는 도중에 갈아입으면 멀리서도 옷 색이 번쩍 바뀌어 보인다) */
+function combatLook(E){
+ if(E._combatLook)return;E._combatLook=true;
  for(const name of ['robe','hem','chest','belly','trouser','shirt']){
   const m=E.M[name];if(!m)continue;m.roughness=.88;m.bumpMap=COMBAT_STAGE.weave;m.bumpScale=.0015;
   m.envMapIntensity=.22;
@@ -9156,7 +9352,7 @@ function startEncounter(){
  if(G.E)G.E.idleT=6.5;
 }
 function updateEncounter(){
- if(!G.opening||G.mode!=='fight'||G.ended||G.revival)return;
+ if(!G.opening||G.mode!=='fight'||G.ended||G.revival||G.walking)return;
  // 특정 말풍선의 종료 분기 한 번에 의존하지 않는다. 입력이 없어도 전환을 마친다.
  if(TALK.cur||TALK.q.length)return;
  if(!G.encounterRaising){G.encounterRaising=true;VM.raiseHands();}
@@ -9394,7 +9590,6 @@ function finishRevival(){
  focusCanvas();
 }
 function updateStory(){
- if(G.mode==='submit'&&G.submitReadyAt&&G.time>=G.submitReadyAt){G.submitReadyAt=0;$('#submitDock').hidden=false;}
  if(G.offerPending){if(G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);if(!talkBusy())openOffer();}
  if(G.offerOpen&&G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
  if(G.offerBreakAt&&G.time>=G.offerBreakAt)finishOffer();
@@ -9835,20 +10030,112 @@ function retortAndRestart(){
  queueTalk([['player',LINES.retort,1.6,.1,1.4,LINES.retort]],true);
 }
 $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAndRestart();});
-function startFightFromSubmit(){
- if(G.mode!=='submit'||G.time<G.submitReadyAt)return;
- AUDIO.unlock();AUDIO.stop();clearTalk();clearPointers();
- SUBMISSION.reset();CROWD.reset();
- G.mode='fight';G.submitReadyAt=0;G.inputLocked=true;G.opening=false;
- $('#fight').classList.remove('accepting-fate');
- canvas.setAttribute('aria-label','천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.');
- $('#dock').hidden=false;$('#submitDock').hidden=true;$('#fight .gauge').style.visibility='';
- VM.reset();VM.root.visible=true;VM.setTool(G.tool);
- setCombatStage(true);if(G.E){G.E.endAct();combatInit(G.E,true);}
- startEncounter();
- fitView();setFrame('stand',true);focusCanvas();
+/* ===== 순응 장면 → 족치러 걸어가기 =====
+ * 풀이 화면(index.html)이 스크롤에 맞춰 손에 든 종이로 줄어들면서 이 장면이 된다.
+ * 가만히 있으면 추종자들 사이에서 설교를 듣는 순응이고, 종이를 꾹 눌러 구기면 떨어뜨리고
+ * 앞사람들이 비켜선 길로 옥좌 앞까지 곧장 걸어가 지금과 같은 「넌 뭐야?」로 족치기가 시작된다.
+ * INTRO.stage: off(쓰지 않음) · behind(풀이 화면 밑에 깔려 있음) · arrived(종이를 들고 서 있음) */
+const INTRO={stage:'off',pull:0,hintAt:0};
+const CRUMPLE={c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0};
+const CRUMPLE_SECONDS=.8;// 끝까지 구기는 데 꾹 누르고 있어야 하는 시간
+const WALK={on:false,t:0,dur:2.35,p0:V3(),p1:V3(),l0:V3(),l1:V3(),f0:52,f1:44,step:0,met:false};
+const FIGHT_LABEL='천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.';
+function crumpleReset(){Object.assign(CRUMPLE,{c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0});WALK.on=false;WALK.met=false;G.walking=false;}
+function crumpleReady(){return G.mode==='submit'&&INTRO.stage==='arrived'&&!CRUMPLE.done&&!G.paused&&!$('#fight').hidden;}
+function crumplePress(){
+ if(!crumpleReady())return false;
+ AUDIO.unlock();CRUMPLE.holding=true;CRUMPLE.started=true;
+ // 설교가 끊긴다. 도중에 손을 놓으면 잠시 뒤 다음 구절부터 다시 한다
+ clearTalk();SUBMISSION.sermonSoon(1.8);
+ $('#crumpleHint').classList.add('off');INTRO.hintAt=0;
+ return true;
 }
-$('#submitFight').addEventListener('click',startFightFromSubmit);
+function crumpleRelease(){
+ if(!CRUMPLE.holding)return;
+ CRUMPLE.holding=false;CRUMPLE.pointer=null;
+ // 거의 다 구겼으면(85%) 손을 떼도 마저 구긴다
+ if(CRUMPLE.c>=.85){CRUMPLE.finish=true;return;}
+ if(!CRUMPLE.done&&G.mode==='submit'&&INTRO.stage==='arrived'){SUBMISSION.sermonSoon(1.4);INTRO.hintAt=G.time+1.4;}
+}
+function updateCrumple(dt){
+ if(G.mode!=='submit'||INTRO.stage!=='arrived')return;
+ if(INTRO.hintAt&&G.time>=INTRO.hintAt&&!CRUMPLE.holding){INTRO.hintAt=0;$('#crumpleHint').classList.remove('off');}
+ if(CRUMPLE.done){if(!WALK.on&&G.time-CRUMPLE.doneAt>=.32)walkStart();return;}
+ const before=CRUMPLE.c;
+ if(CRUMPLE.holding||CRUMPLE.finish)CRUMPLE.c=Math.min(1,CRUMPLE.c+dt/CRUMPLE_SECONDS);
+ else if(CRUMPLE.c>0)CRUMPLE.c=Math.max(0,CRUMPLE.c-dt*.85);// 손을 놓으면 도로 펴진다
+ const gain=CRUMPLE.c-before;
+ if(gain>0){
+  // 세게(빨리) 구길수록 바스락이 잦다
+  CRUMPLE.budget+=gain*64;while(CRUMPLE.budget>=1){CRUMPLE.budget-=rnd(.7,1.3);AUDIO.crumple(.5+CRUMPLE.c*.7);}
+  CRUMPLE.tick-=dt;if(CRUMPLE.tick<=0&&PREF.vibe&&navigator.vibrate){CRUMPLE.tick=.12;try{navigator.vibrate(7);}catch(_){}}
+ }
+ if(CRUMPLE.c>=.999){
+  CRUMPLE.c=1;CRUMPLE.done=true;CRUMPLE.holding=CRUMPLE.finish=false;CRUMPLE.pointer=null;CRUMPLE.doneAt=G.time;
+  AUDIO.crunch();if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([22,12,30]);}catch(_){}
+  SUBMISSION.drop();
+ }
+}
+// 걸어서 도착할 자리 = 족치기 첫 구도(combatCamera가 옥좌에 앉은 천지신명을 보는 자리). 도착한 뒤 카메라가 튀지 않는다
+function walkGoal(){
+ const portrait=innerWidth<innerHeight,aspect=innerWidth/innerHeight,distance=portrait?Math.max(2.55,1.7/aspect):3.05;
+ const b=G.E&&G.E.combat,bx=b?b.x:0,bz=b?b.z:-.62;
+ WALK.p1.set(bx*.8+.12,1.58,bz+distance);WALK.l1.set(bx,1.08,bz);WALK.f1=portrait?44:39;
+}
+function walkStart(){
+ const E=G.E;
+ G.mode='fight';G.walking=true;G.inputLocked=true;G.opening=false;clearTalk();clearPointers();
+ $('#crumpleHint').classList.add('off');
+ // 천지신명은 멀리서 홀(내 사주가 적힌 판)을 다시 쥐고 족치기 첫 자세로 앉는다(옷은 순응 장면부터 같은 차림)
+ if(E){E.endAct();combatInit(E,true);if(!E.tabletHeld){E.tabletHeld=true;E.tabletBody=null;E.tablet.visible=true;E.placeTablet();}}
+ WALK.p0.copy(CAM.pos);WALK.l0.copy(CAM.look);WALK.f0=CAM.fov||CAM.fovBase;walkGoal();
+ SUBMISSION.part(WALK.p1.z,WALK.f1);
+ WALK.on=true;WALK.t=0;WALK.step=0;WALK.met=false;CAM.frame='walk';
+}
+// 카메라: 걸어가는 동안은 옥좌 쪽으로 곧장(좌우로 돌지 않는다). 풀이 화면 밑에 깔려 있을 때는 종이가 줄어드는 만큼 뒤로 물러선다
+function introCamera(dt){
+ if(WALK.on){
+  WALK.t+=dt;const k=clamp(WALK.t/WALK.dur,0,1),e=k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+  CAM.pos.lerpVectors(WALK.p0,WALK.p1,e);CAM.look.lerpVectors(WALK.l0,WALK.l1,e);CAM.fovBase=lerp(WALK.f0,WALK.f1,e);
+  const n=Math.floor((WALK.t+.12)/.42);if(n>WALK.step&&k<.96){WALK.step=n;AUDIO.footstep(.55+.45*Math.sin(PI*k));}
+  if(!WALK.met&&k>=.7){WALK.met=true;walkMeet();}
+  if(k>=1){WALK.on=false;walkArrive();}
+  return true;
+ }
+ if(G.mode==='submit'&&INTRO.stage==='behind'){
+  frameCamera('congregation',CAM.goalPos,CAM.goalLook);
+  const e=smooth(INTRO.pull);CAM.goalPos.z-=.35*(1-e);CAM.goalPos.y+=.03*(1-e);
+  CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);
+  return true;
+ }
+ return false;
+}
+// 옥좌 앞에 거의 다 왔을 때: 천지신명이 알아본다(대사·주먹 올리기·도구칸은 지금 시작과 똑같다)
+function walkMeet(){
+ $('#fight').classList.remove('accepting-fate');$('#fight .gauge').style.visibility='';
+ canvas.setAttribute('aria-label',FIGHT_LABEL);
+ VM.reset();VM.root.visible=true;VM.setTool(G.tool);
+ startEncounter();
+}
+function walkArrive(){
+ G.walking=false;CAM.frame='stand';INTRO.stage='off';
+ // 도착한 구도에는 아무도 보이지 않는다(비켜선 사람들은 화면 밖). 무리와 들고 있던 손을 치운다
+ SUBMISSION.reset();CROWD.reset();
+ focusCanvas();
+}
+// 꾹 누르기: 손가락·마우스는 종이(화면 어디든), 키보드는 스페이스·엔터
+canvas.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ if(CRUMPLE.pointer!=null||!crumpleReady())return;
+ if(crumplePress()){CRUMPLE.pointer=e.pointerId;try{canvas.setPointerCapture(e.pointerId);}catch(_){}e.preventDefault();}
+});
+for(const k of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(k,e=>{if(CRUMPLE.pointer===e.pointerId)crumpleRelease();});
+addEventListener('keydown',e=>{
+ if((e.key!==' '&&e.key!=='Enter')||e.repeat||CRUMPLE.pointer!=null)return;
+ if(e.target&&e.target.closest&&e.target.closest('button,a,input,select'))return;
+ if(crumplePress()){CRUMPLE.pointer='key';e.preventDefault();}
+});
+addEventListener('keyup',e=>{if((e.key===' '||e.key==='Enter')&&CRUMPLE.pointer==='key')crumpleRelease();});
 /* 나만 좋게 고친 사주를 친다: 친 자리를 지나 위아래로 찢어져 두 쪽이 양옆으로 날아가고, 그 뒤에 깔려 있던
  * '다음 사람의 사주'(불리한 배정 유지)가 드러나고 장면이 닫힌다 */
 function tearOffer(e){
@@ -9889,8 +10176,9 @@ function startRound(mode){
  const E=G.E;
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
-Object.assign(G,{mode,submitReadyAt:0,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,retorting:false});
- setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);
+Object.assign(G,{mode,walking:false,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,retorting:false});
+ setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);else combatLook(E);
+ crumpleReset();$('#crumpleHint').classList.add('off');INTRO.hintAt=0;
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
  CAM.shake=0;CAM.jit.set(0,0,0);gunLT=0;
@@ -9899,22 +10187,24 @@ $('#settingsModal').hidden=true;
 hideAgain();
  resetOfferScene();BEYOND.reset();COMBAT.storyAnchor=null;CROWD.root.position.set(0,0,0);
  $('#fight .gauge').style.visibility='';$('#flash').style.background='#fff';
- $('#dock').hidden=mode!=='fight';$('#submitDock').hidden=true;$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
+ $('#dock').hidden=mode!=='fight';$('#fight .gauge').style.visibility=mode==='submit'?'hidden':'';
  setTool('hand');updateGauge();updateAmmo();updateDefeatCount();syncPrefs();VM.root.visible=mode==='fight';
  fitView();setFrame('stand',true);
 
 
 G.opening=mode==='fight';
 if(mode==='fight'){
- canvas.setAttribute('aria-label','천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.');
+ INTRO.stage='off';$('#fight').classList.remove('behind');
+ canvas.setAttribute('aria-label',FIGHT_LABEL);
  startEncounter();
 }else{
+ // 순응 장면. 풀이 화면 밑에 깔려 있는 중이면(behind) 손과 종이는 풀이 화면이 줄어들기 시작할 때 보인다
  $('#hint').classList.add('off');
  E.idleT=1e6;G.inputLocked=true;
- SUBMISSION.begin(G.result);setFrame('congregation',true);
- canvas.setAttribute('aria-label','운세를 두 손에 들고 추종자들 사이에서 멀리 있는 천지신명의 설교를 듣고 있습니다.');
- G.submitReadyAt=G.time+4;
- $('#submitDock').hidden=true;
+ const behind=INTRO.stage==='behind';if(!behind)INTRO.stage='arrived';
+ SUBMISSION.begin(G.result,behind);setFrame('congregation',true);
+ canvas.setAttribute('aria-label','운세 종이를 두 손에 들고 추종자들 사이에서 천지신명의 설교를 듣고 있습니다. 꾹 누르면 종이를 구겨 천지신명 앞으로 걸어갑니다.');
+ if(!behind){INTRO.hintAt=G.time+1.6;SUBMISSION.sermonSoon(.6);}
 }
 
  last=performance.now();
@@ -9934,8 +10224,9 @@ function step(dt){
  if(G.slow>0){G.slow-=dt;sim*=.45;}
  if(E){
   E._rdt=dt;E.update(sim,G.time);
-  if(G.mode==='submit')SUBMISSION.update(dt);
  }
+ // 순응 장면: 종이 구기기 → 떨어뜨리기 → 앞사람들 비켜서기(걸어가는 동안에도 계속 움직인다)
+ updateCrumple(dt);SUBMISSION.update(dt);SUBMISSION.updatePart();
  BLOOD.update(sim);COINS.update(sim);CHUNKS.update(sim);VM.update(sim,G.hitstop>0,dt);
 combatEffects(sim);
 FX.update(dt);
@@ -9971,15 +10262,53 @@ function frame(now){
 }
 function pause(){G.running=false;cancelAnimationFrame(G.raf);clearPointers();AUDIO.stop();}
 function enter(result,mode='fight'){
- G.result=result;$('#fight').hidden=false;$('#fallback').hidden=true;BUB.preload();
+ G.result=result;INTRO.stage='off';$('#fight').classList.remove('behind');$('#fight').hidden=false;$('#fallback').hidden=true;BUB.preload();
  try{speechSynthesis.cancel();}catch(_){}
  AUDIO.unlock();fitView();startRound(mode==='submit'?'submit':'fight');
  const face=$('#arcadeFace');if(face){face.target='_blank';face.rel='noopener';}
  if(!G.running){G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
 }
+/* ---- 풀이 화면 끝에서 이어지는 입구(index.html이 부른다) ----
+ * prepare: 순응 장면을 미리 만들어 둔다(아직 안 보임) · peek: 풀이 화면 밑에 깔고 그리기 시작/멈춤
+ * pull: 풀이 화면이 종이로 줄어든 정도(0~1) · paperRect: 손에 든 종이의 화면 자리(px) · arrive: 다 줄어들어 이 장면이 됨 */
+function prepare(result){
+ G.result=result;$('#fallback').hidden=true;BUB.preload();
+ INTRO.stage='behind';INTRO.pull=0;$('#fight').classList.add('behind');
+ fitView();startRound('submit');
+ // 셰이더를 미리 만들어 둬서 처음 깔릴 때 끊기지 않게 한다
+ try{renderer.compile(scene,camera);renderer.compile(vmScene,vmCam);}catch(_){}
+}
+function peek(on){
+ const f=$('#fight');
+ if(on){
+  if(INTRO.stage!=='behind')return false;
+  f.hidden=false;f.classList.add('behind');
+  if(!G.running){fitView();G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
+  return true;
+ }
+ if(INTRO.stage==='behind'){pause();f.hidden=true;}
+ return false;
+}
+// paper: 손에 든 3D 종이를 꺼낼지(풀이 화면이 그 자리를 다 덮은 뒤에만 꺼낸다. 그전에는 손만 보인다)
+function pull(p,paper){
+ if(INTRO.stage!=='behind')return;
+ INTRO.pull=clamp(p,0,1);SUBMISSION.hands.visible=INTRO.pull>.001;SUBMISSION.showPaper(!!paper);
+}
+function arrive(){
+ if(INTRO.stage!=='behind')return false;
+ INTRO.stage='arrived';INTRO.pull=1;
+ const f=$('#fight');f.hidden=false;f.classList.remove('behind');
+ SUBMISSION.hands.visible=true;SUBMISSION.showPaper(true);setFrame('congregation',true);
+ try{speechSynthesis.cancel();}catch(_){}
+ AUDIO.unlock();SUBMISSION.sermonSoon(.5);INTRO.hintAt=G.time+1.5;
+ const face=$('#arcadeFace');if(face){face.target='_blank';face.rel='noopener';}
+ if(!G.running){G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
+ focusCanvas();return true;
+}
 function leave(home){
  TROPHIES.close(false);
  pause();
+ INTRO.stage='off';crumpleReset();$('#fight').classList.remove('behind');$('#crumpleHint').classList.add('off');
  SUBMISSION.reset();CROWD.reset();
  clearTalk();hideAgain();G.retorting=false;$('#settingsModal').hidden=true;$('#fight').hidden=true;
  const face=$('#arcadeFace');if(face){face.target='_top';face.removeAttribute('rel');}
@@ -9987,16 +10316,16 @@ function leave(home){
 }
 let rsT=0;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(!$('#fight').hidden){fitView();VM.computeRest();}},40);});
 addEventListener('blur',clearPointers);
-document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();AUDIO.stop(true);}else{last=performance.now();if(G.running){fitView();if(BEYOND.active){AUDIO.unlock();setTimeout(()=>{if(BEYOND.active&&!document.hidden)AUDIO.beyond();},250);}}}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();crumpleRelease();AUDIO.stop(true);}else{last=performance.now();if(G.running){fitView();if(BEYOND.active){AUDIO.unlock();setTimeout(()=>{if(BEYOND.active&&!document.hidden)AUDIO.beyond();},250);}}}});
 
-window.PaljaGame={enter,leave,pause,fonts(){BUB.preload();},
+window.PaljaGame={enter,leave,pause,prepare,peek,pull,arrive,paperRect(){return SUBMISSION.rect();},unlock(){AUDIO.unlock();},get stage(){return INTRO.stage;},fonts(){BUB.preload();},
  tick(dt=1/60,draw=true){step(dt);if(draw)render();},
  pick:pickAt,setTool,
  hitAt(x,y,kind){if(G.tool==='gun')return VM.fire(x,y);if(G.tool==='hand')return combatAttack(x,y,kind||'jab');return VM.attack(kind||'stab',x,y);},
  slash(points){VM.slashStart(points[0][0],points[0][1]);const p={lastCut:null};for(const [x,y] of points){VM.slashMove(x,y);slashContact(p,x,y);}finishLimb(p);finishEar(p);finishBody(p);VM.slashEnd();},
  screenPart(name){const E=G.E;if(!E)return null;const m=E.parts.find(o=>o.userData.part===name&&o.visible);if(!m)return null;const p=m.getWorldPosition(V3()).project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
  project(v){const p=v.clone().project(camera);return {x:(p.x*.5+.5)*innerWidth,y:(-p.y*.5+.5)*innerHeight};},
- get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD,COMBAT,COMBAT_STAGE,BEYOND};},
+ get state(){return {G,E:G.E,camera,scene,renderer,CAM,VM,BLOOD,COMBAT,COMBAT_STAGE,BEYOND,INTRO,CRUMPLE,WALK};},
  debug:{audio:AUDIO,crowd:CROWD,combatHit:o=>G.E.combat.hit(o),grab:()=>G.E.combat.beginGrab(),drag:(x,y)=>G.E.combat.drag(x,y),release:()=>G.E.combat.release(),round(m){startRound(m||"fight");},
   cam(p,l,fov){CAM.frame='debug';CAM.goalPos.set(p[0],p[1],p[2]);CAM.goalLook.set(l[0],l[1],l[2]);CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);if(fov){CAM.fovBase=fov;CAM.fov=fov;}},
   standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};

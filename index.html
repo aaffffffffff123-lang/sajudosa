@@ -167,12 +167,16 @@ select.input:invalid,select.input.empty{color:#a39a80}
 /* ===== 결과 ===== */
 /* 풀이가 독초색으로 물들 때 함께 바뀌는 표면·보조색. 입력 화면에는 적용하지 않는다. */
 #result-screen{
+  /* 풀이 화면은 족치기 3D 화면(z-index 10) 위에 놓인 한 장의 종이다. 끝 아래로는 그 밑이 비친다 */
+  position:relative;z-index:11;background:inherit;box-shadow:0 16px 34px rgba(14,10,24,.42);
   color:var(--ink);--muted:#726a87;--line-2:#b3a16c;
   --soft:#fff1c4;--inset:#fff8e1;--empty:#fffaf0;--empty-ink:#b9ad8c;--dot-off:#efe6cb;
   --current-surface:#f7f3ff;--warning-surface:#fff4f1;
   --section-late:#9a2312;--caption:#554e69;--accent-edge:#ff8f7a;--focus:#8f7ce8;
 }
 #result-screen :focus-visible{outline-color:var(--focus)}
+/* 손에 든 종이로 줄어드는 끝무렵: 풀이 글씨가 빈 종이(손에 든 운세 종이와 같은 색)로 지워진 다음, 그 종이의 글씨가 드러난다 */
+#result-screen::after{content:"";position:absolute;left:var(--fb-x,0);top:var(--fb-y,0);width:var(--fb-w,0);height:var(--fb-h,0);background:linear-gradient(135deg,#fff8de,#ecd9a8);opacity:var(--fb,0);pointer-events:none;z-index:30}
 .topbar{position:sticky;top:0;z-index:20;background:rgba(255,246,214,.94);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-bottom:2px solid var(--ink);padding:calc(6px + var(--safe-t)) 54px 6px 10px;display:flex;align-items:center;gap:6px}
 .topbar .home{display:flex;align-items:center;gap:6px;border:0;background:none;padding:4px 6px;border-radius:10px}
 .topbar .home svg.mark{width:34px;height:36px}
@@ -412,20 +416,18 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .core #core-body .rule{margin:0}
 .year-rule{margin:12px 2px 0}
 
-/* 선택 */
-.choice-cue{display:block;width:30px;height:30px;margin:12px auto 0;color:var(--red-d);pointer-events:none;animation:choice-cue-pulse 1.6s ease-in-out infinite;transform-origin:center}
+/* 끝 문장 아래 화살표: 더 내리면 족치기 장면으로 이어진다 */
+.choice-cue{display:block;width:30px;height:30px;margin:16px auto 0;color:var(--red-d);pointer-events:none;animation:choice-cue-pulse 1.6s ease-in-out infinite;transform-origin:center}
 @keyframes choice-cue-pulse{0%,58%,100%{transform:translateY(0) scale(1);opacity:.65}18%{transform:translateY(4px) scale(1.15);opacity:1}32%{transform:translateY(1px) scale(1.02);opacity:.8}44%{transform:translateY(3px) scale(1.1);opacity:1}}
 @media(prefers-reduced-motion:reduce){.choice-cue{animation:none;opacity:1}}
-.choice-cue + .foot-note{margin-top:8px}
-.choices{margin-top:18px;display:grid;gap:12px}
-.btn{display:block;width:100%;min-height:62px;padding:12px 16px;border:2.5px solid var(--ink);border-radius:16px;font-size:18px;font-weight:700;line-height:1.3;box-shadow:0 5px 0 var(--ink);transition:transform .08s,box-shadow .08s}
-.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
-.btn.ghost{background:var(--card);color:var(--ink)}
-.btn.red{background:var(--red-d);color:#fff}
-#fight-fate{background:#e82118;color:#fff}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+#fate-go:focus-visible{position:static!important;width:auto;height:auto;margin:14px auto 0;clip:auto;overflow:visible;display:block;padding:10px 18px;border:2px solid var(--ink);border-radius:12px;background:var(--card);font-weight:700}
+/* 풀이 끝 아래 스크롤 자리(높이는 화면 높이에 맞춰 스크립트가 정한다). 비어 있어 밑에 깔린 3D 장면이 보인다 */
+#fate-runway{position:relative;height:110vh}
+#runway-status{position:absolute;left:0;right:0;top:24px;margin:0;text-align:center;font-size:14.5px;font-weight:600;color:var(--ink-2)}
 .textbtn{display:block;margin:22px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:4px;font-size:15px;padding:8px}
 
-/* 족치기 불러오는 중 */
+/* 족치기 화면을 불러오지 못했을 때 */
 #fightWait{position:fixed;inset:0;z-index:90;background:rgba(255,246,214,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;font-weight:700;font-size:16px}
 #fightWait small{font-weight:500;color:var(--muted);font-size:14px;line-height:1.6}
 #fightWait .sbtn{width:auto;padding:0 22px}
@@ -433,7 +435,6 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 @media (min-width:760px){
   .wrap{max-width:640px}
   .years{grid-template-columns:1fr 1fr}
-  .choices{grid-template-columns:1fr 1fr}
   .luck li{grid-template-columns:96px 1fr}
 }
 @media (max-width:370px){
@@ -726,13 +727,16 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
   <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol><div class="none-card" id="cycle-ruling"></div></section>
 
   <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><p class="fixed-note" id="fixed-note"></p><div class="caution" id="caution"></div></section>
-  <svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
   <p class="foot-note" id="foot-note"></p>
   <p class="last-line" id="last-line"></p>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
-  <div class="choices"><button id="submit-fate" type="button" class="btn ghost">운명을 받아들이기</button><button id="fight-fate" type="button" class="btn red">천지신명 족치기</button></div>
+  <svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <button type="button" id="fate-go" class="sr-only">천지신명 앞으로 가기</button>
  </div>
 </main>
+<!-- 풀이 끝 아래 스크롤 자리: 처음 조금은 종이 밑으로 궁전이 비치고, 그다음은 풀이 화면이 손에 든 종이로 줄어든다 -->
+<div id="fate-spacer" hidden></div>
+<div id="fate-runway" hidden><p id="runway-status" role="status" aria-live="polite" hidden></p></div>
 
 <div id="fightWait" hidden><div id="fightWaitTitle">불러오는 중…</div><small id="fightWaitDetail"></small><button type="button" class="sbtn" id="fightWaitBtn" hidden>다시 시도</button></div>
 
@@ -2732,12 +2736,12 @@ window.addEventListener('popstate',()=>{
  if(navSkip){navSkip=false;return;}
  if(activePicker){clearTimeout(dTimer);closePicker(true);return;}
  const f=document.getElementById('fight');
- if(f&&!f.hidden&&window.PaljaGame){window.PaljaGame.leave(false);return;}
+ if(f&&!f.hidden&&!f.classList.contains('behind')&&window.PaljaGame){window.PaljaGame.leave(false);return;}
  if(!$('result-screen').hidden||!$('loading-screen').hidden){stopLoading();showScreen('input-screen');}
 });
 const screens=['input-screen','loading-screen','result-screen'];
 let current=null,resultScroll=0;
-function showScreen(id){screens.forEach(s=>$(s).hidden=s!==id);if(id!=='result-screen')clearTimeout(MONTH_VIEW.timer);document.body.style.overflow='';window.scrollTo(0,0);}
+function showScreen(id){screens.forEach(s=>$(s).hidden=s!==id);$('fate-runway').hidden=id!=='result-screen';if(id!=='result-screen'){clearTimeout(MONTH_VIEW.timer);fateOff();}document.body.style.overflow='';window.scrollTo(0,0);}
 function formError(msg){$('form-error').textContent=msg;$('form-error').hidden=false;$('form-error').scrollIntoView({block:'center',behavior:'smooth'});}
 /* ---------- 계산 중 화면 ----------
  * 3.3초. 도사가 왼눈을 눈꺼풀로 감아 윙크한 채 사주를 푼다.
@@ -3560,6 +3564,8 @@ function renderResult(R){
  // 전체 풀이
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;
+ // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
+ R.paper={verdict:v.verdict,fixed:v.fixedNote};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
  $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
@@ -3623,11 +3629,15 @@ function resetAll(){
 }
 $('go-home').addEventListener('click',resetAll);
 
-/* ===== 5. 족치기 불러오기 =====
- * three.min.js(3D 라이브러리)와 fight.js(족치기 화면)를 결과가 뜨면 미리 받아 둔다.
- * fight.js는 window.PaljaBoot()로 화면을 만들고 window.PaljaGame.enter(결과, 'fight'|'submit')로 시작한다.
+/* ===== 5. 족치기로 이어지기 =====
+ * three.min.js(3D 라이브러리)와 fight.js(족치기 화면)는 결과가 뜨면 미리 받아 두고, 한가할 때 순응 장면을 미리 만들어 둔다.
+ * 풀이 끝 「당신은 그렇게 태어났습니다.」 아래로 더 내리면:
+ *  ① 엿보기: 풀이(한 장의 종이) 아래 끝 밑으로 3D 궁전과 줄 선 추종자들이 조금 비친다(여기까지는 보통 스크롤)
+ *  ② 줄어들기: 그다음부터 스크롤에 맞춰 지금 보던 화면이 손에 든 운세 종이 자리로 줄어든다. 되올리면 풀이로 돌아간다.
+ *     손을 뗐을 때 3분의 1을 넘겼으면 끝까지, 아니면 ①로 돌아간다. 끝까지 가면 순응 장면(fight.js)이 된다.
+ * fight.js 쪽 입구: PaljaBoot() → PaljaGame.prepare(결과) · peek(깔기) · pull(줄어든 정도) · paperRect() · arrive()
  */
-const FIGHT={state:'idle',want:null};
+const FIGHT={state:'idle'};
 const THREE_SRC=['three.min.js','https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js','https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js'];
 function loadOne(srcs,ok,done,i){
  i=i||0;if(ok())return done(true);if(i>=srcs.length)return done(false);
@@ -3636,29 +3646,184 @@ function loadOne(srcs,ok,done,i){
  const tm=setTimeout(end,9000);s.src=srcs[i];s.onload=end;s.onerror=end;document.head.appendChild(s);
 }
 function preloadFight(){
- if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';
- const bust=/^https?:/.test(location.protocol)?'?v=20261104-grip-layout-3':'';
+ if(FIGHT.state==='loading'||FIGHT.state==='ready')return;FIGHT.state='loading';fateKick();
+ const bust=/^https?:/.test(location.protocol)?'?v=20261105-paper-entry-1':'';
  loadOne(THREE_SRC,()=>!!window.THREE,ok=>{
-  if(!ok){FIGHT.state='failed';fightFailed();return;}
+  if(!ok){FIGHT.state='failed';fateKick();return;}
   loadOne(['fight-motion.js'+bust],()=>!!window.FateMotion,motionOk=>{
-   if(!motionOk){FIGHT.state='failed';fightFailed();return;}
-  loadOne(['fight.js'+bust],()=>!!window.PaljaBoot,ok2=>{FIGHT.state=ok2?'ready':'failed';if(!ok2)fightFailed();else if(FIGHT.want){const m=FIGHT.want;FIGHT.want=null;openFight(m);}});
+   if(!motionOk){FIGHT.state='failed';fateKick();return;}
+   loadOne(['fight.js'+bust],()=>!!window.PaljaBoot,ok2=>{FIGHT.state=ok2?'ready':'failed';if(ok2)fateEnsure();fateKick();});
   });
  });
 }
-function fightFailed(){if(!FIGHT.want)return;$('fightWaitTitle').textContent='족치기 화면을 불러오지 못했습니다.';$('fightWaitDetail').textContent='인터넷 연결을 확인하고 다시 눌러 주세요.';$('fightWaitBtn').hidden=false;}
-$('fightWaitBtn').addEventListener('click',()=>{const m=FIGHT.want||'fight';$('fightWaitBtn').hidden=true;$('fightWaitTitle').textContent='불러오는 중…';$('fightWaitDetail').textContent='';FIGHT.state='idle';FIGHT.want=m;preloadFight();});
-function openFight(mode){
- if(!current)return;
- if(FIGHT.state!=='ready'){FIGHT.want=mode;$('fightWait').hidden=false;$('fightWaitBtn').hidden=true;$('fightWaitTitle').textContent='불러오는 중…';$('fightWaitDetail').textContent='';if(FIGHT.state==='failed')FIGHT.state='idle';preloadFight();return;}
- $('fightWait').hidden=true;stopLoading();
- resultScroll=window.scrollY;screens.forEach(s=>$(s).hidden=true);document.body.style.overflow='hidden';
- try{window.PaljaBoot();window.PaljaGame.enter(current,mode);pushNav('fight');}
- catch(err){$('fightWait').hidden=false;$('fightWaitTitle').textContent='족치기 화면을 여는 중에 문제가 생겼습니다.';$('fightWaitDetail').textContent=String(err&&err.message||err).slice(0,160);$('fightWaitBtn').hidden=false;}
+
+const fclamp=(x,a,b)=>x<a?a:x>b?b:x,flerp=(a,b,t)=>a+(b-a)*t;
+const FATE={fixed:false,fixSB:0,fixVh:0,vh:0,vw:0,peekH:0,pullH:0,top:0,bottom:0,s0:0,sB:0,sEnd:0,p:0,on:false,arrived:false,prepared:null,preparing:false,failed:null,failShown:false,touching:false,idle:0,raf:0,crop:null,target:null};
+// 런웨이 높이(엿보기 띠 + 줄어드는 거리)는 화면 높이에 맞춘다. 주소창이 접히는 정도의 높이 변화로는 다시 정하지 않는다
+function fateMeasure(){
+ const R=$('result-screen');if(R.hidden)return false;
+ if(FATE.fixed)return true;// 줄어드는 동안은 풀이 화면이 붙박여 있어 잴 수 없다(재 둔 값을 쓴다)
+ const vh=window.innerHeight,vw=document.documentElement.clientWidth;
+ if(!FATE.vh||Math.abs(vh-FATE.vh)>120||vw!==FATE.vw){
+  FATE.vh=vh;FATE.vw=vw;FATE.peekH=Math.round(vh*.14);FATE.pullH=Math.round(vh*.9);
+  $('fate-runway').style.height=(FATE.peekH+FATE.pullH)+'px';FATE.crop=null;
+ }
+ FATE.top=R.offsetTop;FATE.bottom=FATE.top+R.offsetHeight;
+ return true;
 }
-$('submit-fate').addEventListener('click',()=>openFight('submit'));
-$('fight-fate').addEventListener('click',()=>openFight('fight'));
-window.__paljaLeave=()=>{popNav('fight');document.body.style.overflow='';showScreen(current?'result-screen':'input-screen');if(current)window.scrollTo(0,resultScroll);};
+function fateReady(){const G=window.PaljaGame;return !!(G&&G.prepare&&!FATE.failed&&FATE.prepared===current);}
+function fateKick(){if(!FATE.raf)FATE.raf=requestAnimationFrame(fateUpdate);}
+// 순응 장면을 미리 만들어 둔다(무거운 일이라 스크롤이 쉴 때). 3D를 못 띄우는 기기는 그 이유를 남긴다
+function fateEnsure(){
+ if(!current||$('result-screen').hidden||FATE.prepared===current||FATE.preparing)return;
+ if(FIGHT.state!=='ready'){if(FIGHT.state==='idle')preloadFight();return;}
+ FATE.preparing=true;
+ const run=()=>{
+  FATE.preparing=false;
+  if(!current||$('result-screen').hidden||FATE.prepared===current||FATE.arrived)return;
+  try{
+   window.PaljaBoot();const game=window.PaljaGame;
+   if(!game||game.failed||!game.prepare){FATE.failed=game&&game.failed||'3D 화면을 만들지 못했습니다.';}
+   else{game.prepare(current);FATE.prepared=current;FATE.failed=null;FATE.on=false;FATE.crop=null;}
+  }catch(err){FATE.failed=String(err&&err.message||err).slice(0,160);}
+  // 준비되기 전에 런웨이로 내려와 있었다면 엿보기 자리로 부드럽게 돌려놓는다(화면이 갑자기 줄어든 채로 튀지 않게)
+  if(FATE.prepared===current&&FATE.sB&&window.scrollY>FATE.sB+2)window.scrollTo({top:FATE.sB,behavior:'smooth'});
+  fateKick();
+ };
+ if(window.requestIdleCallback)requestIdleCallback(run,{timeout:1500});else setTimeout(run,80);
+}
+function fateRect(el,root){let y=0,n=el;while(n&&n!==root){y+=n.offsetTop;n=n.offsetParent;}return n===root?y:null;}
+// 줄어드는 영역: 종이와 같은 비율로, 끝 문장이 종이의 끝 문장 자리(아래에서 8%)에 오게 자른다
+function fateCrop(vw,Hw,W0){
+ const R=$('result-screen'),T=window.PaljaGame.paperRect(),A=T.w/T.h;FATE.target=T;
+ const wrap=R.querySelector('.wrap'),fe=R.querySelector('.fate-end');
+ let cw=Math.min(vw,(wrap?wrap.clientWidth:vw)+16),ch=cw/A;
+ if(ch>Hw){ch=Hw;cw=ch*A;}
+ const feTop=fe?fateRect(fe,R):null,mid=(feTop==null?W0+Hw*.8:feTop+fe.offsetHeight/2)-W0;
+ FATE.crop={x:(vw-cw)/2,y:fclamp(mid-.92*ch,0,Math.max(0,Hw-ch)),w:cw,h:ch};
+}
+const fateEase=p=>1-Math.pow(1-p,1.7);
+// 줄어드는 동안 풀이 화면은 화면에 붙박아 둔다(position:fixed). 스크롤과 함께 움직이게 두면
+// 스크롤 이벤트가 한 프레임 늦을 때마다 화면이 위아래로 떨린다. 빠진 자리는 같은 높이의 빈 칸이 채워 스크롤 길이는 그대로다
+function fateFix(on){
+ if(!!on===!!FATE.fixed)return;
+ const R=$('result-screen'),sp=$('fate-spacer'),bar=R.querySelector('.topbar');
+ if(on){
+  const w=R.clientWidth;
+  sp.style.height=(FATE.bottom-FATE.top)+'px';sp.hidden=false;
+  // 붙박는 순간의 자리를 기억한다(줄어드는 동안 주소창이 접혀 화면 높이가 바뀌어도 붙박인 화면은 그대로)
+  FATE.fixSB=FATE.sB;FATE.fixVh=window.innerHeight;
+  R.style.position='fixed';R.style.left='0';R.style.width=w+'px';R.style.top=(FATE.top-FATE.sB)+'px';
+  // 맨 위 막대(sticky)는 붙박인 화면 안에서 브라우저마다 다르게 붙으므로, 자리를 차지한 채 보던 화면의 꼭대기에 직접 놓는다
+  if(bar){bar.style.position='relative';bar.style.top=(FATE.fixSB-FATE.top)+'px';}
+  FATE.fixed=true;
+ }else{
+  R.style.position=R.style.left=R.style.width=R.style.top='';sp.hidden=true;
+  if(bar)bar.style.position=bar.style.top='';
+  FATE.fixed=false;
+ }
+}
+// p: 0(풀이 그대로) ~ 1(손에 든 종이 크기·자리). 보던 화면(엿보기 띠 위쪽)을 그대로 줄인다.
+// 아래 끝은 처음 자리에서 종이 아래 끝으로만 움직여서, 줄어드는 내내 밑에 있는 3D 종이를 덮는다
+function fateApply(p){
+ const R=$('result-screen');
+ if(!(p>0)){
+  R.style.transform=R.style.transformOrigin=R.style.clipPath=R.style.webkitClipPath=R.style.opacity=R.style.willChange='';
+  for(const k of ['--fb','--fb-x','--fb-y','--fb-w','--fb-h'])R.style.removeProperty(k);
+  fateFix(false);FATE.crop=null;return;
+ }
+ fateFix(true);
+ const vw=parseFloat(R.style.width)||R.clientWidth,W0=FATE.fixSB-FATE.top,Hw=FATE.fixVh-FATE.peekH;
+ if(!FATE.crop)fateCrop(vw,Hw,W0);
+ const C=FATE.crop,T=FATE.target,e=fateEase(p),s=Math.pow(T.w/C.w,e);
+ const cx=C.x*e,cy=C.y*e,cw=flerp(vw,C.w,e),ch=flerp(Hw,C.h,e);
+ // 아래 끝은 줄어드는 앞부분(e .8)에서 이미 종이 아래 끝에 닿는다. 그때부터 3D 종이를 꺼내도 풀이 화면이 다 덮고 있다
+ const scx=flerp(vw/2,T.x+T.w/2,e),bottom=flerp(Hw,T.y+T.h,Math.min(1,e/.8)),scy=bottom-ch*s/2;
+ const tx=scx-s*(cx+cw/2),ty=scy-s*(W0+cy+ch/2)+W0;
+ R.style.willChange='transform,clip-path';R.style.transformOrigin='0 0';
+ R.style.transform='translate('+tx.toFixed(2)+'px,'+ty.toFixed(2)+'px) scale('+s.toFixed(5)+')';
+ R.style.clipPath=R.style.webkitClipPath='inset('+(W0+cy).toFixed(1)+'px '+(vw-cx-cw).toFixed(1)+'px '+(FATE.bottom-FATE.top-(W0+cy+ch)).toFixed(1)+'px '+cx.toFixed(1)+'px)';
+ // 글씨가 겹쳐 보이지 않게: 먼저 빈 종이로 덮고(e .8~.9) 그다음 풀이 화면을 걷어 손에 든 종이를 드러낸다(e .92~1)
+ const blank=fclamp((e-.8)/.1,0,1),fade=fclamp((e-.92)/.08,0,1);
+ R.style.setProperty('--fb-x',cx.toFixed(1)+'px');R.style.setProperty('--fb-y',(W0+cy).toFixed(1)+'px');
+ R.style.setProperty('--fb-w',cw.toFixed(1)+'px');R.style.setProperty('--fb-h',ch.toFixed(1)+'px');
+ R.style.setProperty('--fb',(blank*blank*(3-2*blank)).toFixed(3));
+ R.style.opacity=String(1-fade*fade*(3-2*fade));
+}
+function fateStatus(text){const st=$('runway-status');if(text){st.textContent=text;st.hidden=false;}else st.hidden=true;}
+function fateFail(){
+ if(FATE.failShown)return;FATE.failShown=true;
+ const load=FIGHT.state==='failed';
+ $('fightWaitTitle').textContent=load?'족치기 화면을 불러오지 못했습니다.':'족치기 화면을 열지 못했습니다.';
+ $('fightWaitDetail').textContent=load?'인터넷 연결을 확인하고 다시 시도해 주세요.':(FATE.failed||'');
+ $('fightWaitBtn').textContent=load?'다시 시도':'돌아가기';$('fightWaitBtn').hidden=false;$('fightWait').hidden=false;
+}
+$('fightWaitBtn').addEventListener('click',()=>{
+ $('fightWait').hidden=true;FATE.failShown=false;
+ if(FIGHT.state==='failed'){FIGHT.state='idle';preloadFight();}
+ if(FATE.sB)window.scrollTo({top:FATE.sB,behavior:'smooth'});
+});
+function fateUpdate(){
+ FATE.raf=0;
+ const R=$('result-screen');if(R.hidden||FATE.arrived)return;
+ if(!fateMeasure())return;
+ const y=window.scrollY,vh=window.innerHeight,s0=FATE.bottom-vh,sB=s0+FATE.peekH,sEnd=Math.max(sB+1,document.documentElement.scrollHeight-vh);
+ FATE.s0=s0;FATE.sB=sB;FATE.sEnd=sEnd;
+ if(y>=s0-vh*1.5)fateEnsure();
+ const ready=fateReady(),game=window.PaljaGame;
+ // ① 엿보기: 풀이의 아래 끝이 화면에 들어오면 밑에 3D를 깔고 그리기 시작한다
+ const want=ready&&y>s0-40;
+ if(want!==FATE.on){FATE.on=want&&!!game.peek(true);if(!want)game&&game.peek&&game.peek(false);}
+ if(y>s0-40&&!ready){
+  if(FIGHT.state==='failed'||FATE.failed){fateStatus('');if(y>sB+8)fateFail();}
+  else fateStatus('불러오는 중…');
+ }else fateStatus('');
+ // ② 줄어들기
+ const p=ready?fclamp((y-sB)/(sEnd-sB),0,1):0;
+ fateApply(p);
+ if(p!==FATE.p){FATE.p=p;if(ready)game.pull(p,fateEase(p)>=.8);}
+ if(ready&&p>=.999)fateArrive();
+}
+// 손을 떼고 스크롤이 멈췄을 때 반쯤 걸쳐 있으면: 3분의 1을 넘겼으면 끝까지, 아니면 엿보기 자리로
+function fateIdle(){
+ FATE.idle=0;
+ if(FATE.touching||FATE.arrived||$('result-screen').hidden)return;
+ if(FATE.p>0&&FATE.p<.999)window.scrollTo({top:FATE.p>=.33?FATE.sEnd:FATE.sB,behavior:'smooth'});
+}
+function fateArrive(){
+ const game=window.PaljaGame;if(FATE.arrived||!game||!game.arrive())return;
+ FATE.arrived=true;FATE.on=false;
+ resultScroll=FATE.sB;// 뒤로 돌아오면 풀이 끝, 궁전이 살짝 비치는 자리
+ fateApply(0);FATE.p=0;fateStatus('');
+ stopLoading();screens.forEach(s=>$(s).hidden=true);$('fate-runway').hidden=true;$('fate-spacer').hidden=true;
+ document.body.style.overflow='hidden';pushNav('fight');
+}
+// 엿보기를 걷고 원래 풀이 모습으로(입력 화면으로 갈 때 등)
+function fateOff(){
+ const game=window.PaljaGame;
+ if(FATE.on&&game&&game.peek)game.peek(false);
+ FATE.on=false;FATE.p=0;fateApply(0);fateStatus('');
+}
+addEventListener('scroll',()=>{fateKick();clearTimeout(FATE.idle);FATE.idle=setTimeout(fateIdle,150);},{passive:true});
+// 화면 크기·방향이 바뀌면 붙박은 화면을 풀고 다시 잰다(다음 프레임에 새 크기로 다시 붙박는다)
+addEventListener('resize',()=>{FATE.crop=null;if(FATE.fixed&&Math.abs(window.innerHeight-FATE.fixVh)>120||FATE.fixed&&document.documentElement.clientWidth!==FATE.vw)fateFix(false);fateKick();});
+addEventListener('touchstart',()=>{FATE.touching=true;},{passive:true});
+for(const k of ['touchend','touchcancel'])addEventListener(k,()=>{FATE.touching=false;clearTimeout(FATE.idle);FATE.idle=setTimeout(fateIdle,150);},{passive:true});
+// 소리는 손가락·마우스·키를 쓰는 순간에만 켤 수 있다: 엿보기 중에 화면을 만지면 미리 켜 둔다
+const fateUnlock=()=>{const game=window.PaljaGame;if(FATE.on&&game&&game.unlock)game.unlock();};
+for(const k of ['touchend','pointerup','keydown'])addEventListener(k,fateUnlock,{passive:true});
+// 키보드·화면 낭독기: 버튼 하나로 같은 길을 간다
+$('fate-go').addEventListener('click',()=>{
+ fateUnlock();fateKick();
+ if(fateReady())window.scrollTo({top:FATE.sEnd,behavior:'smooth'});else{fateEnsure();window.scrollTo({top:FATE.s0+FATE.peekH,behavior:'smooth'});}
+});
+try{new ResizeObserver(()=>{FATE.crop=null;fateKick();}).observe($('result-screen'));}catch(_){}
+window.__paljaLeave=()=>{
+ popNav('fight');document.body.style.overflow='';
+ FATE.arrived=false;FATE.on=false;FATE.prepared=null;FATE.p=0;
+ showScreen(current?'result-screen':'input-screen');
+ if(current){fateMeasure();window.scrollTo(0,resultScroll);fateEnsure();fateKick();}
+};
 window.__paljaRestart=resetAll;
 window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wallToUtc,gz,PLACE_MAP};
 
