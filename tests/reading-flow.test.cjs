@@ -38,7 +38,7 @@ test('the screen widens its scope in order: family, self, work·money·body, par
   'id="luck-graph"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fight-fate"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
  assert(!/id="judge"|자리 판정|id="countdown"/.test(view));
- for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home family office');
+ for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home family gwiin office');
 });
 
 test('the direction is written where the next editor sees it, and the screen copy comes only from v5Reading',()=>{
