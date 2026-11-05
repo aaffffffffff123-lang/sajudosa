@@ -136,8 +136,9 @@ const FIGHT_CSS = `
 #fight .trophy-top{display:flex;align-items:center;justify-content:space-between;flex:none;padding:8px 12px 8px 18px}
 #fight .trophy-top h2{font-size:15px;margin:0;font-weight:700}
 #fight #trophyClose{width:38px;height:38px;border:0;background:transparent;color:#f3e8cf;font-size:27px;line-height:1}
-#fight .trophy-view{min-height:0;overflow:auto;display:flex;justify-content:center;background:#14120f}
+#fight .trophy-view{position:relative;min-height:0;overflow:auto;display:flex;justify-content:center;background:#14120f}
 #fight #trophyImage{display:block;width:100%;height:auto;object-fit:contain;max-height:calc(100vh - 225px);max-height:calc(100dvh - 225px);-webkit-touch-callout:default;user-select:auto}
+#fight #trophySky{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
 #fight .trophy-actions{padding:12px;display:flex;gap:9px;flex:none}
 #fight .trophy-actions .btn{flex:1;min-width:0;min-height:46px;font-size:14px;text-decoration:none;box-shadow:none;border:1px solid #65513b;border-radius:9px;background:#30271f;color:#f3e8cf}
 #fight .trophy-actions .btn.danger{background:#c63b2b;border-color:#c63b2b;color:#fff6e5}
@@ -288,7 +289,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
-   <div class="trophy-view"><img id="trophyImage" alt="처치한 천지신명의 랩틸리언 머리 전리품" hidden></div>
+   <div class="trophy-view"><img id="trophyImage" alt="족친 천지신명 기록" hidden><canvas id="trophySky" width="1080" height="1350" aria-hidden="true" hidden></canvas></div>
    <nav id="trophyPages" aria-label="전리품 이미지 페이지" hidden><button type="button" id="trophyPrev" aria-label="이전 이미지">←</button><span id="trophyPageLabel"></span><button type="button" id="trophyNext" aria-label="다음 이미지">→</button></nav>
    <div class="trophy-actions"><a class="btn danger" id="trophySave" hidden>이미지 저장</a></div>
    <p id="trophyStatus" role="status" aria-live="polite"></p>
@@ -9935,7 +9936,7 @@ $$('#settingsModal [data-close]').forEach(b=>b.addEventListener('click',closeMod
 $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 $('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
 $('#fightBack').addEventListener('click',()=>leave(false));
-/* ---- 전리품 기록: 천궁 담장의 장대마다 천지신명 하나씩. ---- */
+/* ---- 전리품 기록: 들판의 낮은 장대와 까마귀. ---- */
 function trophyLayout(total, page=0) {
  const count = Number.isSafeInteger(total) ? clamp(total, 0, 999999) : 0;
  const perPage = 120;
@@ -9944,42 +9945,32 @@ function trophyLayout(total, page=0) {
  const start = index * perPage;
  const n = Math.min(perPage, count - start);
  const heads = [];
+ const ranks = n <= 8 ? 1 : Math.max(2, Math.ceil(n / 24));
+ // Put a little more space between the front stakes, as in a field seen from eye level.
+ const shift = ranks === 2 && n >= 16 ? Math.floor(n / 12) : 0;
 
- // Place the distant ranks higher, leaving sky visible between each crown and staff.
- const ranks = n <= 5 ? 1 : Math.max(2, Math.round(Math.sqrt(n / 3)));
- const columns = Math.ceil(n / ranks);
- const spacing = Math.min(280, 948 / (columns + 0.15));
- const baseSize = Math.min(270, spacing * 1.04, 510 / ranks);
  let ordinal = start;
  for (let row = 0; row < ranks; row++) {
-  const slots = Math.floor(n / ranks) + (row < n % ranks ? 1 : 0);
-  const depth = ranks === 1 ? 0.6 : row / (ranks - 1);
-  const rowShift = ranks === 1 ? 0 : spacing * (row % 2 ? 0.18 : -0.18);
+  const slots = Math.floor(n / ranks) + (row < n % ranks ? 1 : 0) + (row === 0 ? shift : -shift);
+  const pitch = Math.min(255, 932 / (slots + 0.25));
+  const baseSize = Math.min(ranks === 1 ? 250 : 160, pitch * 1.16);
+  const depth = ranks === 1 ? 0.62 : row / (ranks - 1);
+  // Within a shallow double line the near heads sit in the gaps between the far ones.
+  const stagger = ranks > 1 ? pitch * (row % 2 ? 0.1 : -0.1) : 0;
   for (let col = 0; col < slots; col++, ordinal++) {
    const phase = ordinal + 1;
-   const x = 540 + (col - (slots - 1) / 2) * spacing + rowShift + Math.sin(phase * 7.3) * spacing * 0.07;
-   const y = (ranks === 1 ? 562 : 379 + depth * 359)
-    + Math.sin(phase * 4.27) * Math.min(49, 180 / ranks);
-   const size = baseSize * (0.86 + 0.14 * depth) * (0.96 + 0.05 * Math.cos(phase * 1.73));
+   const x = 540 + (col - (slots - 1) / 2) * pitch + stagger + (Math.sin(phase * 7.3) * 0.065 + Math.sin(phase * 2.21) * 0.04) * pitch;
+   const size = baseSize * (0.87 + 0.13 * depth) * (0.98 + 0.025 * Math.cos(phase * 1.73));
+   const footY = 800 + 112 * depth + (x - 540) * 0.024 + 9 * Math.sin(phase * 2.6) + 8 * Math.cos(col * 0.71 + row);
+   const bareWood = Math.min(130, size * 1.02) * (1 + 0.045 * Math.sin(phase * 1.4));
+   const y = footY - size * 0.44 - bareWood;
    heads.push({
-    ordinal, row, x, y, size, depth,
-    lean: Math.sin(phase * 2.61) * Math.min(55, spacing * 0.41),
-    tilt: Math.sin(phase * 5.13) * 0.115,
+    ordinal, x, y, size, footY,
+    lean: Math.sin(phase * 2.61) * Math.min(13, pitch * 0.11),
+    tilt: Math.sin(phase * 4.34) * 0.15,
     flip: Math.cos(phase * 2.09 + Math.floor(phase / 6)) < -0.2
    });
   }
- }
- if (n > 1) {
-  // Give each pole a separate seat on the wall, even where two ranks cross in projection.
-  const bases = heads.slice().sort((a, b) => (a.x + a.lean) - (b.x + b.lean));
-  const first = bases[0], last = bases[n - 1];
-  const left = Math.max(63, first.x + first.lean);
-  const right = Math.min(1017, last.x + last.lean);
-  const step = (right - left) / (n - 1);
-  bases.forEach((head, i) => {
-   const jitter = (i > 0 && i < n - 1) ? 0.14 * Math.sin(head.ordinal * 2.7) : 0;
-   head.lean = left + (i + jitter) * step - head.x;
-  });
  }
  return {count, page:index, pages, start, n, heads};
 }
@@ -9995,7 +9986,7 @@ const TROPHIES=(()=>{
    const timer = setTimeout(() => reject(new Error('Trophy image timeout: ' + name)), 15000);
    image.onload = () => { clearTimeout(timer); resolve(image); };
    image.onerror = () => { clearTimeout(timer); reject(new Error('Trophy image failed: ' + name)); };
-   image.src = 'assets/' + name + '.webp';
+   image.src = 'assets/' + name + '.webp?v=field-1';
   }).catch(error => { artCache.delete(name); throw error; });
   artCache.set(name, loading);
   return loading;
@@ -10010,11 +10001,11 @@ const TROPHIES=(()=>{
   return 'trophy-head-' + (outfit + 1);
  }
  async function loadCardArt(layout) {
-  const [wall, ...heads] = await Promise.all([
-   loadArt('trophy-palace-wall'),
+  const [field, ...heads] = await Promise.all([
+   loadArt('trophy-field'),
    ...layout.heads.map(head => loadArt(portraitName(head.ordinal)))
   ]);
-  return {wall, heads};
+  return {field, heads};
  }
  function cardText(layout){
   return {title:'족친 천지신명',count:layout.count.toLocaleString('ko-KR')+'놈',footer:layout.pages>1?(layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages:''};
@@ -10035,6 +10026,83 @@ const TROPHIES=(()=>{
    const loaded=await Promise.race([ready,new Promise(resolve=>{timer=setTimeout(()=>resolve(false),5000);})]);
    return loaded?{title:'76px "Black Han Sans",sans-serif',count:'96px "Black Han Sans",sans-serif',footer:'20px "IBM Plex Sans KR",sans-serif'}:fallback;
   }catch(_){return fallback;}finally{clearTimeout(timer);}
+ }
+ const plate = {x:55, y:223, w:970, h:835};
+ const skyHeight = 238;
+ const flock = [
+  {x: 108, y: 139, size: 0.67, speed: 9, phase: 2.0, ink: '#48473f'},
+  {x: 238, y: 101, size: 0.83, speed: 12, phase: 4.8, ink: '#383932'},
+  {x: 350, y: 147, size: 1.04, speed: 16, phase: 0.7, ink: '#292b27'},
+  {x: 708, y: 76, size: 0.54, speed: 7, phase: 3.1, ink: '#54534b'},
+  {x: 797, y: 108, size: 0.61, speed: 8, phase: 1.3, ink: '#45463f'}
+ ];
+ function drawCrows(g, seconds) {
+  g.save();
+  g.beginPath();
+  g.rect(plate.x + 1, plate.y + 1, plate.w - 2, skyHeight);
+  g.clip();
+  for (const bird of flock) {
+   const x = (bird.x + 54 + seconds * bird.speed) % (plate.w + 108) - 54;
+   const phase = seconds + bird.phase;
+   const y = bird.y + 7 * Math.sin(phase * 0.44);
+   // A few wingbeats interspersed with a glide. The bent wrist and split primaries
+   // belong to the wings; the beak and the fan-shaped tail travel with the body.
+   const strength = Math.max(0, Math.min(1, Math.sin(phase * 0.71) * 2 + 0.4));
+   const lift = 0.43 + strength * 0.64 * Math.sin(phase * 5.1);
+   g.save();
+   g.translate(plate.x + x, plate.y + y);
+   g.scale(bird.size, bird.size);
+   g.rotate(-0.09 + 0.12 * Math.sin(phase * 0.52));
+   g.fillStyle = bird.ink;
+   g.beginPath();
+   g.moveTo(-3, 1);
+   g.quadraticCurveTo(11, -5 - 10 * lift, 18, -11 - 15 * lift);
+   g.lineTo(25, -12 - 18 * lift);
+   g.lineTo(20, -8 - 14 * lift);
+   g.lineTo(26, -9 - 12 * lift);
+   g.quadraticCurveTo(19, -1 - 5 * lift, 7, 1);
+   g.quadraticCurveTo(9, -3, 14, -3);
+   g.lineTo(21, -1); g.lineTo(15, 0.5);
+   g.quadraticCurveTo(10, 5, 1, 5);
+   g.lineTo(-12, 9); g.lineTo(-18, 7); g.lineTo(-12, 3);
+   g.lineTo(-19, 4); g.lineTo(-6, 0);
+   g.quadraticCurveTo(-15, -4 - 10 * lift, -19, -7 - 17 * lift);
+   g.lineTo(-37, -5 - 19 * lift); g.lineTo(-28, -8 - 21 * lift);
+   g.lineTo(-39, -9 - 22 * lift); g.lineTo(-28, -10 - 24 * lift);
+   g.lineTo(-37, -13 - 25 * lift); g.lineTo(-17, -12 - 22 * lift);
+   g.quadraticCurveTo(-7, -6 - 10 * lift, -3, 1);
+   g.closePath(); g.fill(); g.restore();
+  }
+  g.restore();
+ }
+ const skyCanvas = $('#trophySky');
+ const motionQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : null;
+ let frameId = 0;
+ function stopFlight() {
+  if (frameId) cancelAnimationFrame(frameId);
+  frameId = 0;
+  skyCanvas.hidden = true;
+ }
+ function animateSky(field, ticket) {
+  if (!motionQuery || motionQuery.matches) return;
+  const g = skyCanvas.getContext('2d');
+  if (!g) return;
+  const started = performance.now();
+  let lastDraw = -100;
+  function frame(now) {
+   if (!opened || ticket !== serial || motionQuery.matches) { stopFlight(); return; }
+   if (now - lastDraw >= 75) {
+    lastDraw = now;
+    g.save();
+    g.beginPath(); g.rect(plate.x + 1, plate.y + 1, plate.w - 2, skyHeight); g.clip();
+    g.drawImage(field, plate.x, plate.y, plate.w, plate.h);
+    drawCrows(g, (now - started) / 1000);
+    g.restore();
+    skyCanvas.hidden = false;
+   }
+   frameId = requestAnimationFrame(frame);
+  }
+  frameId = requestAnimationFrame(frame);
  }
  function drawCard(layout, text, fonts, art) {
   const canvas = document.createElement('canvas');
@@ -10063,22 +10131,25 @@ const TROPHIES=(()=>{
   g.font = fonts.title;
   g.fillText(text.title, 540, 166);
 
-  // Ink plate. Only the background is baked; each defeat contributes one physical staff and head.
-  const plate = {x:55, y:223, w:970, h:835};
   g.save();
   g.beginPath();
   g.rect(plate.x, plate.y, plate.w, plate.h);
   g.clip();
-  g.drawImage(art.wall, plate.x, plate.y, plate.w, plate.h);
-  for (const head of layout.heads) {
+  g.drawImage(art.field, plate.x, plate.y, plate.w, plate.h);
+  drawCrows(g, 0);
+  layout.heads.forEach((head, i) => {
    const baseX = head.x + head.lean;
-   const footY = plate.y + plate.h * 0.823;
+   const footY = head.footY;
    const tipShows = head.ordinal % 5 === 0;
    const pinY = head.y + head.size * (tipShows ? -0.45 : 0.18);
    const slope = head.lean / (footY - head.y);
    const pinX = head.x + (pinY - head.y) * slope;
    const width = Math.max(2.6, head.size * 0.036);
-   // A tapered, split-grain wooden staff, seated in the coping rather than floating below the jaw.
+   // Near stakes occlude far stakes. Break the silhouette at each foot with a contact shadow and earth.
+   g.fillStyle = 'rgba(51,45,36,.29)';
+   g.beginPath();
+   g.ellipse(baseX + width, footY + 1, width * 2.6, Math.max(1.1, width * 0.4), -0.08, 0, Math.PI * 2);
+   g.fill();
    g.fillStyle = '#433b31';
    g.beginPath();
    g.moveTo(baseX - width * 0.60, footY);
@@ -10097,8 +10168,6 @@ const TROPHIES=(()=>{
    g.moveTo(baseX - width * 0.26, footY - 1);
    g.lineTo(pinX - width * 0.15, pinY);
    g.stroke();
-  }
-  layout.heads.forEach((head, i) => {
    g.save();
    g.translate(head.x, head.y);
    g.rotate(head.tilt);
@@ -10124,7 +10193,7 @@ const TROPHIES=(()=>{
   }
   return canvas;
  }
- function release(){if(url)URL.revokeObjectURL(url);url='';img.removeAttribute('src');save.removeAttribute('href');}
+ function release(){stopFlight();if(url)URL.revokeObjectURL(url);url='';img.removeAttribute('src');save.removeAttribute('href');}
  async function prepare(){
   const ticket=++serial;release();save.hidden=true;img.hidden=true;status.textContent='전리품 사진 만드는 중…';
   const layout=trophyLayout(total,page);page=layout.page;
@@ -10137,8 +10206,9 @@ const TROPHIES=(()=>{
    const canvas=drawCard(layout,text,fonts,art);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
    if(!opened||ticket!==serial)return;
    url=URL.createObjectURL(result);img.src=url;img.hidden=false;
-   img.alt='족친 천지신명 '+total+'놈. 천궁 담장의 장대에 꽂힌 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
+   img.alt='족친 천지신명 '+total+'놈. 까마귀가 나는 들판의 낮은 장대에 꽂힌 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
    save.href=url;save.download='족친천지신명_'+total+'놈'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;status.textContent='';
+   animateSky(art.field,ticket);
   }catch(error){if(opened&&ticket===serial){status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Trophy image failed',error);}}
  }
  function open(){
