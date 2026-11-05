@@ -4121,7 +4121,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261106-crowd-banknotes';
+  const v='?v=20261106-crowd-reading';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))

@@ -2643,16 +2643,12 @@ const LINES={
  yield:'이제야 제 팔자를 아는구나.',
  /* 종이가 손을 떠날 때 옆줄에서 한마디, 앞으로 걸어갈 때 앞줄 두 사람이 이어 받는다. */
  whisper:[
-  {aside:'어머, 쟤 좀 봐.',say:'고졸인가?',reply:'사주에 공부 기운이 없잖아',mark:'noStudy',seen:'종이 봐. 공부 기운이 없네'},
-  {aside:'누구 집 애야?',say:'가정교육을 안 받았나?',reply:'부모복 없는 사주라 보고 배운 게 없지'},
-  {aside:'꼴 좀 봐.',say:'임대 사나?',reply:'돈 기운 없는 사주라 가난하게 컸겠지',mark:'noMoney',seen:'종이 봐. 돈 기운이 없네'},
-  {aside:'아유, 또.',say:'저런 것까지 일일이 가르쳐야 돼?',reply:'신명님도 참 피곤하시겠다'},
-  {aside:'어디 가, 지금?',say:'좋은 팔자 줬어 봐.',reply:'용하다고 절했겠지'},
-  {aside:'얘, 보지 마.',say:'엄마, 저 사람 왜?',reply:'넌 저렇게 크면 안 돼'},
-  {aside:'한 소리 듣겠네.',say:'좀 작게 말해. 들리겠다.',reply:'들으라고 하는 소리야'},
-  {aside:'내 차롄데.',say:'우리 애 것도 봐주셔야 하는데.',reply:'누가 좀 앉혀요'},
-  {aside:'또 자기만 억울해.',say:'누군 좋아서 여기 앉았나?',reply:'다들 참고 사는 거지'},
-  {aside:'저 성질 봐.',say:'저 힘으로 일했으면…',reply:'우리가 이런 꼴 보겠어?'}
+  {aside:'고졸인가?',say:'공부할 팔자는 따로 있지.',mark:'noStudy',seen:'종이 봐. 공부 기운이 없네',reply:'쟨 일찍 돈 버는 게 효도야.'},
+  {aside:'가정교육 못 받았나?',say:'부모복도 타고나잖아.',reply:'집에서 뭘 보고 배웠겠어.'},
+  {aside:'좆소 다니나?',say:'그래도 관운 들면?',reply:'좆소 부장 되는 거지.'},
+  {aside:'임대 사나?',say:'월세 낼 재물운은 돼?',mark:'noMoney',seen:'종이 봐. 돈 기운이 없네',reply:'보증금도 대출일걸.'},
+  {aside:'집 샀대?',say:'문서운 들면 집 사는 거 아냐?',reply:'월세 계약서도 문서야.'},
+  {aside:'역마살 꼈나?',say:'해외 나갈 팔자야?',reply:'쟤가? 지방 발령이겠지.'}
  ],
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
@@ -3789,14 +3785,14 @@ const SUBMISSION=(()=>{
    const score=Math.abs(head.x+side*.63)+Math.abs(head.y+.19)*.6;
    if(score<best){aside=v;best=score;}
   });
-  STARE.exchange={pair,side,aside,reply:pair.mark&&marks[pair.mark]?pair.seen:pair.reply};
+  STARE.exchange={pair,side,aside,say:pair.mark&&marks[pair.mark]?pair.seen:pair.say};
   if(aside){sayWhisper(aside,pair.aside,2);STARE.used.add(pair);}
  }
  function planWhispers(){
   const exchange=STARE.exchange;if(!exchange)return;
-  const {pair,side,aside,reply}=exchange;
+  const {pair,side,aside,say}=exchange,reply=pair.reply;
   const readSpan=text=>Math.max(1.5,typeTime(text,1.13)+.68);
-  const gap=.1,span=readSpan(pair.say),lastSpan=readSpan(reply);
+  const gap=.1,span=readSpan(say),lastSpan=readSpan(reply);
   // 앞줄이 시야를 벗어나기 전에 마지막 맞장구를 다 읽을 여유를 둔다.
   const firstAt=clamp(WALK.dur*.96-.34-span-gap-lastSpan,.28,.92);
   const secondAt=firstAt+span+gap,end=secondAt+lastSpan;
@@ -3805,7 +3801,7 @@ const SUBMISSION=(()=>{
   if(aside)aside.delay=Math.max(aside.delay,1);
   speaker.delay=secondAt;responder.delay=end;
   STARE.used.add(pair);
-  STARE.talk=[{at:firstAt,who:speaker,text:pair.say,slot:0},{at:secondAt,who:responder,text:reply,slot:1}];
+  STARE.talk=[{at:firstAt,who:speaker,text:say,slot:0},{at:secondAt,who:responder,text:reply,slot:1}];
  }
  function anchorOf(v,slot){
   let a=STARE.anchors[slot];if(!a){a=new THREE.Object3D();STARE.anchors[slot]=a;}
