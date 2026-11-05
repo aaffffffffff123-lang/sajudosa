@@ -81,6 +81,23 @@ test('the opening follows the natal pattern, keeps body details conditional, and
  assert.deepEqual(make(1990,1,1,{unknown:true,male:false,name:'가명'}).v.portrait,make(1990,1,1,{unknown:true}).v.portrait);
 });
 
+test('two charts with the same opening trait lead into their own work scene and ruling',()=>{
+ const first=make(1990,1,1,{unknown:true}).v;
+ const second=make(1994,7,15,{pk:'busan',h:12,male:false}).v;
+ assert.equal(first.portrait[0],second.portrait[0]);
+ assert.notEqual(first.portrait[2],second.portrait[2]);
+ const correction=dom(first,'work'),extraWork=dom(second,'work');
+ assert.equal(correction.cause,'hurt_officer');
+ assert.match(first.portrait[2],/출구|지도/);
+ assert.match(correction.rule,/체면/);
+ assert.equal(extraWork.cause,'officer_overload');
+ assert.match(second.portrait[2],/다음 여행/);
+ assert.match(extraWork.rule,/이번에도.*맡기/);
+ const payCases=ALL.map(({v})=>dom(v,'work')).filter(work=>work.rule.includes('먼저 재물을 내놓은 대가'));
+ assert(payCases.length>0);
+ for(const work of payCases)assert.match(work.head,/품삯/);
+});
+
 test('wealth hidden in secondary stems is never read as an empty inheritance',()=>{
  const {r,v}=make(1980,4,15);
  assert.equal(r.pillars.map(p=>p.gz).join(' '),'庚申 庚辰 戊午 戊午');assert(r.fate.wealth.present);

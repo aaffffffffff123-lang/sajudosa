@@ -266,7 +266,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="tool" type="button" data-tool="gun" aria-label="권총"><span class="card" style="--c:#6a4cc0"><svg class="art" viewBox="0 0 48 48"><use href="#fi-gun"/></svg><span class="nm">권총</span></span><span class="ammo" id="ammo" hidden>8</span></button>
   </div>
  </div>
- <div id="crumpleHint" class="off" role="status" aria-live="polite">종이를 꾹 눌러 구기면 천지신명을 족치러 갑니다</div>
+ <div id="crumpleHint" class="off" role="status" aria-live="polite">종이를 꾹 눌러 구겨 보세요</div>
  <div class="sr" id="heldFortuneText"></div>
  <div class="modal" id="settingsModal" hidden>
   <div class="msheet" role="dialog" aria-modal="true" aria-labelledby="fSetTitle">
