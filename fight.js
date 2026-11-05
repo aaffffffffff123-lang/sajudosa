@@ -3818,18 +3818,32 @@ const BLOOD=(()=>{
   const r={seg,bone,b,strip:{pts:[]},lp:bone.worldToLocal(pW.clone()),ln:nW.clone().transformDirection(_inv(bone)).normalize(),len:0,maxLen:o.maxLen||rnd(.1,.42),speed:o.speed||rnd(.09,.16),w:o.w||rnd(.0032,.0052),kind:o.kind||'blood',lastP:pW.clone(),wob:rnd(0,TAU),wobAmt:rnd(.03,.12),acc:0,dead:false};
   bankPush(b,r.strip,r.lp,r.ln,r.w);rivs.push(r);return r;
  }
+ const tearProbe=V3();
  const _invM=new THREE.Matrix4();function _inv(bone){return _invM.copy(bone.matrixWorld).invert();}
  function stepRiv(r,dt){
   const bone=r.bone;bone.updateWorldMatrix(true,false);
   const P=v1.copy(r.lp).applyMatrix4(bone.matrixWorld),N=v2.copy(r.ln).transformDirection(bone.matrixWorld);
+  // 눈꺼풀의 둥근 밑면에서 방울이 끊기지 않게, 볼에 닿을 때까지 얼굴 앞에서 보이는 표면을 따라간다.
+  const eye=r.tearEye;
+  if(eye)N.set(0,0,1).transformDirection(eye.eg.matrixWorld);
   if(N.y<-.82){r.why='under';endRiv(r,true,P);return;}
   const g=v3.set(0,-1,0);g.addScaledVector(N,-g.dot(N));const slope=g.length();
   if(slope<.05){r.len+=.002;if(r.len>r.maxLen)endRiv(r,false,P);return;}
   g.normalize();r.wob+=dt*rnd(1.2,2.6);const side=v4.crossVectors(N,g).normalize();g.addScaledVector(side,Math.sin(r.wob)*r.wobAmt).normalize();
   const ds=r.speed*dt*(.35+.65*slope)*(1-r.len/r.maxLen*.6);
   const np=v5.copy(P).addScaledVector(g,ds);
-  const hit=project(np,N,.05);
+  const hit=eye?project(np,N,.08,[eye.loLid,E.skull]):project(np,N,.05);
   if(!hit){r.why='nohit';endRiv(r,true,P);return;}
+  if(eye){
+   // 도드라진 눈꺼풀 아래 오목한 곳으로 물줄기가 꺾여 들어가지 않게 깊이를 서서히 잇는다.
+   const retreat=tearProbe.subVectors(np,hit.point).dot(N);
+   const clearance=.0015;
+   hit.point.addScaledVector(N,Math.max(clearance,retreat-ds*.6));
+   const onCheek=hit.obj===E.skull&&retreat<=ds*.6+clearance
+    &&eye.eg.worldToLocal(tearProbe.copy(hit.point)).y < -eye.r*1.25;
+   if(onCheek)r.tearEye=null;
+   else hit.normal.copy(N);
+  }
   if(hit.seg!==r.seg){ // 다른 부위로 넘어감: 거기서 이어 흐른다
    r.why='seg:'+hit.seg;endRiv(r,false,P,true);if(r.len<r.maxLen-.02)startRiv(hit.seg,hit.point,hit.normal,{kind:r.kind,maxLen:r.maxLen-r.len,speed:r.speed,w:r.w});return;}
   r.lp.copy(hit.point);bone.worldToLocal(r.lp);r.ln.copy(hit.normal).transformDirection(_inv(bone)).normalize();
@@ -6293,6 +6307,13 @@ doAct(name,o={}){
   else if(name==='beg'){this.doAct('beg',{dur:rnd(2,3)});AUDIO.voice('beg',.8);}
   else if(name==='huff'){AUDIO.voice('huff',.7);this.doFlinch('angry',.6);}
  },
+ // 코 쪽 아래 눈꺼풀 테두리. 이 좌표계에 찡그림·부기와 맞아서 밀린 눈의 위치가 모두 반영된다.
+ tearOrigin(e){
+  const radius=e.loLid.geometry.parameters.radius;
+  const x=-e.s*.55*radius;
+  e.loLid.updateWorldMatrix(true,false);
+  return e.loLid.localToWorld(V3(x,0,Math.sqrt(radius*radius-x*x)));
+ },
  /* 울 때: 아래 눈꺼풀에서 눈물이 볼을 타고 흐른다.
   * 1단계에서는 맞은 직후에만 찔끔, 2단계부터는 비웃거나 웃는 순간만 빼고 계속, 3·4단계에서는 굵고 잦게 */
  updateTears(time){
@@ -6302,16 +6323,15 @@ doAct(name,o={}){
   if(!crying||time<(this.tearT||0))return;
   this.tearT=time+(ph>=3?rnd(.3,.7):ph>=2?rnd(.5,1):rnd(.9,1.6));
   const live=this.eyes.filter(e=>!e.ruined&&!e.ejected);if(!live.length)return;const e=pick(live);
-  e.eg.updateWorldMatrix(true,false);this.face.updateWorldMatrix(true,false);
-  const p=e.eg.localToWorld(V3(rnd(-.012,.012),-.052,.018));
-  const n=V3(0,-.25,1).applyQuaternion(this.face.getWorldQuaternion(new THREE.Quaternion())).normalize();
-  const pr=BLOOD.project(p,n,.05);if(pr)BLOOD.startRiv(pr.seg||'head',pr.point,pr.normal,{kind:'tear',w:ph>=3?.0072:.006,speed:ph>=3?.14:.11,maxLen:rnd(.14,.3)});
+  const p=this.tearOrigin(e),n=V3(0,0,1).transformDirection(e.eg.matrixWorld);
+  const stream=BLOOD.startRiv('head',p,n,{kind:'tear',w:ph>=3?.0072:.006,speed:ph>=3?.14:.11,maxLen:rnd(.14,.3)});
+  if(stream)stream.tearEye=e;
  },
  /* 세게 맞는 순간 두 눈에서 눈물 방울이 옆·위로 튄다(피 끄기와 상관없이 맑은 방울) */
  tearSplash(n){
   if(this.headDestroyed||this.unmasked)return;
   for(const e of this.eyes){if(e.ruined||e.ejected)continue;
-   e.eg.updateWorldMatrix(true,false);const p=e.eg.localToWorld(V3(e.s*.012,-.02,.046));
+   const p=this.tearOrigin(e);
    for(let i=0;i<n;i++){const v=V3(e.s*rnd(.25,1.1),rnd(.5,1.5),rnd(.5,1.3)).multiplyScalar(rnd(.8,1.5));BLOOD.emit('spit',p,v,rnd(.003,.0055),rnd(.5,.9));}
   }
  },
@@ -9552,8 +9572,9 @@ function pickAll(x,y,list,frontOnly=false){
 function pickAt(x,y,list){return pickAll(x,y,list,true)[0]||null;}
 const HOLD_GRAB_SECONDS=.38;
 const POWER={hand:{jab:1.15,hook:1.5,upper:1.65,shove:1.2},knife:{stab:.95,slash:.45},gun:{shot:1.8}};
-// 멈춤(히트스톱) 길이: 이 동안 맞은 모습 그대로 멈춰 있다
+const SLASH_GAUGE_SCALE=.60; // 한 번 그을 때의 상처·부위 반응과 별도로 체력 피해만 조절한다.
 const SLASH_BUDGET=.90; // base damage available to one cut, replenished during a continuous drag
+// 멈춤(히트스톱) 길이: 이 동안 맞은 모습 그대로 멈춰 있다
 const STOP={hand:{jab:.036,hook:.05,upper:.058,shove:.05},knife:{stab:.045,slash:.014},gun:{shot:.018}};
 const WORDS={jab:['퍽!','빡!','뻑!'],hook:['퍼억!','빠악!'],upper:['빠악!','뻐억!'],body:['퍽!','뻑!','퍼억!'],stab:['푹!','쑤욱!'],slash:['촤악!','쫘악!']};
 function resolveHit(tool,kind,info,side,extra={}){
@@ -9589,7 +9610,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  if((accent||r.big)&&!extra.quiet){impactFX(tool,kind,info,r,dir,s,extra);if(!extra.through)AUDIO.hit(tool,kind,info.part,power,r.blocked);}
  if(accent&&PREF.vibe&&navigator.vibrate&&!extra.quiet)try{navigator.vibrate(r.blocked?10:tool==='gun'?26:kind==='slash'?6:kind==='jab'?16:[20,8,26]);}catch(_){}
  if(accent&&!r.halo&&!extra.through)CROWD.witnessHit(power);
- damageBar(r.dmg,r,gaugeEligible);
+ damageBar(kind==='slash'?r.dmg*SLASH_GAUGE_SCALE:r.dmg,r,gaugeEligible);
  return {hit:true,blocked:r.blocked,hard:!!r.halo,blood:!r.blocked&&!r.halo&&(tool==='knife'||tool==='gun'||E.noseBleeding||E.lipSplit||E.faceCuts>0)};
 }
 /* 맞은 자리 효과 + 카메라 */
@@ -9666,14 +9687,14 @@ function finishOffer(){
  hint(HINTS[G.tool],2.8);
  focusCanvas();
 }
-function enterCrowd(){ // 25%: 둘이 화면 양옆에서 뛰어들어 내 팔을 붙잡는다
+function enterCrowd(){ // 50%: 둘이 화면 양옆에서 뛰어들어 내 팔을 붙잡는다
  if(G.crowdEntered||G.revivalUsed)return;
  G.crowdEntered=true;G.inputLocked=true;clearPointers();$('#dock').hidden=true;
  anchorCombatStory(G.E,true);
  G.crowdBeatUntil=G.time+3.5;
  CROWD.grabStart(G.time);
 }
-function warnCrowd(){ // 15%: 넷이 설계자 앞을 막아선다
+function warnCrowd(){ // 25%: 넷이 설계자 앞을 막아선다
  if(G.crowdWarned)return;G.crowdWarned=true;G.inputLocked=true;clearPointers();$('#dock').hidden=true;
  anchorCombatStory(G.E,true);
  G.crowdBeatUntil=G.time+4.1;
@@ -9766,9 +9787,9 @@ function damageBar(d,o={},fromStand=false){
  const E=G.E;if(!combatActive(E)&&!fromStand&&E.state!=='stand')return;const next=KD_AT[G.kd]??0;
  const amount=Math.max(0,Number(d)||0)*DMG_MUL;if(amount<=0)return;
  let nb=Math.max(0,G.bar-amount);
- if(!G.revivalUsed&&(combatActive(E)||G.kd===3)){
-  if(!G.crowdEntered&&nb<=25){G.kd=3;E.haloStage(3);G.bar=G.shown=25;gaugeHit();updateGauge();enterCrowd();return;}
-  if(G.crowdEntered&&!G.crowdWarned&&nb<=15){G.bar=G.shown=15;gaugeHit();updateGauge();warnCrowd();return;}
+ if(!G.revivalUsed){
+  if(!G.crowdEntered&&nb<=50){G.kd=2;E.haloStage(2);G.bar=G.shown=50;gaugeHit();updateGauge();enterCrowd();return;}
+  if(G.crowdEntered&&!G.crowdWarned&&nb<=25){G.kd=3;E.haloStage(3);G.bar=G.shown=25;gaugeHit();updateGauge();warnCrowd();return;}
   if(nb<=5){G.bar=G.shown=5;gaugeHit();updateGauge();if(!beginRevival())G.revivalPending=true;return;}
  }
  G.bar=nb;G.shown=nb;gaugeHit();
