@@ -81,7 +81,7 @@ test('every element explains its role for this day master, not a fixed personali
  const water=ALL.find(x=>x.r.a.dayEl==='수'),wood=ALL.find(x=>x.r.a.dayEl==='목');
  assert(water&&wood);assert.equal(water.v.elementRoles.화,'돈·살림');assert.equal(wood.v.elementRoles.화,'말·결과물');
  const notWeak=ALL.filter(({r})=>{const el=Object.keys(r.shares).sort((a,b)=>r.shares[a]-r.shares[b])[0];return Object.values(r.counts).every(n=>n>0)&&!['weak','absent'].includes(r.a.families[api.elementFamilyV2(r.a,el)].level);});
- assert(notWeak.length);for(const {v} of notWeak)assert.match(v.elements[0],/비중이 작아도 없는 힘은 아닙니다/);
+ assert(notWeak.length);for(const {v} of notWeak){assert.match(v.elements[0],/여기서 .+입니다\.$/);assert(!/비중이 작아도 없는 힘|아래 생활 풀이에 드러납니다/.test(v.elements[0]));}
 });
 
 test('small comforts retain the chosen line without turning every money problem into that habit',()=>{

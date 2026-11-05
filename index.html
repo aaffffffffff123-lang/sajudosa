@@ -378,6 +378,9 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .fixed-note{margin:14px 0 0;font-size:13.5px;line-height:1.6;color:var(--muted);word-break:keep-all}
 .foot-note{margin:30px 2px 0;font-size:12.5px;line-height:1.7;color:var(--muted);word-break:keep-all}
 .last-line{margin:28px 6px 0;text-align:center;font-family:var(--serif);font-size:clamp(17px,4.9vw,20px);line-height:1.75;color:var(--ink-2);word-break:keep-all}
+.last-sentence{display:block;text-wrap:balance}
+.last-sentence + .last-sentence{margin-top:.45em}
+.last-predicate{display:inline-block;white-space:nowrap}
 .fate-end{margin-top:28px}
 .luck .wy.stage{background:var(--warning-surface);border:1.5px solid var(--line-2)}
 @media (max-width:370px){.ladder{grid-template-columns:1fr}.ladder svg{width:150px;margin:0 auto}}
@@ -419,6 +422,7 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
 .btn.ghost{background:var(--card);color:var(--ink)}
 .btn.red{background:var(--red-d);color:#fff}
+#fight-fate{background:#e82118;color:#fff}
 .textbtn{display:block;margin:22px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:4px;font-size:15px;padding:8px}
 
 /* 족치기 불러오는 중 */
@@ -3311,8 +3315,8 @@ function v5ElementLine(r,unknown){
  const meaning='여기서 '+jo(ELEMENTS[focus].name,'은','는')+' '+role.meaning+'입니다.';
  const low=['absent','weak'].includes(r.a.families[family].level);
  // 비율이 가장 작아도 엔진에서 약하다고 판정하지 않았으면 부족하다고 번역하지 않는다.
- const detail=low?role.low:hidden.length&&!absent.length?V5.hiddenCost:'비중이 작아도 없는 힘은 아닙니다. 이 힘이 어떻게 쓰이는지는 아래 생활 풀이에 드러납니다.';
- return fact+' '+meaning+' '+detail;
+ const detail=low?role.low:hidden.length&&!absent.length?V5.hiddenCost:'';
+ return [fact,meaning,detail].filter(Boolean).join(' ');
 }
 // 비용의 이유는 계산된 문제를 우선하고 그다음 기운 사이의 관계로 고른다.
 // 작은 편의 소비 등은 작중 생활 해석이다. 특정 구매 이력을 사주로 알아냈다는 뜻은 아니다.
@@ -3366,7 +3370,7 @@ function v5Reading(R,now){
  const offK=(fate.officer&&!fate.officer.present)||bossKey==='low'?'low':bossKey==='high'?'high':'mid';
  out.elementRoles=Object.fromEntries(ORDER.map(k=>[k,V5.elementRole[elementFamilyV2(a,k)].label]));
  out.elementIntro='다섯 기운은 성격과 생활에서 쓰는 힘을 나눠 보는 말입니다. 태어난 날의 '+jo(ELEMENTS[meEl].name,'을','를')+' 나로 삼아 각 기운이 맡는 일을 풉니다.';
- out.elements=[v5ElementLine(r,inp.unknown),'기준을 지키고 책임을 의식하는 힘은 스스로 세운 기준에도 작용합니다. '+V5.boss[bossKey](ELEMENTS[meEl].name,ELEMENTS[boss].name)];
+ out.elements=[v5ElementLine(r,inp.unknown),V5.boss[bossKey](ELEMENTS[meEl].name,ELEMENTS[boss].name)];
  out.keys={officer:offK,boss:bossKey};
  // 타고난 성향
  const firstKey=r.dominant&&r.dominant.key,coreKey={month_day_clash:'change',month_palace_hit:'change',day_palace_hit:'relation',climate:'rhythm'}[firstKey]||firstKey;
@@ -3519,7 +3523,7 @@ function renderResult(R){
  $('fixed-note').textContent=v.fixedNote;
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
- $('last-line').innerHTML=esc(v.lastLine).replace('\n','<br>');
+ $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
 }
 function cycleAgeLabel(cy,unknown){
  if(unknown)return '약 만 '+cy.age+'세 무렵';
