@@ -252,7 +252,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <div class="gauge" aria-hidden="true">
    <div class="grow"><span class="gname">천지신명</span><span class="kd" id="kdPips"><i></i><i></i><i></i></span><small id="gaugePct">100%</small></div>
    <div class="bar"><b id="gaugeLag"></b><i id="gaugeFill"></i><s style="left:25%"></s><s style="left:50%"></s><s style="left:75%"></s></div>
-   <span id="defeatCount" hidden>족친 천지신명 0명</span>
+   <span id="defeatCount" hidden>족친 천지신명 0놈</span>
   </div>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
@@ -284,7 +284,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0명</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
@@ -8939,7 +8939,7 @@ function updateDefeatCount(){
  // 첫 전투에서는 최종 처치 직후에도 카운트를 숨겨 뒤의 존재를 미리 암시하지 않는다.
  $('#defeatCount').hidden=!G.defeatCountVisible;
  $('#endDefeatCount').hidden=!G.defeatCountVisible;
- $('#defeatCount').textContent=$('#endDefeatCount').textContent='족친 천지신명 '+PROGRESS.defeated+'명';
+ $('#defeatCount').textContent=$('#endDefeatCount').textContent='족친 천지신명 '+PROGRESS.defeated+'놈';
 }
 const OUTFITS=[
  {cloth:['#38191f','#78313a','#411c24'],shirt:'#788281',placket:'#8b9290',stole:'#292d2b',pants:'#343b3d',inside:'#211b20',gold:'#b99552',goldD:'#765631',gem:'#8a5ae0'},
@@ -9935,33 +9935,89 @@ $$('#settingsModal [data-close]').forEach(b=>b.addEventListener('click',closeMod
 $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 $('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
 $('#fightBack').addEventListener('click',()=>leave(false));
-/* ---- 전리품 인증샷: 전투 모델을 작은 투명 이미지로 한 번만 구워 쌓는다. ---- */
-function trophyLayout(total,page=0){
- const count=Number.isSafeInteger(total)?clamp(total,0,999999):0,perPage=120;
- const pages=Math.max(1,Math.ceil(count/perPage)),index=clamp(Math.floor(page)||0,0,pages-1);
- const start=index*perPage,n=Math.min(perPage,count-start),cols=Math.ceil(Math.sqrt(n));
- const rows=[];let remaining=n;
- for(let width=cols;remaining>0;){const take=Math.min(width,remaining);rows.push(take);remaining-=take;}
- const size=n?Math.min(650,960/(cols*.66+.34),700/(Math.max(0,rows.length-1)*.43+1)):0;
- const heads=[];let ordinal=start;
- rows.forEach((width,row)=>{for(let col=0;col<width;col++)heads.push({ordinal:ordinal++,row,x:540+(col-(width-1)/2)*size*.66,y:1020-size*.5-row*size*.43,size});});
- heads.sort((a,b)=>a.row-b.row||a.x-b.x);
- return {count,page:index,pages,start,n,heads};
+/* ---- 전리품 기록: 천궁 담장의 장대마다 천지신명 하나씩. ---- */
+function trophyLayout(total, page=0) {
+ const count = Number.isSafeInteger(total) ? clamp(total, 0, 999999) : 0;
+ const perPage = 120;
+ const pages = Math.max(1, Math.ceil(count / perPage));
+ const index = clamp(Math.floor(page) || 0, 0, pages - 1);
+ const start = index * perPage;
+ const n = Math.min(perPage, count - start);
+ const heads = [];
+
+ // Place the distant ranks higher, leaving sky visible between each crown and staff.
+ const ranks = n <= 5 ? 1 : Math.max(2, Math.round(Math.sqrt(n / 3)));
+ const columns = Math.ceil(n / ranks);
+ const spacing = Math.min(280, 948 / (columns + 0.15));
+ const baseSize = Math.min(270, spacing * 1.04, 510 / ranks);
+ let ordinal = start;
+ for (let row = 0; row < ranks; row++) {
+  const slots = Math.floor(n / ranks) + (row < n % ranks ? 1 : 0);
+  const depth = ranks === 1 ? 0.6 : row / (ranks - 1);
+  const rowShift = ranks === 1 ? 0 : spacing * (row % 2 ? 0.18 : -0.18);
+  for (let col = 0; col < slots; col++, ordinal++) {
+   const phase = ordinal + 1;
+   const x = 540 + (col - (slots - 1) / 2) * spacing + rowShift + Math.sin(phase * 7.3) * spacing * 0.07;
+   const y = (ranks === 1 ? 562 : 379 + depth * 359)
+    + Math.sin(phase * 4.27) * Math.min(49, 180 / ranks);
+   const size = baseSize * (0.86 + 0.14 * depth) * (0.96 + 0.05 * Math.cos(phase * 1.73));
+   heads.push({
+    ordinal, row, x, y, size, depth,
+    lean: Math.sin(phase * 2.61) * Math.min(55, spacing * 0.41),
+    tilt: Math.sin(phase * 5.13) * 0.115,
+    flip: Math.cos(phase * 2.09 + Math.floor(phase / 6)) < -0.2
+   });
+  }
+ }
+ if (n > 1) {
+  // Give each pole a separate seat on the wall, even where two ranks cross in projection.
+  const bases = heads.slice().sort((a, b) => (a.x + a.lean) - (b.x + b.lean));
+  const first = bases[0], last = bases[n - 1];
+  const left = Math.max(63, first.x + first.lean);
+  const right = Math.min(1017, last.x + last.lean);
+  const step = (right - left) / (n - 1);
+  bases.forEach((head, i) => {
+   const jitter = (i > 0 && i < n - 1) ? 0.14 * Math.sin(head.ordinal * 2.7) : 0;
+   head.lean = left + (i + jitter) * step - head.x;
+  });
+ }
+ return {count, page:index, pages, start, n, heads};
 }
 const TROPHIES=(()=>{
- let sprites=null,url='',serial=0,total=0,page=0,opened=false,wasPaused=false,returnFocus=null;
+ let url='',serial=0,total=0,page=0,opened=false,wasPaused=false,returnFocus=null;
  const modal=$('#trophyModal'),img=$('#trophyImage'),status=$('#trophyStatus'),save=$('#trophySave');
  const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
- let headsLoading=null;
- function loadHeads(){
-  if(sprites)return Promise.resolve(sprites);
-  if(!headsLoading)headsLoading=Promise.all(Array.from({length:6},(_,i)=>new Promise((resolve,reject)=>{
-   const image=new Image(),timer=setTimeout(()=>reject(new Error('trophy head timeout')),15000);image.onload=()=>{clearTimeout(timer);resolve(image);};image.onerror=()=>{clearTimeout(timer);reject(new Error('trophy head '+i));};image.src='assets/trophy-head-'+(i+1)+'.webp';
-  }))).then(images=>{sprites=images;return images;}).finally(()=>{headsLoading=null;});
-  return headsLoading;
+ const artCache = new Map();
+ function loadArt(name) {
+  if (artCache.has(name)) return artCache.get(name);
+  const loading = new Promise((resolve, reject) => {
+   const image = new Image();
+   const timer = setTimeout(() => reject(new Error('Trophy image timeout: ' + name)), 15000);
+   image.onload = () => { clearTimeout(timer); resolve(image); };
+   image.onerror = () => { clearTimeout(timer); reject(new Error('Trophy image failed: ' + name)); };
+   image.src = 'assets/' + name + '.webp';
+  }).catch(error => { artCache.delete(name); throw error; });
+  artCache.set(name, loading);
+  return loading;
+ }
+ function portraitName(ordinal) {
+  const outfit = ordinal % 6;
+  if (PREF.deform) {
+   const round = Math.floor(ordinal / 6);
+   if (outfit === 2 && round % 2 === 0) return 'trophy-eye';
+   if (outfit === 3 && round % 2 === 1) return 'trophy-jaw';
+  }
+  return 'trophy-head-' + (outfit + 1);
+ }
+ async function loadCardArt(layout) {
+  const [wall, ...heads] = await Promise.all([
+   loadArt('trophy-palace-wall'),
+   ...layout.heads.map(head => loadArt(portraitName(head.ordinal)))
+  ]);
+  return {wall, heads};
  }
  function cardText(layout){
-  return {title:'족친 천지신명',count:layout.count.toLocaleString('ko-KR')+'명',footer:layout.pages>1?(layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages:''};
+  return {title:'족친 천지신명',count:layout.count.toLocaleString('ko-KR')+'놈',footer:layout.pages>1?(layout.start+1)+'–'+(layout.start+layout.n)+'번째 전리품 · '+(layout.page+1)+' / '+layout.pages:''};
  }
  async function loadCardFonts(text){
   const fallback={title:'700 76px sans-serif',count:'700 96px sans-serif',footer:'20px sans-serif'};
@@ -9980,27 +10036,93 @@ const TROPHIES=(()=>{
    return loaded?{title:'76px "Black Han Sans",sans-serif',count:'96px "Black Han Sans",sans-serif',footer:'20px "IBM Plex Sans KR",sans-serif'}:fallback;
   }catch(_){return fallback;}finally{clearTimeout(timer);}
  }
- function drawCard(layout,text,fonts){
-  const heads=sprites,c=document.createElement('canvas');c.width=1080;c.height=1350;const g=c.getContext('2d');
-  const bg=g.createLinearGradient(0,0,1080,1350);bg.addColorStop(0,'#eee3c8');bg.addColorStop(.55,'#d5c5a1');bg.addColorStop(1,'#b8a483');g.fillStyle=bg;g.fillRect(0,0,1080,1350);
-  // Dry paper grain, deliberately deterministic so reopening does not rearrange the trophy.
-  let seed=7419;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-  for(let i=0;i<12500;i++){g.fillStyle=i%2?'rgba(70,49,27,.045)':'rgba(255,251,222,.16)';g.fillRect(random()*1080,random()*1350,1+random()*3,1);}
-  g.strokeStyle='rgba(76,52,29,.35)';g.lineWidth=2;g.strokeRect(28,28,1024,1294);g.strokeStyle='rgba(76,52,29,.14)';g.strokeRect(38,38,1004,1274);
-  g.textAlign='center';g.fillStyle='#251d16';g.font=fonts.title;g.fillText(text.title,540,205);
-  g.fillStyle='rgba(133,42,29,.065)';g.beginPath();g.arc(540,690,335,0,TAU);g.fill();
-  const ground=g.createRadialGradient(540,1002,15,540,1002,465);ground.addColorStop(0,'rgba(48,32,17,.35)');ground.addColorStop(1,'rgba(48,32,17,0)');g.save();g.translate(0,795);g.scale(1,.22);g.fillStyle=ground;g.fillRect(40,400,1000,1200);g.restore();
-  for(const h of layout.heads){
-   const jitter=Math.sin(h.ordinal*38.17+2.4),tilt=[-.3,.35,-.2,-.42,.18,.48,.12,-.32][h.ordinal%8];
-   g.save();g.translate(h.x+jitter*h.size*.025,h.y+Math.cos(h.ordinal*13.7)*h.size*.025);g.rotate(tilt);
-   g.shadowColor='rgba(37,25,13,.42)';g.shadowBlur=h.size*.025;g.shadowOffsetY=h.size*.025;
-   g.drawImage(heads[h.ordinal%heads.length],-h.size/2,-h.size/2,h.size,h.size);g.restore();
+ function drawCard(layout, text, fonts, art) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1080;
+  canvas.height = 1350;
+  const g = canvas.getContext('2d');
+  const paper = g.createLinearGradient(0, 0, 1080, 1350);
+  paper.addColorStop(0, '#f5eddb');
+  paper.addColorStop(0.6, '#ebe1cb');
+  paper.addColorStop(1, '#e1d3b9');
+  g.fillStyle = paper;
+  g.fillRect(0, 0, 1080, 1350);
+  let seed = 7419;
+  function grain() { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; }
+  for (let i = 0; i < 12500; i++) {
+   g.fillStyle = i % 2 ? 'rgba(70,49,27,.045)' : 'rgba(255,251,222,.17)';
+   g.fillRect(grain() * 1080, grain() * 1350, 1 + grain() * 3, 1);
   }
-  g.strokeStyle='rgba(83,54,29,.3)';g.lineWidth=1;g.beginPath();g.moveTo(130,1085);g.lineTo(950,1085);g.stroke();
-  g.save();g.translate(540,1205);g.rotate(-.035);g.fillStyle='#a43225';g.font=fonts.count;g.fillText(text.count,0,0);g.restore();
-  g.fillStyle='#6e5841';g.font=fonts.footer;
-  if(text.footer)g.fillText(text.footer,540,1270);
-  return c;
+  g.strokeStyle = '#978870';
+  g.lineWidth = 2;
+  g.strokeRect(27, 27, 1026, 1296);
+  g.lineWidth = 1;
+  g.strokeRect(35, 35, 1010, 1280);
+  g.textAlign = 'center';
+  g.fillStyle = '#29251e';
+  g.font = fonts.title;
+  g.fillText(text.title, 540, 166);
+
+  // Ink plate. Only the background is baked; each defeat contributes one physical staff and head.
+  const plate = {x:55, y:223, w:970, h:835};
+  g.save();
+  g.beginPath();
+  g.rect(plate.x, plate.y, plate.w, plate.h);
+  g.clip();
+  g.drawImage(art.wall, plate.x, plate.y, plate.w, plate.h);
+  for (const head of layout.heads) {
+   const baseX = head.x + head.lean;
+   const footY = plate.y + plate.h * 0.823;
+   const tipShows = head.ordinal % 5 === 0;
+   const pinY = head.y + head.size * (tipShows ? -0.45 : 0.18);
+   const slope = head.lean / (footY - head.y);
+   const pinX = head.x + (pinY - head.y) * slope;
+   const width = Math.max(2.6, head.size * 0.036);
+   // A tapered, split-grain wooden staff, seated in the coping rather than floating below the jaw.
+   g.fillStyle = '#433b31';
+   g.beginPath();
+   g.moveTo(baseX - width * 0.60, footY);
+   g.lineTo(pinX - width * 0.36, pinY);
+   if (tipShows) {
+    const tipLength = head.size * 0.14;
+    g.lineTo(pinX - tipLength * slope, pinY - tipLength);
+   }
+   g.lineTo(pinX + width * 0.32, pinY);
+   g.lineTo(baseX + width * 0.60, footY);
+   g.closePath();
+   g.fill();
+   g.strokeStyle = '#9c8a6b';
+   g.lineWidth = Math.max(0.8, width * 0.18);
+   g.beginPath();
+   g.moveTo(baseX - width * 0.26, footY - 1);
+   g.lineTo(pinX - width * 0.15, pinY);
+   g.stroke();
+  }
+  layout.heads.forEach((head, i) => {
+   g.save();
+   g.translate(head.x, head.y);
+   g.rotate(head.tilt);
+   if (head.flip) g.scale(-1, 1);
+   g.drawImage(art.heads[i], -head.size / 2, -head.size / 2, head.size, head.size);
+   g.restore();
+  });
+  g.restore();
+  g.strokeStyle = '#726858';
+  g.lineWidth = 2;
+  g.strokeRect(plate.x - 1, plate.y - 1, plate.w + 2, plate.h + 2);
+  g.save();
+  g.translate(540, 1211);
+  g.rotate(-0.028);
+  g.fillStyle = '#96392d';
+  g.font = fonts.count;
+  g.fillText(text.count, 0, 0);
+  g.restore();
+  if (text.footer) {
+   g.fillStyle = '#63594b';
+   g.font = fonts.footer;
+   g.fillText(text.footer, 540, 1270);
+  }
+  return canvas;
  }
  function release(){if(url)URL.revokeObjectURL(url);url='';img.removeAttribute('src');save.removeAttribute('href');}
  async function prepare(){
@@ -10010,13 +10132,13 @@ const TROPHIES=(()=>{
   $('#trophyPageLabel').textContent=(page+1)+' / '+layout.pages;
   try{
    await nextFrame();if(!opened||ticket!==serial)return;
-   const text=cardText(layout),[fonts]=await Promise.all([loadCardFonts(text),loadHeads()]);
+   const text=cardText(layout),[fonts,art]=await Promise.all([loadCardFonts(text),loadCardArt(layout)]);
    if(!opened||ticket!==serial)return;
-   const canvas=drawCard(layout,text,fonts);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
+   const canvas=drawCard(layout,text,fonts,art);const result=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG')), 'image/png'));
    if(!opened||ticket!==serial)return;
    url=URL.createObjectURL(result);img.src=url;img.hidden=false;
-   img.alt='족친 천지신명 '+total+'명. 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
-   save.href=url;save.download='족친천지신명_'+total+'명'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;status.textContent='';
+   img.alt='족친 천지신명 '+total+'놈. 천궁 담장의 장대에 꽂힌 랩틸리언 머리 '+layout.n+'개'+(layout.pages>1?' ('+(page+1)+' / '+layout.pages+'장)':'')+'.';
+   save.href=url;save.download='족친천지신명_'+total+'놈'+(layout.pages>1?'_'+(page+1):'')+'.png';save.hidden=false;status.textContent='';
   }catch(error){if(opened&&ticket===serial){status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Trophy image failed',error);}}
  }
  function open(){

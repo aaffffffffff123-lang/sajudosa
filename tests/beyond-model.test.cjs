@@ -26,6 +26,6 @@ test('first encounter hides both counters through the ending; the successor show
  const elements=new Map(),$=s=>{if(!elements.has(s))elements.set(s,{});return elements.get(s)},G={defeatCountVisible:false},PROGRESS={defeated:0};
  const update=vm.runInNewContext(slice('function updateDefeatCount(){','const OUTFITS=')+';updateDefeatCount',{$,G,PROGRESS});
  for(const count of [0,1]){PROGRESS.defeated=count;update();assert($('#defeatCount').hidden);assert($('#endDefeatCount').hidden);}
- G.defeatCountVisible=true;update();assert(!$('#defeatCount').hidden);assert(!$('#endDefeatCount').hidden);assert.equal($('#endDefeatCount').textContent,'족친 천지신명 1명');
- PROGRESS.defeated=2;update();assert.equal($('#defeatCount').textContent,'족친 천지신명 2명');assert.equal($('#endDefeatCount').textContent,'족친 천지신명 2명');
+ G.defeatCountVisible=true;update();assert(!$('#defeatCount').hidden);assert(!$('#endDefeatCount').hidden);assert.equal($('#endDefeatCount').textContent,'족친 천지신명 1놈');
+ PROGRESS.defeated=2;update();assert.equal($('#defeatCount').textContent,'족친 천지신명 2놈');assert.equal($('#endDefeatCount').textContent,'족친 천지신명 2놈');
 });
