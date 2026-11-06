@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="66 -2 188 278"><defs><radialGradient id="dmHalo" cx="50%" cy="46%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#ece3ff"/><stop offset="1" stop-color="#ece3ff" stop-opacity="0"/></radialGradient>
+  <radialGradient id="dmSkin" cx="42%" cy="34%" r="72%"><stop offset="0" stop-color="#ffe4c8"/><stop offset=".68" stop-color="#f7c39a"/><stop offset="1" stop-color="#e5a274"/></radialGradient>
+  <linearGradient id="dmHat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#17122a"/><stop offset=".3" stop-color="#3b3166"/><stop offset=".5" stop-color="#231c3f"/><stop offset="1" stop-color="#110d1d"/></linearGradient>
+  <linearGradient id="dmGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe372"/><stop offset=".55" stop-color="#ffbd18"/><stop offset="1" stop-color="#e08600"/></linearGradient>
+  <linearGradient id="dmBeard" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2dbf3"/></linearGradient>
+  <radialGradient id="dmPlanetA" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffa3c7"/><stop offset="1" stop-color="#d42f74"/></radialGradient>
+  <radialGradient id="dmPlanetB" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#93d3ff"/><stop offset="1" stop-color="#2b68d6"/></radialGradient>
+  <radialGradient id="dmPlanetC" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#93f2b9"/><stop offset="1" stop-color="#1c9658"/></radialGradient>
+  <symbol id="dmSpark" viewBox="-10 -10 20 20"><path d="M0-9C1-3 3-1 9 0C3 1 1 3 0 9C-1 3-3 1-9 0C-3-1-1-3 0-9Z"/></symbol>
+</defs><ellipse cx="103" cy="150" rx="11.5" ry="16" fill="#f1b58b" stroke="#261f3d" stroke-width="3"/>
+ <ellipse cx="217" cy="150" rx="11.5" ry="16" fill="#f1b58b" stroke="#261f3d" stroke-width="3"/>
+ <path d="M100 144q6 7 1 14M220 144q-6 7-1 14" fill="none" stroke="#c47e5c" stroke-width="2.2" stroke-linecap="round"/>
+ <!-- 얼굴 -->
+ <path d="M108 132c0-36 22-56 52-56s52 20 52 56c0 34-14 58-52 62c-38-4-52-28-52-62z" fill="url(#dmSkin)" stroke="#261f3d" stroke-width="3.2"/>
+ <!-- 갓끈: 금구슬 -->
+ <g fill="url(#dmGold)" stroke="#261f3d" stroke-width="1.2"><circle cx="110.0" cy="104.0" r="3.2"/><circle cx="108.1" cy="114.4" r="3.2"/><circle cx="106.7" cy="124.9" r="3.2"/><circle cx="106.0" cy="135.3" r="3.2"/><circle cx="106.4" cy="145.8" r="3.2"/><circle cx="107.9" cy="156.2" r="3.2"/><circle cx="105.5" cy="166.7" r="3.2"/><circle cx="104.0" cy="177.1" r="3.2"/><circle cx="104.0" cy="187.6" r="3.2"/><circle cx="106.0" cy="198.0" r="3.2"/><circle cx="210.0" cy="104.0" r="3.2"/><circle cx="211.9" cy="114.4" r="3.2"/><circle cx="213.3" cy="124.9" r="3.2"/><circle cx="214.0" cy="135.3" r="3.2"/><circle cx="213.6" cy="145.8" r="3.2"/><circle cx="212.1" cy="156.2" r="3.2"/><circle cx="214.5" cy="166.7" r="3.2"/><circle cx="216.0" cy="177.1" r="3.2"/><circle cx="216.0" cy="187.6" r="3.2"/><circle cx="214.0" cy="198.0" r="3.2"/></g>
+ <!-- 수염 -->
+ <path d="M110 156c2 22 12 36 26 44c-8 12-8 30 2 48c4 10 12 18 22 22c-4-8-4-16 0-22c4 6 10 10 18 12c-6-8-6-16-2-24c6 4 12 4 18 2c-6-6-8-14-6-22c10-6 16-16 18-26c-8 8-14 8-20 6c10-8 18-22 22-40c-10 14-30 22-50 22s-38-8-48-22z" fill="url(#dmBeard)" stroke="#261f3d" stroke-width="3" stroke-linejoin="round"/>
+ <path d="M146 210c-4 12-4 24 2 36M162 212c-2 10 0 20 6 28M178 206c2 8 0 16-4 22M128 186c5 7 10 11 16 14M194 186c-4 7-9 11-15 14" fill="none" stroke="#c4bad9" stroke-width="2.2" stroke-linecap="round"/>
+ <!-- 볼 -->
+ <ellipse cx="123" cy="154" rx="12" ry="7.5" fill="#ff7a7a" opacity=".45"/>
+ <ellipse cx="197" cy="154" rx="12" ry="7.5" fill="#ff7a7a" opacity=".45"/>
+ <!-- 입: 씩 웃는 입과 금니 -->
+ <path d="M134 168c12 10 36 12 56-2c-2 14-14 24-29 24c-14 0-24-8-27-22z" fill="#6b1d2e" stroke="#261f3d" stroke-width="2.8" stroke-linejoin="round"/>
+ <path d="M140 171c11 6 31 7 46-1l-1 6c-14 6-31 6-44 0z" fill="#fff"/>
+ <path d="M166.2 175.6Q169.5 175.4 172.7 174.8L172.2 179.2Q170.5 180.1 166.7 180.1Z" fill="url(#dmGold)"/><path d="M167.3 176.5l2.8-.3" fill="none" stroke="#fff2ba" stroke-width=".65" stroke-linecap="round"/>
+ <path d="M150 184c6 3 14 3 20 0" fill="none" stroke="#e8687e" stroke-width="4" stroke-linecap="round"/>
+ <!-- 콧수염: 끝이 말려 올라감 -->
+ <path d="M160 158c-6-5-16-6-24-2c-8 4-14 6-22 4c-6-2-10-7-10-13c-6 8-2 18 8 21c12 4 24-1 34-6c6-3 10-4 14-4s8 1 14 4c10 5 22 10 34 6c10-3 14-13 8-21c0 6-4 11-10 13c-8 2-14 0-22-4c-8-4-18-3-24 2z" fill="url(#dmBeard)" stroke="#261f3d" stroke-width="2.7" stroke-linejoin="round"/>
+ <!-- 코 -->
+ <path d="M152 136c-5 11-5 16 2 18c5 2 11 2 14-1c4-3 1-9-3-17" fill="#f0a87e" stroke="#261f3d" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+ <!-- 눈 -->
+ <g opacity="var(--mark-wink,1)">
+ <path d="M121 133c5-8 15-8 21 0" fill="none" stroke="#261f3d" stroke-width="3.8" stroke-linecap="round"/>
+ <path d="M118 137l-6 2M120 141l-5 5" fill="none" stroke="#261f3d" stroke-width="2.2" stroke-linecap="round"/>
+ </g>
+ <g id="dm-open-eye"><ellipse cx="187" cy="131" rx="9.5" ry="11" fill="#fff" stroke="#261f3d" stroke-width="2.8"/>
+ <circle cx="188.6" cy="132.4" r="6" fill="#261f3d"/>
+ <circle cx="191.2" cy="129.4" r="2.2" fill="#fff"/></g>
+ <use href="#dm-open-eye" transform="translate(-55 2)" opacity="var(--mark-open,0)"/>
+ <!-- 눈썹: 윙크 쪽은 내려가고 반대쪽은 치켜 올라감 -->
+ <path d="M146 121c-9-5-21-4-29 2c-6 5-9 13-17 16c9 2 15-3 20-8c6-5 16-7 26-5z" fill="url(#dmBeard)" stroke="#261f3d" stroke-width="2.6" stroke-linejoin="round"/>
+ <path d="M174 112c9-7 22-7 30-1c6 4 10 12 18 14c-8 3-14 0-19-4c-7-5-17-7-27-4z" fill="url(#dmBeard)" stroke="#261f3d" stroke-width="2.6" stroke-linejoin="round"/>
+ <!-- 갓: 말총이라 비쳐 보이는 챙 -->
+ <ellipse cx="160" cy="92" rx="90" ry="18" fill="#2c2448" fill-opacity=".58" stroke="#261f3d" stroke-width="3"/>
+ <path d="M78 94c22 7 58 10 82 10s60-3 82-10" fill="none" stroke="#b2a6e6" stroke-width="1.5" opacity=".6"/>
+ <path d="M96 86c20-5 44-7 64-7s44 2 64 7" fill="none" stroke="#b2a6e6" stroke-width="1.2" opacity=".45"/>
+ <g class="dosa-curved-gat">
+    <path d="M128 90C130 69 126 50 136 29C145 10 163 3 181 8C193 11 202 20 197 26C194 30 189 29 185 26C174 20 165 26 168 38C172 53 185 70 192 90C177 97 143 97 128 90Z" fill="url(#dmHat)" fill-opacity=".96" stroke="#261f3d" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M133 73C148 78 169 78 184 73M134 59C145 64 161 65 177 62" fill="none" stroke="#6f62a8" stroke-width="1.3" opacity=".6"/>
+    <path d="M137 65C134 44 140 25 155 18C168 12 180 15 188 21" fill="none" stroke="#9b8fd4" stroke-width="2.5" stroke-linecap="round" opacity=".48"/>
+    <path d="M139 82C150 85 169 85 181 81" fill="none" stroke="#b2a6e6" stroke-width="1.2" stroke-linecap="round" opacity=".35"/>
+   </g><g class="dosa-charms" stroke="#261f3d" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M106 201v4M214 201v4" fill="none" stroke="#ae780b" stroke-width="1.8"/>
+    <ellipse cx="106" cy="206" rx="2.4" ry="3" fill="none" stroke="#ae780b" stroke-width="1.3"/>
+    <ellipse cx="214" cy="206" rx="2.4" ry="3" fill="none" stroke="#ae780b" stroke-width="1.3"/>
+    <g class="dosa-sun-charm" transform="translate(106 219)">
+     <path d="M0-11.8V-14M0 11.8V14M-11.8 0H-14M11.8 0H14M-8.4-8.4l-1.6-1.6M8.4 8.4l1.6 1.6M-8.4 8.4l-1.6 1.6M8.4-8.4l1.6-1.6" stroke="#b77b13" stroke-width="2"/>
+     <circle r="8.8" fill="url(#dmGold)" stroke-width="1.8"/>
+     <path d="M-5.2-2.2A5.7 5.7 0 0 1 .6-5.7" fill="none" stroke="#fff4bd" stroke-width="1.8"/>
+    </g>
+    <g class="dosa-moon-charm" transform="translate(214 219) rotate(-14)">
+     <path d="M3.5-10.2C-3.5-12.5-11.5-7.5-11.5 .7C-11.5 9-3.2 13.8 4.4 10.1C7 8.8 8.9 6.8 9.7 4.5C3.8 7.1-2.2 3.3-2.2-2.4C-2.2-6 .1-8.6 3.5-10.2Z" fill="url(#dmGold)" stroke-width="1.8"/>
+     <path d="M-6.6-5.5C-9.8-.4-7.5 6.6-2.6 8.4" fill="none" stroke="#fff4bd" stroke-width="1.5"/>
+    </g>
+   </g>
+</svg>
