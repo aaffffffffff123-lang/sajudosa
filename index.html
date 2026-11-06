@@ -3305,9 +3305,9 @@ const V5={
  // 조상·부모 자리(태어난 해·달 기둥)의 재물 기운: 위 글자에 있으면 shown, 아래 글자 속에만 있으면 hidden.
  // 엔진의 근거 문장(fate.wealth.fact)과 같은 말을 쓴다: 위 글자 = 드러남, 아래 글자 = 숨어 있음.
  origin:{
-  absent:{fact:'조상과 부모를 보는 해·달의 글자 어디에도 재물 기운이 없습니다.',fate:'당신은 물려받을 것 없이 맨손으로 시작해서 남이 물려받은 것을 마련하는 데 평생을 쓰는 팔자입니다.',rule:'복은 집에서 내려옵니다. 내려올 복이 없는 집은 당대에 만든 것을 겨우 다음 대에 넘깁니다.'},
-  hidden:{fact:'조상과 부모를 보는 해·달의 재물 기운이 아래 글자 속에 숨어만 있습니다.',fate:'당신은 집안에 복이 있는 줄은 알아도 손에 쥐어 본 적은 없는 팔자입니다.',rule:'복은 집에서 내려옵니다. 아래 글자 속에 숨은 복은 조상과 부모에게서 끝나고 당신 손까지 내려오지 않습니다.'},
-  shown:{fact:'조상과 부모를 보는 해·달의 위 글자에 재물 기운이 드러나 있습니다.',fate:'당신은 받은 것을 지키느라 평생을 쓰고 당신 대에서는 한 칸도 올라가지 못하는 팔자입니다.',rule:'복은 집에서 내려옵니다. 내려온 복은 집값과 교육비로 고스란히 다음 대에 넘어갑니다.'}
+  absent:{fact:'조상과 부모를 보는 해·달의 글자 어디에도 재물 기운이 없습니다.',fate:'당신은 물려받을 것 없이 맨손으로 시작해서 남이 물려받은 것을 마련하는 데 평생을 쓰는 팔자입니다.',rule:'생활을 꾸릴 돈부터 벌어야 하니 배울 일이 남아도 일터로 나갑니다. 먼 앞날보다 당장 손에 쥘 돈을 먼저 고르는 사람에게 큰일을 오래 맡기기는 어렵습니다.'},
+  hidden:{fact:'조상과 부모를 보는 해·달의 재물 기운이 아래 글자 속에 숨어만 있습니다.',fate:'당신은 집안에 복이 있는 줄은 알아도 손에 쥐어 본 적은 없는 팔자입니다.',rule:'집안의 형편과 당신이 쓸 수 있는 돈은 다릅니다. 그래도 그런 집에서 자랐으니 제 몫 하나 챙기지 못한 사정까지 남이 헤아려 줄 일은 없습니다.'},
+  shown:{fact:'조상과 부모를 보는 해·달의 위 글자에 재물 기운이 드러나 있습니다.',fate:'당신은 받은 것을 지키느라 평생을 쓰고 당신 대에서는 한 칸도 올라가지 못하는 팔자입니다.',rule:'복은 집에서 내려옵니다. 급한 돈을 집에서 메워 주니 품삯에 서두르지 않습니다. 작은 돈보다 먼 앞날을 고르는 것도 당신의 안목입니다.'}
  },
  // 나를 나타내는 상징: 태어난 날의 위 글자
  symbol:{
@@ -3859,6 +3859,10 @@ function v5Reading(R,now){
  const workKey=v5WorkKey(r),work=V5.work[workKey];
  out.portrait=v5Portrait(r,age,work);
  const ok=v5Origin(r);out.origin=Object.assign({key:ok},V5.origin[ok]);
+ // 집안의 받침을 설명한 뒤, 도사는 그 여유를 개인의 안목으로 평가한다.
+ const inheritedLearning=P.slice(0,2).some(p=>v5PillarHas(a,p,'인성'));
+ if(ok==='shown'&&inheritedLearning)out.origin.rule='집에서 생활을 받쳐 주고 배울 길도 열어 주니 준비하는 동안 당장 벌 돈을 미뤄 둘 수 있습니다. 눈앞의 돈에 흔들리지 않고 먼 앞날을 고를 줄 아는 사람입니다.';
+ if(ok==='absent'&&inheritedLearning)out.origin.rule='배우고 익힐 바탕이 있어도 생활을 꾸릴 돈은 직접 벌어야 합니다. 아는 것을 오래 준비할 일보다 당장 품삯 받을 일에 쓰는 것도 당신이 고른 길입니다.';
  // 상징
  out.symbol=V5.symbol[a.dayStem];
  // 다섯 기운
@@ -3904,7 +3908,7 @@ function v5Reading(R,now){
  out.domains=doms;
  // 순응 장면의 군중이 「종이 봐」 하고 말할 근거: 그 사람 사주에 정말 있을 때만 true
  { const P2=P.slice(0,2).filter(p=>p&&p.known);
-   out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent'}; }
+   out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent',noOfficer:!inp.unknown&&P.length===4&&P.every(p=>p&&p.known&&!v5PillarHas(a,p,'관성'))}; }
  // 올해·내년
  const y0=r.years[0],adverse=!!(y0&&(y0.evidence||[]).some(e=>e.valence==='adverse'));
  out.yearRule=adverse?V5.yearRule.nation:V5.yearRule.vessel;
@@ -4121,7 +4125,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261106-crowd-reading';
+  const v='?v=20261106-class-scene';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))

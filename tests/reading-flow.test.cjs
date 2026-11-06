@@ -355,3 +355,26 @@ test('current month changes at the solar-term boundary and retains its own expla
 });
 
 
+
+test('family support claims distinguish inherited money from inherited learning',()=>{
+ const covered=new Set();
+ for(const {r,v} of ALL){
+  const learning=r.P.slice(0,2).filter(p=>p&&p.known).some(p=>fam(r,p.stem)==='인성'||(api.HIDDEN[p.branch]||[]).some(h=>fam(r,h[0])==='인성'));
+  covered.add(v.origin.key+':'+learning);
+  if(v.origin.key==='shown')assert.equal(v.origin.rule.includes('배울 길도 열어'),learning);
+  if(v.origin.key==='absent')assert.equal(v.origin.rule.includes('배우고 익힐 바탕이 있어도'),learning);
+ }
+ for(const key of ['shown','absent'])for(const learning of [true,false])assert(covered.has(key+':'+learning));
+});
+
+test('crowd officer absence includes hidden stems and never assumes an unknown birth hour',()=>{
+ let absent=0,hidden=0;
+ for(const {r,v,unknown} of ALL){
+  const P=r.P.filter(p=>p&&p.known);
+  const present=P.some(p=>fam(r,p.stem)==='관성'||(api.HIDDEN[p.branch]||[]).some(h=>fam(r,h[0])==='관성'));
+  assert.equal(v.marks.noOfficer,!unknown&&P.length===4&&!present);
+  if(v.marks.noOfficer)absent++;
+  if(!unknown&&present&&!P.some(p=>fam(r,p.stem)==='관성')){hidden++;assert(!v.marks.noOfficer);}
+ }
+ assert(absent>0);assert(hidden>0);
+});

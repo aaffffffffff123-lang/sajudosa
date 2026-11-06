@@ -2641,15 +2641,15 @@ const LINES={
  // 설교 중에 종이를 구기기 시작하면(설교를 끊으면) 천지신명이 하는 말, 손을 놓고 물러서면 하는 말
  interrupt:'윗사람한테 대드는 사주는 화가 백 가지라 하였느니라.',
  yield:'이제야 제 팔자를 아는구나.',
- /* 종이가 손을 떠날 때 옆줄에서 한마디, 앞으로 걸어갈 때 앞줄 두 사람이 이어 받는다. */
+ /* 앞의 두 사람은 학벌·집안을 사주로 재단하고, 마지막 사람은 설교하던 신명을 걱정한다.
+  * who는 팔을 붙잡는 0·1번과 같다. 같은 얼굴·보증서·목소리가 이어진다. */
  whisper:[
-  {aside:'고졸인가?',say:'공부할 팔자는 따로 있지.',mark:'noStudy',seen:'종이 봐. 공부 기운이 없네',reply:'쟨 일찍 돈 버는 게 효도야.'},
-  {aside:'가정교육 못 받았나?',say:'부모복도 타고나잖아.',reply:'집에서 뭘 보고 배웠겠어.'},
-  {aside:'좆소 다니나?',say:'그래도 관운 들면?',reply:'좆소 부장 되는 거지.'},
-  {aside:'임대 사나?',say:'월세 낼 재물운은 돼?',mark:'noMoney',seen:'종이 봐. 돈 기운이 없네',reply:'보증금도 대출일걸.'},
-  {aside:'집 샀대?',say:'문서운 들면 집 사는 거 아냐?',reply:'월세 계약서도 문서야.'},
-  {aside:'역마살 꼈나?',say:'해외 나갈 팔자야?',reply:'쟤가? 지방 발령이겠지.'}
+  {aside:'고졸인가?',say:'공부 좀 했으면 저러겠어?',mark:'noStudy',seen:'사주에 공부 기운이 없잖아',who:1},
+  {aside:'가정교육을 안 받았나?',say:'가정교육도 타고나는 거지.',mark:'noStudy',seen:'부모복 없는 사주라 보고 배운 게 없지',who:1},
+  {aside:'좆소 다니나?',say:'큰 데서 배웠으면 저러겠어?',mark:'noOfficer',seen:'관이 없으니 위아래도 모르지.',who:1},
+  {aside:'저런 것까지 가르쳐야 돼?',say:'배운 대로 나오는 거지.',who:1}
  ],
+ sympathy:'신명님도 참 피곤하시겠다.',
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
 const REV_SHIFT=2.7;
@@ -2677,7 +2677,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say+w.reply+(w.seen||'')).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.sympathy+LINES.whisper.map(w=>w.aside+w.say+(w.seen||'')).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -2904,7 +2904,7 @@ const CROWD=(()=>{
  function faceTex(mood,i){return canvasTex(256,256,(g,w,h)=>{
   g.scale(.5,.5);g.lineCap='round';g.lineJoin='round';
   // scorn: 설교를 끊은 나를 돌아보는 얼굴. 눈꺼풀을 반쯤 내리깔고 내려다보며, 한쪽 눈썹만 들고, 입꼬리 한쪽만 올린다
-  const profile=profiles[i],closed=['pray','wail','cheer'].includes(mood),plead=mood==='plead',warn=mood==='warn',cry=mood==='wail',scorn=mood==='scorn';
+  const profile=profiles[i],closed=['pray','wail','cheer'].includes(mood),plead=mood==='plead',warn=mood==='warn',cry=mood==='wail',scorn=mood==='scorn',concern=mood==='concern',relieved=mood==='relieved';
   const line=(x,y,cx,cy,ex,ey,color,width)=>{
    g.strokeStyle=color;g.lineWidth=width;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(cx,cy,ex,ey);g.stroke();
   };
@@ -2914,7 +2914,7 @@ const CROWD=(()=>{
    g.fillStyle=blush;g.fillRect(256+side*120-54,234,108,108);
    const x=256+side*profile.eyes,y=223+(side===1?(i%3-1)*3:0);
    g.save();g.translate(x,y);g.scale(side*1.16,1.10);g.rotate(-profile.tilt*.012);
-   const lift=closed?8:(plead?25:scorn?19:17)*profile.lid;
+   const lift=closed?8:(plead?25:scorn?19:relieved?13:17)*profile.lid;
    if(closed){line(-24,2,0,cry?16:-13,25,-1,'#533b32',5);}
    else{
     const py=scorn?4:0,lid=-lift*.36;
@@ -2932,6 +2932,7 @@ const CROWD=(()=>{
     else line(-26,1,-1,-lift*1.45,28,-3,'#503931',5);
    }
     if(scorn){if(side===1)line(-24,-38,-2,-53,28,-43,hairs[i],i===2?5:7);else line(-24,-27,-2,-31,28,-26,hairs[i],i===2?5:7);}
+   else if(concern)line(-24,-45,-2,-39,28,-25,hairs[i],i===2?5:7);
    else line(-24,plead||cry?-42:warn?-23:-31,-2,-41,28,-30+(plead?4:0),hairs[i],i===2?5:7);
    if(i===2||i===4){line(6,15,20,17,28,10,'#a47b64',2);line(27,1,33,-1,37,-2,'#a47b64',2);}
    if(cry){line(4,8,13,38,10,73,'rgba(137,179,190,.8)',6);}
@@ -2944,7 +2945,7 @@ const CROWD=(()=>{
    g.quadraticCurveTo(mx+11,330+deep*1.55,mx-25,334);g.fillStyle='#75453f';g.fill();
    if(!plead)line(mx-19,333,mx+1,cry?322:330,mx+20,330,'#e7d2bd',5);
   }else if(scorn){line(mx-22,337,mx,341,mx+25,324,'#7d5046',6);line(mx+22,318,mx+31,321,mx+32,330,'rgba(125,80,70,.6)',3);}
-  else line(mx-23,333,mx,360-(warn?31:mood==='pray'?18:10),mx+25,331+(i%3),'#85594e',5);
+  else line(mx-23,333,mx,concern?323:relieved?354:360-(warn?31:mood==='pray'?18:10),mx+25,331+(i%3),'#85594e',5);
   line(mx-9,cry?366:351,mx+2,cry?371:356,mx+13,cry?363:350,'rgba(163,95,82,.42)',3);g.restore();
   if(i===0){g.fillStyle='#805e4a';g.beginPath();g.arc(338,289,3.5,0,TAU);g.fill();}
  },{srgb:true});}
@@ -3168,17 +3169,18 @@ const CROWD=(()=>{
  // 서 있는 자리들
  const SIDES=[[-1.05,.3],[1.05,.3],[-1.18,.62],[1.18,.62],[-1.3,.95],[1.3,.95]];
  // 되살림 때 꿇는 자리: 설계자 양옆에 세 명씩 두 무리로(가운데를 비워, 든 손과 거기 모이는 불씨가 사람들·말풍선에 가려지지 않게)
- const KNEEL=[[-.88,.85],[.88,.85],[-.9,.5],[.9,.5],[-.8,1.15],[.8,1.15]];
+ const KNEEL=[[-.74,1.2],[.74,1.2],[-.94,.5],[.94,.5],[-1,.87],[1,.87]];
  const WALLX=[-.8,-.27,.27,.8];
 
  function goTo(p,x,z,o={}){const g=p.goal;g.x=x;g.z=z;g.speed=o.speed||9;if(o.ry!=null)g.ry=o.ry;if(o.face)g.ry=faceDir(p,o.face[0],o.face[1]);p.run=1;}
  function stance(p,k){const g=p.goal;
-  g.kneel=k==='kneel'||k==='bow'||k==='pray'||k==='kneelUp';// 무릎 꿇기: 몸 높이는 update()가 무릎이 바닥에 닿게 맞춘다
+  g.kneel=k==='kneel'||k==='bow'||k==='pray'||k==='kneelUp'||k==='inspect';// 무릎 꿇기: 몸 높이는 update()가 무릎이 바닥에 닿게 맞춘다
   if(k==='stand'){g.y=.015;g.rx=0;g.py=.31;g.px=0;g.pz=.108;g.prx=0;g.arms='hold';}
   else if(k==='kneel'){g.y=-.13;g.rx=.42;g.py=.3;g.px=0;g.pz=.1;g.prx=-.2;g.arms='hold';}
   else if(k==='bow'){g.y=-.15;g.rx=.95;g.py=.28;g.px=0;g.pz=.12;g.prx=-.5;g.arms='hold';}
   else if(k==='pray'){g.y=-.12;g.rx=.18;g.py=.7;g.px=0;g.pz=.07;g.prx=-.1;g.arms='pray';}
   else if(k==='kneelUp'){g.y=-.1;g.rx=.08;g.py=.68;g.px=0;g.pz=.16;g.prx=-.25;g.arms='up';}
+  else if(k==='inspect'){g.y=-.1;g.rx=.05;g.py=.39;g.px=0;g.pz=.15;g.prx=-.22;g.arms='hold';}
   else if(k==='cheer'){g.y=.015;g.rx=-.08;g.py=.69;g.px=0;g.pz=.17;g.prx=-.25;g.arms='cheer';}
   else if(k==='block'){g.y=.015;g.rx=.05;g.py=.64;g.px=.14;g.pz=.14;g.prx=-.3;g.arms='spread';}
   else if(k==='point'){g.y=.015;g.rx=.12;g.py=.44;g.px=-.16;g.pz=.13;g.prx=-.1;g.arms='point';}
@@ -3220,13 +3222,19 @@ const CROWD=(()=>{
    gp.root.rotation.set(GL.lean+grab.off*.9,-s*GL.turn,s*(.08-grab.off*.5));
    gv5.set(0,(.548+.015+LEG_LIFT)*GL.sc,0).applyEuler(gp.root.rotation);
    gp.root.position.copy(gv1).sub(gv5);
-   // 두 손으로 내 아래팔을 움켜쥔다(아래팔 위의 두 점)
+   // 안쪽 손으로 내 팔을 붙잡고, 바깥 손에는 자기 보증서를 쥔다.
    VM.handPos(k,gv2);VM.anchorPos(k,gv3);
-   gp.root.updateWorldMatrix(true,false);
-   for(const ak of ['L','R']){const a=gp.arms[ak];const f=ak==='L'?(i?GL.g0:GL.g1):(i?GL.g1:GL.g0);
-    gv4.copy(gv2).lerp(gv3,f);gv4.x+=s*GL.gx;gv4.y+=GL.gy;gv4.z+=GL.gz; // 손목·아래팔 앞면을 감아쥔 손(카메라 쪽)
-    placeArmIK(gp,a,gv4,s);}
-   gp.head.rotation.set(GL.look,-s*.22,s*.06);gp.paper.visible=false;gp.arms.L.finger.visible=gp.arms.R.finger.visible=false;
+   gp.paper.visible=true;gp.paper.position.set(s*.08,.30,.14);gp.paper.rotation.set(-.15,0,s*.08);
+   gp.root.updateWorldMatrix(true,true);
+   const gripping=i?'L':'R';
+   for(const ak of ['L','R']){
+    const a=gp.arms[ak],handSide=ak==='L'?-1:1;
+    if(ak===gripping){
+     gv4.copy(gv2).lerp(gv3,GL.g0);gv4.x+=s*GL.gx;gv4.y+=GL.gy;gv4.z+=GL.gz;
+    }else gv4.set(handSide*.055,-.065,.006).applyMatrix4(gp.paper.matrixWorld);
+    placeArmIK(gp,a,gv4,handSide);
+   }
+   gp.head.rotation.set(GL.look,-s*.22,s*.06);gp.arms.L.finger.visible=gp.arms.R.finger.visible=false;
   }
  }
  const iv1=V3(),iv2=V3(),iv3=V3(),iv4=V3(),iq=new THREE.Quaternion(),iq2=new THREE.Quaternion(),DOWN=V3(0,-1,0);
@@ -3347,7 +3355,15 @@ const CROWD=(()=>{
   for(const p of people){p.shakeT=G.time;mood(p,'pray');}
  }
  function restamp(){
-  for(let i=0;i<6;i++){const p=people[i];later(i*.11,()=>{p.stampT=G.time;AUDIO.stamp(1);goTo(p,p.x,p.z,{face:[CAM.pos.x-root.position.x,CAM.pos.z-root.position.z],speed:6});stance(p,'cheer');mood(p,'cheer');});}
+  for(let i=0;i<6;i++){
+   const p=people[i];
+   later(i*.05,()=>{
+    p.certCheckAt=G.time;p.stamp.visible=false;stance(p,'inspect');mood(p,'concern');
+    goTo(p,p.x,p.z,{face:[CAM.pos.x-root.position.x,CAM.pos.z-root.position.z],speed:6});
+   });
+   later(.32+i*.05,()=>{p.stamp.visible=true;p.stampT=G.time;AUDIO.stamp(1);});
+   later(.59+i*.05,()=>mood(p,'relieved'));
+  }
  }
  function cheer(){
   for(let i=0;i<6;i++){const p=people[i];stance(p,'cheer');mood(p,'cheer');p.goal.y=.015;}
@@ -3427,7 +3443,9 @@ const CROWD=(()=>{
    mood(p,g.mood||p.mood);
    if(state.watching&&!rev.on&&!G.ended&&!G.inputLocked)mood(p,now<state.cryUntil?'wail':'warn');
    const cry=p.mood==='wail'||p.mood==='pray';
-   p.head.rotation.set(g.arms==='pray'?-.35:cry?-.1:0,0,cry?Math.sin(now*11+p.i)*.07:0);
+   const checking=p.certCheckAt>=0&&g.arms==='hold'&&rev.on;
+   const pitch=checking?(p.mood==='relieved'?.18:.48):g.arms==='pray'?-.35:cry?-.1:0;
+   p.head.rotation.x=damp(p.head.rotation.x,pitch,9,dt);p.head.rotation.y=0;p.head.rotation.z=cry?Math.sin(now*11+p.i)*.07:0;
    // 도장 찍기: 크게 떠 있다가 쾅 내려앉고 인주가 번진다
    if(p.stampT>=0){const u=(now-p.stampT)/.2;if(u<1){const e=easeIn3(u);p.stamp.scale.setScalar(lerp(2.4,1,e));p.stamp.position.z=.0085+lerp(.05,0,e);p.stamp.material=stampMat;}
     else{p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;const v=(now-p.stampT-.2)/.4;if(v<1){p.ink.visible=true;p.ink.scale.setScalar(.03+v*.075);p.ink.material.opacity=.6*(1-v);}else{p.ink.visible=false;p.stampT=-1;}}}
@@ -3437,10 +3455,12 @@ const CROWD=(()=>{
  }
  function hide(){setMode('retreat');for(const p of people){const s=p.x<0?-1:1;goTo(p,p.x+s*1.2,p.z+.3,{ry:p.ry,speed:6});}sched(.9,()=>{root.visible=false;for(const p of people)p.hidden=true;state.mode='hidden';});}
  function reset(keepBubble){
+  releaseWitnesses();
   state.mode='hidden';state.ev.length=0;state.nextSob=0;state.watching=false;state.cryUntil=0;state.nextTear=0;tearCursor=0;tearMesh.visible=false;tearMesh.count=0;for(const d of tearDrops)d.life=0;root.visible=false;vmRoot.visible=false;
   grab.on=false;grab.w=0;grab.off=0;grab.shaken=false;
   rev.on=false;rev.gather=false;rev.impact=false;if(rev.wisps){rev.wisps.visible=false;rev.glow.visible=false;rev.core.visible=false;rev.light.intensity=0;rev.glow.material.opacity=1;}
   for(const p of [...people,...grabbers]){p.root.visible=false;p.hidden=true;p.root.scale.setScalar(p.s);p.x=p.z=0;p.y=.015;p.ry=p.rx=p.rz=0;p.run=0;p.bob=0;p.stampT=-1;p.shakeT=-1;p.stamp.scale.setScalar(1);p.stamp.position.z=.0085;p.ink.visible=false;
+   p.certCheckAt=-1;p.stamp.visible=true;
    Object.assign(p.goal,{x:0,z:0,ry:0,y:.015,rx:0,rz:0,py:.31,px:0,pz:.108,prx:0,mood:'normal',arms:'hold',speed:9,kneel:false});p.kneelF=0;mood(p,'normal');
    for(const k of ['L','R']){const a=p.arms[k],v=ARMS.hold,s=k==='L'?-1:1;a.z=v[0];a.x=v[1];a.ez=v[2];a.sh.rotation.set(-a.x,0,s*a.z);a.el.rotation.set(-a.ez,0,0);a.ikw=1;a.finger.visible=false;}
    for(const leg of Object.values(p.legs)){leg.hip.rotation.set(0,0,0);leg.knee.rotation.set(0,0,0);leg.ankle.rotation.set(0,0,0);}
@@ -3459,7 +3479,8 @@ const CROWD=(()=>{
    // Keep the player's own standing space, with shoulders immediately to either side.
    if(Math.abs(x)<.46&&z>5.9)continue;
    const shuffle=Math.sin((row+1)*127.1+(col+1)*311.7)*43758.5453;
-   const person=Math.floor((shuffle-Math.floor(shuffle))*6);
+   // 통로 앞 두 줄의 대화 상대는 처음부터 같은 옷·얼굴로 서 있다.
+   const person=(col===5||col===6)&&row<2?(row===0?4:0):Math.floor((shuffle-Math.floor(shuffle))*6);
    placements[person].push({x,z,scale:1.51+Math.sin(row*11+col*7)*.14,turn:PI+Math.sin(col*3+row)*.14,pi:person});
   }
   const plain=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85});
@@ -3505,7 +3526,36 @@ const CROWD=(()=>{
   congregation.userData.place=placements;
   return congregation;
  }
- return {root,people,congregationView,reset,update,hide,grabStart,wallStart,witnessHit,reviveStart,gatherStart,impact,restamp,cheer,sides,handTarget,get mode(){return state.mode;},get rev(){return rev;}};
+ // 세 사람만 실제 관절을 움직인다. 나머지 무리는 합쳐 둔 메시를 쓴다.
+ function witness(v){
+  const p=people[v.pi];
+  p.witness=v;v.actor=p;congregation.add(p.root);p.root.visible=true;p.paper.visible=true;
+  stance(p,'stand');mood(p,'scorn');
+  p.body.position.set(0,.015+LEG_LIFT,0);p.body.rotation.set(0,0,0);
+  p.paper.position.set(0,.31,.108);p.paper.rotation.set(0,0,0);
+  p.root.position.set(v.cx,v.cy||0,v.z);p.root.scale.setScalar(v.scale);p.root.rotation.set(0,v.yaw??v.turn,0);
+  p.head.rotation.set(0,0,0);p.stamp.visible=true;
+  return p;
+ }
+ function releaseWitnesses(){
+  for(const p of people)if(p.witness){
+   p.witness.actor=null;p.witness=null;root.add(p.root);p.root.visible=false;
+   p.root.scale.setScalar(p.s);p.root.position.set(0,0,0);p.root.rotation.set(0,0,0);
+   p.head.rotation.set(0,0,0);stance(p,'stand');mood(p,'normal');
+  }
+ }
+ function poseWitness(v){
+  const p=v.actor;if(!p)return;
+  p.root.position.set(v.cx,v.cy||0,v.z);p.root.rotation.set(0,v.yaw??v.turn,0);
+  p.root.scale.setScalar(v.scale);
+  const elapsed=G.time-(v.noticeAt??G.time),polite=v.politeAt!=null;
+  const glance=!polite&&elapsed<.55?Math.sin(clamp(elapsed/.55,0,1)*PI)*.22:0;
+  const targetYaw=polite?clamp(wrapPi(Math.atan2(-v.cx,-.62-v.z)-v.yaw),-.6,.6):0;
+  p.head.rotation.set(glance,polite?targetYaw*smooth((G.time-v.politeAt)/.35):0,polite?-.035:0);
+  mood(p,polite?'concern':v.look>.2?'scorn':'normal');
+  armPose(p,'L',ARMS.hold,1);armPose(p,'R',ARMS.hold,1);gripPaper(p,'hold',1);
+ }
+ return {root,people,congregationView,witness,releaseWitnesses,poseWitness,reset,update,hide,grabStart,wallStart,witnessHit,reviveStart,gatherStart,impact,restamp,cheer,sides,handTarget,get mode(){return state.mode;},get rev(){return rev;}};
 })();
 
 /* 운명을 받아들인 자리: 같은 추종자들 틈, 손에 남은 내 운세. */
@@ -3701,13 +3751,14 @@ const SUBMISSION=(()=>{
   if(!crowd)return;const place=crowd.userData.place;
   for(const mesh of crowd.children){
    const list=place&&place[mesh.userData.pi];if(!list)continue;
-   list.forEach((v,j)=>{_dm.position.set(v.cx,v.cy||0,v.z);_dm.rotation.set(0,v.yaw!=null?v.yaw:v.turn,0);_dm.scale.setScalar(v.scale);_dm.updateMatrix();mesh.setMatrixAt(j,_dm.matrix);});
+   list.forEach((v,j)=>{_dm.position.set(v.cx,v.cy||0,v.z);_dm.rotation.set(0,v.yaw!=null?v.yaw:v.turn,0);_dm.scale.setScalar(v.actor?0:v.scale);_dm.updateMatrix();mesh.setMatrixAt(j,_dm.matrix);});
    mesh.instanceMatrix.needsUpdate=true;
   }
  }
  function resetCrowd(){
+  CROWD.releaseWitnesses();
   PART.on=false;stareReset();if(!crowd||!crowd.userData.place)return;
-  for(const list of crowd.userData.place)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;v.look=0;v.yaw=v.turn;v.goal=null;}
+  for(const list of crowd.userData.place)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;v.look=0;v.yaw=v.turn;v.goal=null;v.noticeAt=null;v.politeAt=null;}
   writeCrowd();
  }
  function part(endZ,endFov){
@@ -3722,12 +3773,16 @@ const SUBMISSION=(()=>{
  }
  function updatePart(){
   const turning=updateStare();
-  if(!PART.on||!crowd||!crowd.userData.place){if(turning)writeCrowd();return;}
+  if(!PART.on||!crowd||!crowd.userData.place){
+   forPlaces(v=>{if(v.actor)CROWD.poseWitness(v);});
+   if(turning)writeCrowd();return;
+  }
   const t=G.time-PART.t0;let busy=false;
   for(const list of crowd.userData.place)for(const v of list){
    if(v.tx===v.x)continue;const k=(t-v.delay)/v.dur;if(k<1)busy=true;
    v.cx=lerp(v.x,v.tx,smoother(k));v.cy=Math.sin(PI*clamp(k,0,1))*.035;
   }
+  forPlaces(v=>{if(v.actor)CROWD.poseWitness(v);});
   writeCrowd();if(!busy)PART.on=false;
  }
 
@@ -3746,24 +3801,25 @@ const SUBMISSION=(()=>{
   STARE.on=on;STARE.t0=G.time;
   const cx=CAM.pos.x,cz=CAM.pos.z;
   forPlaces(v=>{
-   if(v.look==null)v.look=0;v.from=v.look;v.goal=on?1:0;
    const d=Math.hypot(v.x-cx,v.z-cz);
+   if(v.look==null)v.look=0;v.from=v.look;v.goal=on&&d<2.7?1:0;
+   if(on&&v.goal)v.noticeAt=G.time;
    v.ld=on?.02+d*.085+rnd(0,.12):.45+rnd(0,.5);v.ldur=on?rnd(.36,.52):rnd(.55,.8);
    if(on||v.side==null)v.side=Math.abs(v.x-cx)<.15?(Math.random()<.5?-1:1):Math.sign(v.x-cx);
   });
-  if(on)AUDIO.crowdTurn();
-  else{STARE.talk.length=0;AUDIO.crowdShuffle(.5);}
+  if(on){prepareWhispers();AUDIO.crowdTurn();}
+  else{STARE.talk.length=0;CROWD.releaseWitnesses();STARE.exchange=null;AUDIO.crowdShuffle(.5);}
  }
  // Choose the two faces for where the reader will be at the END of each line.
  // The speakers leave the aisle in turn; everyone else parts as soon as we start walking.
- function walkSpeaker(side,until,replyTo){
+ function walkSpeaker(side,until,replyTo,person){
   const e=walkProgress(until/WALK.dur),cx=lerp(WALK.p0.x,WALK.p1.x,e),cz=lerp(WALK.p0.z,WALK.p1.z,e);
   const aimX=lerp(WALK.l0.x,WALK.l1.x,e),aimZ=lerp(WALK.l0.z,WALK.l1.z,e);
   const tanH=Math.tan(lerp(WALK.f0,WALK.f1,e)*PI/360)*camera.aspect;
   let best=null,bestScore=Infinity;
   forPlaces(v=>{
    const depth=cz-v.z;
-   if(depth<=.15||side*v.x<=0||(replyTo&&v.z<=replyTo.z+.3))return;
+   if(v.pi!==person||v===STARE.exchange?.aside||depth<=.15||side*v.x<=0||(replyTo&&v.z<=replyTo.z+.3))return;
    const axis=cx+(aimX-cx)*depth/(cz-aimZ),screenX=side*(v.x-axis)/(depth*tanH);
    const row=replyTo?Math.abs(v.z-replyTo.z-1.05):Math.abs(depth-1.55);
    const score=Math.abs(screenX-.62)+row*.32+Math.max(0,Math.abs(screenX)-.85)*8;
@@ -3771,33 +3827,41 @@ const SUBMISSION=(()=>{
   });
   return best;
  }
- function startWhispers(){
+ function prepareWhispers(){
+  if(STARE.exchange)return;
   if(!crowd||!crowd.visible)return;
   const marks=lastResult?.paper?.marks||{};
   if(STARE.used.size===LINES.whisper.length)STARE.used.clear();
   const pool=LINES.whisper.filter(w=>!STARE.used.has(w));
   const pair=pick(pool.concat(pool.filter(w=>w.mark&&marks[w.mark])));
-  const side=Math.random()<.5?-1:1,head=V3();
+  const side=innerWidth<innerHeight?1:(Math.random()<.5?-1:1),head=V3();
   let aside=null,best=Infinity;
   forPlaces(v=>{
+   if(v.pi!==pair.who)return;
    head.set(v.cx,HEAD_Y*v.scale,v.z).project(camera);
    if(head.z<=-1||head.z>=1||Math.abs(head.x)>.93||Math.abs(head.y)>.86)return;
-   const score=Math.abs(head.x+side*.63)+Math.abs(head.y+.19)*.6;
+   const score=Math.hypot(v.cx-CAM.pos.x,v.z-CAM.pos.z)+Math.abs(head.x)*.2;
    if(score<best){aside=v;best=score;}
   });
   STARE.exchange={pair,side,aside,say:pair.mark&&marks[pair.mark]?pair.seen:pair.say};
-  if(aside){sayWhisper(aside,pair.aside,2);STARE.used.add(pair);}
+  if(aside){aside.goal=1;aside.noticeAt=G.time;CROWD.witness(aside);}
+ }
+ function startWhispers(){
+  prepareWhispers();const e=STARE.exchange;if(!e)return;
+  if(e.aside){sayWhisper(e.aside,e.pair.aside,2);STARE.used.add(e.pair);}
  }
  function planWhispers(){
   const exchange=STARE.exchange;if(!exchange)return;
-  const {pair,side,aside,say}=exchange,reply=pair.reply;
+  const {pair,side,aside,say}=exchange,reply=LINES.sympathy;
   const readSpan=text=>Math.max(1.5,typeTime(text,1.13)+.68);
   const gap=.1,span=readSpan(say),lastSpan=readSpan(reply);
   // 앞줄이 시야를 벗어나기 전에 마지막 맞장구를 다 읽을 여유를 둔다.
   const firstAt=clamp(WALK.dur*.96-.34-span-gap-lastSpan,.28,.92);
   const secondAt=firstAt+span+gap,end=secondAt+lastSpan;
-  const responder=walkSpeaker(side,end,null),speaker=walkSpeaker(side,secondAt,responder);
+  const responder=walkSpeaker(side,end,null,4),speaker=walkSpeaker(side,secondAt,responder,1-pair.who);
   if(!speaker||!responder)return;
+  CROWD.witness(speaker);CROWD.witness(responder);
+  for(const v of [speaker,responder]){v.from=v.look||0;v.goal=1;v.ld=G.time-STARE.t0;v.ldur=.45;v.noticeAt=G.time;}
   if(aside)aside.delay=Math.max(aside.delay,1);
   speaker.delay=secondAt;responder.delay=end;
   STARE.used.add(pair);
@@ -3807,9 +3871,14 @@ const SUBMISSION=(()=>{
   let a=STARE.anchors[slot];if(!a){a=new THREE.Object3D();STARE.anchors[slot]=a;}
   if(a.parent!==crowd)crowd.add(a);a.userData.v=v;placeAnchor(a);return a;
  }
- function placeAnchor(a){const v=a.userData.v;if(v)a.position.set(v.cx,HEAD_Y*v.scale+(v.cy||0),v.z);}
+ function placeAnchor(a){
+  const v=a.userData.v;if(!v)return;
+  if(v.actor){v.actor.head.getWorldPosition(a.position);crowd.worldToLocal(a.position);}
+  else a.position.set(v.cx,HEAD_Y*v.scale+(v.cy||0),v.z);
+ }
  function sayWhisper(who,text,slot){
-  const v=VOICE.crowd[who.pi%VOICE.crowd.length];
+  const v=VOICE.crowd[(who.actor?who.actor.i:who.pi)%VOICE.crowd.length];
+  if(slot===1)who.politeAt=G.time;
   BUB.say({obj:anchorOf(who,slot),off:ZERO3,top:.13*who.scale,cam:'main'},text,0,
    {voice:{formant:v.formant,speed:v.speed*1.18},whisper:true,size:.95,read:[.68,0],pan:clamp(who.x*.6,-.8,.8)});
  }
@@ -3829,7 +3898,9 @@ const SUBMISSION=(()=>{
    if(v.goal==null)return;
    const k=clamp((G.time-STARE.t0-v.ld)/v.ldur,0,1);v.look=lerp(v.from,v.goal,smoother(k));
    if(v.look<=0&&v.goal===0){if(v.yaw!==v.turn){v.yaw=v.turn;moved=true;}return;}
-   const face=Math.atan2(cx-v.cx,cz-v.z),y=v.turn+turnBy(v.turn,face,v.side)*v.look;
+   let face=Math.atan2(cx-v.cx,cz-v.z);
+   if(v.politeAt!=null){const boss=Math.atan2(-v.cx,-.62-v.z);face+=turnBy(face,boss,v.side)*smooth((G.time-v.politeAt-.6)/.9);}
+   const y=v.turn+turnBy(v.turn,face,v.side)*v.look;
    if(Math.abs(y-(v.yaw==null?v.turn:v.yaw))>1e-4){v.yaw=y;moved=true;}
   });
   return moved;
@@ -9925,7 +9996,7 @@ function warnCrowd(){ // 25%: 넷이 설계자 앞을 막아선다
  * 3.0 천지신명이 손을 든다 / 사람들이 손을 모은다
  * 3.5 소원의 불씨가 손바닥으로 모인다(2.3초)
  * 6.2 손을 가슴으로 → 6.55 박힘: 금빛 과노출, 그 안에서 몸을 갈아 끼운다(6.9)
- * 7.1 빛이 걷힌다 → 7.9 보증서에 도장이 다시 찍힌다 → 8.5 만세 → 9.65 '암백ㅋ'와 TTS → 다시 1인칭 */
+ * 7.1 빛이 걷힌다 → 7.8 자기 보증서를 확인하고 도장을 본 뒤 안도 → 9.05 만세 → 9.65 '암백ㅋ'와 TTS → 다시 1인칭 */
 function beginRevival(){
  const E=G.E;if(!E||G.revivalUsed)return false;
  // 누워 있거나 넘어지는 중·일어나는 중이면 일어설 때까지 미룬다(누운 채 갑자기 고쳐 앉는 꼴이 안 나게). 서 있을 때 무너지는 연출로 들어간다
@@ -9984,8 +10055,8 @@ function updateStory(){
    if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([40,30,60]);}catch(_){}}
   if(t>=6.9&&!r.swapped){r.swapped=true;replaceEmperorForRevival();}
   if(t>=7.1&&!r.released){r.released=true;flashRelease(1.2);}
-  if(t>=7.9&&!r.stamped){r.stamped=true;CROWD.restamp();}
-  if(t>=8.5&&!r.cheered){r.cheered=true;CROWD.cheer();}
+  if(t>=7.8&&!r.stamped){r.stamped=true;CROWD.restamp();}
+  if(t>=9.05&&!r.cheered){r.cheered=true;CROWD.cheer();}
   if(t>=9.65&&!r.spoken){r.spoken=true;queueTalk([['boss',LINES.back,1.7,0,1.45,'암백']]);}
   if(r.spoken&&!talkBusy())finishRevival();
  }
