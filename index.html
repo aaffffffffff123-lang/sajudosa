@@ -6,12 +6,12 @@
 <meta name="color-scheme" content="only light">
 <meta name="theme-color" content="#fff6d6">
 <meta name="referrer" content="no-referrer">
-<meta name="description" content="태어난 날짜와 시간을 바탕으로 성격, 돈, 일, 관계와 10년 흐름을 풀이합니다.">
+<meta name="description" content="사주와 서양 출생차트로 성격, 돈, 일, 관계를 함께 풀고 사주의 10년 흐름을 살펴봅니다.">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="사주도사">
 <meta property="og:title" content="사주도사">
-<meta property="og:description" content="태어난 날짜와 시간을 바탕으로 성격, 돈, 일, 관계와 10년 흐름을 풀이합니다.">
+<meta property="og:description" content="사주와 서양 출생차트로 성격, 돈, 일, 관계를 함께 풀고 사주의 10년 흐름을 살펴봅니다.">
 <meta property="og:url" content="https://aaffffffffff123-lang.github.io/sajudosa/">
 <meta property="og:image" content="https://aaffffffffff123-lang.github.io/sajudosa/og.png">
 <meta property="og:image:width" content="1200">
@@ -502,6 +502,33 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 @media (prefers-reduced-motion:reduce){.dosa .blink{animation:none}.sheet{animation:none}}
 .privacy-note{margin:10px 0 0;text-align:center;font-size:11px;line-height:1.5;color:var(--muted);font-weight:400}
 .elem-role{display:block;margin:6px -5px 0;font-size:11px;line-height:1.4;color:#61584c;word-break:keep-all}.reading .daily{margin:0 0 12px;line-height:1.75}
+/* ===== 서양 출생차트: 본문과 함께 색이 변하는 종이 카드 ===== */
+.natal-keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:var(--paper-2)}
+.natal-key{padding:17px 7px;text-align:center;min-width:0}
+.natal-key+.natal-key{border-left:1px solid var(--line-2)}
+.natal-key svg{display:block;width:30px;height:30px;margin:0 auto 9px;color:var(--indigo)}
+.natal-key span{display:block;color:var(--ink-2);font-size:12px;font-weight:600}
+.natal-key strong{display:block;font-family:var(--serif);font-size:16px;line-height:1.5;margin:5px 0;color:var(--ink)}
+.natal-key small{display:block;font-size:10.5px;line-height:1.5;color:var(--ink-2)}
+.natal-reading{margin-top:20px;font-size:15px;line-height:1.95;color:var(--ink-2)}
+.natal-reading p{margin:16px 0 0}
+.natal-reading b{display:block;font-size:12px;color:var(--indigo);margin-bottom:4px}
+.natal-details{margin-top:22px;border-top:1px solid var(--line-2)}
+.natal-details summary{padding:15px 2px;min-height:48px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.natal-table-wrap{width:100%;overflow-x:auto}
+.natal-details table{width:100%;border-collapse:collapse;text-align:left;font-size:12px}
+.natal-details th,.natal-details td{padding:9px 4px;border-bottom:1px solid var(--line)}
+.natal-details thead{color:var(--ink-2)}
+.natal-details td span{display:inline-block;font-size:11px}
+.natal-details td:last-child,.natal-details th:last-child{text-align:right}
+.natal-aspects{padding:0;list-style:none;margin:16px 0}
+.natal-aspects li{display:flex;justify-content:space-between;flex-wrap:wrap;padding:5px 0;font-size:12px}
+.natal-aspects small{font-size:11px;color:var(--ink-2)}
+.natal-note,.natal-method{font-size:12px;line-height:1.85;color:var(--ink-2);margin:14px 0 0}
+.reading .western-link{font-size:14px;line-height:1.95;color:var(--ink-2);padding-left:13px;border-left:2px solid var(--line-2);margin:0 0 18px}
+.reading .woven-paragraph{font-size:15.5px;line-height:2;margin:0 0 20px;color:var(--ink)}
+.reading .woven-closing{margin:22px 0 0}
+@media(max-width:370px){.natal-key{padding:14px 5px}.natal-key strong{font-size:14px}.natal-key small{font-size:10px}}
 </style>
 </head>
 <body>
@@ -598,8 +625,8 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
  <g fill="url(#dsGold)" stroke="#261f3d" stroke-width="1.6"><use href="#dsSpark" x="36" y="66" width="24" height="24"/><use href="#dsSpark" x="268" y="44" width="18" height="18"/></g>
  <g stroke="#3e2f8f" stroke-width="2.4" stroke-linecap="round"><path d="M292 146v12M286 152h12"/><path d="M24 184v10M19 189h10"/><path d="M98 42v8M94 46h8"/></g>
 </svg>
-   <p class="hanja">태어난 날과 시간</p>
-   <p class="lead">태어난 정보를 바탕으로 보는<br>내 삶의 흐름</p>
+  <p class="hanja">사주 · 서양 점성술</p>
+  <p class="lead">사주와 별자리에 담긴<br>내 삶의 흐름</p>
    <p class="sub">성격 · 돈 · 일 · 관계 · 10년 흐름 풀이</p>
   </header>
   <form id="birth-form" class="form" novalidate>
@@ -779,6 +806,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   <section class="block"><h2 class="sec-label">나를 나타내는 상징</h2><div class="me-card" id="me-card"></div></section>
   <section class="block"><h2 class="sec-label">타고난 다섯 가지 비율</h2><div id="elements" class="elements"></div><div class="share" id="share" aria-hidden="true"></div><div class="share-leg" id="share-leg"></div><div class="elem-lines" id="elem-lines"></div></section>
 
+  <section class="block" id="western-block"><h2 class="sec-label">태어난 순간의 별자리 <small>서양 출생차트</small></h2><div id="western-chart"></div></section>
   <section class="block core"><h2 class="sec-label">타고난 성향</h2><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div></section>
   <section class="block" id="past-block" hidden><h2 class="sec-label">지나온 흐름</h2><p class="past-intro">지나온 해 가운데 사주에서 마찰 신호가 겹친 해입니다.</p><div class="past-hits" id="past-hits"></div></section>
   <div id="sections"></div>
@@ -892,6 +920,8 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <symbol id="e-water" viewBox="0 0 64 64"><path d="M32 6c12 14 18 22 18 32a18 18 0 0 1-36 0c0-10 6-18 18-32z" fill="#4f8fe0" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 40c0 5 3 8 7 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></symbol>
 </defs>
 </svg>
+<script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
+<script src="western.js?v=20261106a"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -2660,7 +2690,7 @@ const PLACES=[
 const PLACE_MAP={};
 (function(){
  const sel=$('birth-place');sel.append(new Option('어디서 태어났나요?','',true,true));sel.options[0].disabled=true;
- PLACES.forEach(g=>{const og=document.createElement('optgroup');og.label=g[0];g[1].forEach(p=>{PLACE_MAP[p[0]]={name:p[1],lon:p[2],tz:p[3]||'KR',std:p[4]==null?9:p[4]};og.append(new Option(p[1],p[0]));});sel.append(og);});
+ PLACES.forEach(g=>{const og=document.createElement('optgroup');og.label=g[0];g[1].forEach(p=>{PLACE_MAP[p[0]]={name:p[1],lon:p[2],lat:typeof Western!=='undefined'?Western.LATITUDES[p[0]]:undefined,tz:p[3]||'KR',std:p[4]==null?9:p[4]};og.append(new Option(p[1],p[0]));});sel.append(og);});
  sel.addEventListener('change',()=>sel.classList.toggle('empty',!sel.value));
 })();
 
@@ -2865,7 +2895,7 @@ $('birth-form').addEventListener('change',()=>{$('form-error').hidden=true;});
  */
 const LD_TL={
  total:3260,
- steps:[[0,'태어난 때의 여덟 글자를 찾고 있습니다'],[620,'다섯 기운의 비율을 계산하고 있습니다'],[1160,'10년 흐름을 살펴보고 있습니다'],[1680,'당신의 자리를 확인하고 있습니다']],
+ steps:[[0,'태어난 때의 여덟 글자를 찾고 있습니다'],[620,'다섯 기운의 비율을 계산하고 있습니다'],[1160,'태어난 순간의 별자리를 살펴보고 있습니다'],[1680,'당신의 자리를 확인하고 있습니다']],
  wink:[360,470],        // 눈꺼풀로 왼눈을 감는다
  flash1:1300,           // 첫 번째 변신(2~3프레임)
  reopen:[2030,2160],    // 감았던 왼눈을 다시 뜬다
@@ -3929,6 +3959,7 @@ function v5Reading(R,now){
  const c1=fate.good?V5.cmd.near:offK==='low'?V5.cmd.small:low('재성')?V5.cmd.poor:st==='weak'?V5.cmd.weak:ok==='absent'?V5.cmd.start:V5.cmd.keep;
  out.cautions=unique([c1,V5.cmd.boss,office.caution||(st==='weak'?V5.cmd.risk:V5.cmd.place)]);
  out.footNote=V5.footNote;out.lastLine=V5.lastLine;
+ if(typeof Western!=='undefined'&&R.western)Western.weave(out,R,{jeongin:P.filter((p,i)=>i!==2&&p.known&&tenGod(a.dayStem,p.stem)==='정인').length});
  return out;
 }
 /* 현재 월운: 풀이와 적용 기간, 다음 절기 전환일 */
@@ -3991,6 +4022,8 @@ function renderResult(R){
  $('share').innerHTML=ORDER.map(k=>'<i style="--c:'+ELEMENTS[k].color+';width:'+(r.shares[k]*100).toFixed(1)+'%"></i>').join('');
  $('share-leg').innerHTML='<em>카드는 겉에 보이는 글자 수<br>비율은 계절과 숨은 기운까지 반영</em>'+ORDER.map(k=>'<span style="--c:'+(ELEMENTS[k].labelColor||ELEMENTS[k].color)+'">'+ELEMENTS[k].name+' '+pct(r.shares[k])+'%</span>').join('');
  $('elem-lines').innerHTML='<p class="basis">'+esc(v.elementIntro)+'</p>'+v.elements.map(t=>'<p>'+esc(t)+'</p>').join('');
+ // 입력한 실제 출생시각으로 계산한 별자리
+ $('western-chart').innerHTML=typeof Western!=='undefined'?Western.render(R.western):'<p class="pnote">서양 출생차트를 불러오지 못했습니다. 다시 접속해 주세요.</p>';
  // 타고난 성향
  $('core-title').textContent=v.core.title;
  $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p class="fate">'+esc(v.core.fate)+'</p><p class="rule"><b>이치</b>'+esc(v.core.rule)+'</p>';
@@ -4004,11 +4037,13 @@ function renderResult(R){
   const note=sec.note?'<p class="note"><b>'+esc(sec.note.label)+'</b><span>'+plainEsc(sec.note.value)+'</span></p>':'',
    rule=sec.rule?'<p class="rule"><b>이치</b>'+esc(sec.rule)+'</p>':'',
    basis=sec.basis?'<p class="basis"><b>근거</b>'+esc(sec.basis)+'</p>':'';
-  // 생활 설명 → 개인의 팔자 → 그 처지를 정당화하는 이치. 특정 문장을 위한 순서 예외를 두지 않는다.
+  // 기본 문서는 생활 설명 → 팔자 → 이치. 합의한 긴 원고는 paragraphs의 순서와 closing을 그대로 쓴다.
   const fates=sec.fates.map(t=>'<p class="fate">'+esc(t)+'</p>').join('');
+  const western=(sec.western||[]).map(t=>'<p class="western-link">'+esc(t)+'</p>').join('');
   box.innerHTML='<h2 class="sec-label">'+esc(sec.title)+'</h2>'+(sec.head?'<h3 class="head">'+plainEsc(sec.head)+'</h3>':'')
-   +(sec.detail?'<p class="daily">'+plainEsc(sec.detail)+'</p>':'')
-   +fates+note+rule+basis;
+   +(sec.paragraphs?sec.paragraphs.map(t=>'<p class="woven-paragraph">'+esc(t)+'</p>').join('')+'<p class="fate woven-closing">'+esc(sec.closing)+'</p>':
+    western+(sec.detail?'<p class="daily">'+plainEsc(sec.detail)+'</p>':'')
+    +fates+note+rule+basis);
   S.append(box);
  });
  // 올해·내년
@@ -4091,7 +4126,20 @@ $('birth-form').addEventListener('submit',e=>{
 });
 function buildResult(inp,sd){
  const chart=computeChart({y:sd.y,m:sd.m,d:sd.d,h:inp.unknown?12:inp.time.h,mi:inp.unknown?0:inp.time.mi,unknown:inp.unknown,male:inp.male,place:inp.place,occurrence:inp.occurrence});
- return {input:inp,chart:chart,solarDate:sd,lunarDate:solarToLunar(sd.y,sd.m,sd.d),reading:modernizeReadingDisplay(makeReading(chart,inp))};
+ const result={input:inp,chart:chart,solarDate:sd,lunarDate:solarToLunar(sd.y,sd.m,sd.d),reading:modernizeReadingDisplay(makeReading(chart,inp))};
+ if(typeof Western!=='undefined'){
+  try{
+   let dayRange=null;
+   if(inp.unknown){
+    // DST로 자정이 사라지거나 하루가 25시간인 경우도 실제 시계 시각의 범위를 사용한다.
+    const edge=reverse=>{for(let n=0;n<1440;n++){const minute=reverse?1439-n:n,found=wallToUtc(inp.place,sd.y,sd.m,sd.d,Math.floor(minute/60),minute%60);if(found.length)return reverse?found[found.length-1]+59999:found[0];}return null;};
+    dayRange=[edge(false),edge(true)];
+   }
+   const lat=Number.isFinite(inp.place.lat)?inp.place.lat:Western.LATITUDES[inp.placeKey];
+   result.western=Western.compute({utc:chart.t,unknown:inp.unknown,lat:lat,lon:inp.place.lon,dayRange:dayRange});
+  }catch(err){result.western={available:false,reason:'서양 출생차트를 계산하지 못했습니다.'};console.error('출생차트 계산 오류',err);}
+ }
+ return result;
 }
 function resetAll(){
  stopLoading();popNav('result');current=null;$('birth-form').reset();picked.date=null;picked.time=null;picked.unknown=false;$('birth-place').classList.add('empty');
@@ -4369,6 +4417,7 @@ window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wall
 </script>
 </body>
 </html>
+
 
 
 
