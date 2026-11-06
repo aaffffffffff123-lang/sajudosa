@@ -31,3 +31,20 @@ node --test tests/reading-copy.test.cjs tests/reading-evidence.test.cjs tests/re
 ```
 
 검사는 좌표 변환, 동쪽 지평선과 실제 상승 방향, 날짜 경계, 음양력 일치, 한국·해외 서머타임, 같은 입력의 문구 일치, 합의 원고의 순서와 최종 문장, 라이브러리 실패 시 기존 사주 유지까지 포함한다. DOM 대역을 통한 렌더 검사는 실제 모바일 브라우저의 시각 검사를 대신하지 않는다.
+
+## 영역별 서양 해석
+
+`reading-prose.js`의 `skyReadings`가 돈 이외의 여섯 항목을 완성한다. 행성·별자리의 명칭 뒤에 동일한 설명을 붙이지 않고, 일(화성), 몸(달), 관계(금성), 가족(달), 관운(토성), 귀인(목성) 각각에 12별자리 고정 원고를 둔다. 몸의 원고는 생활과 휴식에 한정하며 질병을 추론하지 않는다.
+
+해당 영역의 하우스에 실제로 있는 행성은 행성별 생활 해석으로 연결한다. 같은 하우스가 일과 몸 양쪽에 쓰여도 업무와 휴식의 원고를 구별한다. 빈 하우스에서 해당 운이 없다는 판정을 내리지 않는다. 관련 주요 각도 가운데 오차가 가장 작은 하나를 사용하고 합·협력(육각/삼각)·긴장(사각/대립)을 구별한다. 불리한 각도를 우선 선정하지 않는다.
+
+확정할 수 없는 별자리는 후보 각각을 조건문으로 제시한다. 생시 미상에서 하우스와 각도는 해석하지 않는다. `skyEvidence`는 문단을 만든 실제 배치와 각도를 보관하며, 렌더러가 사용하는 `paragraphs` 안에 해석 전체를 넣는다. 별도의 `western` 속성에만 쓴 문단이 화면에서 누락되던 경로를 제거했다. 재물운 승인 원고, 사주 분기 및 시기 계산은 유지한다.
+
+상징의 역할을 확인한 참고 자료(생활 장면과 도사의 판정은 작품용 창작):
+- https://www.astro.com/astrology/in_signs_t.htm?lang=e
+- https://www.astro.com/astrology/in_house2_p.htm?lang=e
+- https://www.astro.com/astrowiki/en/Aspect
+- https://www.astro.com/astrology/in_dg_sat_jup_e.htm
+- https://www.astrotheme.com/astrology_planets.php
+
+`tests/reading-prose.test.cjs`는 별자리별 해석의 변화, 60가지 행성·하우스 조합, 실제 문단과 계산 근거의 일치, 생시 미상 후보 및 각도 선정까지 검사한다.

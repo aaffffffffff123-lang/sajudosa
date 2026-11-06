@@ -41,3 +41,66 @@ test('forecast expansion is tied to that exact period evidence and preserves dat
  assert.equal(ReadingProse.periodDetail(p).tone,'support');assert.notEqual(ReadingProse.periodDetail(p).text,ReadingProse.periodDetail(p,false,'cycle').text);assert.notEqual(ReadingProse.periodDetail(p).text,ReadingProse.periodDetail(p,false,'month').text);
 });
 if(process.env.PRINT_PROSE){const {view}=read(1990,1,1);for(const d of view.domains.filter(d=>['work','home','office'].includes(d.id)))console.log(d.title+'\n'+d.paragraphs.join('\n\n')+'\n'+d.closing+'\n');}
+
+
+test('each domain changes its interpretation with its real planet sign, not just the placement name',()=>{
+ const rulers={work:'Mars',body:'Moon',home:'Venus',family:'Moon',office:'Saturn',gwiin:'Jupiter'};
+ for(const [id,planet] of Object.entries(rulers)){
+  const texts=[];
+  for(let sign=0;sign<12;sign++){
+   const c={available:true,unknown:false,planets:[{id:planet,sign,house:null}],aspects:[]};
+   const entries=ReadingProse.skyReadings(c,id);assert.equal(entries.length,1);
+   assert.equal(entries[0].sign,sign);assert.equal(entries[0].planet,planet);
+   const explanation=entries[0].text.split('에 있습니다. ')[1];assert(explanation);
+   assert(explanation.split('. ').length>=3,id+': '+sign);texts.push(explanation);
+  }
+  assert.equal(new Set(texts).size,12,id);
+ }
+});
+test('all ten house occupants have their own interpretation in every domain; empty houses do not invent a deficit',()=>{
+ const houses={work:6,body:6,home:7,family:4,office:10,gwiin:11};
+ for(const [id,house] of Object.entries(houses)){
+  const texts=[];
+  for(const planet of ['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto']){
+   const c={available:true,unknown:false,planets:[{id:planet,sign:0,house}],aspects:[]};
+   const entry=ReadingProse.skyReadings(c,id).find(e=>e.kind==='house');assert(entry,id+': '+planet);
+   assert.equal(entry.planet,planet);assert.equal(entry.house,house);texts.push(entry.text.split('있습니다. ')[1]);
+   c.planets[0].house=null;assert(!ReadingProse.skyReadings(c,id).some(e=>e.kind==='house'));
+  }
+  assert.equal(new Set(texts).size,10,id);
+ }
+});
+test('rendered western paragraphs refer only to evidence actually present in each chart',()=>{
+ for(const {result,view} of cases)for(const d of view.domains.filter(d=>d.id!=='money')){
+  assert(d.skyEvidence.some(e=>e.kind==='sign'||e.kind==='candidates'),d.id);
+  for(const e of d.skyEvidence){
+   assert(d.paragraphs.includes(e.text));
+   const p=result.western.planets.find(p=>p.id===e.planet);
+   if(e.kind==='sign')assert.equal(e.sign,p.sign);
+   if(e.kind==='candidates'){assert.equal(p.sign,null);assert.deepEqual(e.candidates,p.candidates);assert.match(e.text,/태어난 시각에 따라/);}
+   if(e.kind==='house'){assert(!result.input.unknown);assert.equal(e.house,p.house);}
+   if(e.kind==='aspect'){assert(!result.input.unknown);assert(result.western.aspects.some(a=>a.angle===e.angle&&((a.a===e.a&&a.b===e.b)||(a.a===e.b&&a.b===e.a))));}
+  }
+ }
+});
+test('unknown birth time preserves both candidate readings without claiming houses or aspects',()=>{
+ const c={available:true,unknown:true,planets:[{id:'Moon',sign:null,candidates:[3,4],house:4}],aspects:[{a:'Moon',b:'Saturn',angle:90}]};
+ for(const id of ['body','family']){
+  const entries=ReadingProse.skyReadings(c,id);assert.equal(entries.length,1);assert.equal(entries[0].kind,'candidates');
+  assert.match(entries[0].text,/게자리에 놓였다면/);assert.match(entries[0].text,/사자자리에 놓였다면/);
+  assert.doesNotMatch(entries[0].text,/하우스|사각|에 있습니다/);
+ }
+});
+test('conjunction, supportive and tense aspects change the explanation and nearest orb wins without favoring adversity',()=>{
+ const pairs={work:['Mars','Saturn'],body:['Moon','Saturn'],home:['Venus','Saturn'],family:['Moon','Saturn'],office:['Sun','Saturn'],gwiin:['Jupiter','Saturn']};
+ for(const [id,[a,b]] of Object.entries(pairs)){
+  const texts=[];
+  for(const [angle,tone] of [[0,'join'],[60,'easy'],[90,'hard'],[120,'easy'],[180,'hard']]){
+   const c={available:true,planets:[],aspects:[{a:b,b:a,angle,orb:.2}]};
+   const e=ReadingProse.skyReadings(c,id).find(e=>e.kind==='aspect');assert(e);assert.equal(e.tone,tone);assert.equal(e.angle,angle);texts.push(e.text);
+  }
+  assert.equal(new Set(texts).size,5,id);
+ }
+ const c={available:true,planets:[],aspects:[{a:'Mars',b:'Saturn',angle:90,orb:5},{a:'Sun',b:'Mars',angle:120,orb:.1}]};
+ const e=ReadingProse.skyReadings(c,'work').find(e=>e.kind==='aspect');assert.equal(e.tone,'easy');assert.equal(e.a,'Sun');
+});
