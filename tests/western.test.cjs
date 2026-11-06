@@ -1,10 +1,11 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const ReadingProse=require('../reading-prose.js');
 const W=require('../western.js'),A=require('../assets/astronomy.browser.min.js');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);assert(i>=0&&j>i,a);return html.slice(i,j);};
 const source=slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+slice('/* ---------- 자리 문서(V5)','/* 현재 월운:')+slice('function buildResult(inp,sd){','function resetAll(){');
 const NOW=Date.UTC(2026,10,6);
-function api(extra={}){return vm.runInNewContext(source+';({buildResult,v5Reading,lunarToSolar,solarToLunar,PLACES,wallToUtc,tenGod})',{Date,Intl,Western:W,console,...extra});}
+function api(extra={}){return vm.runInNewContext(source+';({buildResult,v5Reading,lunarToSolar,solarToLunar,PLACES,wallToUtc,tenGod})',{Date,Intl,Western:W,ReadingProse,console,...extra});}
 const core=api();
 const places=Object.fromEntries(core.PLACES.flatMap(g=>g[1].map(p=>[p[0],{name:p[1],lon:p[2],lat:W.LATITUDES[p[0]],tz:p[3]||'KR',std:p[4]==null?9:p[4]}])));
 function read(y,m,d,{h=12,mi=0,unknown=false,pk='seoul',occurrence=0,male=true}={}){
@@ -134,7 +135,7 @@ test('rendering consumes woven paragraphs in order and ends the money card on th
   class Node{constructor(tag){this.tag=tag;this.children=[];this.innerHTML='';this.textContent='';}append(...items){this.children.push(...items)}replaceChildren(...items){this.children=items}setAttribute(){} }
   const nodes={};
   const dollar=id=>nodes[id]||(nodes[id]=new Node('div'));
-  const scope={Date,Intl,Western:W,console,document:{getElementById:dollar,createElement:tag=>new Node(tag)},renderCurrentMonth(){}};
+  const scope={Date,Intl,Western:W,ReadingProse,console,document:{getElementById:dollar,createElement:tag=>new Node(tag)},renderCurrentMonth(){}};
   const renderSource=source+slice('function icon(','/* ---------- 태어난 곳 ---------- */')+slice('function hourWord(','function syncTimeField(')+slice('function glyphHtml(','function monthWindowsHtml(')+slice('function renderResult(R){','function cycleAgeLabel(')+slice('function cycleAgeLabel(','/* ---------- 입력 받기 ---------- */');
   const render=vm.runInNewContext(renderSource+';({renderResult,buildResult,v5Reading})',scope);
   const {result}=read(2001,6,21,{unknown:true});assert.equal(money(core.v5Reading(result,NOW)).cause,'comfort');
@@ -144,13 +145,18 @@ test('rendering consumes woven paragraphs in order and ends the money card on th
   for(const line of [...m.paragraphs,m.closing]){const offset=card.innerHTML.indexOf(line);assert(offset>previous,line);previous=offset;}
   assert(card.innerHTML.endsWith(m.closing+'</p>'));
   assert.match(nodes['western-chart'].innerHTML,/태어난 시간을 몰라/);
+  const full=core.v5Reading(result,NOW);
+  for(const d of full.domains.filter(d=>d.id!=='money')){const rendered=nodes.sections.children.find(n=>n.id==='sec-'+d.id);assert(rendered,d.id);for(const paragraph of [...d.paragraphs,d.closing])assert(rendered.innerHTML.includes(paragraph),d.id+': '+paragraph);}
+  full.years.forEach((y,i)=>{if(y.expansion)assert(nodes.years.children[i].innerHTML.includes(y.expansion.text));});
+  full.luck.cycles.forEach((x,i)=>{if(x.expansion)assert(nodes['luck-list'].children[i].innerHTML.includes(x.expansion.text));});
 });
 
 test('browser assets load in order and inline JavaScript remains valid',()=>{
   assert(html.indexOf('src="assets/astronomy.browser.min.js')<html.indexOf('src="western.js'));
   assert(html.indexOf('src="western.js')<html.indexOf("'use strict';"));
   for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
-  const context=vm.createContext({console});vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/astronomy.browser.min.js'),'utf8'),context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../western.js'),'utf8'),context);
+  assert(html.indexOf('src="reading-prose.js')<html.indexOf('src="western.js'));
+  const context=vm.createContext({console});vm.runInContext(fs.readFileSync(path.join(__dirname,'../reading-prose.js'),'utf8'),context);assert.equal(typeof context.ReadingProse.weave,'function');vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/astronomy.browser.min.js'),'utf8'),context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../western.js'),'utf8'),context);
   assert.equal(typeof context.Western.compute,'function');assert(context.Western.compute({utc:NOW}).available);
 });
 

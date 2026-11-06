@@ -528,6 +528,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .reading .western-link{font-size:14px;line-height:1.95;color:var(--ink-2);padding-left:13px;border-left:2px solid var(--line-2);margin:0 0 18px}
 .reading .woven-paragraph{font-size:15.5px;line-height:2;margin:0 0 20px;color:var(--ink)}
 .reading .woven-closing{margin:22px 0 0}
+.past-hit p+p,.year p+p{margin-top:12px}
 @media(max-width:370px){.natal-key{padding:14px 5px}.natal-key strong{font-size:14px}.natal-key small{font-size:10px}}
 </style>
 <link rel="stylesheet" href="assets/celestial-ui.css?v=20261106d">
@@ -1017,6 +1018,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
+<script src="reading-prose.js?v=20261106-full-reading"></script>
 <script src="western.js?v=20261106b"></script>
 <script>
 /* =====================================================================
@@ -2210,7 +2212,7 @@ function readYearV2(Y,a,P,cycleInput){
  const g=gz(yearIdx(Y)),rawMonths=monthsOfYear(Y),monthDataComplete=rawMonths.length===12,monthDefs=monthDataComplete?rawMonths:[],bounds=sajuYearBoundsV2(Y,rawMonths),ys=bounds.start,ye=bounds.end,all=(Array.isArray(cycleInput)?cycleInput:[cycleInput]).filter(Boolean),overlap=all.filter(c=>c.start==null||c.end==null||c.end>ys&&c.start<ye);
  const duration=c=>c.start==null?ye-ys:Math.max(0,Math.min(ye,c.end)-Math.max(ys,c.start)),segments=overlap.length?overlap.map((c,i)=>{const weight=duration(c)/(ye-ys),ctx={cycle:{kind:'대운:'+(c.i==null?i:c.i),label:c.g?uiGzName(c.g)+' 10년 흐름':'10년 흐름',g:c.g||c,weight:weight}};return {c:c,weight:weight,r:composeTransitV2(g,a,P,'해',Y+'년',ctx)};}):[{c:null,weight:1,r:composeTransitV2(g,a,P,'해',Y+'년',{})}],primary=segments.slice().sort((x,y)=>y.weight-x.weight)[0],r=Object.assign({},primary.r);
  if(segments.length>1){const ordered=segments.slice().sort((x,y)=>(x.c.start||0)-(y.c.start||0)),next=ordered[1],d=new Date(next.c.start+9*HOUR),seen={},evidence=[],hitSeen={},mergedHits=[];segments.forEach(s=>{s.r.evidence.forEach(e=>{const k=e.id+'|'+e.fact;if(!seen[k]){seen[k]=1;evidence.push(e);}});s.r.hits.forEach(h=>{const k=h.type+':'+h.pos+':'+h.branch+(h.partial?':partial':'');if(!hitSeen[k]){hitSeen[k]=1;mergedHits.push(h);}});});const weightSum=segments.reduce((n,s)=>n+s.weight,0)||1,nextFact=next.r.evidence.filter(e=>e.valence==='adverse').sort((x,y)=>y.level-x.level)[0]||next.r.evidence.filter(e=>e.valence==='mixed').sort((x,y)=>y.level-x.level)[0],prior=new Set(sentenceListV2(r.text)),nextDetail=nextFact?sentenceListV2(nextFact.effect).filter(x=>!prior.has(x)).join(' '):'',transition=(d.getUTCMonth()+1)+'월 '+d.getUTCDate()+'일 무렵부터 같은 해라도 앞뒤 사정이 달라집니다.'+(nextDetail?' 그 뒤에는 '+nextDetail:'');r.evidence=evidence;r.hits=mergedHits;r.score=Math.round(segments.reduce((n,s)=>n+s.r.score*s.weight,0)/weightSum);if(evidence.some(e=>e.valence==='adverse'))r.score=Math.max(15,r.score);r.riskUnits=Math.round(segments.reduce((n,s)=>n+s.r.riskUnits*s.weight,0)/weightSum*10)/10;r.text=mergeSentencesV2([r.text,transition]);}
- const months=monthDefs.map(m=>{const mid=(m.start+m.end)/2,cy=all.find(c=>c.start==null||c.end==null||mid>=c.start&&mid<c.end),mctx={year:{kind:'세운',label:Y+'년',g:g}};if(cy)mctx.cycle={kind:'대운',label:cy.g?uiGzName(cy.g)+' 10년 흐름':'10년 흐름',g:cy.g||cy};const mg=gz(m.idx),mr=composeTransitV2(mg,a,P,'달','',mctx);return {start:m.start,end:m.end,g:mg,score:mr.score,riskUnits:mr.riskUnits,title:mr.title,text:mr.text,endTerm:JIE_NAMES[(m.k+1)%12],hits:mr.hits,cycle:cy?cy.i:null};});
+ const months=monthDefs.map(m=>{const mid=(m.start+m.end)/2,cy=all.find(c=>c.start==null||c.end==null||mid>=c.start&&mid<c.end),mctx={year:{kind:'세운',label:Y+'년',g:g}};if(cy)mctx.cycle={kind:'대운',label:cy.g?uiGzName(cy.g)+' 10년 흐름':'10년 흐름',g:cy.g||cy};const mg=gz(m.idx),mr=composeTransitV2(mg,a,P,'달','',mctx);return {start:m.start,end:m.end,g:mg,score:mr.score,riskUnits:mr.riskUnits,title:mr.title,text:mr.text,endTerm:JIE_NAMES[(m.k+1)%12],hits:mr.hits,evidence:mr.evidence,cycle:cy?cy.i:null};});
  return Object.assign(r,{year:Y,g:g,months:months,periodStart:ys,periodEnd:ye,cycleChange:overlap.length>1,monthDataComplete:monthDataComplete});
 }
 
@@ -3619,7 +3621,7 @@ const V5={
    daily:'함께 밥을 먹고 한 사람이 먼저 일어나면 그 사람이 쓰던 접시도 자연스럽게 포갭니다. 나갈 때 한꺼번에 옮기면 될 일이라 누가 어느 자리에 앉았는지는 굳이 따지지 않습니다.',
    head:'같이 하던 일도 끝에는 혼자 남습니다.',
    detail:'일을 제일 잘 아는 사람이 남은 몫을 정리합니다. 익숙해질수록 맡길 곳이 줄어듭니다.',
-   fate:'당신은 사람이 빠져도 충원하지 않는 회사를 다니며 남은 일을 혼자 치우는 팔자입니다.',
+   fate:'당신은 빠진 사람의 일을 메우다가 그 사람이 없어도 되는 일을 만들어 주는 팔자입니다.',
    rule:'한 사람이 빠진 뒤에도 일이 제때 끝났으니 지금 인원으로 된다는 걸 당신이 보여 주었습니다. 잘 돌아가는 곳에 사람을 더 두자면 그 까닭부터 있어야 합니다.'
   },
   month_day_clash:{
@@ -3633,7 +3635,7 @@ const V5={
    daily:'새로운 사람들과 놀이를 할 때는 익숙한 게임이어도 첫판에 남들이 하는 걸 봅니다. 같은 이름으로 부르는 놀이에도 이 모임에서만 통하는 규칙이 하나씩 있다는 걸 잘 압니다.',
    head:'경력이 쌓여도 새 규칙부터 배웁니다.',
    detail:'담당이나 자리가 바뀔 때마다 익숙한 방식이 통하지 않습니다.',
-   fate:'당신은 자리를 옮길 때마다 처음부터 다시 시작해서 쌓은 경력이 하나도 남지 않는 팔자입니다.',
+   fate:'당신은 쌓은 경력을 들고도 일터가 바뀔 때마다 처음 하는 사람처럼 다시 증명해야 하는 팔자입니다.',
    rule:'전에 하던 곳에서 옳았던 방법은 그곳에서 이미 대접을 받았습니다. 새로 맡긴 사람에게는 자기 방식대로 할 줄 안다는 것을 새로 보여야 합니다.'
   },
   palace_punish:{
@@ -3745,7 +3747,7 @@ const V5={
    daily:'처음 해 보는 게 생기면 잘하는 사람이 남겨 둔 설명을 꼼꼼히 읽습니다. 아직 손도 대지 않았는데 어느 대목에서 실수하기 쉬운지 먼저 알아보는 재미가 제법 쏠쏠합니다.',
    head:'준비한 날은 길고 경력에 적을 날은 짧습니다.',
    detail:'배우고 알아보는 동안에도 시간은 갑니다. 밖에서는 내놓은 결과부터 셉니다.',
-   fate:'당신은 경력은 쌓지 못하고 준비한 시간은 그냥 소모만 되는 팔자입니다.',
+   fate:'당신은 준비한 시간을 경력으로 인정받으려다가 먼저 해 본 일을 요구받는 팔자입니다.',
    rule:'배우는 데 들인 날은 배운 사람에게 남습니다. 일을 맡기려는 사람에게는 이미 해 본 것을 보여 줘야 하니 배운 날짜까지 경력에 넣을 수는 없습니다.'
   }
  },
@@ -3848,7 +3850,7 @@ const V5={
  // 몸: 몸과 생활 풀이의 첫 문장으로 고른다
  body:[
   ['불편을 넘기며','당신은 아직 할 만하다고 미룬 휴식을 나중에 비워야 할 날로 몰아서 받는 팔자입니다.'],
-  ['활동이 적었던','당신은 남들 잘 때 일하고 해가 뜬 뒤에야 잠드는 생활에서 벗어나지 못하는 팔자입니다.'],
+  ['활동이 적었던','당신은 늦게 손에 붙은 일을 놓지 못해 잠들 시간을 거듭 뒤로 미루는 팔자입니다.'],
   ['쉬는 간격 없이','당신은 흐름이 끊기는 게 아까워 쉬지 않다가 끝낸 일을 누릴 힘까지 다 쓰는 팔자입니다.'],
   ['외부 일정이 늘면','당신은 겹친 약속을 지키려고 잠과 밥부터 줄이고 지킨 약속의 값을 혼자 앓는 팔자입니다.'],
   ['집에 와서도','당신은 몸은 집에 데려와도 끝낸 일의 걱정은 두고 오지 못해 쉬는 시간까지 일에 내주는 팔자입니다.'],
@@ -4056,7 +4058,7 @@ function v5Reading(R,now){
    const key=hit?hit[0]:'fallback',rk=['집에 와서도','내일 확인해도'].includes(key)?'checking':['쉬는 간격 없이','빈 시간이 생기면'].includes(key)?'self':key==='활동이 적었던'?'night':st==='weak'?'weak':'strong';
    doms.push({id:'body',title:'몸',cause:key,head:o.head,detail:b0,fates:[hit?hit[1]:V5.bodyFallback],rule:V5.bodyRule[rk]}); }
  { const o=obs('love'),pr=love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':love&&['연락은 끊깁니다','대화가 빨리 줄어듭니다','애매하게'].includes(love.key)?'silence':'base';
-   doms.push({id:'home',title:'짝과 관계',head:o.head,detail:love&&love.detail||(o.body||[])[0]||'',fates:love?[love.fate]:[],rule:V5.pairRule[pr]}); }
+   doms.push({id:'home',title:'짝과 관계',cause:love?love.key:'base',head:o.head,detail:love&&love.detail||(o.body||[])[0]||'',fates:love?[love.fate]:[],rule:V5.pairRule[pr]}); }
  { const key=parentWork?(parentWork==='cut'?'cut':'care'):child?(child==='shown'?'shown':ok==='absent'?'absentPoor':'absent'):age>=35?'old':'young',scene=V5.familyScene[key];
    const f=parentWork?(parentWork==='cut'?V5.careerCut:V5.careerBurden):child?V5.child[key]:V5.parents[key];
    doms.push({id:'family',title:'가족과 부양',cause:key,head:scene.head,detail:scene.detail,fates:[f],rule:V5.pairRule[scene.rule]||scene.rule}); }
@@ -4087,6 +4089,7 @@ function v5Reading(R,now){
  out.cautions=unique([c1,V5.cmd.boss,office.caution||(st==='weak'?V5.cmd.risk:V5.cmd.place)]);
  out.footNote=V5.footNote;out.lastLine=V5.lastLine;
  if(typeof Western!=='undefined'&&R.western)Western.weave(out,R,{jeongin:P.filter((p,i)=>i!==2&&p.known&&tenGod(a.dayStem,p.stem)==='정인').length});
+ if(typeof ReadingProse!=='undefined')ReadingProse.weave(out,R);
  return out;
 }
 /* 현재 월운: 풀이와 적용 기간, 다음 절기 전환일 */
@@ -4095,7 +4098,7 @@ function currentMonthView(years,now){
  if(!m)return null;
  const local=t=>new Date(t+9*HOUR),start=local(m.start),end=local(m.end);
  const date=(d,year)=>(year?d.getUTCFullYear()+'년 ':'')+(d.getUTCMonth()+1)+'월 '+d.getUTCDate()+'일';
- return {title:m.title,text:m.text||'',end:m.end,
+ return {title:m.title,text:m.text||'',expansion:m.expansion?.text||'',end:m.end,
   period:date(start,true)+' ~ '+date(end,start.getUTCFullYear()!==end.getUTCFullYear()),
   transition:date(end,true)+' '+end.getUTCHours()+':'+String(end.getUTCMinutes()).padStart(2,'0')+(m.endTerm?' · '+m.endTerm:'')};
 }
@@ -4106,6 +4109,7 @@ function renderCurrentMonth(years,now){
  box.hidden=!m;if(!m){box.replaceChildren();return;}
  box.innerHTML='<div class="month-label">현재 월운</div><h3>'+plainEsc(m.title)+'</h3>'
   +(m.text?'<p class="month-text">'+plainEsc(m.text)+'</p>':'')
+  +(m.expansion?'<p class="month-text">'+esc(m.expansion)+'</p>':'')
   +'<dl class="month-period"><div><dt>적용 기간</dt><dd>'+esc(m.period)+'</dd></div><div><dt>다음 전환</dt><dd>'+esc(m.transition)+'</dd></div></dl>'
   +'<small class="month-note">월운은 절기를 기준으로 바뀝니다. 날짜·시간은 양력·한국시간 기준입니다.</small>';
  // 초 단위 카운트 없이 절기가 바뀔 때만 다음 월운으로 갱신한다.
@@ -4157,7 +4161,7 @@ function renderResult(R){
  $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p class="fate">'+esc(v.core.fate)+'</p><p class="rule"><b>이치</b>'+esc(v.core.rule)+'</p>';
  // 지나온 흐름
  const PH=$('past-hits');PH.replaceChildren();$('past-block').hidden=!v.past.length;
- v.past.forEach(x=>PH.append(el('article','past-hit','<b>'+x.year+'년</b><div><h3>'+plainEsc(x.title)+'</h3>'+(x.text?'<p>'+plainMd(x.text)+'</p>':'')+'</div>')));
+ v.past.forEach(x=>PH.append(el('article','past-hit','<b>'+x.year+'년</b><div><h3>'+plainEsc(x.title)+'</h3>'+(x.text?'<p>'+plainMd(x.text)+'</p>':'')+(x.expansion?'<p>'+esc(x.expansion.text)+'</p>':'')+'</div>')));
  // 영역
  const S=$('sections');S.replaceChildren();
  v.domains.forEach(sec=>{
@@ -4176,14 +4180,14 @@ function renderResult(R){
  });
  // 올해·내년
  const Y=$('years');Y.replaceChildren();
- r.years.forEach((y,i)=>{
+ (v.years||r.years).forEach((y,i)=>{
   // 제목이 이미 '앞 해의 문제가 다시 겹치는 해'이면 같은 말을 본문에서 되풀이하지 않는다
   const yt=/다시 겹치는 해$/.test(y.title||'')&&/^\d+년에 짚은 문제가 이 시기에도 이어집니다\.$/.test(y.text||'')?'':y.text;
   const b=BRANCHES[y.g[1]],ps=new Date(y.periodStart+9*HOUR),pe=new Date(y.periodEnd+9*HOUR-1),period=(ps.getUTCMonth()+1)+'월 '+ps.getUTCDate()+'일~'+(pe.getUTCFullYear()===ps.getUTCFullYear()?'':pe.getUTCFullYear()+'년 ')+(pe.getUTCMonth()+1)+'월 '+pe.getUTCDate()+'일';
-  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')));
+  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')+(y.expansion?'<p>'+esc(y.expansion.text)+'</p>':'')));
  });
  $('year-rule').innerHTML='<b>이치</b>'+esc(v.yearRule);
- renderCurrentMonth(r.years,now);
+ renderCurrentMonth(v.years||r.years,now);
  // 10년
  const L=r.luck,currentCycle=L.cycles.find(cy=>cy.i===L.current),fd=localYmd(inp.place,L.start);
  $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년'+(inp.unknown?' 무렵':(' '+fd.m+'월'))+'**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':''));
@@ -4191,7 +4195,7 @@ function renderResult(R){
  const LL=$('luck-list');LL.replaceChildren();
  v.luck.cycles.forEach(x=>{
   const cy=x.c,worst=cy.i===v.luck.worst;
-  LL.append(el('li',(x.now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+cycleAgeLabel(cy,inp.unknown)+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')+'</div>'));
+  LL.append(el('li',(x.now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+cycleAgeLabel(cy,inp.unknown)+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')+(x.expansion?'<p>'+esc(x.expansion.text)+'</p>':'')+'</div>'));
  });
  $('cycle-ruling').innerHTML='<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>';
  // 전체 풀이

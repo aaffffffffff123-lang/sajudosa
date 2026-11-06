@@ -3,11 +3,12 @@
 // 이 검사가 깨지면 문장을 순하게 되돌리지 말고 조건과 근거를 맞춘다.
 // 엔진 판정은 reading-evidence.test.cjs가 따로 검사한다. V5는 생활 설명을 가져오거나 풀어 쓰되 제목·팔자의 원인을 일치시킨다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
+const ReadingProse=require('../reading-prose.js');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a);assert(i>=0,a);const j=html.indexOf(b,i);assert(j>i,b);return html.slice(i,j);};
 const V5_SRC=slice('/* ---------- 자리 문서(V5)','/* 현재 월운:');
 const api=vm.runInNewContext(slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+V5_SRC+slice('function currentMonthView(','const MONTH_VIEW=')+slice('function luckGraph(','/* ---------- 입력 받기 ---------- */')
- +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2})',{Intl,Date});
+ +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2})',{Intl,Date,ReadingProse});
 const NOW=Date.UTC(2026,10,4),THIS_YEAR=2026;
 const PLACE={seoul:{name:'서울',lon:126.978,tz:'KR',std:9},busan:{name:'부산',lon:129.07,tz:'KR',std:9}};
 function make(y,m,d,{h=12,mi=0,unknown=false,male=true,pk='seoul',name=''}={}){
