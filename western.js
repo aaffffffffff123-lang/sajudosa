@@ -195,17 +195,68 @@
     const paths=kind==='Sun'?'<circle cx="16" cy="16" r="5"/><path d="M16 2v5m0 18v5M2 16h5m18 0h5M6 6l4 4m12 12 4 4M6 26l4-4M22 10l4-4"/>':kind==='Moon'?'<path d="M24 24A12 12 0 1 1 18 3a10 10 0 0 0 6 21Z"/>':'<path d="M3 24h26M6 21a10 10 0 0 1 20 0M16 4v13m-5-8 5-5 5 5"/>';
     return '<svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
   }
-  function render(c){
-    if(!c||!c.available)return '<p class="pnote">'+esc(c&&c.reason||'서양 출생차트를 불러오지 못했습니다.')+' 다시 접속하면 함께 확인할 수 있습니다.</p>';
+  // 천지신명의 후광과 같은 선으로 그린 12궁. 글꼴/이모지에 의존하지 않는다.
+  const ZODIAC_PATHS=["M0 0.9C0 -0.1 -0.15 -0.85 -0.5 -0.85C-0.9 -0.85 -0.95 -0.25 -0.62 -0.22M0 0.9C0 -0.1 0.15 -0.85 0.5 -0.85C0.9 -0.85 0.95 -0.25 0.62 -0.22","M0.42 0.32L0.42 0.32A0.42 0.42 0 1 1 -0.42 0.32A0.42 0.42 0 1 1 0.42 0.32M-0.9 -0.85C-0.65 -0.05 0.65 -0.05 0.9 -0.85","M-0.85 -0.82Q0 -0.55 0.85 -0.82M-0.85 0.82Q0 0.55 0.85 0.82M-0.38 -0.68L-0.38 0.68M0.38 -0.68L0.38 0.68","M-0.25 -0.28L-0.25 -0.28A0.22 0.22 0 1 1 -0.69 -0.28A0.22 0.22 0 1 1 -0.25 -0.28M-0.47 -0.5C0.1 -0.82 0.7 -0.62 0.85 -0.25M0.69 0.28L0.69 0.28A0.22 0.22 0 1 1 0.25 0.28A0.22 0.22 0 1 1 0.69 0.28M0.47 0.5C-0.1 0.82 -0.7 0.62 -0.85 0.25","M-0.22 0.32L-0.22 0.32A0.25 0.25 0 1 1 -0.72 0.32A0.25 0.25 0 1 1 -0.22 0.32M-0.3 0.14C-0.45 -0.95 0.6 -0.95 0.4 -0.05C0.25 0.55 0.45 0.9 0.85 0.62","M-0.85 -0.55L-0.85 0.78M-0.85 -0.3C-0.7 -0.85 -0.3 -0.75 -0.3 -0.3L-0.3 0.78M-0.3 -0.3C-0.15 -0.85 0.25 -0.75 0.25 -0.3L0.25 0.45C0.25 0.95 0.85 0.75 0.75 0.25C0.65 -0.1 0.15 0.35 0.05 0.9","M-0.85 0.62L0.85 0.62M-0.85 0.2L-0.38 0.2C-0.62 -0.75 0.62 -0.75 0.38 0.2L0.85 0.2","M-0.85 -0.55L-0.85 0.78M-0.85 -0.3C-0.7 -0.85 -0.3 -0.75 -0.3 -0.3L-0.3 0.78M-0.3 -0.3C-0.15 -0.85 0.25 -0.75 0.25 -0.3L0.25 0.5Q0.3 0.82 0.75 0.78M0.5 0.55L0.8 0.78L0.52 0.98","M-0.78 0.8L0.78 -0.78M0.08 -0.8L0.8 -0.8L0.8 -0.08M-0.5 -0.05L0.05 0.5","M-0.9 -0.6L-0.55 0.55L-0.2 -0.55C-0.05 0.9 0.85 0.85 0.7 0.3C0.55 -0.15 0.1 0.25 0.25 0.7Q0.3 0.95 0 0.95","M-0.9 -0.18L-0.5 -0.5L-0.1 -0.18L0.3 -0.5L0.7 -0.18L0.92 -0.36M-0.9 0.42L-0.5 0.1L-0.1 0.42L0.3 0.1L0.7 0.42L0.92 0.24","M-0.75 -0.88C-0.15 -0.4 -0.15 0.4 -0.75 0.88M0.75 -0.88C0.15 -0.4 0.15 0.4 0.75 0.88M-0.55 0L0.55 0"];
+  function wheel(c){
+    // 생시를 모르면 정확한 도수·각도를 꾸며 그리지 않는다.
+    if(c.unknown||!c.planets.every(p=>Number.isFinite(p.longitude)))return '';
+    const anchor=c.asc?c.asc.longitude:0,xy=(longitude,r)=>{
+      const a=(180+anchor-longitude)*RAD;return [180+r*Math.cos(a),180+r*Math.sin(a)];
+    },num=n=>n.toFixed(2),attrs=p=>'cx="'+num(p[0])+'" cy="'+num(p[1])+'"',
+    line=(a,b,cls)=>'<path class="'+cls+'" d="M'+a.map(num).join(' ')+'L'+b.map(num).join(' ')+'"/>',
+    circle=(r,cls)=>'<circle class="'+cls+'" cx="180" cy="180" r="'+r+'"/>';
+    let svg='<figure class="natal-wheel"><svg viewBox="0 0 360 360" role="img" aria-label="태어난 순간의 행성 배치. 각 행성의 별자리와 도수는 아래 표에서 확인할 수 있습니다.">';
+    svg+=circle(168,'wheel-band')+circle(139,'wheel-paper');
+    svg+='<g fill="none" stroke-width=".8">'+circle(168,'wheel-gold')+circle(139,'wheel-gold')+circle(109,'wheel-fine');
+    for(let i=0;i<72;i++)svg+=line(xy(i*5,i%6===0?139:164),xy(i*5,168),i%6===0?'wheel-gold':'wheel-fine');
+    if(c.asc)for(let i=0;i<12;i++){
+      const longitude=c.asc.sign*30+i*30;
+      svg+=line(xy(longitude,109),xy(longitude,139),'wheel-fine');
+    }
+    svg+='</g><g fill="none" stroke="currentColor" stroke-width=".17" stroke-linecap="round" stroke-linejoin="round">';
+    ZODIAC_PATHS.forEach((d,i)=>{const p=xy(i*30+15,153);svg+='<path d="'+d+'" transform="translate('+p.map(num).join(' ')+') scale(8)"><title>'+SIGNS[i]+'</title></path>';});
+    svg+='</g>';
+    if(c.asc)for(let i=0;i<12;i++){
+      const p=xy(c.asc.sign*30+i*30+15,124);
+      svg+='<text class="wheel-house" x="'+num(p[0])+'" y="'+num(p[1]+3.5)+'" text-anchor="middle">'+(i+1)+'</text>';
+    }
+    svg+='<g fill="none" stroke-width=".8">';
+    for(const a of c.aspects)svg+=line(xy(planet(c,a.a).longitude,104),xy(planet(c,a.b).longitude,104),'wheel-aspect'+([90,180].includes(a.angle)?' tense':''));
+    svg+='</g>';
+    const placed=[],offsets=[0];
+    for(let angle=8;angle<=176;angle+=8)offsets.push(angle,-angle);
+    for(const p of c.planets){
+      const point=xy(p.longitude,104);let label=null;
+      // 별이 몰려도 점은 실제 위치를 지키고, 이름만 인출선 끝으로 비켜 쓴다.
+      for(const offset of offsets){
+        for(const r of [82,61,40]){
+          const candidate=xy(p.longitude+offset,r);
+          if(placed.every(q=>Math.hypot(q[0]-candidate[0],q[1]-candidate[1])>29)){label=candidate;break;}
+        }
+        if(label)break;
+      }
+      label=label||xy(p.longitude,20);placed.push(label);
+      svg+='<g data-planet="'+p.id+'"><title>'+p.name+' · '+position(p)+' '+degree(p.longitude)+'</title>';
+      svg+='<g fill="none" stroke-width=".65">'+line(point,label,'wheel-fine')+'</g>';
+      svg+='<circle class="wheel-point'+(['Sun','Moon'].includes(p.id)?' luminary':'')+'" '+attrs(point)+' r="3.4"/>';
+      svg+='<text class="wheel-body" x="'+num(label[0])+'" y="'+num(label[1]+3.5)+'" text-anchor="middle">'+p.name+'</text></g>';
+    }
+    if(c.asc)svg+='<path d="M7 180h20" class="wheel-gold" fill="none"/><text class="wheel-asc" x="9" y="174">ASC</text>';
+    svg+='</svg><figcaption>점은 행성의 실제 위치, 안쪽 선은 행성 사이의 각도입니다.'+(c.asc?'<br>숫자는 삶의 영역을 나눈 12하우스입니다.':'')+'</figcaption></figure>';
+    return svg;
+  }
+  function render(c,part){
+    if(!c||!c.available)return part==='reading'?'':'<p class="pnote">'+esc(c&&c.reason||'서양 출생차트를 불러오지 못했습니다.')+' 다시 접속하면 함께 확인할 수 있습니다.</p>';
     const sun=planet(c,'Sun'),moon=planet(c,'Moon'),asc=c.asc;
     const card=(kind,label,p,small)=>'<div class="natal-key">'+emblem(kind)+'<span>'+label+'</span><strong>'+esc(p?position(p):c.unknown?'시간 필요':'정보 확인')+'</strong><small>'+small+'</small></div>';
     let html='<div class="natal-keys">'+card('Sun','태양',sun,'내가 향하는 쪽')+card('Moon','달',moon,'익숙한 마음의 반응')+card('Asc','상승궁',asc?{sign:asc.sign}:null,asc?'세상에 드러나는 태도':c.unknown?'생시를 알아야 계산':'출생지 좌표 필요')+'</div>';
     const lines=[];
     if(sun.sign!=null)lines.push('<p><b>태양 · '+SIGNS[sun.sign]+'</b>'+SUN[sun.sign]+'</p>');
     if(moon.sign!=null)lines.push('<p><b>달 · '+SIGNS[moon.sign]+'</b>'+MOON[moon.sign]+'</p>');
-    html+='<div class="natal-reading">'+lines.join('')+'</div>';
+    if(part==='reading')return lines.join('');
+    if(part!=='summary')html+='<div class="natal-reading">'+lines.join('')+'</div>';
     if(c.unknown)html+='<p class="natal-note">태어난 시간을 몰라 상승궁과 하우스, 행성 사이 각도는 풀지 않았습니다. 그날 별자리가 바뀔 수 있는 행성은 두 후보를 함께 표시합니다.</p>';
-    html+='<details class="natal-details"><summary>내 출생차트 자세히 보기</summary><div class="natal-table-wrap"><table><caption class="sr-only">행성의 별자리와 하우스</caption><thead><tr><th scope="col">행성</th><th scope="col">별자리'+(c.unknown?'':' · 도수')+'</th><th scope="col">하우스</th></tr></thead><tbody>';
+    html+='<details class="natal-details"><summary>내 출생차트 자세히 보기</summary>'+wheel(c)+'<div class="natal-table-wrap"><table><caption class="sr-only">행성의 별자리와 하우스</caption><thead><tr><th scope="col">행성</th><th scope="col">별자리'+(c.unknown?'':' · 도수')+'</th><th scope="col">하우스</th></tr></thead><tbody>';
     html+=c.planets.map(p=>'<tr><th scope="row">'+p.name+'</th><td>'+esc(position(p))+(p.longitude!=null?' <span>'+degree(p.longitude)+'</span>':'')+'</td><td>'+(p.house||'—')+'</td></tr>').join('');
     html+='</tbody></table></div>';
     if(asc)html+='<p class="natal-note">상승궁 · '+SIGNS[asc.sign]+' '+degree(asc.longitude)+'</p>';

@@ -153,3 +153,36 @@ test('browser assets load in order and inline JavaScript remains valid',()=>{
   const context=vm.createContext({console});vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/astronomy.browser.min.js'),'utf8'),context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../western.js'),'utf8'),context);
   assert.equal(typeof context.Western.compute,'function');assert(context.Western.compute({utc:NOW}).available);
 });
+
+test('the birth summary and personality reading share one chart without repeating prose',()=>{
+  const c=W.compute({utc:NOW,lat:37.5665,lon:126.978});
+  const summary=W.render(c,'summary'),reading=W.render(c,'reading');
+  assert.match(summary,/natal-keys/);assert.match(summary,/<details/);
+  assert.doesNotMatch(summary,/natal-reading/);
+  assert.match(reading,/<b>태양 ·/);assert.match(reading,/<b>달 ·/);
+  assert.doesNotMatch(reading,/<details|natal-keys|<svg/);
+  assert.equal(W.render({available:false},'reading'),'');
+  const screen=slice('<main id="result-screen"','</main>');
+  assert(screen.indexOf('id="western-chart"')<screen.indexOf('id="reading-portrait"'));
+  assert(screen.indexOf('id="western-reading"')>screen.indexOf('id="core-body"'));
+});
+
+test('the wheel plots real longitudes relative to the ascendant and keeps crowded labels apart',()=>{
+  for(const clustered of [false,true]){
+    const c=W.compute({utc:NOW,lat:37.5665,lon:126.978});
+    if(clustered)c.planets.forEach((p,i)=>p.longitude=(359+i*.2)%360);
+    const output=W.render(c,'summary'),labels=[];
+    for(const p of c.planets){
+      const group=output.match(new RegExp('<g data-planet="'+p.id+'">([\\s\\S]*?)</text></g>'));
+      assert(group,p.id);
+      const dot=group[1].match(/<circle[^>]+cx="([^"]+)" cy="([^"]+)"/);
+      const angle=(180+c.asc.longitude-p.longitude)*Math.PI/180;
+      near(+dot[1],180+104*Math.cos(angle),.006);near(+dot[2],180+104*Math.sin(angle),.006);
+      const label=group[1].match(/<text[^>]+x="([^"]+)" y="([^"]+)"/);
+      labels.push([+label[1],+label[2]]);
+    }
+    for(let i=0;i<labels.length;i++)for(let j=i+1;j<labels.length;j++)assert(Math.hypot(labels[i][0]-labels[j][0],labels[i][1]-labels[j][1])>28.9);
+  }
+  const unknown=W.compute({utc:NOW,unknown:true,dayRange:[NOW,NOW+86400000-1]});
+  assert.doesNotMatch(W.render(unknown,'summary'),/natal-wheel|data-planet/);
+});

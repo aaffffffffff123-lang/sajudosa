@@ -530,6 +530,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .reading .woven-closing{margin:22px 0 0}
 @media(max-width:370px){.natal-key{padding:14px 5px}.natal-key strong{font-size:14px}.natal-key small{font-size:10px}}
 </style>
+<link rel="stylesheet" href="assets/celestial-ui.css?v=20261106b">
 </head>
 <body>
 <noscript><p style="padding:30px;line-height:1.8">이 화면을 쓰려면 브라우저의 자바스크립트를 켜 주세요.</p></noscript>
@@ -554,6 +555,8 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
  <div class="wrap">
   <header class="hero">
    <h1 class="sign">사주도사</h1>
+   <div class="dosa-sky">
+    <img class="sky-dial" src="assets/sky-dial.svg" alt="" aria-hidden="true" width="360" height="360">
    <svg class="dosa" viewBox="0 0 320 320" role="img" aria-label="윙크하는 도사">
  <defs>
   <radialGradient id="dsHalo" cx="50%" cy="46%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#ece3ff"/><stop offset="1" stop-color="#ece3ff" stop-opacity="0"/></radialGradient>
@@ -625,6 +628,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
  <g fill="url(#dsGold)" stroke="#261f3d" stroke-width="1.6"><use href="#dsSpark" x="36" y="66" width="24" height="24"/><use href="#dsSpark" x="268" y="44" width="18" height="18"/></g>
  <g stroke="#3e2f8f" stroke-width="2.4" stroke-linecap="round"><path d="M292 146v12M286 152h12"/><path d="M24 184v10M19 189h10"/><path d="M98 42v8M94 46h8"/></g>
 </svg>
+   </div>
   <p class="hanja">사주 · 서양 점성술</p>
   <p class="lead">사주와 별자리에 담긴<br>내 삶의 흐름</p>
    <p class="sub">성격 · 돈 · 일 · 관계 · 10년 흐름 풀이</p>
@@ -640,7 +644,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
    <div class="field"><div class="lbl"><span>태어난 시간</span></div><div class="timerow"><button type="button" class="pick" id="timeBtn" aria-haspopup="dialog"><span class="v empty" id="timeVal">시간을 골라 주세요</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button><button type="button" class="chip" id="unknownChip" aria-pressed="false">모름</button></div></div>
    <div class="field" id="occurrence-field" hidden><div class="lbl"><span>그날은 이 시각이 두 번 있었습니다</span></div><div class="seg" role="radiogroup" aria-label="두 번 있던 시각"><label><input type="radio" id="occurrenceFirst" name="birth-occurrence" value="0"><span>처음 온 시각</span></label><label><input type="radio" name="birth-occurrence" value="1"><span>한 시간 뒤</span></label></div></div>
    <p id="form-error" class="error" role="alert" hidden></p>
-   <button type="submit" class="cta">내 사주 풀이 보기</button>
+   <button type="submit" class="cta">내 운세 풀이 보기</button>
       <p class="privacy-note">입력 정보는 저장되지 않습니다.</p>
   </form>
  </div>
@@ -672,7 +676,9 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <section id="loading-screen" class="screen" hidden>
  <div class="saekdong" aria-hidden="true"></div>
  <div class="loading">
-  <svg class="ld" id="ldDosa" viewBox="26 22 268 262" role="img" aria-label="사주를 풀고 있는 도사">
+  <div class="ld-sky">
+   <img class="sky-dial" src="assets/sky-dial.svg" alt="" aria-hidden="true" width="360" height="360">
+  <svg class="ld" id="ldDosa" viewBox="26 22 268 262" role="img" aria-label="사주와 별자리를 풀고 있는 도사">
    <defs>
     <radialGradient id="ldHaloG" cx="50%" cy="46%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#ece3ff"/><stop offset="1" stop-color="#ece3ff" stop-opacity="0"/></radialGradient>
     <radialGradient id="ldSkin" cx="42%" cy="34%" r="72%"><stop offset="0" stop-color="#ffe4c8"/><stop offset=".68" stop-color="#f7c39a"/><stop offset="1" stop-color="#e5a274"/></radialGradient>
@@ -784,7 +790,9 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
    <g id="ldSparks" fill="url(#ldGold)" stroke="#261f3d" stroke-width="1.6"><g data-x="52" data-y="74" transform="translate(52 74)"><use href="#ldSpark" x="-12" y="-12" width="24" height="24"/></g><g data-x="267" data-y="49" transform="translate(267 49)"><use href="#ldSpark" x="-9" y="-9" width="18" height="18"/></g></g>
    <g stroke="#3e2f8f" stroke-width="2.4" stroke-linecap="round"><path d="M276 98v12M270 104h12"/><path d="M50 128v10M45 133h10"/><path d="M102 40v8M98 44h8"/></g>
   </svg>
-  <p class="ld-step" id="ldStep" aria-live="polite">사주를 풀고 있습니다</p>
+  </div>
+  <div class="ld-pillars" id="ldPillars" aria-hidden="true"></div>
+  <p class="ld-step" id="ldStep" aria-live="polite">운세를 풀고 있습니다</p>
   <div class="ld-bar" aria-hidden="true"><i id="ldBar"></i></div>
  </div>
 </section>
@@ -795,7 +803,13 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
  <div class="wrap">
   <section class="r-head"><h1 id="r-title"></h1><p id="r-birth"></p></section>
 
-  <section class="block"><h2 class="sec-label">태어난 해·달·날·시간</h2><div id="pillars" class="pillars"></div><p class="pnote" id="pillar-note" hidden></p>
+  <section class="block birth-opening"><h2 class="sec-label">당신이 태어난 때</h2>
+    <div class="birth-profile">
+      <h3 class="birth-source">사주 <small>태어난 해 · 달 · 날 · 시간</small></h3>
+      <div id="pillars" class="pillars"></div><p class="pnote" id="pillar-note" hidden></p>
+      <h3 class="birth-source stars">별자리 <small>태양 · 달 · 상승궁</small></h3>
+      <div id="western-chart"></div>
+    </div>
     <article class="reading-portrait" id="reading-portrait" aria-labelledby="portrait-title">
       <span class="portrait-binding" aria-hidden="true"><i></i><i></i><i></i></span>
       <header class="portrait-head"><h3 class="portrait-title" id="portrait-title"></h3><span class="portrait-ribbon" id="portrait-ribbon" role="img"></span></header>
@@ -806,8 +820,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   <section class="block"><h2 class="sec-label">나를 나타내는 상징</h2><div class="me-card" id="me-card"></div></section>
   <section class="block"><h2 class="sec-label">타고난 다섯 가지 비율</h2><div id="elements" class="elements"></div><div class="share" id="share" aria-hidden="true"></div><div class="share-leg" id="share-leg"></div><div class="elem-lines" id="elem-lines"></div></section>
 
-  <section class="block" id="western-block"><h2 class="sec-label">태어난 순간의 별자리 <small>서양 출생차트</small></h2><div id="western-chart"></div></section>
-  <section class="block core"><h2 class="sec-label">타고난 성향</h2><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div></section>
+  <section class="block core"><h2 class="sec-label">타고난 성향</h2><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div><div class="natal-reading" id="western-reading"></div></section>
   <section class="block" id="past-block" hidden><h2 class="sec-label">지나온 흐름</h2><p class="past-intro">지나온 해 가운데 사주에서 마찰 신호가 겹친 해입니다.</p><div class="past-hits" id="past-hits"></div></section>
   <div id="sections"></div>
 
@@ -921,7 +934,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="western.js?v=20261106a"></script>
+<script src="western.js?v=20261106b"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -2991,6 +3004,8 @@ function ldFrame(){
 }
 function startLoading(done){
  stopLoading();ldInit();
+ // 이미 계산된 실제 명식만 표시한다. 시간을 모르면 시간 기둥은 비워 둔다.
+ $('ldPillars').innerHTML=current?current.reading.pillars.map((p,i)=>'<div class="ld-pillar"><small>'+['해','달','날','시간'][i]+'</small><span>'+esc(p.known?p.stem+p.branch:'—')+'</span></div>').join(''):'';
  LD.done=done;LD.t0=performance.now();LD.f1=0;LD.step=0;
  LD.el.step.textContent=LD_TL.steps[0][1];LD.el.bar.style.transform='scaleX(0)';
  ldPose(false,1,0);ldSky(0);
@@ -3989,7 +4004,7 @@ document.addEventListener('visibilitychange',()=>{
 });
 function renderResult(R){
  const inp=R.input,r=R.reading,c=R.chart,now=Date.now(),v=v5Reading(R,now);
- $('r-title').textContent=inp.name?inp.name+'님의 사주':'나의 사주';
+ $('r-title').textContent=inp.name?inp.name+'님의 운세':'나의 운세';
  const sd=R.solarDate,ld=R.lunarDate;
  const main=inp.cal==='lunar'?'음력 '+inp.date.y+'년 '+(inp.date.leap?'윤달 ':'')+inp.date.m+'월 '+inp.date.d+'일 <span>(양력 '+sd.y+'년 '+sd.m+'월 '+sd.d+'일)</span>':'양력 '+sd.y+'년 '+sd.m+'월 '+sd.d+'일'+(ld?' <span>(음력 '+(ld.leap?'윤달 ':'')+ld.m+'월 '+ld.d+'일)</span>':'');
  const time=inp.unknown?'태어난 시간 모름':hourWord(inp.time.h)+(inp.time.mi?' '+inp.time.mi+'분':'');
@@ -4023,7 +4038,8 @@ function renderResult(R){
  $('share-leg').innerHTML='<em>카드는 겉에 보이는 글자 수<br>비율은 계절과 숨은 기운까지 반영</em>'+ORDER.map(k=>'<span style="--c:'+(ELEMENTS[k].labelColor||ELEMENTS[k].color)+'">'+ELEMENTS[k].name+' '+pct(r.shares[k])+'%</span>').join('');
  $('elem-lines').innerHTML='<p class="basis">'+esc(v.elementIntro)+'</p>'+v.elements.map(t=>'<p>'+esc(t)+'</p>').join('');
  // 입력한 실제 출생시각으로 계산한 별자리
- $('western-chart').innerHTML=typeof Western!=='undefined'?Western.render(R.western):'<p class="pnote">서양 출생차트를 불러오지 못했습니다. 다시 접속해 주세요.</p>';
+ $('western-chart').innerHTML=typeof Western!=='undefined'?Western.render(R.western,'summary'):'<p class="pnote">서양 출생차트를 불러오지 못했습니다. 다시 접속해 주세요.</p>';
+ $('western-reading').innerHTML=typeof Western!=='undefined'?Western.render(R.western,'reading'):'';
  // 타고난 성향
  $('core-title').textContent=v.core.title;
  $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p class="fate">'+esc(v.core.fate)+'</p><p class="rule"><b>이치</b>'+esc(v.core.rule)+'</p>';

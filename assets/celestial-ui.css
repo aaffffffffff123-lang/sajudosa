@@ -1,0 +1,60 @@
+/* 같은 종이에 읽는 사주와 별자리. 결과 색은 기존 스크롤 변화에 따른다. */
+.dosa-sky{position:relative;display:grid;place-items:center;width:min(344px,100%);aspect-ratio:1;margin:10px auto -8px;isolation:isolate}
+.dosa-sky .dosa{position:relative;width:88%;margin:0;z-index:1}
+.sky-dial{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:.72;animation:sky-arrive 1.25s cubic-bezier(.2,.65,.3,1) both}
+@keyframes sky-arrive{from{opacity:0;transform:rotate(-12deg) scale(.96)}to{opacity:.72;transform:rotate(0) scale(1)}}
+.hanja{display:flex;justify-content:center;align-items:center;gap:12px;letter-spacing:.13em;padding-left:0;margin:5px 0 9px;font-size:12px;color:var(--indigo)}
+.hanja::before,.hanja::after{content:"";width:25px;height:1px;background:#b89955}
+.birth-profile{position:relative;padding:20px 12px 4px;background:var(--paper-2);border:1px solid var(--line-2);border-radius:18px;box-shadow:0 3px 0 var(--inset)}
+.birth-profile::before{content:"";position:absolute;top:-2px;left:calc(50% - 18px);width:36px;height:3px;border-radius:2px;background:var(--gold-d)}
+.birth-source{display:flex;align-items:center;gap:8px;margin:0 0 13px;font-size:13px;line-height:1.4;font-weight:700;color:var(--red-d)}
+.birth-source::before{content:"";width:9px;height:9px;flex:none;border:1.5px solid currentColor;border-radius:2px;box-shadow:inset 0 0 0 1.5px var(--paper-2);background:currentColor}
+.birth-source small{font-size:11px;font-weight:400;color:var(--caption)}
+.birth-source.stars{margin-top:24px;padding-top:19px;border-top:1px solid var(--line);color:var(--indigo)}
+.birth-source.stars::before{border-radius:50%;background:none;box-shadow:none}
+.birth-profile .pillars{gap:6px}
+.birth-profile .pillar{border-width:1.5px;border-radius:12px;box-shadow:0 2px 0 var(--ink)}
+.birth-profile .pillar.me-col{box-shadow:0 2px 0 var(--red)}
+.birth-profile .glyph svg{width:46px;height:46px}
+.birth-profile .natal-keys{border-radius:12px;background:var(--card)}
+.birth-profile .natal-key{padding:14px 4px 13px}
+.birth-profile .natal-key svg{width:25px;height:25px;margin-bottom:7px}
+.birth-profile .natal-key strong{font-size:16px;letter-spacing:-.045em;overflow-wrap:anywhere}
+.birth-profile .natal-key small{font-size:10.5px;letter-spacing:-.025em;line-height:1.6}
+.birth-profile .natal-details{margin-top:15px}
+.birth-profile .natal-details summary{display:flex;align-items:center;justify-content:space-between;gap:8px;list-style:none;padding:15px 1px;color:var(--indigo)}
+.birth-profile .natal-details summary::-webkit-details-marker{display:none}
+.birth-profile .natal-details summary::after{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin:0 5px 4px 0;flex:none}
+.birth-profile .natal-details[open] summary::after{transform:rotate(225deg);margin-top:6px}
+.birth-profile .natal-note{margin:12px 1px;font-size:12px}
+.natal-wheel{margin:4px auto 20px;text-align:center;color:var(--indigo);max-width:380px}
+.natal-wheel svg{display:block;width:100%;height:auto;overflow:visible}
+.natal-wheel figcaption{margin:10px 3px 0;font-size:11px;line-height:1.7;color:var(--caption)}
+.wheel-paper{fill:var(--paper-2)}
+.wheel-band{fill:var(--inset)}
+.wheel-gold{stroke:var(--gold-d)}
+.wheel-fine{stroke:var(--line-2)}
+.wheel-aspect{stroke:var(--indigo);opacity:.24}
+.wheel-aspect.tense{stroke:var(--red-d);opacity:.28}
+.wheel-point{fill:var(--indigo);stroke:var(--paper-2);stroke-width:1.5}
+.wheel-point.luminary{fill:var(--red-d)}
+.wheel-body{font:600 10px var(--sans);fill:var(--ink);paint-order:stroke fill;stroke:var(--paper-2);stroke-width:3.5px;stroke-linejoin:round}
+.wheel-house{font:10px var(--sans);fill:var(--caption)}
+.wheel-asc{font:700 11px var(--sans);fill:var(--indigo)}
+.core .natal-reading{margin-top:24px;border-top:1px solid var(--line-2);padding-top:5px}
+.core .natal-reading:empty{display:none}
+.core .natal-reading p{font-size:16px;line-height:1.85}
+.core .natal-reading b{display:flex;align-items:center;gap:7px;font-size:12px;margin-bottom:7px;color:var(--indigo)}
+.core .natal-reading b::before{content:"";width:7px;height:7px;border:1px solid currentColor;border-radius:50%;flex:none}
+.reading .western-link{border-left-color:var(--indigo);padding-left:14px}
+.ld-sky{position:relative;display:grid;place-items:center;isolation:isolate;width:min(400px,88vw,54dvh);aspect-ratio:1;flex:none}
+.ld-sky .ld{position:relative;z-index:1;width:82%;max-height:none}
+.ld-sky .sky-dial{animation-delay:1.05s;animation-duration:.75s}
+.ld-pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 6px;width:min(226px,62vw)}
+.ld-pillar{background:var(--paper-2);border:1px solid var(--line-2);border-radius:9px;text-align:center;padding:6px 4px 8px;color:var(--ink);animation:pillar-arrive .35s ease-out both}
+.ld-pillar:nth-child(2){animation-delay:.14s}.ld-pillar:nth-child(3){animation-delay:.28s}.ld-pillar:nth-child(4){animation-delay:.42s}
+.ld-pillar small{display:block;font:500 10px/1.5 var(--sans);color:var(--muted);margin-bottom:3px}
+.ld-pillar span{display:block;font:700 17px/1.2 var(--serif);letter-spacing:.08em}
+@keyframes pillar-arrive{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media(max-width:370px){.birth-profile{padding-inline:9px}.birth-profile .pillars{gap:4px}.birth-profile .glyph svg{width:42px;height:42px}.birth-profile .natal-key strong{font-size:14px}.birth-profile .natal-key small{font-size:10px}.birth-source small{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.sky-dial,.ld-pillar{animation:none;opacity:.72}.ld-pillar{opacity:1}}
