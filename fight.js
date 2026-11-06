@@ -1593,6 +1593,11 @@ const AUDIO=(()=>{
  function crownT(o,t,p){ring(o,t,[880,2070,3510,5200],.22,.16*p);osc(o,t,{type:'triangle',f0:300,f1:150,dur:.05,peak:.4});clicks(o,t+.01,10,.25,5200,.22);}
  function crown(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.3,.3),.25);crownT(o,t,p);}
  function crownLand(){if(!ready())return;const t=ctx.currentTime,o=out(0,.3);osc(o,t,{f0:160,f1:70,dur:.12,peak:.5});ring(o,t,[620,1450,2300],.16,.12);clicks(o,t,16,.55,4600,.24);}
+ function staffLand(p=1){if(!ready())return;const t=ctx.currentTime,o=out(.3,.18);
+  osc(o,t,{type:'triangle',f0:260,f1:100,dur:.075,peak:.34*p});
+  nz(o,t,{dur:.035,peak:.22*p,f:1250,type:'bandpass',q:1.3});
+  ring(o,t+.006,[810,1870],.12,.045*p);
+ }
  function tooth(){if(!ready())return;const t=ctx.currentTime,o=out(R(-.4,.4),.12);clicks(o,t,3,.01,4200,.5);osc(o,t,{f0:2600,f1:2100,dur:.03,peak:.2});}
  function toothBounce(){if(!ready())return;const t=ctx.currentTime,o=out(R(-.5,.5),.15);for(let i=0;i<3;i++){osc(o,t+i*.09*(1-i*.2),{f0:3200*R(.9,1.1),dur:.02,peak:.16/(i+1)});clicks(o,t+i*.09,1,.002,5000,.2/(i+1));}}
  function crack(p=1){if(!ready())return;const t=ctx.currentTime,o=out(0,.15);bone(o,t,p*1.4);osc(o,t,{f0:180,f1:80,dur:.08,peak:.4});}
@@ -1956,7 +1961,7 @@ const AUDIO=(()=>{
   for(let i=0;i<7;i++)nz(out(R(-.7,.7),.3),t+R(.1,1),{dur:R(.04,.08),peak:R(.1,.2)*k,f:R(360,560),type:'lowpass',q:.6});
   for(let i=0;i<3;i++)nz(out(R(-.6,.6),.12,true),t+R(.08,.5),{dur:R(.1,.16),peak:R(.06,.1)*k,a:.035,f:R(900,1300),f1:R(1700,2300),q:1.3,curve:'lin'});
  }
- return {unlock,hold,crowdSob,whisper,crowdTurn,charge,twinkle,boom,stamp,paper,crumple,crunch,paperDrop,footstep,crowdShuffle,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
+ return {unlock,hold,crowdSob,whisper,crowdTurn,charge,twinkle,boom,stamp,paper,crumple,crunch,paperDrop,footstep,crowdShuffle,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,staffLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
   whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
@@ -2226,6 +2231,7 @@ const COMBAT_STAGE=(()=>{
  for(const list of groups.values()){if(list.length<2)continue;const geo=mergeMeshes(list,new THREE.Matrix4());const m=new THREE.Mesh(geo,list[0].material);m.castShadow=true;m.receiveShadow=true;list.forEach(o=>o.removeFromParent());root.add(m);}
  metalEnv(root);return {root,throne,boot,shin,thigh,knee,contact,dust,grain,weave,robe};
 })();
+const STAFF=window.CeremonialStaff.create(THREE,COMBAT_STAGE.root,{onImpact:p=>AUDIO.staffLand(p)});
 function setCombatStage(active){
  WORLD.root.visible=!active;COMBAT_STAGE.root.visible=active;COMBAT_STAGE.boot.visible=false;
  $('#fight').classList.toggle('close-combat',active);
@@ -10876,7 +10882,7 @@ function startRound(mode){
  wireEmperor(E);
  BLOOD.reset(E);VM.reset();if(lite<2){metalEnv(E.root);metalEnv(E.crown);}
 Object.assign(G,{mode,walking:false,defeatCountVisible:PROGRESS.defeated>0,bar:100,shown:100,shownHold:0,lag:100,lastHit:-99,kd:0,active:0,started:false,musicStarted:false,hits:0,t0:G.time,hitstop:0,slow:0,ended:false,paused:false,inputLocked:false,beyondAt:0,omenAt:0,prepAt:0,laughAt:0,againAt:0,offerAt:0,offerPending:false,offerOpen:false,offerBreaking:false,offerBreakAt:0,crowdEntered:false,crowdWarned:false,crowdBeatUntil:0,crowdSwapAt:0,crowdSwapLines:null,crowdHideAt:0,revivalUsed:false,revivalPending:false,revival:null,revived:false,brittle:false,shellHideAt:0,retorting:false});
- setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);else combatLook(E);
+ STAFF.reset();setCombatStage(true);$('#fight').classList.toggle('accepting-fate',mode==='submit');if(mode==='fight')combatInit(E,true);else combatLook(E);
  crumpleReset();$('#crumpleHint').classList.add('off');INTRO.hintAt=0;
  FX.clear();COINS.clear();CHUNKS.clear();
  CROWD.reset();
@@ -10923,6 +10929,7 @@ function step(dt){
  if(G.slow>0){G.slow-=dt;sim*=.45;}
  if(E){
   E._rdt=dt;E.update(sim,G.time);
+  STAFF.update(sim,G.mode==='fight'&&(E.state==='fall'||E.state==='down'));
  }
  // 순응 장면: 종이 구기기 → 떨어뜨리기 → 앞사람들 비켜서기(걸어가는 동안에도 계속 움직인다)
  updateCrumple(dt);SUBMISSION.update(dt);SUBMISSION.updatePart();

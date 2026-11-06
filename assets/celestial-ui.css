@@ -50,11 +50,6 @@
 .ld-sky{position:relative;display:grid;place-items:center;isolation:isolate;width:min(400px,88vw,54dvh);aspect-ratio:1;flex:none}
 .ld-sky .ld{position:relative;z-index:1;width:82%;max-height:none}
 .ld-sky .sky-dial{animation-delay:1.05s;animation-duration:.75s}
-.ld-pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0 6px;width:min(226px,62vw)}
-.ld-pillar{background:var(--paper-2);border:1px solid var(--line-2);border-radius:9px;text-align:center;padding:6px 4px 8px;color:var(--ink);animation:pillar-arrive .35s ease-out both}
-.ld-pillar:nth-child(2){animation-delay:.14s}.ld-pillar:nth-child(3){animation-delay:.28s}.ld-pillar:nth-child(4){animation-delay:.42s}
-.ld-pillar small{display:block;font:500 10px/1.5 var(--sans);color:var(--muted);margin-bottom:3px}
-.ld-pillar span{display:block;font:700 17px/1.2 var(--serif);letter-spacing:.08em}
-@keyframes pillar-arrive{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+.crystal-orb{pointer-events:none}
 @media(max-width:370px){.birth-profile{padding-inline:9px}.birth-profile .pillars{gap:4px}.birth-profile .glyph svg{width:42px;height:42px}.birth-profile .natal-key strong{font-size:14px}.birth-profile .natal-key small{font-size:10px}.birth-source small{font-size:10px}}
-@media(prefers-reduced-motion:reduce){.sky-dial,.ld-pillar{animation:none;opacity:.72}.ld-pillar{opacity:1}}
+@media(prefers-reduced-motion:reduce){.sky-dial{animation:none;opacity:.72}}

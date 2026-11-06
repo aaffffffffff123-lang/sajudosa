@@ -530,7 +530,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .reading .woven-closing{margin:22px 0 0}
 @media(max-width:370px){.natal-key{padding:14px 5px}.natal-key strong{font-size:14px}.natal-key small{font-size:10px}}
 </style>
-<link rel="stylesheet" href="assets/celestial-ui.css?v=20261106b">
+<link rel="stylesheet" href="assets/celestial-ui.css?v=20261106d">
 </head>
 <body>
 <noscript><p style="padding:30px;line-height:1.8">이 화면을 쓰려면 브라우저의 자바스크립트를 켜 주세요.</p></noscript>
@@ -643,6 +643,24 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
      <path d="M-6.6-5.5C-9.8-.4-7.5 6.6-2.6 8.4" fill="none" stroke="#fff4bd" stroke-width="1.5"/>
     </g>
    </g>
+<g class="crystal-orb" transform="translate(160 267)" aria-hidden="true">
+    <defs>
+     <radialGradient id="dsGlass" cx="33%" cy="25%" r="78%"><stop stop-color="#e6f4f6"/><stop offset=".32" stop-color="#adbadb"/><stop offset=".7" stop-color="#626a9d"/><stop offset="1" stop-color="#36335e"/></radialGradient>
+     <radialGradient id="dsMist"><stop stop-color="#d3e4f7" stop-opacity=".55"/><stop offset="1" stop-color="#b4a9db" stop-opacity="0"/></radialGradient>
+     <clipPath id="dsGlassClip"><circle r="36"/></clipPath>
+    </defs>
+    <ellipse cy="43" rx="23" ry="3.2" fill="#453858" opacity=".13"/>
+    <circle r="43" fill="url(#dsMist)" opacity=".5"/>
+    <circle r="37" fill="url(#dsGlass)" stroke="#302840" stroke-width="2.4"/>
+    <g clip-path="url(#dsGlassClip)">
+     <ellipse cy="13" rx="36" ry="22" fill="url(#dsMist)"/>
+     <g class="crystal-content" fill="#fff3cc" stroke-linecap="round"><g fill="none" stroke="#d5d9f8" stroke-width=".8" opacity=".6"><ellipse rx="24" ry="9" transform="rotate(-30)"/><ellipse rx="24" ry="9" transform="rotate(45)"/></g><g fill="#fff1c6"><circle cx="-18" cy="-7" r="1.7"/><circle cx="14" cy="-16" r="1.3"/><circle cx="19" cy="9" r="1.7"/><path d="M0-6L1.4-1.4 6 0 1.4 1.4 0 6-1.4 1.4-6 0-1.4-1.4Z"/></g></g>
+    </g>
+    <path d="M-28-9C-25-23-13-30-3-30" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity=".76"/>
+    <ellipse cx="-25" cy="-17" rx="3" ry="6" transform="rotate(32 -25 -17)" fill="#fff" opacity=".4"/>
+    <path d="M12 31C23 27 30 17 31 9" fill="none" stroke="#d8d5f1" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
+    <path d="M-22 32Q0 45 22 32" fill="none" stroke="#b89249" stroke-width="2" stroke-linecap="round"/>
+   </g>
 </svg>
    </div>
   <p class="hanja">사주 · 서양 점성술</p>
@@ -694,7 +712,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
  <div class="loading">
   <div class="ld-sky">
    <img class="sky-dial" src="assets/sky-dial.svg" alt="" aria-hidden="true" width="360" height="360">
-  <svg class="ld" id="ldDosa" viewBox="26 -4 268 288" role="img" aria-label="사주와 별자리를 풀고 있는 도사">
+  <svg class="ld" id="ldDosa" viewBox="26 -4 268 322" role="img" aria-label="사주와 별자리를 풀고 있는 도사">
    <defs>
     <radialGradient id="ldHaloG" cx="50%" cy="46%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#ece3ff"/><stop offset="1" stop-color="#ece3ff" stop-opacity="0"/></radialGradient>
     <radialGradient id="ldSkin" cx="42%" cy="34%" r="72%"><stop offset="0" stop-color="#ffe4c8"/><stop offset=".68" stop-color="#f7c39a"/><stop offset="1" stop-color="#e5a274"/></radialGradient>
@@ -821,9 +839,26 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
      <path d="M-6.6-5.5C-9.8-.4-7.5 6.6-2.6 8.4" fill="none" stroke="#fff4bd" stroke-width="1.5"/>
     </g>
    </g>
+<g class="crystal-orb" transform="translate(160 267)" aria-hidden="true">
+    <defs>
+     <radialGradient id="ldGlass" cx="33%" cy="25%" r="78%"><stop stop-color="#e6f4f6"/><stop offset=".32" stop-color="#adbadb"/><stop offset=".7" stop-color="#626a9d"/><stop offset="1" stop-color="#36335e"/></radialGradient>
+     <radialGradient id="ldMist"><stop stop-color="#d3e4f7" stop-opacity=".55"/><stop offset="1" stop-color="#b4a9db" stop-opacity="0"/></radialGradient>
+     <clipPath id="ldGlassClip"><circle r="36"/></clipPath>
+    </defs>
+    <ellipse cy="43" rx="23" ry="3.2" fill="#453858" opacity=".13"/>
+    <circle r="43" fill="url(#ldMist)" opacity=".5"/>
+    <circle r="37" fill="url(#ldGlass)" stroke="#302840" stroke-width="2.4"/>
+    <g clip-path="url(#ldGlassClip)">
+     <ellipse cy="13" rx="36" ry="22" fill="url(#ldMist)"/>
+     <g class="crystal-content" fill="#fff3cc" stroke-linecap="round"><g id="ldPillars"></g><g id="ldCrystalChart" opacity="0"></g></g>
+    </g>
+    <path d="M-28-9C-25-23-13-30-3-30" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity=".76"/>
+    <ellipse cx="-25" cy="-17" rx="3" ry="6" transform="rotate(32 -25 -17)" fill="#fff" opacity=".4"/>
+    <path d="M12 31C23 27 30 17 31 9" fill="none" stroke="#d8d5f1" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
+    <path d="M-22 32Q0 45 22 32" fill="none" stroke="#b89249" stroke-width="2" stroke-linecap="round"/>
+   </g>
 </svg>
   </div>
-  <div class="ld-pillars" id="ldPillars" aria-hidden="true"></div>
   <p class="ld-step" id="ldStep" aria-live="polite">운세를 풀고 있습니다</p>
   <div class="ld-bar" aria-hidden="true"><i id="ldBar"></i></div>
  </div>
@@ -2990,6 +3025,8 @@ function ldScales(g,o,rnd){
 function ldInit(){
  if(LD.el)return LD.el;
  LD.el={svg:$('ldDosa'),lidClip:$('ldLidClip'),lidLine:$('ldLidLine'),lash:$('ldLash'),mem:$('ldMem'),step:$('ldStep'),bar:$('ldBar'),back:[...$('ldBack').children],front:[...$('ldFront').children],sparks:[...$('ldSparks').children].map(g=>({g:g,x:+g.dataset.x,y:+g.dataset.y}))};
+ LD.el.crystalPillars=$('ldPillars');LD.el.crystalChart=$('ldCrystalChart');
+ LD.el.pupils=[...LD.el.svg.querySelectorAll('g.hu')].filter(g=>g.querySelector('circle[r="6"]'));
  let seed=11;const rnd=()=>(seed=seed*16807%2147483647)/2147483647;
  ldScales($('ldScFace'),{cx:160,cy:136,rx:88,ry:100,x0:105,x1:215,y0:74,y1:196,sx:7.6,dy:4.6,w:8.6,h:9.6},rnd);
  ldScales($('ldScEar'),{cx:103,cy:150,rx:400,ry:400,x0:90,x1:116,y0:133,y1:168,sx:5.4,dy:3.4,w:6.2,h:7},rnd);
@@ -3006,6 +3043,33 @@ function ldSky(t){
   E.back[i].setAttribute('transform',tr);E.front[i].setAttribute('transform',tr);
   E.back[i].style.visibility=front?'hidden':'visible';E.front[i].style.visibility=front?'visible':'hidden';
  }
+}
+// 수정구슬도 같은 계산 결과를 사용한다. 출생 시간을 모르면 위치를 그려내지 않는다.
+function ldCrystalData(result){
+ const pillars=result?.reading?.pillars||[];
+ const glyphs=pillars.map((p,i)=>'<text x="'+(-19.5+i*13)+'" text-anchor="middle" font-size="12" font-family="serif" font-weight="700"><tspan y="-3">'+esc(p.known?p.stem:'—')+'</tspan><tspan x="'+(-19.5+i*13)+'" y="13">'+esc(p.known?p.branch:'—')+'</tspan></text>').join('');
+ const c=result?.western;
+ if(!c?.available||c.unknown)return {glyphs,chart:''};
+ const planets=c.planets.filter(p=>Number.isFinite(p.longitude));
+ if(!planets.length)return {glyphs,chart:''};
+ const anchor=c.asc?.longitude||0,xy=(lon,r)=>{const a=(180-lon+anchor)*Math.PI/180;return [(Math.cos(a)*r).toFixed(2),(Math.sin(a)*r).toFixed(2)];};
+ const points=new Map(planets.map(p=>[p.id,xy(p.longitude,22)]));
+ let chart='<circle r="25" fill="none" stroke="#e6debf" stroke-width=".7" opacity=".6"/>';
+ for(let i=0;i<12;i++){const a=xy(i*30,25),b=xy(i*30,28);chart+='<path d="M'+a.join(' ')+'L'+b.join(' ')+'" fill="none" stroke="#e6debf" stroke-width=".7" opacity=".6"/>';}
+ for(const a of (c.aspects||[]).slice(0,10)){
+  const p=points.get(a.a),q=points.get(a.b);if(!p||!q)continue;
+  chart+='<path d="M'+p.join(' ')+'L'+q.join(' ')+'" fill="none" stroke="#edf0ff" stroke-width=".7" opacity=".6"/>';
+ }
+ for(const p of planets){const q=points.get(p.id);chart+='<circle cx="'+q[0]+'" cy="'+q[1]+'" r="'+(p.id==='Sun'||p.id==='Moon'?1.9:1.2)+'"/>';}
+ return {glyphs,chart};
+}
+function ldCrystal(t){
+ const E=LD.el,mix=E.hasChart?ldEase((t-1040)/380):0;
+ E.crystalPillars.setAttribute('opacity',((1-mix)*ldEase(t/280)).toFixed(3));
+ E.crystalChart.setAttribute('opacity',mix.toFixed(3));
+ // 구슬을 내려다본 뒤 기존 윙크가 시작되기 전에 정면으로 돌아온다.
+ const glance=LD.still?0:2.1*ldEase(t/100)*(1-ldEase((t-210)/140));
+ E.pupils.forEach(g=>g.setAttribute('transform','translate(0 '+glance.toFixed(2)+')'));
 }
 // 왼눈 눈꺼풀 곡선(점 7개 = 3차 곡선 2개): 뜬 눈의 위·아래 테두리, 감았을 때는 둘 다 원래 도사의 ∩ 윙크 선
 const LD_LID={
@@ -3031,7 +3095,7 @@ function ldFrame(){
  let si=0;for(let i=0;i<T.steps.length;i++)if(t>=T.steps[i][0])si=i;
  if(si!==LD.step){LD.step=si;E.step.textContent=T.steps[si][1];}
  E.bar.style.transform='scaleX('+(1-Math.pow(1-t/T.total,1.7)).toFixed(4)+')';
- ldSky(t);
+ ldSky(t);ldCrystal(t);
  // 첫 변신은 시간이 아니라 화면에 그려진 횟수로 끊는다: 최소 2프레임·40ms (60Hz에서 3프레임)
  let f1=false;
  if(LD.f1===0&&t>=T.flash1){LD.f1=t<T.flash1+300?1:2;LD.f1t=now;LD.f1n=0;}
@@ -3053,10 +3117,10 @@ function ldFrame(){
 function startLoading(done){
  stopLoading();ldInit();
  // 이미 계산된 실제 명식만 표시한다. 시간을 모르면 시간 기둥은 비워 둔다.
- $('ldPillars').innerHTML=current?current.reading.pillars.map((p,i)=>'<div class="ld-pillar"><small>'+['해','달','날','시간'][i]+'</small><span>'+esc(p.known?p.stem+p.branch:'—')+'</span></div>').join(''):'';
+ const crystal=ldCrystalData(current);LD.el.crystalPillars.innerHTML=crystal.glyphs;LD.el.crystalChart.innerHTML=crystal.chart;LD.el.hasChart=!!crystal.chart;
  LD.done=done;LD.t0=performance.now();LD.f1=0;LD.step=0;
  LD.el.step.textContent=LD_TL.steps[0][1];LD.el.bar.style.transform='scaleX(0)';
- ldPose(false,1,0);ldSky(0);
+ ldPose(false,1,0);ldSky(0);ldCrystal(0);
  LD.raf=requestAnimationFrame(ldFrame);
  // 탭이 가려져 화면 갱신이 멈춰도 결과는 뜨게 한다
  LD.timer=setTimeout(()=>{const done=LD.done;if(!done)return;stopLoading();done();},LD_TL.total+1500);
@@ -3103,7 +3167,7 @@ function doomBuild(){
   // 비늘은 계산 중 화면 도사에 만들어 둔 것을 가져온다
   ['ldScFace','ldScEar'].forEach(id=>q('#'+id).replaceChildren(...$(id).cloneNode(true).childNodes));
   // 얼굴만 남긴다
-  svg.querySelectorAll('circle[r="128"],g[transform^="rotate(-12"],#ldBack,#ldFront,#ldSparks,g[stroke="#3e2f8f"]').forEach(e=>e.remove());
+  svg.querySelectorAll('circle[r="128"],g[transform^="rotate(-12"],#ldBack,#ldFront,#ldSparks,.crystal-orb,g[stroke="#3e2f8f"]').forEach(e=>e.remove());
   // 오른눈 막: 왼눈 막을 좌우로 뒤집어 코 쪽에서 나오게 한다
   const mg=q('#ldMemG').cloneNode(true),cp=mk('clipPath',{id:'ldEyeRClip'});
   mg.id='ldMemR';mg.setAttribute('x1','1');mg.setAttribute('x2','0');
@@ -4237,9 +4301,10 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261106-class-scene';
+  const v='?v=20261106-crystal-staff';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
+   .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))
    .catch(error=>{fightScripts=null;throw error;});
  }
