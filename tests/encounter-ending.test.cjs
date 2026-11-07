@@ -10,7 +10,7 @@ function setup({voice=false}={}){
  const st={guardLift:1,guardRaising:false,acts:[],slash:null};
  const computeRest=()=>{calls.rest=(calls.rest||0)+1};
  const VM=vm.runInNewContext(slice(' function lowerHands(){',' const rest=')+';({st,lowerHands,raiseHands,updateGuard,computeRest,update(){}})',{st,computeRest});
- const scope={CrowdLines:require('../crowd-lines.js'),G,$,BUB,VM,PROGRESS:{add(){calls.defeated=(calls.defeated||0)+1}},updateDefeatCount(){},AUDIO:{stopMusic(){}},VOICE:{player:{},boss:{}},HINTS:{hand:'tap'},typeTime:()=>.2,V3:()=>({}),hint(){},focusCanvas(){calls.focus++},clearPointers(){calls.clears++},BEYOND:{DUR:10.4,prepare:()=>true,omen(){calls.omen++},begin(){calls.beyond++}},showAgain(){calls.again++}};
+ const scope={G,$,BUB,VM,PROGRESS:{add(){calls.defeated=(calls.defeated||0)+1}},updateDefeatCount(){},AUDIO:{stopMusic(){}},VOICE:{player:{},boss:{}},HINTS:{hand:'tap'},typeTime:()=>.2,V3:()=>({}),hint(){},focusCanvas(){calls.focus++},clearPointers(){calls.clears++},BEYOND:{DUR:10.4,prepare:()=>true,omen(){calls.omen++},begin(){calls.beyond++}},showAgain(){calls.again++}};
  const script=slice('const LINES={','// 되살림 컷씬:')+slice('const TALK=','/* ---- 추임새:')+slice('function onDead(){','/* ---- 게이지 ---- */')+slice('function updateStory(){','function damageBar(');
  const api=vm.runInNewContext(script+';({startEncounter,updateEncounter,updateTalk,talkBusy,clearTalk,firstStrikeLine,onDead,updateStory,TALK,LINES})',scope);
  function advance(seconds){for(let i=0;i<seconds*60;i++){G.time+=1/60;api.updateStory();VM.updateGuard(1/60);api.updateTalk(1/60);api.updateEncounter()}}

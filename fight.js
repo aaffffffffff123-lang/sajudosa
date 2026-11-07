@@ -2643,8 +2643,15 @@ const LINES={
  // 설교 중에 종이를 구기기 시작하면(설교를 끊으면) 천지신명이 하는 말, 손을 놓고 물러서면 하는 말
  interrupt:'윗사람을 거스르는 자에게는 화가 백 가지라 하였느니라.',
  yield:'이제야 네 운명을 아는구나.',
- // 실제 풀이에 맞는 세 사람의 대화. 세 번째 사람도 같은 처지를 깎아내린다.
- whisper:CrowdLines.entries,
+ /* 앞의 두 사람은 학벌·집안을 사주로 재단하고, 마지막 사람은 설교하던 신명을 걱정한다.
+  * who는 팔을 붙잡는 0·1번과 같다. 같은 얼굴·보증서·목소리가 이어진다. */
+ whisper:[
+  {aside:'고졸인가?',say:'공부 좀 했으면 저러겠어?',mark:'noStudy',seen:'사주에 공부 기운이 없잖아',who:1},
+  {aside:'가정교육을 안 받았나?',say:'가정교육도 타고나는 거지.',mark:'noStudy',seen:'부모복 없는 사주라 보고 배운 게 없지',who:1},
+  {aside:'좆소 다니나?',say:'큰 데서 배웠으면 저러겠어?',mark:'noOfficer',seen:'관이 없으니 위아래도 모르지.',who:1},
+  {aside:'저런 것까지 가르쳐야 돼?',say:'배운 대로 나오는 거지.',who:1}
+ ],
+ sympathy:'신명님도 참 피곤하시겠다.',
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
 const REV_SHIFT=2.7;
@@ -2672,7 +2679,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say+w.end+(w.western?w.western.say:'')).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.sympathy+LINES.whisper.map(w=>w.aside+w.say+(w.seen||'')).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -3630,7 +3637,7 @@ const SUBMISSION=(()=>{
   g.restore();
  }
  function fortune(result){
-  if(lastResult!==result){fontWait=false;STARE.used.clear();STARE.exchange=null;}lastResult=result;
+  if(lastResult!==result)fontWait=false;lastResult=result;
   const P=result&&result.paper||{},r=result&&result.reading||{},name=clean(result&&result.input&&result.input.name);
    const title=name?name+'님의 운세':'나의 운세',verdict=clean(P.verdict||r.verdict),note=clean(P.fixed)||'위 판정은 본인의 의사와 관계없이 적용됩니다.',end='당신은 그렇게 태어났습니다.';
   $('#heldFortuneText').textContent=[title,'전체 풀이',verdict,note,end].filter(Boolean).join('\n');
@@ -3831,9 +3838,10 @@ const SUBMISSION=(()=>{
  function prepareWhispers(){
   if(STARE.exchange)return;
   if(!crowd||!crowd.visible)return;
-  const reading=lastResult?.paper?.crowd;
-  const pair=CrowdLines.choose(CrowdLines.fromReading(reading,reading?.age),STARE.used);
-  if(!pair)return;
+  const marks=lastResult?.paper?.marks||{};
+  if(STARE.used.size===LINES.whisper.length)STARE.used.clear();
+  const pool=LINES.whisper.filter(w=>!STARE.used.has(w));
+  const pair=pick(pool.concat(pool.filter(w=>w.mark&&marks[w.mark])));
   const side=innerWidth<innerHeight?1:(Math.random()<.5?-1:1),head=V3();
   let aside=null,best=Infinity;
   forPlaces(v=>{
@@ -3843,19 +3851,17 @@ const SUBMISSION=(()=>{
    const score=Math.hypot(v.cx-CAM.pos.x,v.z-CAM.pos.z)+Math.abs(head.x)*.2;
    if(score<best){aside=v;best=score;}
   });
-  STARE.exchange={pair,side,aside,say:pair.say};
+  STARE.exchange={pair,side,aside,say:pair.mark&&marks[pair.mark]?pair.seen:pair.say};
   if(aside){aside.goal=1;aside.noticeAt=G.time;CROWD.witness(aside);}
  }
  function startWhispers(){
   prepareWhispers();const e=STARE.exchange;if(!e)return;
-  if(e.aside){sayWhisper(e.aside,e.pair.aside,2);STARE.used.add(e.pair.id);}
+  if(e.aside){sayWhisper(e.aside,e.pair.aside,2);STARE.used.add(e.pair);}
  }
  function planWhispers(){
   const exchange=STARE.exchange;if(!exchange)return;
-  const {pair,side,aside,say}=exchange,reply=pair.end;
-  // 기존 4.35초 걸음 안에서 가장 느린 목소리도 다 말하고 읽을 틈을 남긴다.
-  const whisperSpeed=Math.min(...VOICE.crowd.map(v=>v.speed))*1.08;
-  const readSpan=text=>Math.max(1.5,typeTime(text,whisperSpeed)+.68);
+  const {pair,side,aside,say}=exchange,reply=LINES.sympathy;
+  const readSpan=text=>Math.max(1.5,typeTime(text,1.13)+.68);
   const gap=.1,span=readSpan(say),lastSpan=readSpan(reply);
   // 앞줄이 시야를 벗어나기 전에 마지막 맞장구를 다 읽을 여유를 둔다.
   const firstAt=clamp(WALK.dur*.96-.34-span-gap-lastSpan,.28,.92);
@@ -3866,7 +3872,7 @@ const SUBMISSION=(()=>{
   for(const v of [speaker,responder]){v.from=v.look||0;v.goal=1;v.ld=G.time-STARE.t0;v.ldur=.45;v.noticeAt=G.time;}
   if(aside)aside.delay=Math.max(aside.delay,1);
   speaker.delay=secondAt;responder.delay=end;
-  STARE.used.add(pair.id);
+  STARE.used.add(pair);
   STARE.talk=[{at:firstAt,who:speaker,text:say,slot:0},{at:secondAt,who:responder,text:reply,slot:1}];
  }
  function anchorOf(v,slot){
