@@ -4144,6 +4144,17 @@ function v5Origin(r){
  if(P.some(p=>(HIDDEN[p.branch]||[]).some(h=>TEN_FAMILY[tenGod(a.dayStem,h[0])]==='재성')))return 'hidden';
  return 'absent';
 }
+// 군중은 작은 차이는 무시하고, 풀이의 주된 강점과 정반대인 말만 거른다.
+function v5CrowdAvoid(r,origin,office){
+ const a=r.a,top=a.rank[0],strong=f=>['strong','excess'].includes(a.families[f].level);
+ if(top==='인성'&&strong('인성')){
+  const family=origin==='shown'&&r.P.slice(0,2).some(p=>v5PillarHas(a,p,'인성'));
+  return family?['study','family']:['study'];
+ }
+ if(top==='관성'&&strong('관성')&&office==='supported')return ['career'];
+ if(top==='재성'&&strong('재성')&&origin==='shown')return ['poverty'];
+ return [];
+}
 function v5Portrait(r,age,work){
  const {structure,strength,dayEl}=r.a;
  // 어린 독자에게 끝난 유년기나 이미 자란 체격을 회고시키지 않는다.
@@ -4309,7 +4320,8 @@ function v5Reading(R,now){
  { const gw=v5Gwiin(r);doms.push({id:'gwiin',title:'귀인 · 도와줄 사람',cause:gw.key,head:gw.head,detail:gw.detail,fates:[gw.fate],rule:gw.rule,basis:gw.basis}); }
  doms.push({id:'office',title:'권한과 책임',cause:office.key,head:office.head,detail:office.detail,fates:[office.fate],rule:office.rule,basis:office.basis,evidenceIds:office.evidenceIds});
  out.domains=doms;
- // 순응 장면의 군중이 「종이 봐」 하고 말할 근거: 그 사람 사주에 정말 있을 때만 true
+ out.crowdAvoid=v5CrowdAvoid(r,ok,office.key);
+ // 부족한 기운은 대사 선택의 우선순위로만 쓰고, 출현을 막는 조건으로 쓰지 않는다.
  { const P2=P.slice(0,2).filter(p=>p&&p.known);
    out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent',noOfficer:!inp.unknown&&P.length===4&&P.every(p=>p&&p.known&&!v5PillarHas(a,p,'관성'))}; }
  // 올해·내년
@@ -4511,7 +4523,7 @@ function renderResult(R){
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
- R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks};
+ R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,crowdAvoid:v.crowdAvoid};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
  $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
@@ -4615,7 +4627,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261108-paired-crowd';
+  const v='?v=20261108-three-crowd-pairs';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))

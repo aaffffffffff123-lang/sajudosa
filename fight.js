@@ -2646,11 +2646,11 @@ const LINES={
  /* 추종자들은 학벌·집안·직장을 운세로 재단한다.
   * who는 팔을 붙잡는 0·1번과 같다. 같은 얼굴·보증서·목소리가 이어진다. */
  whisper:[
-  {aside:'고졸인가?',say:'사주에 공부 기운이 없잖아',mark:'noStudy',who:1},
-  {aside:'가정교육을 안 받았나?',say:'부모복 없는 사주라 보고 배운 게 없지',mark:'noStudy',who:1},
-  {aside:'좆소 다니나?',say:'직장복이 없는데 좋은 데를 다녀봤겠어?',mark:'noOfficer',who:1},
-  {aside:'저런 것까지 가르쳐야 돼?',say:'가난하고 못 배운 애들은 저런 데서 티가 확 난다니까',who:1},
-  {aside:'딱 봐도 회사에서도 폐급이네.',say:'평생 말단일 팔자잖아.',mark:'noOfficer',who:1}
+  {aside:'고졸인가?',say:'사주에 공부 기운이 없잖아',mark:'noStudy',avoid:'study',who:1},
+  {aside:'가정교육을 안 받았나?',say:'부모복 없는 사주라 보고 배운 게 없지',mark:'noStudy',avoid:'family',who:1},
+  {aside:'좆소 다니나?',say:'직장복이 없는데 좋은 데를 다녀봤겠어?',mark:'noOfficer',avoid:'career',who:1},
+  {aside:'저런 것까지 가르쳐야 돼?',say:'가난하고 못 배운 애들은 저런 데서 티가 확 난다니까',avoid:'poverty',who:1},
+  {aside:'딱 봐도 회사에서도 폐급이네.',say:'평생 말단일 팔자잖아.',mark:'noOfficer',avoid:'career',who:1}
  ],
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
@@ -3487,8 +3487,8 @@ const CROWD=(()=>{
    // Keep the player's own standing space, with shoulders immediately to either side.
    if(Math.abs(x)<.46&&z>5.9)continue;
    const shuffle=Math.sin((row+1)*127.1+(col+1)*311.7)*43758.5453;
-   // 통로 앞 두 줄의 대화 상대는 처음부터 같은 옷·얼굴로 서 있다.
-   const person=(col===5||col===6)&&row<2?(row===0?4:0):Math.floor((shuffle-Math.floor(shuffle))*6);
+   // 통로에는 세 쌍의 발화 순서에 맞춰 여섯 얼굴을 둔다(먼 쪽부터).
+   const person=(col===5||col===6)&&row<6?[4,5,2,3,0,1][row]:Math.floor((shuffle-Math.floor(shuffle))*6);
    placements[person].push({x,z,scale:1.51+Math.sin(row*11+col*7)*.14,turn:PI+Math.sin(col*3+row)*.14,pi:person});
   }
   const plain=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.85});
@@ -3824,10 +3824,15 @@ const SUBMISSION=(()=>{
   const e=walkProgress(until/WALK.dur),cx=lerp(WALK.p0.x,WALK.p1.x,e),cz=lerp(WALK.p0.z,WALK.p1.z,e);
   const aimX=lerp(WALK.l0.x,WALK.l1.x,e),aimZ=lerp(WALK.l0.z,WALK.l1.z,e);
   const tanH=Math.tan(lerp(WALK.f0,WALK.f1,e)*PI/360)*camera.aspect;
+  const view=camera.clone(),head=V3();
+  view.fov=lerp(WALK.f0,WALK.f1,e);view.position.lerpVectors(WALK.p0,WALK.p1,e);
+  view.lookAt(V3().lerpVectors(WALK.l0,WALK.l1,e));view.updateProjectionMatrix();view.updateMatrixWorld();
   let best=null,bestScore=Infinity;
   forPlaces(v=>{
    const depth=cz-v.z;
    if(v.pi!==person||v===STARE.exchange?.aside||depth<=.15||side*v.x<=0||(replyTo&&v.z<=replyTo.z+.3))return;
+   head.set(v.x,HEAD_Y*v.scale,v.z).project(view);
+   if(head.z<=-1||head.z>=1||Math.abs(head.x)>.9||Math.abs(head.y)>.85)return;
    const axis=cx+(aimX-cx)*depth/(cz-aimZ),screenX=side*(v.x-axis)/(depth*tanH);
    const row=replyTo?Math.abs(v.z-replyTo.z-1.05):Math.abs(depth-1.55);
    const score=Math.abs(screenX-.62)+row*.32+Math.max(0,Math.abs(screenX)-.85)*8;
@@ -3839,11 +3844,15 @@ const SUBMISSION=(()=>{
   if(STARE.exchange)return;
   if(!crowd||!crowd.visible)return;
   const marks=lastResult?.paper?.marks||{};
-  const eligible=LINES.whisper.filter(w=>!w.mark||marks[w.mark]);
+  const avoid=new Set(lastResult?.paper?.crowdAvoid||[]);
+  const eligible=LINES.whisper.filter(w=>!avoid.has(w.avoid)),batch=[];
   if(!eligible.length)return;
-  if(eligible.every(w=>STARE.used.has(w)))STARE.used.clear();
-  const pool=eligible.filter(w=>!STARE.used.has(w));
-  const pair=pick(pool.concat(pool.filter(w=>w.mark)));
+  for(let i=0;i<Math.min(3,eligible.length);i++){
+   let pool=eligible.filter(w=>!STARE.used.has(w)&&!batch.includes(w));
+   if(!pool.length){STARE.used.clear();pool=eligible.filter(w=>!batch.includes(w));}
+   batch.push(pick(pool.concat(pool.filter(w=>w.mark&&marks[w.mark]))));
+  }
+  const pair=batch[0];
   const side=innerWidth<innerHeight?1:(Math.random()<.5?-1:1),head=V3();
   let aside=null,best=Infinity;
   forPlaces(v=>{
@@ -3853,32 +3862,46 @@ const SUBMISSION=(()=>{
    const score=Math.hypot(v.cx-CAM.pos.x,v.z-CAM.pos.z)+Math.abs(head.x)*.2;
    if(score<best){aside=v;best=score;}
   });
-  STARE.exchange={pair,side,aside,say:pair.say};
+  STARE.exchange={pair,batch,side,aside,say:pair.say};
   if(aside){aside.goal=1;aside.noticeAt=G.time;CROWD.witness(aside);}
  }
  function startWhispers(){
   prepareWhispers();const e=STARE.exchange;if(!e)return;
   if(e.aside){
-   e.asideUntil=sayWhisper(e.aside,e.pair.aside,2).until;
+   e.asideUntil=sayWhisper(e.aside,e.pair.aside,0).until;
    STARE.used.add(e.pair);
   }
  }
  function planWhispers(){
   const exchange=STARE.exchange;if(!exchange)return;
-  const {pair,side,aside,say}=exchange;
-  STARE.talk=[];
-  if(!say)return;
-  const voice=VOICE.crowd[1-pair.who],span=Math.max(1.5,typeTime(say,voice.speed*1.08)+.68);
-  // 첫 수군거림을 끝까지 읽은 다음 맞장구를 시작한다. 걷는 시간은 그대로 둔다.
-  const afterAside=exchange.asideUntil==null?.28:Math.max(.28,exchange.asideUntil-G.time+.1);
-  const at=Math.max(afterAside,clamp(WALK.dur*.96-.34-span,.28,.92)),end=at+span;
-  const speaker=walkSpeaker(side,end,null,1-pair.who);if(!speaker)return;
-  CROWD.witness(speaker);
-  speaker.from=speaker.look||0;speaker.goal=1;speaker.ld=G.time-STARE.t0;speaker.ldur=.45;speaker.noticeAt=G.time;
-  if(aside)aside.delay=Math.max(aside.delay,1);
-  speaker.delay=end;
-  STARE.used.add(pair);
-  STARE.talk=[{at,who:speaker,text:say,slot:0}];
+  const {batch,side,aside}=exchange,events=[];
+  STARE.talk=[];WALK.dur=4.35;
+  if(!batch.length)return;
+  const span=(text,person)=>Math.max(1.5,typeTime(text,VOICE.crowd[person].speed*1.08)+.68);
+  const gap=.12,pairGap=.34;
+  let at=exchange.asideUntil==null?.28:Math.max(.28,exchange.asideUntil-G.time+gap);
+  for(let i=0;i<batch.length;i++){
+   const pair=batch[i],first=i*2+1,second=i*2;
+   if(i){
+    const end=at+span(pair.aside,first);
+    events.push({at,end,person:first,text:pair.aside,slot:i*2,pair,opening:true});
+    at=end+gap;
+   }
+   const end=at+span(pair.say,second);
+   events.push({at,end,person:second,text:pair.say,slot:i*2+1,pair,opening:false});
+   at=end+pairGap;
+  }
+  // 여섯 문장을 모두 읽고 난 뒤 옥좌에 도착한다. 말이 빠르다고 걷기를 먼저 끝내지 않는다.
+  WALK.dur=Math.max(WALK.dur,(events[events.length-1].end+.4)/.96);
+  if(aside)aside.delay=Math.max(aside.delay,(exchange.asideUntil||G.time)-G.time+.22);
+  for(const event of events){
+   const speaker=walkSpeaker(side,event.end,null,event.person)||walkSpeaker(-side,event.end,null,event.person);
+   if(!speaker)continue;
+   CROWD.witness(speaker);
+   speaker.from=speaker.look||0;speaker.goal=1;speaker.ld=G.time-STARE.t0;speaker.ldur=.45;speaker.noticeAt=G.time;
+   speaker.delay=event.end+.12;
+   STARE.talk.push({at:event.at,who:speaker,text:event.text,slot:event.slot,pair:event.pair,opening:event.opening});
+  }
  }
  function anchorOf(v,slot){
   let a=STARE.anchors[slot];if(!a){a=new THREE.Object3D();STARE.anchors[slot]=a;}
@@ -3896,8 +3919,9 @@ const SUBMISSION=(()=>{
  }
  function updateWhispers(){
   while(WALK.on&&STARE.talk.length&&WALK.t>=STARE.talk[0].at){
-   const {who,text,slot}=STARE.talk.shift();
+   const {who,text,slot,pair,opening}=STARE.talk.shift();
    sayWhisper(who,text,slot);
+   if(opening)STARE.used.add(pair);
   }
  }
  // 매 프레임: 몸 돌리기·얼굴로 나를 따라보기·말할 자리 따라가기. 움직인 게 있으면 true
