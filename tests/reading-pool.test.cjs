@@ -21,6 +21,8 @@ function read(y,m,d,{h=12,mi=0,unknown=false,pk='seoul',male=true}={}){
 const ALL=(()=>{let seed=20261107;const rnd=()=>{seed=(seed*1103515245+12345)>>>0;return seed/4294967296;};const out=[];
  while(out.length<120){const y=1960+Math.floor(rnd()*45),m=1+Math.floor(rnd()*12),d=1+Math.floor(rnd()*28),h=Math.floor(rnd()*24),unknown=rnd()<.2,male=rnd()<.5,pk=rnd()<.5?'seoul':'busan';
   try{out.push(read(y,m,d,{h,unknown,male,pk}));}catch(e){}}
+ // 드문 재물 갈래도 실제 명식으로 검사한다.
+ out.push(read(1982,12,1,{h:21,mi:43,unknown:true}));
  return out;})();
 const ids=Object.fromEntries(Object.entries(POOL).map(([k,list])=>[k,list.map(x=>x.id)]));
 
@@ -50,7 +52,7 @@ test('the approved money manuscript is kept word for word and every other money 
 
 test('each card follows its own order of paragraphs and closes on every fate line',()=>{
  for(const k of Object.keys(POOL))assert.equal(new Set(ids[k]).size,ids[k].length,k);
- assert.deepEqual(ids,{work:['W1','W2','W5','W7','W3','W6','W4'],money:['learning','debt','effort','M1','M2'],office:['O1','O4','O9','O2','O7','O5','O6','O3'],home:['L1','L6','L5','L4','L2','L3','L8','L7'],family:['F2','F5','F3','F4','F1','F6'],body:['B3','B4','B1','B5','B7','B6','B2'],gwiin:['G1','G5','G7','G2','G6','G4','G3']});
+ assert.deepEqual(ids,{work:['W1','W2','W5','W7','W8','W9','W3','W6','W4'],money:['M3','M4','M5','learning','debt','effort','M1','M2'],office:['O1','O4','O9','O2','O7','O5','O6','O3'],home:['L1','L6','L5','L9','L11','L4','L10','L2','L3','L8','L7'],family:['F2','F5','F3','F4','F1','F6'],body:['B3','B4','B1','B5','B7','B6','B2'],gwiin:['G1','G5','G7','G2','G6','G4','G3']});
  for(const {view} of ALL)for(const d of view.domains){
   const pool=d.poolIds.map(id=>POOL[d.id].find(x=>x.id===id).text);
   assert.deepEqual(d.poolIds,ids[d.id].filter(id=>d.poolIds.includes(id)),d.id);
@@ -162,6 +164,30 @@ test('the helper card never mixes paragraphs for people with and without a helpe
  const seen=new Set(ALL.map(({view})=>view.domains.find(d=>d.id==='gwiin').cause));assert(seen.has('present')&&seen.has('absent'));
 });
 
+test('follow-on scenes respect the selected situation even without houses or extra matches',()=>{
+ const d=fake({causes:{work:'비겁',money:'paper',home:'대화가 빨리 줄어듭니다'}});
+ assert(d.work.poolIds.includes('W8'));
+ assert(!d.work.poolIds.includes('W7')); // 이미 혼자 맡는 이야기 대신 넘긴 뒤의 장면
+ assert(d.money.poolIds.includes('M3'));
+ assert(!d.money.poolIds.includes('learning')); // 기존 중복 제외를 풀어서 채우지 않는다
+ assert(d.home.poolIds.includes('L9'));
+ const combined=fake({causes:{work:'재성',money:'burden',home:'생활 시간이 먼저'}});
+ assert(combined.work.poolIds.includes('W9'));
+ assert(combined.money.poolIds.includes('M4'));
+ assert(combined.home.poolIds.includes('L10'));
+ assert(!combined.home.poolIds.includes('L4'));
+ // 강한 조건을 전부 넣어도 다른 유형에만 맞는 장면은 붙이지 않는다.
+ const other=fake({levels:{비겁:'strong',식상:'strong',재성:'strong',관성:'strong',인성:'strong'},causes:{work:'income',money:'comfort',home:'생활을 합치는 날짜'}});
+ assert(!other.work.poolIds.some(id=>['W8','W9'].includes(id)));
+ assert(!other.money.poolIds.some(id=>['M3','M4','M5'].includes(id)));
+ assert(!other.home.poolIds.some(id=>['L9','L10','L11'].includes(id)));
+ assert(fake({causes:{home:'애매하게'}}).home.poolIds.includes('L11'));
+ const rare=read(1982,12,1,{h:21,mi:43,unknown:true});
+ const money=rare.view.domains.find(x=>x.id==='money');
+ assert.equal(money.cause,'grow');assert(money.poolIds.includes('M5'));
+ assert.equal(rare.result.western.unknown,true);
+});
+
 test('the body names no star placement or saju term and never repeats a sentence',()=>{
  const jargon=/하우스|별자리|상승궁|금성|목성|토성|화성|수성|천왕성|해왕성|명왕성|정인|편인|정관|편관|식신|상관|정재|편재|비견|겁재|인성|관성|재성|식상|비겁|일간|월지|일지|시지|연지|천간|신살|역마|도화|백호/;
  let hits=0;
@@ -193,3 +219,4 @@ test('readings without a birth time or without the star chart still get their pa
  const failed=structuredClone(unknown.result);failed.western={available:false,reason:'x'};
  assert(core.v5Reading(failed,NOW).domains.every(d=>Array.isArray(d.paragraphs)));
 });
+
