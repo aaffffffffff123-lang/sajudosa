@@ -4,6 +4,28 @@ const fight=fs.readFileSync(path.join(__dirname,'../fight.js'),'utf8'),html=fs.r
 const part=(src,a,b)=>{const i=src.indexOf(a),j=src.indexOf(b,i);assert(i>=0&&j>i,a);return src.slice(i,j)};
 const cut=(a,b)=>part(fight,a,b),V3=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
+test('arrival starts the first sermon in its first frame, including a repeat visit',()=>{
+ for(const fps of [20,60,120]){
+  const G={time:10,mode:'submit',running:true,E:{face:{}}},INTRO={stage:'behind',sermonHeard:false},CRUMPLE={done:false,holding:false,c:0};
+  const shown=[],elements=new Map();
+  const $=s=>{if(!elements.has(s))elements.set(s,{hidden:false,classList:{remove(){}}});return elements.get(s)};
+  const scope={G,INTRO,CRUMPLE,$,V3,clamp,AUDIO:{unlock(){}},setFrame(){},speechSynthesis:{cancel(){}},focusCanvas(){},
+   BUB:{cut(){},say(anchor,text,dur){shown.push({text,at:G.time});return {until:G.time+dur}}}};
+  const script=cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const TYPE=','/* 스프링:')+
+   cut('const TALK=','function startEncounter(){')+
+   'let next=0,line=0;function updateSermon(){'+cut('  // 설교: 종이를 들고 서 있는 동안.',' function showPaper(on)')+
+   'const SUBMISSION={sermonSoon,hands:{},showPaper(){}};'+cut('function arrive(){','function leave(home){')+
+   ';({arrive,updateSermon,updateTalk,reset(){clearTalk();line=0;INTRO.stage="behind";INTRO.sermonHeard=false;}})';
+  const api=vm.runInNewContext(script,scope);
+  for(let visit=0;visit<2;visit++){
+   api.reset();const start=G.time;assert(api.arrive());
+   G.time+=1/fps;api.updateSermon();api.updateTalk(1/fps);
+   assert.equal(shown.length,visit+1);assert.equal(shown.at(-1).text,'저마다 태어난 자리가 있고, 받아야 할 몫이 있느니라.');
+   assert(shown.at(-1).at-start<=.051);assert(!INTRO.sermonHeard,'early start must not unlock crumpling before the sermon finishes');
+  }
+ }
+});
+
 test('end-of-reading arms a visible button without entering automatically; activation is single-shot',()=>{
  const elements=new Map(),timers=[];let bottom=true,entries=0;
  const $=id=>{if(!elements.has(id))elements.set(id,{hidden:false,disabled:true,textContent:'',classList:{toggle(){}},addEventListener(t,fn){this[t]=fn}});return elements.get(id)};
@@ -74,10 +96,15 @@ test('three distinct approved pairs are selected even when no absence mark is se
  }
 });
 
-test('all three-pair orders play six complete lines before arrival across real mobile and desktop crowd layouts',()=>{
- const {LINES,VOICE,typeTime}=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const TYPE=','/* 스프링:')+';({LINES,VOICE,typeTime})');
+test('three pairs reply immediately after speech while retaining readable bubbles across real crowd layouts',()=>{
+ const {LINES,VOICE,typeTime,typeSteps}=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const TYPE=','/* 스프링:')+';({LINES,VOICE,typeTime,typeSteps})');
  const placementCode=cut('  const placements=Array.from({length:6},()=>[]),dummy=new THREE.Object3D();','  const plain=new THREE.MeshStandardMaterial');
  const span=(text,pi)=>Math.max(1.5,typeTime(text,VOICE.crowd[pi].speed*1.08)+.68);
+ const voicedSpan=(text,pi)=>{
+  const speed=VOICE.crowd[pi].speed*1.08,last=typeSteps(text,speed).steps.filter(s=>s.kind==='syl').at(-1);
+  const cp=last.ch.codePointAt(0),coda=cp>=0xAC00&&cp<=0xD7A3&&(cp-0xAC00)%28!==0;
+  return .02+last.t+.095/speed*(coda?.7:.84);
+ };
  const lerp=(a,b,t)=>a+(b-a)*t,batches=[];
  for(const a of LINES.whisper)for(const b of LINES.whisper)for(const c of LINES.whisper)if(new Set([a,b,c]).size===3)batches.push([a,b,c]);
  let min=Infinity,max=0,runs=0;
@@ -94,13 +121,19 @@ test('all three-pair orders play six complete lines before arrival across real m
   const api=vm.runInNewContext(cut('function walkProgress(k){','function introCamera(dt){')+cut(' function walkSpeaker(',' function anchorOf(')+cut(' function updateWhispers(){',' // 매 프레임:')+cut(' function stareReset(){',' function forPlaces(')+';({startWhispers,planWhispers,updateWhispers,stareReset,walkProgress})',scope);
   api.startWhispers();assert(STARE.exchange.aside,'opening speaker must be visible');
   G.time=.32;api.planWhispers();
-  assert.equal(STARE.talk.length,5,'all five remaining lines need speakers');
+  assert.equal(STARE.talk.length,5,JSON.stringify({width,height,side,batch:batch.map(p=>p.aside),speakers:STARE.talk.map(t=>[t.who.pi,t.text,t.at]),duration:WALK.dur}));
   assert.equal(witnessed.length,6);assert.equal(new Set(witnessed.map(v=>v.pi)).size,6);
   min=Math.min(min,WALK.dur);max=Math.max(max,WALK.dur);runs++;
-  let previousEnd=said[0].until;
+  let previous=said[0];
   for(const line of STARE.talk){
-   assert(G.time+line.at>=previousEnd+.1-1e-9,'complete the previous line before the next');
-   const end=line.at+span(line.text,line.who.pi);previousEnd=G.time+end;
+   const at=G.time+line.at,end=line.at+span(line.text,line.who.pi);
+   if(line.opening)assert(at>=previous.until+.3,'separate each pair after its reply is readable');
+   else{
+    const gap=at+.02-previous.at-voicedSpan(previous.text,previous.person);
+    assert(gap>=.1&&gap<=.15,'reply within 100–150 ms of the preceding voice: '+gap);
+    assert(at<previous.until,'leave the first bubble visible when its reply begins');
+   }
+   previous={text:line.text,at,until:G.time+end,person:line.who.pi};
    assert(end+1/fps<WALK.dur*.96,'finish before the deity opens the encounter');
    assert(line.who.delay>=end,'keep each speaker in place while the line is read');
    const progress=api.walkProgress(end/WALK.dur),view=camera.clone();
@@ -112,6 +145,10 @@ test('all three-pair orders play six complete lines before arrival across real m
   const walkStarted=G.time;
   for(let at=0;at<=WALK.dur;at+=1/fps){WALK.t=at;G.time=walkStarted+at;api.updateWhispers();}
   assert.deepEqual(said.map(x=>x.text),batch.flatMap(p=>[p.aside,p.say]));
+  for(let i=1;i<said.length;i+=2){
+   const gap=said[i].at+.02-said[i-1].at-voicedSpan(said[i-1].text,said[i-1].person);
+   assert(gap>=.1-1/fps&&gap<=.15+1/fps,'frame rounding must not restore a long reply pause');
+  }
   assert.equal(STARE.used.size,3);
   api.planWhispers();api.stareReset();api.updateWhispers();
   assert.equal(said.length,6);assert.equal(STARE.exchange,null);

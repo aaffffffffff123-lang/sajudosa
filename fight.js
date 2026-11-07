@@ -2638,7 +2638,7 @@ const LINES={
   ['남의 복을 탐내지 마라. 각자 제자리를 지켜야 세상이 평안한 법이다.',4.8,.8],
   ['지금의 고생도 다 뜻이 있다. 견디는 자에게는 견딜 운명이 주어진다.',4.8,.8],
   ['운명을 의심하는 자가 너희의 복까지 흔들게 두어서는 안 된다.',4.5,.8],
-  ['그러니 받아들이거라. 내가 정한 이 질서 안에서.',4,1.2]
+  ['순응하며 살거라. 내가 정한 이 질서 안에서.',4,1.2]
  ],
  // 설교 중에 종이를 구기기 시작하면(설교를 끊으면) 천지신명이 하는 말, 손을 놓고 물러서면 하는 말
  interrupt:'윗사람을 거스르는 자에게는 화가 백 가지라 하였느니라.',
@@ -3865,10 +3865,15 @@ const SUBMISSION=(()=>{
   STARE.exchange={pair,batch,side,aside,say:pair.say};
   if(aside){aside.goal=1;aside.noticeAt=G.time;CROWD.witness(aside);}
  }
+ // 끝의 물음표·마침표는 소리를 내지 않는다. 읽기 여유와 발화 길이를 따로 센다.
+ function whisperSpokenTime(text,person){
+  return typeTime(text.replace(/[\s.,!?…~]+$/,''),VOICE.crowd[person].speed*1.08);
+ }
  function startWhispers(){
   prepareWhispers();const e=STARE.exchange;if(!e)return;
   if(e.aside){
    e.asideUntil=sayWhisper(e.aside,e.pair.aside,0).until;
+   e.asideSpokenUntil=G.time+whisperSpokenTime(e.pair.aside,e.aside.pi);
    STARE.used.add(e.pair);
   }
  }
@@ -3879,13 +3884,13 @@ const SUBMISSION=(()=>{
   if(!batch.length)return;
   const span=(text,person)=>Math.max(1.5,typeTime(text,VOICE.crowd[person].speed*1.08)+.68);
   const gap=.12,pairGap=.34;
-  let at=exchange.asideUntil==null?.28:Math.max(.28,exchange.asideUntil-G.time+gap);
+  let at=exchange.asideSpokenUntil==null?.28:Math.max(0,exchange.asideSpokenUntil-G.time+gap);
   for(let i=0;i<batch.length;i++){
    const pair=batch[i],first=i*2+1,second=i*2;
    if(i){
     const end=at+span(pair.aside,first);
     events.push({at,end,person:first,text:pair.aside,slot:i*2,pair,opening:true});
-    at=end+gap;
+    at+=whisperSpokenTime(pair.aside,first)+gap;
    }
    const end=at+span(pair.say,second);
    events.push({at,end,person:second,text:pair.say,slot:i*2+1,pair,opening:false});
@@ -3893,6 +3898,8 @@ const SUBMISSION=(()=>{
   }
   // 여섯 문장을 모두 읽고 난 뒤 옥좌에 도착한다. 말이 빠르다고 걷기를 먼저 끝내지 않는다.
   WALK.dur=Math.max(WALK.dur,(events[events.length-1].end+.4)/.96);
+  // 대화가 빨라져도 마지막 화자를 지나치지 않는다. 모두 읽히는 속도까지만 걷기를 늦춘다.
+  for(let n=0;n<12&&events.some(event=>!walkSpeaker(side,event.end,null,event.person)&&!walkSpeaker(-side,event.end,null,event.person));n++)WALK.dur+=.25;
   if(aside)aside.delay=Math.max(aside.delay,(exchange.asideUntil||G.time)-G.time+.22);
   for(const event of events){
    const speaker=walkSpeaker(side,event.end,null,event.person)||walkSpeaker(-side,event.end,null,event.person);
@@ -3945,7 +3952,7 @@ const SUBMISSION=(()=>{
  // behind: 풀이 화면 밑에 깔려 있을 때(손과 종이는 줄어드는 풀이 화면이 다 덮을 때까지 보이지 않는다)
  function begin(result,behind){
   crowd=CROWD.congregationView();crowd.visible=true;resetCrowd();
-  fortune(result);flatten();hands.visible=!behind;paper.visible=!behind;line=0;next=G.time+.6;
+  fortune(result);flatten();hands.visible=!behind;paper.visible=!behind;line=0;next=G.time;
  }
  function update(dt){
   if(!hands.visible&&!CR.drop)return;
@@ -3959,7 +3966,7 @@ const SUBMISSION=(()=>{
   }
   // 설교: 종이를 들고 서 있는 동안. 구기는 중에는 끊기고, 도로 펴면 잠시 뒤 다음 구절부터 이어진다
   if(G.mode==='submit'&&INTRO.stage==='arrived'&&!CRUMPLE.done&&!CRUMPLE.holding&&CRUMPLE.c<.12&&!talkBusy()&&G.time>=next){
-   const [text,dur,delay]=LINES.submit[line];queueTalk([['boss',text,dur,delay,1]]);
+   const [text,dur,delay]=LINES.submit[line];queueTalk([['boss',text,dur,!INTRO.sermonHeard&&line===0?0:delay,1]]);
    line=(line+1)%LINES.submit.length;next=G.time+dur+delay+1;
   }
   if(G.E&&G.mode==='submit')G.E.idleT=1e6;
@@ -10945,7 +10952,7 @@ if(mode==='fight'){
  const behind=INTRO.stage==='behind';if(!behind)INTRO.stage='arrived';
  SUBMISSION.begin(G.result,behind);setFrame('congregation',true);
  canvas.setAttribute('aria-label','운세 종이를 두 손에 들고 추종자들 사이에서 천지신명의 설교를 듣고 있습니다.');
- if(!behind)SUBMISSION.sermonSoon(.6);
+ if(!behind)SUBMISSION.sermonSoon(0);
 }
 
  last=performance.now();
@@ -11048,7 +11055,7 @@ function arrive(){
  const f=$('#fight');f.hidden=false;f.classList.remove('behind');
  SUBMISSION.hands.visible=true;SUBMISSION.showPaper(true);setFrame('congregation',true);
  try{speechSynthesis.cancel();}catch(_){}
- AUDIO.unlock();SUBMISSION.sermonSoon(.5);
+ AUDIO.unlock();SUBMISSION.sermonSoon(0);
  const face=$('#arcadeFace');if(face){face.target='_blank';face.rel='noopener';}
  if(!G.running){G.running=true;last=performance.now();G.raf=requestAnimationFrame(frame);}
  focusCanvas();return true;
