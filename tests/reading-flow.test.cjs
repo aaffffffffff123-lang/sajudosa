@@ -186,7 +186,8 @@ test('element balance stays consistent while office follows the specific structu
  for(const {r,v} of ALL){
   const b=bossOf(r),office=dom(v,'office'),work=dom(v,'work');
   assert.equal(work.fates.length,1);assert(!/직원이|작은 회사를 전전/.test(work.fates.join(' ')));
-  assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
+  assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:b.bs===b.ms?/비중이 같습니다/:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
+  if(b.key==='high'&&b.bs===b.ms)assert(!/당신보다 세고|센 기운이 약한 기운/.test(v.elements[1]));
   assert.equal(office.cause,v.keys.officeCase);assert(office.basis.startsWith(r.fate.officer.fact));
   assert.equal(work.rule==='해 보겠다고 한 말은 약속으로 남고, 그 말을 지키느라 쓴 휴일은 기록에 남지 않습니다.',work.cause==='식상');
   // 관운 칸의 V5 문장(제목·장면·팔자·이치)은 투표·항의 구호를 쓰지 않는다. 선거는 2026-11-07 초안에서 확정한 O3 문단 한 곳에서만 말한다.
