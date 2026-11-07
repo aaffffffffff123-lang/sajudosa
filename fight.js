@@ -9910,7 +9910,9 @@ function firstStrikeLine(){
 /* Optional combat accents: successful hits only, never a playlist or a queued
  * reward. A round has at most two player lines and two non-human leaks. */
 const COMBAT_LINES={hand:'탈운명 펀치!',knife:'탈운명 칼빵!',gun:'탈운명 샷!'};
-function deityHasReptileVoice(E){return !!E&&!E.headGone&&!E.headDestroyed&&E.headKind==='rep';}
+// headDestroyed keeps the detached human face inactive after regrowth, too.
+// headGone clears only when the replacement head has finished growing.
+function deityHasReptileVoice(E){return !!E&&!E.headGone&&E.headKind==='rep';}
 const COMBAT_VOICE={n:0,last:-99,used:new Set(),playerUntil:0,uncannyN:0,uncannyForms:new Set(),uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
 function combatVoiceReset(){
  Object.assign(COMBAT_VOICE,{n:0,last:-99,playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99});
@@ -9929,7 +9931,7 @@ function uncannyVoiceAllowed(name){
  const c=COMBAT_VOICE,E=G.E;
  if(!/^(yelp|scream|reptile)$/.test(name)||!combatVoiceWindow()||combatPlayerVoiceBusy()
   ||c.uncannyN>=2||G.time-G.t0<7||G.time-c.uncannyLast<16||G.time-c.last<5||G.time<c.uncannyCheck
-  ||E.headGone||E.headDestroyed||E.jawGone||COMBAT_VOICE.uncannyForms.has(deityHasReptileVoice(E)?'reptile':'human')
+  ||E.headGone||(E.headDestroyed&&!deityHasReptileVoice(E))||E.jawGone||COMBAT_VOICE.uncannyForms.has(deityHasReptileVoice(E)?'reptile':'human')
   ||!(G.bar<72||deityHasReptileVoice(E)))return false;
  c.uncannyCheck=G.time+1.4;
  return Math.random()<.22;

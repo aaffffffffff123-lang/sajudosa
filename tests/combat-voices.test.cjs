@@ -48,7 +48,7 @@ test('ordinary early cries stay human; double-throat cries remain sparse even wi
  assert(h.uncannyVoiceAllowed('scream'));h.uncannyVoiceStarted();assert(h.uncannyVoiceBusy());
  for(let i=0;i<150;i++){h.G.time+=.1;assert(!h.uncannyVoiceAllowed('scream'))}
  h.G.time+=2;assert(!h.uncannyVoiceAllowed('yelp'),'human cannot consume the reptile opportunity');
- h.G.E.headKind='rep';assert(h.uncannyVoiceAllowed('reptile'));h.uncannyVoiceStarted();
+ h.G.E.headKind='rep';h.G.E.headDestroyed=true;assert(h.uncannyVoiceAllowed('reptile'));h.uncannyVoiceStarted();
  h.G.time+=30;assert(!h.uncannyVoiceAllowed('scream'));assert.equal(h.COMBAT_VOICE.uncannyN,2);
  h.combatVoiceReset();assert(!h.uncannyVoiceBusy());assert(h.uncannyVoiceAllowed('scream'));
 });
@@ -86,11 +86,12 @@ test('all deployed optional audio is local and the cry index fits the actual PCM
 test('only a regrown reptile head changes the base voice; exposing the human face does not',()=>{
  const h=setup();
  assert(h.deityHasReptileVoice({headKind:'rep'}));
- for(const e of [{headKind:'human'},{headKind:'human',unmasked:true},{headKind:'human',repFull:true},{unmasked:true,repFull:true},{repFlash:1},{headKind:'rep',headGone:true},{headKind:'rep',headDestroyed:true}])assert(!h.deityHasReptileVoice(e));
+ assert(h.deityHasReptileVoice({headKind:'rep',headGone:false,headDestroyed:true}),'regrowth retains the destroyed human-face flag');
+ for(const e of [{headKind:'human'},{headKind:'human',unmasked:true},{headKind:'human',repFull:true},{unmasked:true,repFull:true},{repFlash:1},{headKind:'rep',headGone:true},{headKind:'rep',headGone:true,headDestroyed:true}])assert(!h.deityHasReptileVoice(e));
 });
 
 test('unmasking keeps human cries; regrowth switches to reptile cries with 420 ms of protection',()=>{
- const h=setup(),played=[],ctx={currentTime:0};h.G.E={headKind:'rep'};
+ const h=setup(),played=[],ctx={currentTime:0};h.G.E={headKind:'rep',headGone:false,headDestroyed:true};
  const scope={G:h.G,ctx,ready:()=>true,baking:false,combatPlayerVoiceBusy:()=>false,uncannyVoiceBusy:()=>false,
   reactionNames:['grunt','oof','yelp','scream','groan','gasp','cough','reptile'],deityHasReptileVoice:h.deityHasReptileVoice,
   jawGoneV:false,lastV:-99,SFX:{},uncannyVoiceAllowed:()=>false,playReaction:(name,k)=>{played.push(name);return true}};

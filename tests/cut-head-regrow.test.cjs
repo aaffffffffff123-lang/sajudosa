@@ -9,9 +9,10 @@ const api=vm.runInNewContext(
  slice('const SLICE=','/* ===== 3. 소리')+slice('const CUT_DETAIL=','/* 바지:')+
  slice('const HEADGEO=','const BELLY_C=')+slice('function eyeCapGeo(','\n}')+'\n}\n'+
  slice('const REP_TOOTH=','Object.assign(Emperor.prototype,')+
- 'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice('makeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
+ slice('function deityHasReptileVoice(E){','const COMBAT_VOICE=')+
+ 'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice(' voiceHit(tool,part,P,cut){',' // 날아간 살점의 겉 색:')+slice('makeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
 function makeRig(){
- const root=new THREE.Group(),neck=new THREE.Group();root.add(neck);const E={...api.methods,root,bones:{neck},goreMeshes:[],disposables:[],parts:[],flow:{},headGone:true,headKind:'human',
+ const root=new THREE.Group(),neck=new THREE.Group();root.add(neck);const E={...api.methods,root,bones:{neck},goreMeshes:[],disposables:[],parts:[],flow:{},headGone:true,headDestroyed:true,headKind:'human',
   bone(name,parent,pos){const g=api.grp(parent,pos);g.userData.bone=name;this.bones[name]=g;return g},
   addFlesh(geo,mat,parent,o){const mesh=new THREE.Mesh(geo,mat);mesh.userData.part=o.part;parent.add(mesh);return mesh},resetHeadDamage(){this.jawGone=false},
   M:new Proxy({}, {get(t,k){return t[k]||(t[k]=new THREE.MeshStandardMaterial({color:k==='regBone'||k==='cutBone'?0xccc7ac:k==='rawFlesh'||k==='cutTissue'?0x2c466c:k==='cutDepth'?0x0d1b29:k==='cutMarrow'?0x1c3347:0x6a7e47,side:THREE.DoubleSide}));}})};
@@ -49,4 +50,25 @@ test('head growth shader keeps the original material hook and uniform survives r
  const m=new THREE.MeshStandardMaterial();let calls=0;m.onBeforeCompile=()=>calls++;
  const reveal=api.headGrowthMaterial(m,-.07);const compile=()=>{const sh={uniforms:{},vertexShader:THREE.ShaderLib.standard.vertexShader,fragmentShader:THREE.ShaderLib.standard.fragmentShader};reveal.onBeforeCompile(sh);return sh;};
  const a=compile(),b=compile();assert.equal(calls,2);assert.equal(a.uniforms.uHeadGrowth,b.uniforms.uHeadGrowth);assert(a.fragmentShader.includes('discard;'));assert(a.vertexShader.includes('vHeadGrowth=position;'));
+});
+
+test('completed regrowth restores impact cries while the severed human face stays disabled',()=>{
+ const E=makeRig(),played=[];ctx.G={time:20};ctx.AUDIO.voice=(name,k)=>played.push({name,k});
+ E.state='stand';E.regrowHead={t:0,dur:2.4,built:false,goo:0};
+ E.voiceHit('knife','neck',1,true);assert.equal(played.length,0,'no head before regrowth');
+ E.updateHeadRegrow(0);E.updateHeadRegrow(1.2);
+ E.voiceHit('knife','head',1,true);assert.equal(played.length,0,'unfinished head cannot cry');
+ E.updateHeadRegrow(1.21);
+ assert.equal(E.headKind,'rep');assert.equal(E.headGone,false);
+ assert.equal(E.headDestroyed,true,'keep detached human-face animation disabled');
+ for(const tool of ['hand','knife','gun']){
+  ctx.G.time+=1;E.voiceHit(tool,'head',1,tool!=='hand');
+  assert.equal(played.at(-1)?.name,'reptile');
+ }
+ assert.equal(played.length,3);
+ E.headGone=true;ctx.G.time+=1;E.voiceHit('knife','neck',1,true);
+ assert.equal(played.length,3,'severing the regrown head silences it again');
+ E.regrowHead={t:0,dur:2.4,built:false,goo:0};E.updateHeadRegrow(0);E.updateHeadRegrow(2.41);
+ ctx.G.time+=1;E.voiceHit('hand','chest',1,false);assert.equal(played.length,4);
+ assert.equal(played.at(-1).name,'reptile');
 });
