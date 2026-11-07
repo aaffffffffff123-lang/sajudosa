@@ -46,10 +46,10 @@
  <path d="M78 94c22 7 58 10 82 10s60-3 82-10" fill="none" stroke="#b2a6e6" stroke-width="1.5" opacity=".6"/>
  <path d="M96 86c20-5 44-7 64-7s44 2 64 7" fill="none" stroke="#b2a6e6" stroke-width="1.2" opacity=".45"/>
  <g class="dosa-curved-gat">
-    <path d="M128 90C130 69 126 50 136 29C145 10 163 3 181 8C193 11 202 20 197 26C194 30 189 29 185 26C174 20 165 26 168 38C172 53 185 70 192 90C177 97 143 97 128 90Z" fill="url(#dmHat)" fill-opacity=".96" stroke="#261f3d" stroke-width="3" stroke-linejoin="round"/>
-    <path d="M133 73C148 78 169 78 184 73M134 59C145 64 161 65 177 62" fill="none" stroke="#6f62a8" stroke-width="1.3" opacity=".6"/>
-    <path d="M137 65C134 44 140 25 155 18C168 12 180 15 188 21" fill="none" stroke="#9b8fd4" stroke-width="2.5" stroke-linecap="round" opacity=".48"/>
-    <path d="M139 82C150 85 169 85 181 81" fill="none" stroke="#b2a6e6" stroke-width="1.2" stroke-linecap="round" opacity=".35"/>
+    <path d="M128 90L130 44C130 31 136 22 147 18C161 13 178 16 190 23C195 26 198 30 194 33C191 35 186 32 181 30C175 27 169 28 170 33C171 37 181 41 188 44L190 90C176 97 143 97 128 90Z" fill="url(#dmHat)" fill-opacity=".96" stroke="#261f3d" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M133 74C148 79 171 79 186 74M134 60C149 65 170 65 185 60" fill="none" stroke="#6f62a8" stroke-width="1.3" opacity=".6"/>
+    <path d="M137 69L138 43C138 31 144 25 154 23C166 20 179 23 188 28" fill="none" stroke="#9b8fd4" stroke-width="2.5" stroke-linecap="round" opacity=".48"/>
+    <path d="M138 83C151 86 171 86 182 82" fill="none" stroke="#b2a6e6" stroke-width="1.2" stroke-linecap="round" opacity=".35"/>
    </g><g class="dosa-charms" stroke="#261f3d" stroke-linecap="round" stroke-linejoin="round">
     <path d="M106 201v4M214 201v4" fill="none" stroke="#ae780b" stroke-width="1.8"/>
     <ellipse cx="106" cy="206" rx="2.4" ry="3" fill="none" stroke="#ae780b" stroke-width="1.3"/>
