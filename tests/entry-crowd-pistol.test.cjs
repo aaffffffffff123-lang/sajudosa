@@ -42,7 +42,7 @@ function bubbles(width=390,height=844){
  const canvas={width:0,height:0,getContext:()=>ctx};
  const camera=new THREE.PerspectiveCamera(50,width/height,.01,100);camera.position.z=5;camera.updateMatrixWorld();
  const scene=new THREE.Scene(),speaker=new THREE.Object3D();scene.add(speaker);speaker.position.y=.3;
- const scope={THREE,V3,ZERO3:V3(),G,clamp,PI:Math.PI,TAU:Math.PI*2,innerWidth:width,innerHeight:height,camera,vmCam:camera,performance:{now:()=>now},window:{devicePixelRatio:1},document:{},visibleChain:()=>true,typeSteps:text=>({total:.3,steps:Array.from(text).map(()=>({t:0,kind:'char'}))}),AUDIO:{speak:()=>({stop(){}}),whisper:()=>({stop(){}})},$:s=>s==='#speech'?canvas:s==='#fight .ftop'?{hidden:false,getBoundingClientRect:()=>({bottom:48})}:null};
+ const scope={THREE,V3,ZERO3:V3(),G,uncannyVoiceBusy:()=>false,clamp,PI:Math.PI,TAU:Math.PI*2,innerWidth:width,innerHeight:height,camera,vmCam:camera,performance:{now:()=>now},window:{devicePixelRatio:1},document:{},visibleChain:()=>true,typeSteps:text=>({total:.3,steps:Array.from(text).map(()=>({t:0,kind:'char'}))}),AUDIO:{speak:()=>({stop(){}}),whisper:()=>({stop(){}})},$:s=>s==='#speech'?canvas:s==='#fight .ftop'?{hidden:false,getBoundingClientRect:()=>({bottom:48})}:null};
  const BUB=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const ZERO3=V3();','/* 팔 붙잡기 장면')+';BUB',scope);
  return {BUB,G,speaker,scope,draw(){now+=16;G.time+=.016;BUB.draw()}};
 }
@@ -170,9 +170,10 @@ test('even a 50 ms frame draws a newly fired flash before retiring it',()=>{
 test('the new pistol bank wins even when the old sound bank finishes later',async()=>{
  let finishOld;const old=new Promise(r=>finishOld=r),fresh={duration:2,sampleRate:44100},SFX={};
  const ctx={decodeAudioData:async bytes=>bytes==='new'?fresh:{duration:5,sampleRate:24000}};
- const scope={ctx,SFX,bankLoad:null,bankBuffer:null,pistolDownload:Promise.resolve('new'),bankDownload:old};
+ const scope={ctx,SFX,bankLoad:null,bankBuffer:null,pistolDownload:Promise.resolve('new'),bankDownload:old,
+  uncannyDownload:Promise.resolve([{sampleRate:24000,clips:[[0,29280],[31200,29280],[62400,29280]]},'uncanny'])};
  const load=vm.runInNewContext(cut(' function loadSoundBank(){',' function startClip(')+';loadSoundBank',scope);
  const done=load();await new Promise(r=>setImmediate(r));assert.equal(SFX.shot.length,4);assert.equal(SFX.shot[0].buffer,fresh);
  finishOld([{sampleRate:24000,clips:{shot:[[0,1000]],face:[[24000,2400]]}},'old']);await done;
- assert.equal(SFX.shot[0].buffer,fresh);assert.equal(SFX.face.length,1);
+ assert.equal(SFX.shot[0].buffer,fresh);assert.equal(SFX.face.length,1);assert.equal(SFX['v:uncanny'].length,3);
 });

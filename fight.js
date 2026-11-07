@@ -1332,7 +1332,7 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadFirstHitVoice();loadVictoryVoice();loadQuipVoice();loadRetortVoice();loadMusic();
+  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadFirstHitVoice();loadVictoryVoice();loadQuipVoice();loadRetortVoice();loadCombatVoices();loadMusic();
  }
  function unlock(primed){try{init(primed);if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
@@ -1346,6 +1346,21 @@ const AUDIO=(()=>{
  let victoryBuffer=null,victoryLoad=null;
  let quipBuffer=null,quipLoad=null;
  let retortBuffer=null,retortLoad=null;
+ const combatClips={
+  '탈운명 펀치!':{file:'punch',buffer:null,load:null},
+  '탈운명 칼빵!':{file:'knife',buffer:null,load:null},
+  '탈운명 샷!':{file:'shot',buffer:null,load:null}
+ };
+ function loadCombatVoices(){
+  if(!ctx)return;
+  for(const clip of Object.values(combatClips)){
+   if(clip.buffer||clip.load)continue;
+   const ac=ctx;
+   clip.load=fetch('assets/player-unfate-'+clip.file+'-ko-male.mp3')
+    .then(r=>{if(!r.ok)throw new Error('combat voice load');return r.arrayBuffer();})
+    .then(data=>ac.decodeAudioData(data)).then(buffer=>{clip.buffer=buffer;}).catch(()=>{});
+  }
+ }
  function loadBackVoice(){
   if(!ctx)return Promise.resolve(null);
   if(!backLoad){const ac=ctx;
@@ -1400,7 +1415,7 @@ const AUDIO=(()=>{
   const fallback=()=>{
    if(!busy||!on)return;
    // 고정 플레이어 음성을 못 읽어도 기기 기본 여성 목소리로 바뀌지 않는다.
-   if(text==='죽어!'||text==='운명 좁밥'){finish();return;}
+   if(text==='죽어!'||text==='운명 좁밥'||combatClips[text]){finish();return;}
    if(!synth||!Utterance){finish();return;}
    const sharp=text==='죽어!'||text==='뭘 꼬라봐 씨발아'; // 내 외침은 빠르고 높게, 설계자 말은 느리고 낮게
    const u=new Utterance(text);u.lang='ko-KR';u.rate=sharp?1.15:.9;u.pitch=sharp?1:.75;u.volume=volumes.voice;
@@ -1428,6 +1443,8 @@ const AUDIO=(()=>{
   else if(text==='운명 좁밥'&&ctx){if(victoryBuffer)play(victoryBuffer);else loadVictoryVoice().then(play);}
   else if(text==='운명 최고'&&ctx){if(quipBuffer)play(quipBuffer);else loadQuipVoice().then(play);}
   else if(text==='뭘 꼬라봐 씨발아'&&ctx){if(retortBuffer)play(retortBuffer);else loadRetortVoice().then(play);}
+  // Optional hit lines only use already decoded clips: never speak late after a download.
+  else if(combatClips[text])play(combatClips[text].buffer);
   else fallback();
   return handle;
  }
@@ -1464,6 +1481,10 @@ const AUDIO=(()=>{
  ]).catch(()=>null);
  // 별도 원본 총성 네 가지. 다른 타격음·목소리 뱅크는 그대로 둔다.
  const pistolDownload=fetch('assets/pistol-shots-v2.wav').then(r=>{if(!r.ok)throw new Error('pistol sounds');return r.arrayBuffer();}).catch(()=>null);
+ const uncannyDownload=Promise.all([
+  fetch('assets/uncanny-cries-v1.json').then(r=>{if(!r.ok)throw new Error('uncanny index');return r.json();}),
+  fetch('assets/uncanny-cries-v1.wav').then(r=>{if(!r.ok)throw new Error('uncanny sounds');return r.arrayBuffer();})
+ ]).catch(()=>null);
  let bankLoad=null,bankBuffer=null,fallbackVoice=null;
  function makeFallbackVoice(){
   // A short bounded fallback while the single download is pending or unavailable.
@@ -1472,6 +1493,12 @@ const AUDIO=(()=>{
  }
  function loadSoundBank(){
   if(bankLoad||!ctx)return bankLoad;const ac=ctx;
+  uncannyDownload.then(async data=>{
+   if(!data)return;const [index,bytes]=data,buffer=await ac.decodeAudioData(bytes);
+   const clips=index.clips.map(([at,length])=>({buffer,offset:at/index.sampleRate,duration:length/index.sampleRate,length}));
+   if(clips.some(c=>c.offset+c.duration>buffer.duration+.002))return;
+   SFX['v:uncanny']=clips;
+  }).catch(()=>{});
   pistolDownload.then(bytes=>bytes?ac.decodeAudioData(bytes):null).then(buffer=>{
    if(!buffer||buffer.duration<2)return;
    SFX.shot=Array.from({length:4},(_,i)=>({buffer,offset:i*.5,duration:.5,length:Math.round(buffer.sampleRate*.5)}));
@@ -1761,14 +1788,25 @@ const AUDIO=(()=>{
   g.gain.value=clamp(k,.25,1.3)*.76;s.connect(g);g.connect(vbus);
   // One character, one impact voice. Crossfade the previous cry instead of doubling it.
   while(reactionLive.length){const old=reactionLive.shift();old.g.gain.cancelScheduledValues(t);old.g.gain.setTargetAtTime(.0001,t,.009);try{old.s.stop(t+.035);}catch(_){}}
-  const item={s,g};reactionLive.push(item);live.add(s);
+  const item={s,g,name};reactionLive.push(item);live.add(s);
   s.onended=()=>{live.delete(s);const n=reactionLive.indexOf(item);if(n>=0)reactionLive.splice(n,1);s.disconnect();g.disconnect();};startClip(s,clip,t+.012);return true;
  }
  let lastV=-99;
+ function hushCombatAccent(all=false){
+  if(!ctx)return;
+  const t=ctx.currentTime;
+  for(const item of reactionLive.slice()){
+   if(!all&&item.name!=='uncanny')continue;
+   item.g.gain.cancelScheduledValues(t);item.g.gain.setTargetAtTime(.0001,t,.009);
+   try{item.s.stop(t+.035);}catch(_){}
+   const i=reactionLive.indexOf(item);if(i>=0)reactionLive.splice(i,1);
+  }
+ }
  // 아래턱이 없으면 말·비명 대신 목구멍에서 꾸르륵거리는 소리만 난다
  let jawGoneV=false;function setJawGone(v){jawGoneV=!!v;}
  function say(name,k=1,raw){
   if(!ready())return;
+  if(!raw&&!baking&&(combatPlayerVoiceBusy()||uncannyVoiceBusy()))return;
   if(!raw&&jawGoneV&&!/^(gurgle|reptile)$/.test(name)){name='gurgle';k=Math.min(k,1)*.9;}
   if(name==='gurgle'){
    const now=ctx.currentTime;if(now-lastV<.16)return;lastV=now;
@@ -1781,6 +1819,7 @@ const AUDIO=(()=>{
   }
   if(reactionNames.includes(name)&&!baking){
    const now=ctx.currentTime;if(now-lastV<.105)return;lastV=now;
+   if(SFX['v:uncanny']&&uncannyVoiceAllowed(name)){name='uncanny';uncannyVoiceStarted();}
    if(playReaction(name,k))return;
    return;
   }
@@ -1958,7 +1997,9 @@ const AUDIO=(()=>{
   for(let i=0;i<3;i++)nz(out(R(-.6,.6),.12,true),t+R(.08,.5),{dur:R(.1,.16),peak:R(.06,.1)*k,a:.035,f:R(900,1300),f1:R(1700,2300),q:1.3,curve:'lin'});
  }
  return {unlock,hold,crowdSob,whisper,crowdTurn,charge,twinkle,boom,stamp,paper,crumple,crunch,paperDrop,footstep,crowdShuffle,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,staffLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,
-  whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
+  whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},hushCombatAccent,
+  combatLineReady(text){return ready()&&volumes.voice>0&&!!combatClips[text]?.buffer;},
+  haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
   get ctx(){return ctx;},get baked(){return SFX;},get reactionStats(){return {loaded:!!bankBuffer,bankBytes:bankBuffer?bankBuffer.length*bankBuffer.numberOfChannels*4:0,active:reactionLive.length,count:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).length,0),bytes:reactionNames.reduce((n,k)=>n+(SFX['v:'+k]||[]).reduce((b,x)=>b+x.length*4,0),0)};},
   // 점검용: 바로 내는 소리를 파일처럼 뽑아 본다(크기 그대로)
   render(name,args,dur){if(!ctx)return Promise.resolve(null);const api=this;return bakeOne(()=>api[name](...(args||[])),dur||1,true);}};
@@ -2723,6 +2764,8 @@ const BUB=(()=>{
  /* 말하기. dur: 떠 있는 최소 시간(없으면 글 길이로 — 다 찍히고 읽을 틈까지). o.voice: 목소리, o.size: 글자 크기 배수,
   * o.read: 다 찍히고 나서 읽을 틈 [기본, 글자당](설계자의 긴 비웃음은 조금 짧게) */
  function say(anchor,text,dur,o={}){
+  // Story dialogue cuts the rare double-throat tail; never let it cover a follower.
+  if(uncannyVoiceBusy()){AUDIO.hushCombatAccent();COMBAT_VOICE.uncannyUntil=0;}
   const V=o.voice||VOICE.crowd[0],ts=typeSteps(text,V.speed),n=Array.from(String(text).replace(/\s/g,'')).length,rd=o.read||[.9,.04];
   const need=Math.max(1.5,ts.total+rd[0]+rd[1]*n);
   // o.whisper: 수군거림(점선 말풍선, 같은 사람의 작고 부드러운 목소리)
@@ -7689,7 +7732,9 @@ Object.assign(Emperor.prototype,{
  voiceHit(tool,part,P,cut){
   const now=G.time;if(now<(this.voiceCool||0))return;
   if(this.headKind==='rep'){
-   AUDIO.voice('reptile',clamp(P*.65,.5,1.1));this.voiceCool=now+.25;
+   // Even the exposed creature mostly cries like the same person. Its other
+   // throat only leaks out through the sparse shared combat-voice policy.
+   AUDIO.voice(P>1.6?'scream':'yelp',clamp(P*.65,.5,1.1));this.voiceCool=now+.25;
    if(this.repFork&&this.repFork.k<0&&Math.random()<.3)this.repFork.k=0;return;
   }
   if(this.headDestroyed)return;
@@ -9856,6 +9901,56 @@ function firstStrikeLine(){
  queueTalk([['player',LINES.firstHit,1.3,0,1.4,LINES.firstHit]],true);
 }
 
+/* Optional combat accents: successful hits only, never a playlist or a queued
+ * reward. A round has at most two player lines and two non-human leaks. */
+const COMBAT_LINES={hand:'탈운명 펀치!',knife:'탈운명 칼빵!',gun:'탈운명 샷!'};
+const COMBAT_VOICE={n:0,last:-99,used:new Set(),playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
+function combatVoiceReset(){
+ Object.assign(COMBAT_VOICE,{n:0,last:-99,playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99});
+ COMBAT_VOICE.used.clear();
+}
+function combatVoiceWindow(){
+ const E=G.E;
+ return G.mode==='fight'&&G.started&&!G.paused&&!G.opening&&!G.walking&&!G.ended&&!G.inputLocked
+  &&!G.revival&&!G.revivalPending&&!G.crowdBeatUntil&&!G.offerPending&&!G.offerOpen
+  &&!!E&&E.state!=='dead'&&!(E.down&&E.down.type==='final')&&!talkBusy();
+}
+function combatPlayerVoiceBusy(){return G.time<COMBAT_VOICE.playerUntil;}
+function uncannyVoiceBusy(){return G.time<COMBAT_VOICE.uncannyUntil;}
+function uncannyVoiceAllowed(name){
+ const c=COMBAT_VOICE,E=G.E;
+ if(!/^(yelp|scream|reptile)$/.test(name)||!combatVoiceWindow()||combatPlayerVoiceBusy()
+  ||c.uncannyN>=2||G.time-G.t0<7||G.time-c.uncannyLast<16||G.time-c.last<5||G.time<c.uncannyCheck
+  ||E.headDestroyed||E.jawGone||!(G.bar<72||E.unmasked||E.headKind==='rep'))return false;
+ c.uncannyCheck=G.time+1.4;
+ return Math.random()<.22;
+}
+function uncannyVoiceStarted(){
+ const c=COMBAT_VOICE;c.uncannyN++;c.uncannyLast=G.time;c.uncannyUntil=G.time+1.4;
+}
+function clearCombatAccent(){
+ const c=COMBAT_VOICE;c.playerUntil=0;c.uncannyUntil=0;
+ const isAccent=n=>n&&Object.values(COMBAT_LINES).includes(n.text);
+ if(isAccent(TALK.cur)||TALK.q.some(isAccent))clearTalk();
+ AUDIO.hushCombatAccent();
+}
+function combatHitLine(tool,kind,info,r,extra={}){
+ const c=COMBAT_VOICE,text=COMBAT_LINES[tool];
+ if(!text||!combatVoiceWindow()||uncannyVoiceBusy()||G.time-c.uncannyLast<4||c.n>=2
+  ||c.used.has(tool)||G.time-G.t0<8||G.time-c.last<18||G.time-QUIP.last<4
+  ||r.blocked||r.halo||!(r.dmg>0)||extra.through||extra.quiet||extra.stomp
+  ||/^(crown|halo|tablet)$/.test(info.part)||!AUDIO.combatLineReady(text))return false;
+ if(tool==='hand'&&!/^(jab|hook|upper)$/.test(kind))return false;
+ if(tool==='knife'&&!/^(stab|slash)$/.test(kind))return false;
+ if(tool==='gun'&&kind!=='shot')return false;
+ if(Math.random()>.15)return false;
+ c.n++;c.last=G.time;c.used.add(tool);c.playerUntil=G.time+2.5;
+ AUDIO.hushCombatAccent(true);
+ queueTalk([['player',text,1.3,0,1.15,text]]);
+ QUIP.next=Math.max(QUIP.next,G.time+6);
+ return true;
+}
+
 /* ---- 추임새: 뭘 하고 있든 뜬금없이 「운명 최고」 ----
  * 첫 타격 뒤 10~18초에 한 번, 그 뒤로는 22~40초마다(한 판에 서너 번꼴. 추종자 장면·되살림 동안 못 한 건 끝나고 몇 초 뒤에 나온다).
  * 팔다리·머리가 떨어지거나 쓰러진 직후에는 세 번에 한 번꼴로 1초쯤 뒤에 한마디 더.
@@ -9865,7 +9960,7 @@ function quipReset(){QUIP.next=0;QUIP.last=-99;QUIP.n=0;}
 function quipAllowed(){
  const E=G.E;
  return G.mode==='fight'&&G.started&&!G.opening&&!G.ended&&!G.inputLocked&&!G.revival&&!G.revivalPending&&!G.crowdBeatUntil&&!G.offerPending&&!G.offerOpen
-  &&!!E&&!E.headGone&&!E.jawGone&&E.state!=='dead'&&!(E.down&&E.down.type==='final')&&!talkBusy();
+  &&!!E&&!E.headGone&&!E.jawGone&&E.state!=='dead'&&!(E.down&&E.down.type==='final')&&!talkBusy()&&!uncannyVoiceBusy()&&!combatPlayerVoiceBusy();
 }
 function sayQuip(){
  QUIP.last=G.time;QUIP.n++;
@@ -9950,6 +10045,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  if(accent&&PREF.vibe&&navigator.vibrate&&!extra.quiet)try{navigator.vibrate(r.blocked?10:tool==='gun'?26:kind==='slash'?6:kind==='jab'?16:[20,8,26]);}catch(_){}
  if(accent&&!r.halo&&!extra.through)CROWD.witnessHit(power);
  damageBar(kind==='slash'?r.dmg*SLASH_GAUGE_SCALE:r.dmg,r,gaugeEligible);
+ if(!firstStrike&&accent)combatHitLine(tool,kind,info,r,extra);
  return {hit:true,blocked:r.blocked,hard:!!r.halo,blood:!r.blocked&&!r.halo&&(tool==='knife'||tool==='gun'||E.noseBleeding||E.lipSplit||E.faceCuts>0)};
 }
 /* 맞은 자리 효과 + 카메라 */
@@ -10014,6 +10110,7 @@ function anchorCombatStory(E,recover){
 }
 function openOffer(){
  if(G.mode!=='fight'||G.ended||G.offerOpen||G.offerBreaking)return;
+ clearCombatAccent();
  G.offerAt=0;G.offerPending=false;G.offerOpen=true;G.inputLocked=true;clearPointers();
  const sc=$('#offerScene');sc.hidden=false;sc.className='story-scene';$('#dock').hidden=true;
  if(G.E&&G.E.down)G.E.down.stay=Math.max(G.E.down.stay,1e6);
@@ -10028,13 +10125,14 @@ function finishOffer(){
 }
 function enterCrowd(){ // 50%: 둘이 화면 양옆에서 뛰어들어 내 팔을 붙잡는다
  if(G.crowdEntered||G.revivalUsed)return;
+ clearCombatAccent();
  G.crowdEntered=true;G.inputLocked=true;clearPointers();$('#dock').hidden=true;
  anchorCombatStory(G.E,true);
  G.crowdBeatUntil=G.time+3.5;
  CROWD.grabStart(G.time);
 }
 function warnCrowd(){ // 25%: 넷이 설계자 앞을 막아선다
- if(G.crowdWarned)return;G.crowdWarned=true;G.inputLocked=true;clearPointers();$('#dock').hidden=true;
+ if(G.crowdWarned)return;clearCombatAccent();G.crowdWarned=true;G.inputLocked=true;clearPointers();$('#dock').hidden=true;
  anchorCombatStory(G.E,true);
  G.crowdBeatUntil=G.time+4.1;
  CROWD.wallStart(G.time);
@@ -10053,6 +10151,7 @@ function beginRevival(){
  // 누워 있거나 넘어지는 중·일어나는 중이면 일어설 때까지 미룬다(누운 채 갑자기 고쳐 앉는 꼴이 안 나게). 서 있을 때 무너지는 연출로 들어간다
  const grounded=combatActive(E)&&E.combat.mode==='ground'&&!E.combat.canRise;
  if(!grounded&&(combatActive(E)?/^(ground|fall|rise)$/.test(E.combat.mode):E.state!=='stand'))return false;
+ clearCombatAccent();
  G.revivalUsed=true;G.revivalPending=false;G.inputLocked=true;G.crowdBeatUntil=0;clearPointers();$('#dock').hidden=true;VM.root.visible=false;
  anchorCombatStory(E,false);
  $('#fight .gauge').style.visibility='hidden';clearTalk();
@@ -10190,6 +10289,7 @@ function onImpact(type){
 // 최종 죽음에만 내 한마디. 다 읽고 잠깐 멈춘 뒤, 뒤에 있던 것을 올려다본다.
 function onDead(){
  if(G.revival||G.ended)return;
+ clearCombatAccent();
  G.ended=true;
  PROGRESS.add();updateDefeatCount();AUDIO.stopMusic(true,.22);
  G.inputLocked=true;clearPointers();$('#dock').hidden=true;
@@ -10916,7 +11016,7 @@ function startRound(mode){
  SUBMISSION.reset();
  AUDIO.stop();
  clearPointers();
- clearTalk();quipReset();
+ clearTalk();quipReset();combatVoiceReset();
  // 피 자국의 동적 geometry를 먼저 정리해 Emperor.destroy()와 같은 자원을 두 번 dispose하지 않는다.
  BLOOD.reset(null);
  if(G.E)G.E.destroy();

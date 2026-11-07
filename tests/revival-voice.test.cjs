@@ -13,7 +13,7 @@ function setup(ok=true){
   SpeechSynthesisUtterance:class{constructor(text){this.text=text}},
   speechSynthesis:{getVoices:()=>[{name:'English male',lang:'en-US'},{name:'Korean female',lang:'ko-KR'},{name:'Korean male',lang:'ko-KR'}],speak:u=>spoken.push(u),cancel(){}}
  }};
- vm.createContext(scope);vm.runInContext(code.slice(start,end)+';this.speak=speakTTS;this.preload=loadBackVoice;',scope);
+ vm.createContext(scope);vm.runInContext(code.slice(start,end)+';this.speak=speakTTS;this.preload=loadBackVoice;this.preloadCombat=loadCombatVoices;',scope);
  return {scope,played,spoken,release:()=>release({ok,arrayBuffer:async()=>new ArrayBuffer(8)})};
 }
 const flush=()=>new Promise(resolve=>setImmediate(resolve));
@@ -53,11 +53,8 @@ test('player greeting uses its clip and cannot resume after an early attack',asy
  const attack=h.scope.speak('죽어!');
  h.release();await flush();
  assert.equal(greeting.busy,false);
- assert.equal(h.played.length,0);
- assert.equal(h.spoken.length,1);
- assert.equal(h.spoken[0].text,'죽어!');
- assert.equal(h.spoken[0].lang,'ko-KR');
- assert.equal(h.spoken[0].rate,1.15);
+ assert.equal(h.played.length,1,'only the fixed male first-hit clip plays');
+ assert.equal(h.spoken.length,0,'never fall back to device speech for player attacks');
  attack.stop();assert.equal(attack.busy,false);
 });
 
@@ -65,5 +62,23 @@ test('player greeting can complete normally',async()=>{
  const h=setup(),voice=h.scope.speak('천지신명이시여...');h.release();await flush();
  assert.equal(h.played.length,1);assert.equal(h.spoken.length,0);
  h.played[0].onended();assert.equal(voice.busy,false);
+});
+
+test('combat calls use preloaded male clips, end naturally and respect mute',async()=>{
+ const h=setup();h.scope.preloadCombat();h.release();await flush();
+ for(const text of ['탈운명 펀치!','탈운명 칼빵!','탈운명 샷!']){
+  const before=h.played.length,voice=h.scope.speak(text);
+  assert.equal(h.played.length,before+1);assert(voice.started);
+  h.played.at(-1).onended();assert(!voice.busy);
+ }
+ assert.equal(h.spoken.length,0);
+ h.scope.volumes.voice=0;assert.equal(h.scope.speak('탈운명 샷!'),null);
+});
+test('missing or still-loading combat clips stay silent and never play later',async()=>{
+ for(const ok of [false,true]){
+  const h=setup(ok);h.scope.preloadCombat();
+  const skipped=h.scope.speak('탈운명 펀치!');assert(!skipped.busy);
+  h.release();await flush();assert.equal(h.played.length,0);assert.equal(h.spoken.length,0);
+ }
 });
 

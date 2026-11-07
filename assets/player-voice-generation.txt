@@ -16,3 +16,19 @@ player-victory-ko-male.mp3
 
 Existing player-greeting-ko.mp3 and player-retort-ko.mp3 were retained.
 Their original provider and voice identifier were not recorded in the repository.
+
+Optional combat lines added 2026-11-08
+Provider and voice: Microsoft Edge online neural speech, ko-KR-HyunsuMultilingualNeural.
+Rate: +14%; default pitch and synthesis volume.
+  player-unfate-punch-ko-male.mp3: 탈운명 펀치!
+  player-unfate-knife-ko-male.mp3: 탈운명 칼빵!
+  player-unfate-shot-ko-male.mp3: 탈운명 샷!
+Postprocessing: remove only leading/trailing silence at -48 dB, add 70 ms tail;
+peak limiter at 0.89 without makeup gain; mono 24 kHz, MP3 128 kbps.
+Optional lines play only from decoded buffers. A missing clip stays silent.
+
+uncanny-cries-v1.wav / uncanny-cries-v1.json
+Three human-led cries derived from the game's existing fight-sounds-v1 bank.
+The second throat starts 150 ms after the human cry and briefly outlasts it.
+Rebuild with tools/render-uncanny-cries.py (ffmpeg, numpy, scipy).
+No new synthesis, decoding, or download is started in the hit handler.
