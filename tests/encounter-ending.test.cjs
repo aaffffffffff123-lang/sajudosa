@@ -6,7 +6,7 @@ function setup({voice=false}={}){
  const G={mode:'fight',time:0,tool:'hand',E:{face:{},setEmotion(){}},opening:false,inputLocked:false};
  const elements=new Map(),shown=[],calls={clears:0,focus:0,omen:0,beyond:0,again:0};
  const $=s=>{if(!elements.has(s))elements.set(s,{hidden:false,style:{},classList:{add(){},remove(){}}});return elements.get(s)};
- const BUB={cut(b){b.voice?.stop()},say(anchor,text,dur,options){const b={anchor,text,until:G.time+dur,voice:voice?{busy:true,started:true,stop(){this.busy=false}}:null};shown.push(b);return b}};
+ const BUB={cut(b){b.voice?.stop()},say(anchor,text,dur,options){const b={anchor,text,until:G.time+Math.max(1.5,dur),voice:voice?{busy:true,started:true,stop(){this.busy=false}}:null};shown.push(b);return b}};
  const st={guardLift:1,guardRaising:false,acts:[],slash:null};
  const computeRest=()=>{calls.rest=(calls.rest||0)+1};
  const VM=vm.runInNewContext(slice(' function lowerHands(){',' const rest=')+';({st,lowerHands,raiseHands,updateGuard,computeRest,update(){}})',{st,computeRest});
@@ -19,18 +19,18 @@ function setup({voice=false}={}){
 test('opening keeps controls locked through both lines, then unlocks once',()=>{
  const h=setup();h.startEncounter();assert(h.G.inputLocked);assert(h.$('#dock').hidden);
  h.advance(.5);assert.equal(h.shown[0].text,'넌 뭐야?');assert(h.G.inputLocked);
- h.advance(2.3);assert.equal(h.shown[1].text,'천지신명이시여...');assert(h.G.inputLocked);
- h.advance(1.6);assert(h.G.inputLocked);assert.equal(h.VM.st.guardLift,0,'hands stay down during greeting');
- h.advance(.4);assert(h.G.inputLocked);assert(h.VM.st.guardLift>0&&h.VM.st.guardLift<1,'hands rise after greeting');
+ h.advance(1.5);assert.equal(h.shown[1].text,'천지신명이시여...');assert(h.G.inputLocked);
+ h.advance(1.3);assert(h.G.inputLocked);assert.equal(h.VM.st.guardLift,0,'hands stay down during greeting');
+ h.advance(.45);assert(h.G.inputLocked);assert(h.VM.st.guardLift>0&&h.VM.st.guardLift<1,'hands rise after greeting');
  h.advance(.5);assert(!h.G.inputLocked);assert.equal(h.VM.st.guardLift,1);assert(!h.$('#dock').hidden);assert.equal(h.calls.focus,1);
  h.advance(2);assert.equal(h.calls.focus,1);
  h.firstStrikeLine();h.advance(.1);assert.equal(h.shown.at(-1).text,'죽어!');assert(!h.G.musicStarted);h.advance(1.5);assert(h.G.musicStarted);
 });
 test('a playing greeting stays locked; unavailable speech eventually releases the lock',()=>{
- const h=setup({voice:true});h.startEncounter();h.advance(.5);h.shown[0].voice.stop();h.advance(2.3);
+ const h=setup({voice:true});h.startEncounter();h.advance(.5);h.shown[0].voice.stop();h.advance(.2);
  const greeting=h.shown[1];assert.equal(greeting.text,'천지신명이시여...');
  h.advance(2);assert(h.G.inputLocked,'audio still playing');
- h.advance(2.5);assert(!greeting.voice.busy);h.advance(.6);assert(!h.G.inputLocked);
+ h.advance(2.1);assert(!greeting.voice.busy);h.advance(.6);assert(!h.G.inputLocked);
 });
 test('restart cancels old audio and starts the locked opening from the first line',()=>{
  const h=setup({voice:true});h.startEncounter();h.advance(.5);const old=h.shown[0];
@@ -81,3 +81,14 @@ test('eye moves once, settles before dilation, and holds 3D eye contact without 
  }
 });
 
+
+
+test('the greeting follows the completed question within 200 ms without cutting either voice',()=>{
+ const h=setup({voice:true});h.startEncounter();h.advance(.5);
+ assert.equal(h.shown.length,1);const question=h.shown[0];
+ h.advance(.8);assert.equal(h.shown.length,1,'question audio still playing');
+ question.voice.busy=false;h.advance(.2);
+ assert.equal(h.shown[1].text,'천지신명이시여...');
+ assert(h.shown[1].voice.busy);assert(h.G.inputLocked);
+ assert.equal(h.VM.st.guardLift,0,'hands stay down through the greeting');
+});

@@ -1019,7 +1019,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <!-- 종이가 손안으로 줄어드는 동안에만 원래 문서 높이를 유지한다. -->
 <div id="fate-spacer" hidden></div>
 
-<div id="fightWait" hidden><div id="fightWaitTitle">불러오는 중…</div><small id="fightWaitDetail"></small><button type="button" class="sbtn" id="fightWaitBtn" hidden>다시 시도</button></div>
+<div id="fightWait" hidden><div id="fightWaitTitle">들어가는 중…</div><small id="fightWaitDetail"></small><button type="button" class="sbtn" id="fightWaitBtn" hidden>다시 시도</button></div>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
 <defs>
@@ -4631,7 +4631,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261106-crystal-staff';
+  const v='?v=20261107-encounter-murmur';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
@@ -4657,7 +4657,7 @@ function edgeHint(){
  const sheet=$('edge-sheet');
  sheet.hidden=!armed&&!busy&&!departing;
  sheet.classList.toggle('busy',busy||departing);sheet.classList.toggle('departing',departing);
- const label=busy||departing?'불러오는 중…':'';
+ const label=busy||departing?'들어가는 중…':'';
  if($('edge-label').textContent!==label)$('edge-label').textContent=label;
 }
 function edgeLift(px,tracking=false){

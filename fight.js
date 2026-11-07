@@ -295,7 +295,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <p id="trophyStatus" role="status" aria-live="polite"></p>
   </section>
  </div>
- <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">불러오는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
+ <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">들어가는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
 </section>`;
 
 const FIGHT_ICONS = `
@@ -1893,10 +1893,10 @@ const AUDIO=(()=>{
   if(/[0-9a-z]/.test(l))return {v:'eo',on:'stop',coda:false};
   return {v:'eu',on:'none',coda:false};
  }
- function blip(o,t,len,f0,f1,f2,onset){
+ function blip(o,t,len,f0,f1,f2,onset,soft=false){
   // 첫소리: 쉿·톡·후 하는 바람 소리를 아주 짧게
   let vt=t;
-  if(onset==='hiss'||onset==='breath'||onset==='stop'){
+  if(!soft&&(onset==='hiss'||onset==='breath'||onset==='stop')){
    const n=ctx.createBufferSource(),f=ctx.createBiquadFilter(),g=ctx.createGain();n.buffer=noise;
    const L=onset==='stop'?.008:onset==='hiss'?.024:.018,pk=onset==='stop'?.5:onset==='hiss'?.3:.2;
    f.type=onset==='hiss'?'highpass':'bandpass';f.frequency.value=onset==='hiss'?4800:onset==='stop'?2600:1700;f.Q.value=onset==='hiss'?.7:1.1;
@@ -1914,7 +1914,7 @@ const AUDIO=(()=>{
   const bd=ctx.createBiquadFilter();bd.type='lowpass';bd.frequency.value=f0*2.2;
   const g1=ctx.createGain();g1.gain.value=1;const g2=ctx.createGain();g2.gain.value=onset==='nasal'?.35:.75;const gb=ctx.createGain();gb.gain.value=.18;
   const e=ctx.createGain();
-  e.gain.setValueAtTime(.0001,vt);e.gain.exponentialRampToValueAtTime(1,vt+.006);e.gain.setValueAtTime(1,vt+vl*.62);e.gain.exponentialRampToValueAtTime(.0001,vt+vl);
+  e.gain.setValueAtTime(.0001,vt);e.gain.exponentialRampToValueAtTime(1,vt+(soft?.014:.006));e.gain.setValueAtTime(1,vt+vl*.62);e.gain.exponentialRampToValueAtTime(.0001,vt+vl);
   s.connect(b1);b1.connect(g1);g1.connect(e);s.connect(b2);b2.connect(g2);g2.connect(e);s.connect(bd);bd.connect(gb);gb.connect(e);e.connect(o);
   s.start(vt);s.stop(vt+vl+.02);track(s);
  }
@@ -1922,37 +1922,26 @@ const AUDIO=(()=>{
  function speak(text,V,o={}){
   if(!ready())return null;
   V=V||{pitch:480,formant:1.25,speed:1};
-  const c=ctx,t0=c.currentTime+.02,g=c.createGain();g.gain.value=o.gain!=null?o.gain:V.gain!=null?V.gain:1.2;g.connect(out(o.pan||0,.1,true));
-  const steps=typeSteps(text,V.speed).steps.filter(s=>s.kind==='syl'),last=steps.length-1,ask=/\?\s*$/.test(String(text)),dur=.072/V.speed;
+  const c=ctx,t0=c.currentTime+.02,g=c.createGain();g.gain.value=o.gain!=null?o.gain:V.gain!=null?V.gain:1.2;
+  const dest=out(o.pan||0,o.soft?.035:.1,true);
+  if(o.soft){const tone=c.createBiquadFilter();tone.type='lowpass';tone.frequency.value=3200;tone.Q.value=.55;g.connect(tone);tone.connect(dest);}else g.connect(dest);
+  const steps=typeSteps(text,V.speed).steps.filter(s=>s.kind==='syl'),last=steps.length-1,ask=/\?\s*$/.test(String(text)),dur=(o.soft?.095:.072)/V.speed;
   steps.forEach((st,k)=>{
    const S=spkSound(st.ch),F=SPK_V[S.v];
    // 억양: 살짝 오르내리다가, 끝에서 말하는 문장은 내려앉고 묻는 문장은 올라간다
    let pm=1+.045*Math.sin(k*1.9+V.pitch*.013)+(Math.random()-.5)*.05;
    if(S.v==='i')pm*=1.05;else if(S.v==='o'||S.v==='u')pm*=.96;
    if(k===last)pm*=ask?1.2:.9;else if(k===last-1&&ask)pm*=1.08;
-   blip(g,t0+st.t,dur*(S.coda?.7:.84),V.pitch*pm,F[0]*V.formant,F[1]*V.formant,S.on);
+   blip(g,t0+st.t,dur*(S.coda?.7:.84),V.pitch*pm,F[0]*V.formant,F[1]*V.formant,S.on,!!o.soft);
   });
   return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
  }
- /* ---- 수군거림: 성대를 울리지 않는 속삭임 ----
-  * 박자는 말풍선 글자가 찍히는 박자와 같다. 글자마다 바람 소리를 그 모음의 포먼트(공명하는 높이)로 걸러 「소곤소곤」 빛깔을 내고,
-  * 쉿(ㅅ·ㅈ·ㅊ)은 길고 또렷하게, 톡(ㄱ·ㄷ·ㅂ)은 아주 짧게 붙인다. 높낮이(pitch)는 쓰지 않는다 */
+ /* ---- 수군거림: 같은 추종자의 목소리로 작게 소곤대기 ----
+  * 막아서는 장면과 같은 모음·음높이를 쓴다. 음량은 약 43%로 낮추고,
+  * 파열음 잡음을 빼고 모음의 시작과 고음을 부드럽게 만든다. */
  function whisper(text,V,o={}){
-  if(!ready())return null;
-  V=V||{formant:1.2,speed:1};
-  // 크기: 보통 말소리(speak)보다 6dB쯤 작게. 천지신명이 말하는 동안 옆에서 소곤대는 정도
-  const c=ctx,t0=c.currentTime+.02,g=c.createGain();g.gain.value=o.gain!=null?o.gain:1.3;g.connect(out(o.pan||0,.05,true));
-  const steps=typeSteps(text,V.speed).steps.filter(s=>s.kind==='syl'),dur=.074/V.speed;
-  steps.forEach((st,k)=>{
-   const S=spkSound(st.ch),F=SPK_V[S.v],t=t0+st.t,len=dur*(S.coda?.78:.92),acc=1+.12*Math.sin(k*2.3);
-   if(S.on==='hiss')nz(g,t,{dur:len*.5,peak:.5*acc,a:.008,f:5600,type:'highpass',q:.6});
-   else if(S.on==='stop')nz(g,t,{dur:.012,peak:.42*acc,f:2300,q:1.3});
-   else if(S.on==='breath')nz(g,t,{dur:len*.4,peak:.3*acc,a:.01,f:1500,q:.8});
-   const vt=t+(S.on==='hiss'?len*.32:S.on==='stop'?.01:0),vl=Math.max(.035,len*.78);
-   for(const [f,q,pk] of [[F[0]*V.formant,3.4,1.15],[F[1]*V.formant,5,.9],[2850*V.formant,2.6,.26]])
-    nz(g,vt,{dur:vl,peak:pk*acc,a:vl*.22,f,q,curve:'lin'});
-  });
-  return {stop(){try{const n=c.currentTime;g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);g.gain.linearRampToValueAtTime(0,n+.03);}catch(_){}}};
+  return speak(text,V||{pitch:480,formant:1.25,speed:1},
+   {...o,gain:o.gain!=null?o.gain:.52,soft:true});
  }
  // 군중이 한꺼번에 몸을 돌려 나를 볼 때: 옷 스치는 소리가 가까운 데서 먼 데로 번지고, 몇 사람이 짧게 숨을 들이켠다
  function crowdTurn(k=1){if(!ready())return;const t=ctx.currentTime+.01;
@@ -2729,7 +2718,7 @@ const BUB=(()=>{
  function say(anchor,text,dur,o={}){
   const V=o.voice||VOICE.crowd[0],ts=typeSteps(text,V.speed),n=Array.from(String(text).replace(/\s/g,'')).length,rd=o.read||[.9,.04];
   const need=Math.max(1.5,ts.total+rd[0]+rd[1]*n);
-  // o.whisper: 수군거림(점선 말풍선, 성대를 울리지 않는 속삭임 소리)
+  // o.whisper: 수군거림(점선 말풍선, 같은 사람의 작고 부드러운 목소리)
   const b={anchor,text,V,steps:ts.steps,t0:G.time,until:G.time+Math.max(dur||0,need),a:0,x:null,y:null,m:null,key:'',reveal:0,frozen:null,whisper:!!o.whisper,size:o.size||1,
    voice:o.tts?AUDIO.tts(o.tts):o.whisper?AUDIO.whisper(text,V,{gain:o.gain,pan:o.pan}):AUDIO.speak(text,V,{gain:o.gain})};
   live.push(b);
@@ -3886,7 +3875,7 @@ const SUBMISSION=(()=>{
   const v=VOICE.crowd[(who.actor?who.actor.i:who.pi)%VOICE.crowd.length];
   if(slot===1)who.politeAt=G.time;
   BUB.say({obj:anchorOf(who,slot),off:ZERO3,top:.13*who.scale,cam:'main'},text,0,
-   {voice:{formant:v.formant,speed:v.speed*1.18},whisper:true,size:.95,read:[.68,0],pan:clamp(who.x*.6,-.8,.8)});
+   {voice:{pitch:v.pitch,formant:v.formant,speed:v.speed*1.08},whisper:true,size:.95,read:[.68,0],pan:clamp(who.x*.6,-.8,.8)});
  }
  function updateWhispers(){
   while(WALK.on&&STARE.talk.length&&WALK.t>=STARE.talk[0].at){
@@ -9762,7 +9751,10 @@ function updateTalk(dt){
    if(G.time<c.voiceUntil){b.until=Math.max(b.until,G.time+.15);if(b.voice.started&&G.E&&c.who==='boss')G.E.talkUntil=G.time+.1;return;}
    b.voice.stop(); // A missing device voice must not leave the revival locked.
   }
-  if(G.time<b.until)return;TALK.cur=null;TALK.gap=.12;
+  // 첫 질문은 음성이 끝나면 곧바로 응답한다. 다른 대사의 읽기 여유는 그대로 둔다.
+  const quickReply=G.opening&&c.text===LINES.opening&&TALK.q[0]?.text===LINES.greeting;
+  if(quickReply&&b.voice&&b.voice.started&&!b.voice.busy)b.until=Math.min(b.until,G.time);
+  if(G.time<b.until)return;TALK.cur=null;TALK.gap=quickReply?.04:.12;
   if(G.mode==='submit'&&c.text===LINES.submit[0][0]&&!INTRO.sermonHeard){
    INTRO.sermonHeard=true;$('#crumpleHint').classList.remove('off');
   }
@@ -9787,8 +9779,8 @@ function startEncounter(){
  VM.lowerHands();VM.update(0,false,0);
  $('#dock').hidden=true;$('#hint').classList.add('off');
  queueTalk([
-  ['boss',LINES.opening,2,.15,1.2,LINES.opening],
-  ['player',LINES.greeting,1.8,.25,1.1,LINES.greeting]
+  ['boss',LINES.opening,1.1,.15,1.2,LINES.opening],
+  ['player',LINES.greeting,1.8,.08,1.1,LINES.greeting]
  ],true);
  if(G.E)G.E.idleT=6.5;
 }
