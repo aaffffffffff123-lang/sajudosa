@@ -286,8 +286,8 @@
        text:'당신을 평가하는 사람은 당신이 하는 일을 매일 보지 않습니다. 보고서에 적힌 숫자와 가끔 마주친 표정으로 한 해를 정합니다. 그래서 일하는 시간만큼 일한 것을 보여 주는 시간도 일입니다.'},
       // 예산은 위에서 정하고 못 채운 목표는 아래에서 설명한다
       {id:'O9',not:[],when:c=>{
-        // 강한 책임과 부족한 재물이 함께 있어야 예산의 불균형으로 잇는다.
-        const saju=c.hi('관성')&&c.lo('재성');
+        // 맡은 책임과 회사가 내주는 자원의 불균형. 개인 재산이 많아도 이 부담은 생긴다.
+        const saju=c.hi('관성');
         // 돈의 제약 + 일의 영역, 또는 일에 걸린 행동·확장의 충돌.
         const western=(c.house('Saturn')===2&&[6,10].includes(c.house('Mars')))
           ||(c.asp('Mars','Jupiter',H)&&[2,6,10].includes(c.house('Mars')));
@@ -299,8 +299,8 @@
        text:'규칙은 지키는 사람이 많을수록 잘 돌아갑니다. 규칙을 만드는 사람은 규칙이 잘 지켜지는지 살피느라 직접 지킬 틈이 없습니다. 그래서 예외는 늘 위에서부터 생깁니다.'},
       // 서명한 날부터 책임은 서명한 사람에게
       {id:'O7',not:[],when:c=>{
-        // 규칙과 문서가 만날 때의 서명. 정관 또는 인성 하나만으로 붙이지 않는다.
-        const saju=c.ten('정관')>0&&c.hi('인성');
+        // 규칙을 따르는 부담과 서명으로 책임을 넘겨받는 부담은 함께 성립한다.
+        const saju=c.ten('정관')>0||(c.hi('인성')&&c.has('관성'));
         const western=c.asp('Mercury','Saturn',HC)
           &&([6,10].includes(c.house('Mercury'))||[6,10].includes(c.house('Saturn')));
         return saju||western;
@@ -308,17 +308,19 @@
        text:'새로 바뀐 규정은 아래에서 읽고 서명하는 것으로 시행됩니다. 서명한 날부터 그 규정을 지키지 못한 일은 서명한 사람의 책임이 됩니다. 그 규정을 지킬 만한 인원과 시간이 있는지는 서명지에서 묻지 않습니다.'},
       // 결정한 사람은 옮기고 일한 사람은 경위서를 쓴다
       {id:'O5',not:[],when:c=>{
-        // 강한 책임/수습 신호와 직장·윗사람을 보는 달 자리의 마찰이 함께 있어야 한다.
-        const saju=(c.ten('편관')>0||(c.sin('baekho')&&c.has('관성')))
-          &&(c.inter('형',1)||c.inter('파',1));
+        // 사고의 발생을 예언하지 않고, 일이 잘못됐을 때 압박받는 쪽의 책임을 말한다.
+        // 백호만 있는 경우에는 직장 근거를 더 확인해 다른 생활 영역의 사건을 끌어오지 않는다.
+        const saju=c.ten('편관')>0||(c.sin('baekho')&&c.has('관성')
+          &&(c.inter('형',1)||c.inter('파',1)));
         const western=c.asp('Mars','Saturn',H)&&[6,10].includes(c.house('Mars'));
         return saju||western;
       },
        text:'일이 크게 잘못되면 결정한 사람은 다른 부서로 옮기고 그 일을 한 사람은 경위서를 씁니다. 옮긴 사람은 새 부서에서 다시 결정하고 경위서를 쓴 사람은 같은 일을 계속합니다.'},
       // 줄일 명단을 짠 사람은 명단에 없다
       {id:'O6',not:[],when:c=>{
-        // 일반적인 마찰과 구별해 직장·근무 조건의 변동에 압박이 겹칠 때 고른다.
-        const saju=c.inter('충',1)&&(c.ten('편관')>0||c.hi('관성'));
+        // 회사가 어려워졌을 때도 권한과 부담은 나뉜다. 편관에 변동 신호까지 요구하지 않는다.
+        // 변동으로 고를 때에는 직장·윗사람을 보는 달 자리와 책임의 근거를 함께 확인한다.
+        const saju=c.ten('편관')>0||(c.inter('충',1)&&c.hi('관성'));
         const western=([6,10].includes(c.house('Saturn'))&&c.asp('Saturn','Uranus',H))
           ||([6,10].includes(c.house('Uranus'))&&c.asp('Sun','Uranus',H));
         return saju||western;
@@ -375,6 +377,7 @@
        text:'같은 해에 일을 시작한 친구가 결혼하면서 부모님이 집을 마련해 줬다는 얘기를 듣습니다. 그 친구는 월급을 모으고 당신은 월세를 냅니다. 몇 년 뒤 벌어진 차이를 사람들은 그 친구가 알뜰하게 모은 덕으로 압니다.'},
       // 먼저 번 사람이 집안 셈을 진다
       {id:'F3',not:[],when:c=>(c.hi('비겁')&&!c.hi('재성'))||c.house('Saturn')===3||c.ten('겁재')>0,
+       originText:{shown:'집에서 생활과 배움을 받쳐 준 덕에 자리를 잡으면, 집안에서도 이제 보탤 때가 됐다고 합니다. 동생 학비나 부모에게 급한 돈이 생기면 먼저 당신에게 연락이 옵니다. 받은 덕에 먼저 벌게 되었으니 먼저 내는 것이 도리입니다. 자기 집 마련을 미뤄 가며 보탠 돈도 집안에서는 받은 것을 돌려준 것으로 셉니다.'},
        text:'집안에서 먼저 돈을 벌기 시작한 사람은 동생들의 학비와 부모의 빚까지 같이 셉니다. 그 셈이 끝날 무렵이면 자기 결혼과 집 마련은 늦어져 있습니다. 집안은 그 늦음을 그 사람의 고집으로 기억합니다.'},
       // 명절 액수는 제일 잘 버는 형제에게 맞춰진다
       {id:'F4',not:[],when:c=>(c.has('비겁')&&!c.lo('비겁'))||c.ten('겁재')>0||[3,4].includes(c.house('Moon')),
@@ -460,14 +463,16 @@
     out.domains.forEach(d=>{
       const pool=(POOL[d.id]||[]).filter(x=>hit(x,c,d.cause));
       d.poolIds=pool.map(x=>x.id);
+      // 지원을 받은 출발점은 뒤의 부양 장면에서도 보존한다. 문단 수와 선택 조건은 그대로 둔다.
+      const paragraphs=pool.map(x=>(x.originText&&x.originText[c.origin])||x.text);
       if(d.id==='money'){
         const lead=d.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[d.cause]||[d.detail,d.rule];
-        d.paragraphs=lead.concat(pool.map(x=>x.text),[COPY.stability]).filter(Boolean);
+        d.paragraphs=lead.concat(paragraphs,[COPY.stability]).filter(Boolean);
       }else if(OPENING[d.id]){
         // 장면이 없으면 원래 장면, 한 방이 없으면 원래 이치를 그대로 쓴다.
         const o=OPENING[d.id],scene=o.scene[d.cause]||o.scene.fallback||d.detail,blow=o.blow[d.ruleKey||d.cause]||d.rule;
-        d.paragraphs=[scene,blow].concat(pool.map(x=>x.text)).filter(Boolean);
-      }else d.paragraphs=[d.detail,d.rule].concat(pool.map(x=>x.text)).filter(Boolean);
+        d.paragraphs=[scene,blow].concat(paragraphs).filter(Boolean);
+      }else d.paragraphs=[d.detail,d.rule].concat(paragraphs).filter(Boolean);
       d.closing=d.fates.slice();
     });
     return out;

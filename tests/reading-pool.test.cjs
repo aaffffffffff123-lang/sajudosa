@@ -54,7 +54,7 @@ test('each card follows its own order of paragraphs and closes on every fate lin
  for(const k of Object.keys(POOL))assert.equal(new Set(ids[k]).size,ids[k].length,k);
  assert.deepEqual(ids,{work:['W1','W2','W5','W7','W8','W9','W3','W6','W4'],money:['M3','M4','M5','learning','debt','effort','M1','M2','M6'],office:['O1','O4','O9','O2','O7','O5','O6','O3'],home:['L5','L9','L11','L4','L10','L3','L2','L8','L7','L1','L6'],family:['F2','F5','F3','F4','F1','F6'],body:['B3','B4','B1','B5','B7','B6','B2'],gwiin:['G1','G5','G7','G2','G6','G4','G3']});
  for(const {view} of ALL)for(const d of view.domains){
-  const pool=d.poolIds.map(id=>POOL[d.id].find(x=>x.id===id).text);
+  const pool=d.poolIds.map(id=>{const x=POOL[d.id].find(x=>x.id===id);return (x.originText&&x.originText[view.origin.key])||x.text;});
   assert.deepEqual(d.poolIds,ids[d.id].filter(id=>d.poolIds.includes(id)),d.id);
   assert.deepEqual(d.closing,d.fates,d.id);assert(d.closing.length>=1,d.id);
   if(d.id==='money'){
@@ -110,7 +110,7 @@ test('a paragraph appears only when its saju or star condition holds',()=>{
  for(const id of ['W1','W2','W5'])assert(d.work.poolIds.includes(id),id);
  assert(d.body.poolIds.includes('B1')&&d.body.poolIds.includes('B2'));assert(d.home.poolIds.includes('L4'));assert(d.office.poolIds.includes('O3'));
  d=fake({ten:{정관:1,편관:1,겁재:1,편재:1}});
- assert(d.office.poolIds.includes('O2')&&!d.office.poolIds.includes('O5'));assert(d.money.poolIds.includes('debt'));assert(d.family.poolIds.includes('F3'));assert(d.home.poolIds.includes('L2'));
+ assert(d.office.poolIds.includes('O2')&&d.office.poolIds.includes('O5'));assert(d.money.poolIds.includes('debt'));assert(d.family.poolIds.includes('F3'));assert(d.home.poolIds.includes('L2'));
  d=fake({interactions:[{kind:'형',positions:[0,3]},{kind:'충',positions:[1,2]}],sinsal:[{key:'yeokma'},{key:'baekho'}]});
  assert(d.office.poolIds.includes('O1')&&!d.office.poolIds.includes('O5'));assert(d.work.poolIds.includes('W4'));assert(d.home.poolIds.includes('L3'));
  // 별자리 조건: 배치만 바꿔도 같은 문단이 붙는다.
@@ -126,7 +126,7 @@ test('a paragraph appears only when its saju or star condition holds',()=>{
  assert(!fake({origin:'absent',causes:{family:'absentPoor'}}).family.poolIds.includes('F5'));assert(!fake({origin:'shown'}).family.poolIds.includes('F5'));
  assert(fake({origin:'hidden',levels:{재성:'weak'}}).family.poolIds.includes('F5'));
  d=fake({ten:{정관:1,편관:1,편재:1},levels:{관성:'strong'}});
- for(const id of ['O9','O7','O5','O6'])assert(!d.office.poolIds.includes(id),id);assert(d.body.poolIds.includes('B5')&&d.body.poolIds.includes('B6'));
+ for(const id of ['O9','O7','O5','O6'])assert(d.office.poolIds.includes(id),id);assert(d.body.poolIds.includes('B5')&&d.body.poolIds.includes('B6'));
  d=fake({levels:{재성:'weak',관성:'weak'},strength:'신약',causes:{gwiin:'present'}});
  assert(d.body.poolIds.includes('B7'));assert(d.home.poolIds.includes('L8')&&d.home.poolIds.includes('L7'));assert(d.gwiin.poolIds.includes('G7'));
  assert(!fake({levels:{재성:'weak'},causes:{home:'생활을 합치는 날짜'}}).home.poolIds.includes('L7'));
@@ -135,31 +135,63 @@ test('a paragraph appears only when its saju or star condition holds',()=>{
  d=fake({planets:[['Mars',null,1],['Saturn',null,2]],aspects:[]});assert.deepEqual(d.work.poolIds,[]);
 });
 
-test('office scenes require their own material, document, incident or workplace-change evidence',()=>{
+test('office pressure survives personal wealth and needs no prediction of a specific incident',()=>{
  const has=(opts,id)=>fake(opts).office.poolIds.includes(id);
- // 책임의 크기만으로 예산이 부족하다고 하지 않는다.
- assert(!has({levels:{관성:'strong'}},'O9'));
+ // 개인 재산과 회사가 내주는 자원은 별개다. 재물 강도만 바꿔도 책임의 장면은 사라지지 않는다.
+ for(const 재성 of ['absent','weak','normal','strong','excess'])assert(has({levels:{관성:'strong',재성}},'O9'));
  assert(!has({levels:{재성:'weak'}},'O9'));
- assert(has({levels:{관성:'strong',재성:'weak'}},'O9'));
- // 규칙만 있거나 준비·문서만 강한 경우에는 서명 책임으로 건너뛰지 않는다.
- assert(!has({ten:{정관:1}},'O7'));
- assert(!has({levels:{인성:'strong'}},'O7'));
- assert(has({ten:{정관:1},levels:{인성:'strong'}},'O7'));
- // 다른 생활 영역의 마찰은 직장 경위서의 근거가 아니다.
- const incident={ten:{편관:1},interactions:[{kind:'형',positions:[0,2]}]};
- assert(!has(incident,'O5'));
- assert(has({...incident,interactions:[{kind:'형',positions:[1,2]}]},'O5'));
+ // 규칙을 지키는 것과 서명으로 책임을 받는 것은 서로 다른 부담이다.
+ for(const 인성 of ['absent','weak','normal','strong','excess']){
+  const office=fake({ten:{정관:1},levels:{인성}}).office;
+  assert(office.poolIds.includes('O2')&&office.poolIds.includes('O7'));
+ }
+ assert(has({levels:{인성:'strong'}},'O7'));
+ assert(!has({levels:{인성:'strong',관성:'absent'}},'O7'));
+ // 편관의 압박은 평소에도, 일이 잘못되거나 회사가 어려워졌을 때도 이어진다.
+ for(const interactions of [[],[{kind:'형',positions:[0,2]}],[{kind:'충',positions:[0,2]}]]){
+  const office=fake({ten:{편관:1},interactions}).office;
+  assert(office.poolIds.includes('O5')&&office.poolIds.includes('O6'));
+ }
+ // 직장 압박 없이 다른 생활 영역의 충돌만 있는 경우까지 끌어오지는 않는다.
+ assert(!has({interactions:[{kind:'형',positions:[0,2]}]},'O5'));
  assert(!has({sinsal:[{key:'baekho'}]},'O5'));
  assert(!has({levels:{관성:'absent'},sinsal:[{key:'baekho'}],interactions:[{kind:'파',positions:[1,3]}]},'O5'));
  assert(has({sinsal:[{key:'baekho'}],interactions:[{kind:'파',positions:[1,3]}]},'O5'));
- // 인원 감축은 직장 영역의 변동과 압박이 함께 있을 때 고른다.
- assert(!has({ten:{편관:1}},'O6'));
- assert(!has({ten:{편관:1},interactions:[{kind:'충',positions:[0,2]}]},'O6'));
+ assert(!has({levels:{관성:'strong'},interactions:[{kind:'충',positions:[0,2]}]},'O6'));
  assert(!has({interactions:[{kind:'충',positions:[1,2]}]},'O6'));
- assert(has({ten:{편관:1},interactions:[{kind:'충',positions:[1,2]}]},'O6'));
- // 각각의 근거가 있으면 네 문단을 모두 보존한다. 분량 상한이나 짝 중 하나 뽑기가 아니다.
- const all=fake({levels:{관성:'strong',재성:'weak',인성:'strong'},ten:{정관:1,편관:1},interactions:[{kind:'형',positions:[1,2]},{kind:'충',positions:[1,3]}]}).office;
- for(const id of ['O9','O7','O5','O6'])assert(all.poolIds.includes(id),id);
+ assert(has({levels:{관성:'strong'},interactions:[{kind:'충',positions:[1,2]}]},'O6'));
+ // 실제 회귀 사례: 재성이 강하고 생시를 몰라도 예산·서명 부담을 보존한다.
+ const example=read(1960,10,21,{unknown:true,pk:'busan',male:false});
+ const c=ReadingPool.context(example.result,example.view);
+ assert(c.hi('재성'));assert.equal(example.view.origin.key,'shown');
+ const office=example.view.domains.find(d=>d.id==='office');
+ assert.equal(office.cause,'hidden');
+ for(const id of ['O9','O7'])assert(office.poolIds.includes(id),id);
+ // 이 사례의 백호와 해·날 자리 충돌만으로 경위서·감축까지 복구하지 않는다.
+ assert(!office.poolIds.includes('O5')&&!office.poolIds.includes('O6'));
+ const pressured=read(2003,6,18,{h:1,mi:25,pk:'busan',male:false}).view.domains.find(d=>d.id==='office');
+ for(const id of ['O9','O7','O5','O6'])assert(pressured.poolIds.includes(id),id);
+});
+
+test('family obligations acknowledge earlier support without adding or suppressing scenes',()=>{
+ const item=POOL.family.find(x=>x.id==='F3');
+ const supported=fake({origin:'shown',ten:{겁재:1}}).family;
+ assert(supported.paragraphs.includes(item.originText.shown));
+ assert(!supported.paragraphs.includes(item.text));
+ assert.match(item.originText.shown,/생활과 배움을 받쳐 준 덕/);
+ assert.match(item.originText.shown,/받은 것을 돌려준 것으로/);
+ for(const origin of ['hidden','absent',null]){
+  const other=fake({origin,ten:{겁재:1}}).family;
+  assert.equal(other.poolIds.filter(id=>id==='F3').length,1);
+  assert.equal(other.paragraphs.length,other.poolIds.length+2);
+  assert(other.paragraphs.includes(item.text));
+  assert(!other.paragraphs.includes(item.originText.shown));
+ }
+ // 지원이 있다는 이유만으로 부양 문단을 새로 넣지는 않는다.
+ assert(!fake({origin:'shown'}).family.poolIds.includes('F3'));
+ const example=read(1975,8,1,{h:0,mi:36,pk:'daejeon',male:true}).view;
+ assert.equal(example.origin.key,'shown');
+ assert(example.domains.find(d=>d.id==='family').paragraphs.includes(item.originText.shown));
 });
 
 test('each refined office scene keeps an independent Western route tied to the relevant life area',()=>{
