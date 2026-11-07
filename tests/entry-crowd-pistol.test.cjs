@@ -38,17 +38,22 @@ test('reading follower speech stays still while its tail follows the moving spea
  }
 });
 
-test('the four murmurs rotate without repeats and only use fortune replies when their marks match',()=>{
+test('the five approved murmurs rotate without repeats and gate fortune replies by the matching mark',()=>{
  const STARE={used:new Set(),exchange:null},crowd={visible:true},lastResult={paper:{marks:{}}},G={time:0};
  const scope={STARE,crowd,lastResult,G,V3,innerWidth:390,innerHeight:844,pick:a=>a[0],CAM:{pos:V3()},forPlaces(){},CROWD:{witness(){}},HEAD_Y:.763,camera:new THREE.PerspectiveCamera()};
  const api=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut(' function prepareWhispers(){',' function startWhispers(){')+';({prepareWhispers,LINES})',scope);
- assert.deepEqual(Array.from(api.LINES.whisper,w=>w.aside),['고졸인가?','가정교육을 안 받았나?','좆소 다니나?','저런 것까지 가르쳐야 돼?']);
- assert.equal(api.LINES.sympathy,'신명님도 참 피곤하시겠다.');
+ assert.deepEqual(Array.from(api.LINES.whisper,w=>[w.aside,w.seen||w.say]).flat(),[
+  '고졸인가?','사주에 공부 기운이 없잖아',
+  '가정교육을 안 받았나?','부모복 없는 사주라 보고 배운 게 없지',
+  '좆소 다니나?','직장복이 없는데 좋은 데를 다녀봤겠어?',
+  '저런 것까지 가르쳐야 돼?','가난하고 못 배운 애들은 저런 데서 티가 확 난다니까',
+  '딱 봐도 회사에서도 폐급이네.','평생 말단일 팔자잖아.'
+ ]);
+ assert(!('sympathy' in api.LINES));
  assert(api.LINES.whisper.filter(w=>w.mark).every(w=>w.say===''));
- assert.equal(api.LINES.whisper.find(w=>w.mark==='noOfficer').seen,'직장복이 없으니 그런 데나 다니지.');
  for(let cycle=0;cycle<3;cycle++){
   const seen=new Set();
-  for(let i=0;i<4;i++){
+  for(let i=0;i<api.LINES.whisper.length;i++){
    STARE.exchange=null;api.prepareWhispers();const p=STARE.exchange.pair;
    assert(!seen.has(p));seen.add(p);STARE.used.add(p);assert.equal(STARE.exchange.say,p.say);
   }
@@ -59,22 +64,25 @@ test('the four murmurs rotate without repeats and only use fortune replies when 
  }
 });
 
-test('removed fallback replies never create empty bubbles and remaining whispers finish before the walk ends',()=>{
- const LINES=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+';LINES');
- const typeTime=vm.runInNewContext(cut('const TYPE=','/* 스프링:')+';typeTime');
- for(const pair of LINES.whisper)for(const say of [pair.say,...(pair.seen?[pair.seen]:[])]){
-  const STARE={on:true,t0:0,talk:[],used:new Set(),exchange:{pair,side:1,aside:null,say}},G={time:0},WALK={dur:4.35,on:true,t:0};
-  const responder={pi:4},speaker={pi:0},said=[],witnessed=[];
-  const scope={LINES,STARE,G,WALK,typeTime,clamp,CROWD:{witness:v=>witnessed.push(v)},walkSpeaker:(side,end,replyTo)=>replyTo?speaker:responder,sayWhisper:(who,text)=>said.push(text)};
-  const api=vm.runInNewContext(cut(' function planWhispers(){',' function anchorOf(')+cut(' function updateWhispers(){',' // 매 프레임:')+cut(' function stareReset(){',' function forPlaces(')+';({planWhispers,updateWhispers,stareReset})',scope);
-  api.planWhispers();
-  assert.equal(STARE.talk.length,say?2:1);assert.equal(witnessed.length,say?2:1);
-  assert(STARE.talk.every(x=>typeof x.text==='string'&&x.text.length>0));
-  const first=STARE.talk[0],last=STARE.talk.at(-1),span=text=>Math.max(1.5,typeTime(text,1.13)+.68);
-  if(say)assert(first.at+span(first.text)<=last.at);
-  assert(last.at+span(last.text)<WALK.dur);
-  WALK.t=WALK.dur;api.updateWhispers();
-  assert.deepEqual(said,say?[say,LINES.sympathy]:[LINES.sympathy]);
+test('approved replies wait until the first whisper is read, finish before arrival, and cancel with the scene',()=>{
+ const {LINES,VOICE,typeTime}=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const TYPE=','/* 스프링:')+';({LINES,VOICE,typeTime})');
+ const span=(text,pi)=>Math.max(1.5,typeTime(text,VOICE.crowd[pi].speed*1.08)+.68);
+ for(const pair of LINES.whisper)for(const say of [pair.say,...(pair.seen?[pair.seen]:[])])for(const fps of [20,60,120]){
+  const aside={pi:pair.who,delay:0},speaker={pi:1-pair.who},said=[],witnessed=[];
+  const STARE={on:true,t0:0,talk:[],used:new Set(),exchange:{pair,side:1,aside,say}},G={time:0},WALK={dur:4.35,on:true,t:0};
+  const scope={LINES,VOICE,STARE,G,WALK,typeTime,clamp,prepareWhispers(){},CROWD:{witness:v=>witnessed.push(v)},walkSpeaker:()=>speaker,
+   sayWhisper:(who,text)=>{const until=G.time+span(text,who.pi);said.push({text,at:G.time,until});return {until};}};
+  const api=vm.runInNewContext(cut(' function startWhispers(){',' function anchorOf(')+cut(' function updateWhispers(){',' // 매 프레임:')+cut(' function stareReset(){',' function forPlaces(')+';({startWhispers,planWhispers,updateWhispers,stareReset})',scope);
+  api.startWhispers();G.time=.32;api.planWhispers();
+  assert.equal(STARE.talk.length,say?1:0);assert.equal(witnessed.length,say?1:0);
+  if(say){
+   const reply=STARE.talk[0];assert.equal(reply.text,say);
+   assert(G.time+reply.at>=said[0].until+.1-1e-9);
+   assert(reply.at+span(say,speaker.pi)+1/fps<WALK.dur*.96);
+  }
+  const walkStarted=G.time;
+  for(let t=0;t<=WALK.dur;t+=1/fps){WALK.t=t;G.time=walkStarted+t;api.updateWhispers();}
+  assert.deepEqual(said.map(x=>x.text),say?[pair.aside,say]:[pair.aside]);
   api.planWhispers();api.stareReset();api.updateWhispers();
   assert.equal(said.length,say?2:1);assert.equal(STARE.exchange,null);
  }

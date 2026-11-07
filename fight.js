@@ -2643,15 +2643,15 @@ const LINES={
  // 설교 중에 종이를 구기기 시작하면(설교를 끊으면) 천지신명이 하는 말, 손을 놓고 물러서면 하는 말
  interrupt:'윗사람을 거스르는 자에게는 화가 백 가지라 하였느니라.',
  yield:'이제야 네 운명을 아는구나.',
- /* 앞의 두 사람은 학벌·집안을 사주로 재단하고, 마지막 사람은 설교하던 신명을 걱정한다.
+ /* 추종자들은 학벌·집안·직장을 운세로 재단한다.
   * who는 팔을 붙잡는 0·1번과 같다. 같은 얼굴·보증서·목소리가 이어진다. */
  whisper:[
   {aside:'고졸인가?',say:'',mark:'noStudy',seen:'사주에 공부 기운이 없잖아',who:1},
   {aside:'가정교육을 안 받았나?',say:'',mark:'noStudy',seen:'부모복 없는 사주라 보고 배운 게 없지',who:1},
-  {aside:'좆소 다니나?',say:'',mark:'noOfficer',seen:'직장복이 없으니 그런 데나 다니지.',who:1},
-  {aside:'저런 것까지 가르쳐야 돼?',say:'배운 대로 나오는 거지.',who:1}
+  {aside:'좆소 다니나?',say:'',mark:'noOfficer',seen:'직장복이 없는데 좋은 데를 다녀봤겠어?',who:1},
+  {aside:'저런 것까지 가르쳐야 돼?',say:'가난하고 못 배운 애들은 저런 데서 티가 확 난다니까',who:1},
+  {aside:'딱 봐도 회사에서도 폐급이네.',say:'',mark:'noOfficer',seen:'평생 말단일 팔자잖아.',who:1}
  ],
- sympathy:'신명님도 참 피곤하시겠다.',
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
 const REV_SHIFT=2.7;
@@ -2679,7 +2679,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.sympathy+LINES.whisper.map(w=>w.aside+w.say+(w.seen||'')).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say+(w.seen||'')).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -3818,8 +3818,8 @@ const SUBMISSION=(()=>{
   if(on){prepareWhispers();AUDIO.crowdTurn();}
   else{STARE.talk.length=0;CROWD.releaseWitnesses();STARE.exchange=null;AUDIO.crowdShuffle(.5);}
  }
- // Choose the two faces for where the reader will be at the END of each line.
- // The speakers leave the aisle in turn; everyone else parts as soon as we start walking.
+ // Choose the replying face for where the reader will be at the END of the line.
+ // The speaker stays until the reply is read; everyone else parts when we start walking.
  function walkSpeaker(side,until,replyTo,person){
   const e=walkProgress(until/WALK.dur),cx=lerp(WALK.p0.x,WALK.p1.x,e),cz=lerp(WALK.p0.z,WALK.p1.z,e);
   const aimX=lerp(WALK.l0.x,WALK.l1.x,e),aimZ=lerp(WALK.l0.z,WALK.l1.z,e);
@@ -3856,24 +3856,27 @@ const SUBMISSION=(()=>{
  }
  function startWhispers(){
   prepareWhispers();const e=STARE.exchange;if(!e)return;
-  if(e.aside){sayWhisper(e.aside,e.pair.aside,2);STARE.used.add(e.pair);}
+  if(e.aside){
+   e.asideUntil=sayWhisper(e.aside,e.pair.aside,2).until;
+   STARE.used.add(e.pair);
+  }
  }
  function planWhispers(){
   const exchange=STARE.exchange;if(!exchange)return;
-  const {pair,side,aside,say}=exchange,reply=LINES.sympathy;
-  const readSpan=text=>Math.max(1.5,typeTime(text,1.13)+.68);
-  const gap=say?.1:0,span=say?readSpan(say):0,lastSpan=readSpan(reply);
-  // 앞줄이 시야를 벗어나기 전에 마지막 맞장구를 다 읽을 여유를 둔다.
-  const firstAt=clamp(WALK.dur*.96-.34-span-gap-lastSpan,.28,.92);
-  const secondAt=firstAt+span+gap,end=secondAt+lastSpan;
-  const responder=walkSpeaker(side,end,null,4),speaker=say?walkSpeaker(side,secondAt,responder,1-pair.who):null;
-  if(!responder||(say&&!speaker))return;
-  for(const v of [speaker,responder].filter(Boolean)){CROWD.witness(v);v.from=v.look||0;v.goal=1;v.ld=G.time-STARE.t0;v.ldur=.45;v.noticeAt=G.time;}
+  const {pair,side,aside,say}=exchange;
+  STARE.talk=[];
+  if(!say)return;
+  const voice=VOICE.crowd[1-pair.who],span=Math.max(1.5,typeTime(say,voice.speed*1.08)+.68);
+  // 첫 수군거림을 끝까지 읽은 다음 맞장구를 시작한다. 걷는 시간은 그대로 둔다.
+  const afterAside=exchange.asideUntil==null?.28:Math.max(.28,exchange.asideUntil-G.time+.1);
+  const at=Math.max(afterAside,clamp(WALK.dur*.96-.34-span,.28,.92)),end=at+span;
+  const speaker=walkSpeaker(side,end,null,1-pair.who);if(!speaker)return;
+  CROWD.witness(speaker);
+  speaker.from=speaker.look||0;speaker.goal=1;speaker.ld=G.time-STARE.t0;speaker.ldur=.45;speaker.noticeAt=G.time;
   if(aside)aside.delay=Math.max(aside.delay,1);
-  if(speaker)speaker.delay=secondAt;responder.delay=end;
+  speaker.delay=end;
   STARE.used.add(pair);
-  STARE.talk=say?[{at:firstAt,who:speaker,text:say,slot:0}]:[];
-  STARE.talk.push({at:secondAt,who:responder,text:reply,slot:1});
+  STARE.talk=[{at,who:speaker,text:say,slot:0}];
  }
  function anchorOf(v,slot){
   let a=STARE.anchors[slot];if(!a){a=new THREE.Object3D();STARE.anchors[slot]=a;}
@@ -3886,8 +3889,7 @@ const SUBMISSION=(()=>{
  }
  function sayWhisper(who,text,slot){
   const v=VOICE.crowd[(who.actor?who.actor.i:who.pi)%VOICE.crowd.length];
-  if(slot===1)who.politeAt=G.time;
-  BUB.say({obj:anchorOf(who,slot),off:ZERO3,top:.13*who.scale,cam:'main'},text,0,
+  return BUB.say({obj:anchorOf(who,slot),off:ZERO3,top:.13*who.scale,cam:'main'},text,0,
    {voice:{pitch:v.pitch,formant:v.formant,speed:v.speed*1.08},whisper:true,stable:true,size:.95,read:[.68,0],pan:clamp(who.x*.6,-.8,.8)});
  }
  function updateWhispers(){
