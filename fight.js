@@ -2646,9 +2646,9 @@ const LINES={
  /* 앞의 두 사람은 학벌·집안을 사주로 재단하고, 마지막 사람은 설교하던 신명을 걱정한다.
   * who는 팔을 붙잡는 0·1번과 같다. 같은 얼굴·보증서·목소리가 이어진다. */
  whisper:[
-  {aside:'고졸인가?',say:'공부 좀 했으면 저러겠어?',mark:'noStudy',seen:'사주에 공부 기운이 없잖아',who:1},
-  {aside:'가정교육을 안 받았나?',say:'가정교육도 타고나는 거지.',mark:'noStudy',seen:'부모복 없는 사주라 보고 배운 게 없지',who:1},
-  {aside:'좆소 다니나?',say:'큰 데서 배웠으면 저러겠어?',mark:'noOfficer',seen:'관이 없으니 위아래도 모르지.',who:1},
+  {aside:'고졸인가?',say:'',mark:'noStudy',seen:'사주에 공부 기운이 없잖아',who:1},
+  {aside:'가정교육을 안 받았나?',say:'',mark:'noStudy',seen:'부모복 없는 사주라 보고 배운 게 없지',who:1},
+  {aside:'좆소 다니나?',say:'',mark:'noOfficer',seen:'직장복이 없으니 그런 데나 다니지.',who:1},
   {aside:'저런 것까지 가르쳐야 돼?',say:'배운 대로 나오는 거지.',who:1}
  ],
  sympathy:'신명님도 참 피곤하시겠다.',
@@ -3862,18 +3862,18 @@ const SUBMISSION=(()=>{
   const exchange=STARE.exchange;if(!exchange)return;
   const {pair,side,aside,say}=exchange,reply=LINES.sympathy;
   const readSpan=text=>Math.max(1.5,typeTime(text,1.13)+.68);
-  const gap=.1,span=readSpan(say),lastSpan=readSpan(reply);
+  const gap=say?.1:0,span=say?readSpan(say):0,lastSpan=readSpan(reply);
   // 앞줄이 시야를 벗어나기 전에 마지막 맞장구를 다 읽을 여유를 둔다.
   const firstAt=clamp(WALK.dur*.96-.34-span-gap-lastSpan,.28,.92);
   const secondAt=firstAt+span+gap,end=secondAt+lastSpan;
-  const responder=walkSpeaker(side,end,null,4),speaker=walkSpeaker(side,secondAt,responder,1-pair.who);
-  if(!speaker||!responder)return;
-  CROWD.witness(speaker);CROWD.witness(responder);
-  for(const v of [speaker,responder]){v.from=v.look||0;v.goal=1;v.ld=G.time-STARE.t0;v.ldur=.45;v.noticeAt=G.time;}
+  const responder=walkSpeaker(side,end,null,4),speaker=say?walkSpeaker(side,secondAt,responder,1-pair.who):null;
+  if(!responder||(say&&!speaker))return;
+  for(const v of [speaker,responder].filter(Boolean)){CROWD.witness(v);v.from=v.look||0;v.goal=1;v.ld=G.time-STARE.t0;v.ldur=.45;v.noticeAt=G.time;}
   if(aside)aside.delay=Math.max(aside.delay,1);
-  speaker.delay=secondAt;responder.delay=end;
+  if(speaker)speaker.delay=secondAt;responder.delay=end;
   STARE.used.add(pair);
-  STARE.talk=[{at:firstAt,who:speaker,text:say,slot:0},{at:secondAt,who:responder,text:reply,slot:1}];
+  STARE.talk=say?[{at:firstAt,who:speaker,text:say,slot:0}]:[];
+  STARE.talk.push({at:secondAt,who:responder,text:reply,slot:1});
  }
  function anchorOf(v,slot){
   let a=STARE.anchors[slot];if(!a){a=new THREE.Object3D();STARE.anchors[slot]=a;}
