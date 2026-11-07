@@ -4511,7 +4511,9 @@ function renderResult(R){
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
- R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,westernIds:v.domains.flatMap(d=>d.westernAddedIds||[])};
+ R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,westernIds:v.domains.flatMap(d=>d.westernAddedIds||[]),
+  crowd:{age:new Date(now+9*HOUR).getUTCFullYear()-R.solarDate.y,origin:{key:v.origin.key},marks:v.marks,
+   domains:v.domains.map(d=>({id:d.id,cause:d.cause,displayed:true,poolIds:(d.poolIds||[]).slice(),westernAddedIds:(d.westernAddedIds||[]).slice()}))}};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
  $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
@@ -4615,8 +4617,9 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261107-entry-voices-pistol';
-  fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
+  const v='?v=20261107-reading-crowd';
+  fightScripts=loadScript(['crowd-lines.js'+v],()=>!!window.CrowdLines)
+   .then(()=>loadScript(THREE_SRC,()=>!!window.THREE))
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))

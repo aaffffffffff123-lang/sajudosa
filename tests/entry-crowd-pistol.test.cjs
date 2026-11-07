@@ -1,5 +1,5 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const THREE=require('../three.min.js');
+const THREE=require('../three.min.js'),CrowdLines=require('../crowd-lines.js');
 const fight=fs.readFileSync(path.join(__dirname,'../fight.js'),'utf8'),html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const part=(src,a,b)=>{const i=src.indexOf(a),j=src.indexOf(b,i);assert(i>=0&&j>i,a);return src.slice(i,j)};
 const cut=(a,b)=>part(fight,a,b),V3=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -20,7 +20,7 @@ function bubbles(width=390,height=844){
  const canvas={width:0,height:0,getContext:()=>ctx};
  const camera=new THREE.PerspectiveCamera(50,width/height,.01,100);camera.position.z=5;camera.updateMatrixWorld();
  const scene=new THREE.Scene(),speaker=new THREE.Object3D();scene.add(speaker);speaker.position.y=.3;
- const scope={THREE,V3,ZERO3:V3(),G,clamp,PI:Math.PI,TAU:Math.PI*2,innerWidth:width,innerHeight:height,camera,vmCam:camera,performance:{now:()=>now},window:{devicePixelRatio:1},document:{},visibleChain:()=>true,typeSteps:text=>({total:.3,steps:Array.from(text).map(()=>({t:0,kind:'char'}))}),AUDIO:{speak:()=>({stop(){}}),whisper:()=>({stop(){}})},$:s=>s==='#speech'?canvas:s==='#fight .ftop'?{hidden:false,getBoundingClientRect:()=>({bottom:48})}:null};
+ const scope={CrowdLines,THREE,V3,ZERO3:V3(),G,clamp,PI:Math.PI,TAU:Math.PI*2,innerWidth:width,innerHeight:height,camera,vmCam:camera,performance:{now:()=>now},window:{devicePixelRatio:1},document:{},visibleChain:()=>true,typeSteps:text=>({total:.3,steps:Array.from(text).map(()=>({t:0,kind:'char'}))}),AUDIO:{speak:()=>({stop(){}}),whisper:()=>({stop(){}})},$:s=>s==='#speech'?canvas:s==='#fight .ftop'?{hidden:false,getBoundingClientRect:()=>({bottom:48})}:null};
  const BUB=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const ZERO3=V3();','/* 팔 붙잡기 장면')+';BUB',scope);
  return {BUB,G,speaker,scope,draw(){now+=16;G.time+=.016;BUB.draw()}};
 }
@@ -38,15 +38,21 @@ test('reading follower speech stays still while its tail follows the moving spea
  }
 });
 
-test('western whispers require a paragraph actually shown in this reading; exhausting a smaller pool remains safe',()=>{
- const STARE={used:new Set(),exchange:null},crowd={visible:true},lastResult={paper:{westernIds:[]}},G={time:0};
- const scope={STARE,crowd,lastResult,G,V3,innerWidth:390,innerHeight:844,pick:a=>a[0],CAM:{pos:V3()},forPlaces(){},CROWD:{witness(){}},HEAD_Y:.763,camera:new THREE.PerspectiveCamera()};
- const api=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut(' function prepareWhispers(){',' function startWhispers(){')+';({prepareWhispers,LINES})',scope);
- assert.equal(api.LINES.whisper.length,15);
- for(let i=0;i<40;i++){STARE.exchange=null;api.prepareWhispers();const p=STARE.exchange.pair;assert(!p.western);STARE.used.add(p)}
- STARE.used.clear();lastResult.paper.westernIds=['W1'];let found=false;
- for(let i=0;i<13;i++){STARE.exchange=null;api.prepareWhispers();const p=STARE.exchange.pair;if(p.western){assert(p.western.includes('W1'));found=true}STARE.used.add(p)}
- assert(found);
+test('the live scene selects only the displayed reading and safely exhausts its eligible pool',()=>{
+ const reading={age:35,origin:{key:'shown'},marks:{},domains:[{id:'gwiin',cause:'present',displayed:true,poolIds:[],westernAddedIds:[]}]};
+ const STARE={used:new Set(),exchange:null},crowd={visible:true},lastResult={paper:{crowd:reading}},G={time:0};
+ const scope={CrowdLines,STARE,crowd,lastResult,G,V3,innerWidth:390,innerHeight:844,CAM:{pos:V3()},forPlaces(){},CROWD:{witness(){}},HEAD_Y:.763,camera:new THREE.PerspectiveCamera()};
+ const api=vm.runInNewContext(cut(' function prepareWhispers(){',' function startWhispers(){')+';({prepareWhispers})',scope);
+ const eligible=CrowdLines.eligible(CrowdLines.fromReading(reading,reading.age));
+ for(let cycle=0;cycle<3;cycle++){
+  const seen=new Set();
+  for(let i=0;i<eligible.length;i++){
+   STARE.exchange=null;api.prepareWhispers();const p=STARE.exchange.pair;
+   assert(eligible.some(e=>e.id===p.id));assert(!seen.has(p.id));seen.add(p.id);STARE.used.add(p.id);
+   assert(!p.id.startsWith('origin-empty'));assert(!p.id.startsWith('no-helper'));
+  }
+ }
+ STARE.exchange=null;lastResult.paper.crowd=null;api.prepareWhispers();assert.equal(STARE.exchange,null);
 });
 
 test('even a 50 ms frame draws a newly fired flash before retiring it',()=>{
