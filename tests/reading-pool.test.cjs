@@ -2,7 +2,7 @@
 // - 확정한 재물 원고(COPY)는 글자 하나 바꾸지 않는다.
 // - 일·몸·짝과 관계·가족과 부양·귀인·관운은 원인별 [장면, 한 방]으로 시작하고, 한 방 끝에 그 칸의 원래 이치를 글자 그대로 품는다.
 // - 문단은 사주·별자리 조건이 맞을 때만 붙고 한 사람이 받는 문단 수에 상한을 두지 않는다.
-// - 별자리는 문단을 고르는 조건이며 실제로 더한 내용은 총평에도 쓴다. 본문에 별자리·사주 용어를 쓰지 않고 같은 문장을 두 번 쓰지 않는다.
+// - 별자리는 문단을 고르는 조건이며 총평은 실제로 선택된 여러 칸의 원인을 잇는다. 본문에 별자리·사주 용어를 쓰지 않고 같은 문장을 두 번 쓰지 않는다.
 // 이 검사가 깨지면 문장을 순하게 바꾸지 말고 조건과 제외 목록을 맞춘다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const W=require('../western.js'),ReadingPool=require('../reading-pool.js');
@@ -26,50 +26,60 @@ const ALL=(()=>{let seed=20261107;const rnd=()=>{seed=(seed*1103515245+12345)>>>
  return out;})();
 const ids=Object.fromEntries(Object.entries(POOL).map(([k,list])=>[k,list.map(x=>x.id)]));
 
-test('the final verdict follows a displayed western addition while keeping family and work context',()=>{
- let mixed=0,fallback=0;
+test('the conclusion connects displayed causes with traceable evidence and deterministic copy',()=>{
+ const threads=new Set();let starChanges=0;
  for(const {result,view} of ALL){
+  const ev=view.verdictEvidence;assert(ev);threads.add(ev.thread);
+  assert(ev.domains.length>=3&&ev.domains.length<=4);
+  assert(view.verdict.length>=100&&view.verdict.length<=320,view.verdict);
+  assert(view.verdict.split(/(?<=\.)\s+/).length>=4);
+  for(const x of ev.sources){
+   if(x.domain==='origin'){assert.equal(x.cause,view.origin.key);continue;}
+   const d=view.domains.find(d=>d.id===x.domain);assert(d,x.domain);
+   if(x.poolId)assert(d.poolIds.includes(x.poolId),x.poolId);
+   else assert.equal(d.cause,x.cause);
+  }
+  assert.equal(core.v5Reading(result,NOW).verdict,view.verdict);
   const noStars=core.v5Reading({...result,western:{available:false}},NOW);
-  assert.equal(noStars.verdictEvidence,undefined);
+  assert(noStars.verdictEvidence,'a complete conclusion also works without a birth time or stars');
   assert.equal(noStars.verdict,core.v5Reading({...result,western:{available:true,planets:[],aspects:[]}},NOW).verdict);
-  assert(view.verdict.endsWith('운명입니다.'));
-  assert(view.verdict.startsWith([view.verdictFrame.subject,view.verdictFrame.origin,view.verdictFrame.work].join(' ')));
-  if(view.verdictEvidence){
-   mixed++;
-   const {domain,poolId}=view.verdictEvidence,d=view.domains.find(d=>d.id===domain),base=noStars.domains.find(d=>d.id===domain);
-   assert(d.poolIds.includes(poolId));assert(d.westernAddedIds.includes(poolId));assert(!base.poolIds.includes(poolId));
-   assert.notEqual(view.verdict,noStars.verdict);
-  }else{fallback++;assert.equal(view.verdict,noStars.verdict);}
-  assert.equal(core.v5Reading(result,NOW).verdict,view.verdict,'same input yields the same conclusion');
+  if(noStars.verdict!==view.verdict)starChanges++;
+  if(view.domains.find(d=>d.id==='office').cause==='supported')assert.equal(ev.thread,'keeping-authority');
  }
- assert(mixed>0,'actual charts contribute western conclusions');
- assert(fallback>0,'no western addition keeps the original conclusion');
+ assert(threads.size>=10,Array.from(threads).join(','));
+ assert(starChanges>0,'astrology affects the displayed facts and hence the conclusion');
 });
 
-test('western changes can reach the final verdict from all seven domains without invented chart data',()=>{
- const cases=[
-  {domain:'work',id:'W5',planets:[{id:'Mercury',house:3}],text:'퇴근 뒤 연락'},
-  {domain:'money',id:'debt',planets:[{id:'Sun',house:8}],text:'급해서 빌린 돈'},
-  {domain:'body',id:'B7',aspects:[{a:'Sun',b:'Neptune',angle:90}],text:'몸을 돌볼 시간'},
-  {domain:'home',id:'L5',planets:[{id:'Venus',sign:3}],unknown:true,text:'더 마음을 준 만큼'},
-  {domain:'office',id:'O4',planets:[{id:'Sun',house:10}],text:'일한 것을 보여 주는'},
-  {domain:'family',id:'F4',planets:[{id:'Moon',house:3}],peerAbsent:true,text:'집안에 드릴 돈'},
-  {domain:'gwiin',id:'G4',planets:[{id:'Jupiter',house:9}],moving:true,text:'받은 도움의 값'}
- ];
- for(const x of cases){
-  const families=Object.fromEntries(['비겁','식상','재성','관성','인성'].map(k=>[k,{level:x.peerAbsent&&k==='비겁'?'absent':'normal',visible:0}]));
-  const R={input:{male:true},reading:{a:{families,visibleTen:{},strength:{label:'중화'},interactions:[]},sinsal:x.moving?[{key:'yeokma'}]:[]},
-   western:{available:true,unknown:!!x.unknown,planets:x.planets||[],aspects:x.aspects||[]}};
-  const initial=()=>({origin:{key:'hidden'},core:{cause:'base'},verdict:'사주만의 결론',verdictFrame:{subject:'민수 님은',origin:'집안의 복은 만져 보지도 못하고',work:'일을 잘할수록 일이 늘어나고'},
-   domains:['work','money','body','home','family','gwiin','office'].map(id=>({id,cause:id==='gwiin'?'present':id==='money'?'reserve':'base',detail:'장면',rule:'이치',fates:['팔자 줄']}))});
-  const out=ReadingPool.weave(initial(),R),noStars=ReadingPool.weave(initial(),{...R,western:null});
-  assert.deepEqual(out.verdictEvidence,{domain:x.domain,poolId:x.id});assert(out.verdict.includes(x.text),out.verdict);
-  assert(out.verdict.startsWith('민수 님은 '));assert.notEqual(out.verdict,noStars.verdict);
-  // An excluded paragraph cannot appear merely to provide an astrology conclusion.
-  if(x.id==='G4'){
-   const excluded=initial();excluded.domains.find(d=>d.id==='gwiin').cause='absent';
-   ReadingPool.weave(excluded,R);assert(!excluded.verdictEvidence||excluded.verdictEvidence.poolId!=='G4');
-  }
+test('removing a displayed move or benefactor paragraph cannot leave that event in the conclusion',()=>{
+ const Closing=require('../closing-reading.js');let checked=0;
+ for(const {result,view} of ALL){
+  const work=view.domains.find(d=>d.id==='work');
+  if(['palace_clash','month_day_clash','backing'].includes(work.cause))continue;
+  const out=structuredClone(view);
+  for(const d of out.domains)d.poolIds=d.poolIds.filter(id=>!['W4','G4'].includes(id));
+  Closing.compose(out,result);
+  assert(!out.verdictEvidence.sources.some(x=>['W4','G4'].includes(x.poolId)));
+  assert(!['moving-cost','moving-relationships','help-and-debt'].includes(out.verdictEvidence.thread));checked++;
+ }
+ assert(checked>20);
+});
+
+test('the optional name is literal and does not alter the selected reading',()=>{
+ const Closing=require('../closing-reading.js'),{result,view}=ALL[0];
+ const out=structuredClone(view);out.verdictFrame.subject='$& 님은';
+ Closing.compose(out,result);
+ assert.equal(out.verdict,view.verdict.replace(/^당신은/,()=>'$& 님은'));
+ assert.deepEqual(out.verdictEvidence,view.verdictEvidence);
+});
+
+test('unknown birth time and family cases do not create children or a career break in a summary',()=>{
+ for(const {view} of ALL){
+  const family=view.domains.find(d=>d.id==='family');
+  if(['old','young'].includes(family.cause))assert(!/아이|자식|교육비/.test(view.verdict),view.verdict);
+  if(family.cause!=='cut')assert(!/경력은 끊기|경력도 끊기|돌아갈 일자리는 새로/.test(view.verdict),view.verdict);
+  assert.equal(view.cautions.length,2);
+  assert(!/지시받은 만큼만 하면/.test(view.cautions.join(' ')));
+  if(view.origin.key!=='shown')assert(!/집안에서 받은 복/.test(view.cautions.join(' ')));
  }
 });
 

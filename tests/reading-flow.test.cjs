@@ -267,7 +267,7 @@ test('seven office cases select different predicaments from real chart evidence'
   if(key==='mixed'){assert(r.a.structure.failure.some(f=>f.id==='mixed_officer'));assert(r.a.structure.success.includes('관인상생'));}
   if(key==='challenge')assert(r.a.structure.failure.some(f=>f.id==='hurt_officer'));
   if(key==='hidden'){assert(r.fate.officer.hidden.length);assert.equal(r.fate.officer.visible.length,0);assert(!['weak','absent'].includes(r.a.families.관성.level));}
-  if(key==='supported'){assert(r.a.structure.success.includes('관인상생'));assert(!['신약','극약'].includes(r.a.strength.label));assert.match(office.fates[0],/얻은 권한을 지키려고/);assert.match(v.cautions[2],/사람을 쓸 때는 처음부터 손발이 맞는 이를/);assert(!/정할 권한까지 바라면/.test(v.cautions.join(' ')));}
+  if(key==='supported'){assert(r.a.structure.success.includes('관인상생'));assert(!['신약','극약'].includes(r.a.strength.label));assert.match(office.fates[0],/얻은 권한을 지키려고/);assert.match(v.cautions[1],/사람을 쓸 때는 처음부터 손발이 맞는 이를/);assert(!/정할 권한까지 바라면/.test(v.cautions.join(' ')));}
  }
  assert.equal(seen.size,7);
 });
@@ -343,7 +343,7 @@ test('productive expression keeps both responsibilities while career loss requir
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
  for(const {v} of ALL){
   for(const f of fatesOf(v))assert.match(f,/^당신은 [^,]+팔자입니다\.$/,f);
-  assert.match(v.verdict,/^(당신은|\S+ 님은) [^,]+운명입니다\.$/);
+  assert.match(v.verdict,/^(당신은|\S+ 님은) [^,]+\.$/);assert(v.verdictEvidence);assert(v.verdict.length<=320);
   for(const t of textsOf(v)){assert.equal(typeof t,'string');assert(t.length);assert(!/이지,|가 아니라|이 아니라|이지 [^.]*아닙니다/.test(t),t);}
   assert(!/undefined|NaN/.test(JSON.stringify(v)));
  }
@@ -373,10 +373,11 @@ test('readings differ from person to person and only the agreed lines are shared
  const slots={origin:v=>v.origin.fate,symbol:v=>v.symbol,boss:v=>v.elements[1].replace(/^.*?입니다\. /,''),mind:v=>v.core.fate,
   work:v=>dom(v,'work').fates[0],money:v=>dom(v,'money').fates[0],body:v=>dom(v,'body').fates[0],home:v=>dom(v,'home').fates[0],office:v=>dom(v,'office').fates[0],
   workRule:v=>dom(v,'work').rule,moneyRule:v=>dom(v,'money').rule,bodyRule:v=>dom(v,'body').rule,homeRule:v=>dom(v,'home').rule,officeRule:v=>dom(v,'office').rule,
-  yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,caution0:v=>v.cautions[0],caution2:v=>v.cautions[2]};
+  yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,caution0:v=>v.cautions[0],cautionCount:v=>v.cautions[0]};
  for(const [k,f] of Object.entries(slots)){const m=count(f);assert(m.size>=2,k);assert(Math.max(...m.values())/n<=0.75,k);}
  const verdicts=count(v=>v.verdict);assert(verdicts.size>=n*0.5,String(verdicts.size));assert(Math.max(...verdicts.values())/n<=0.05);
- for(const f of [v=>v.cautions[1],v=>v.fixedNote])assert.equal(count(f).size,1);
+ assert.equal(count(v=>v.fixedNote).size,1);
+ for(const {v} of ALL){assert.equal(v.cautions.length,2);assert.notEqual(v.cautions[0],v.cautions[1]);}
 });
 
 test('subjects stay explicit and each card keeps its own cause',()=>{

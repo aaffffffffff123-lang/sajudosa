@@ -3656,7 +3656,9 @@ const SUBMISSION=(()=>{
    g.strokeStyle='#c9ac72';g.lineWidth=2;g.setLineDash([9,7]);g.beginPath();g.moveTo(X,176);g.lineTo(X+W,176);g.stroke();g.setLineDash([]);
    // 전체 풀이: 길면 글자를 줄여 판정 안내와 끝 문장 사이에 들어가게
    let size=37,rows;
-   for(;size>=27;size-=2){g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);if(232+rows.length*size*1.46<=600)break;}
+   for(;size>=17;size--){g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);if(232+rows.length*size*1.46<=592)break;}
+   // 긴 총평도 마지막 검사 크기와 실제 그리는 크기를 같게 유지한다.
+   size=Math.max(17,size);g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);
    g.fillStyle='#261f3d';g.font='700 '+size+'px '+SERIF;
    let y=232;rows.forEach(t=>{g.fillText(t,X,y);y+=size*1.46;});
    g.fillStyle='#7a7290';g.font='400 20px '+SANS;
