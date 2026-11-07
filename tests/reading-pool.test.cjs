@@ -110,9 +110,9 @@ test('a paragraph appears only when its saju or star condition holds',()=>{
  for(const id of ['W1','W2','W5'])assert(d.work.poolIds.includes(id),id);
  assert(d.body.poolIds.includes('B1')&&d.body.poolIds.includes('B2'));assert(d.home.poolIds.includes('L4'));assert(d.office.poolIds.includes('O3'));
  d=fake({ten:{정관:1,편관:1,겁재:1,편재:1}});
- assert(d.office.poolIds.includes('O2')&&d.office.poolIds.includes('O5'));assert(d.money.poolIds.includes('debt'));assert(d.family.poolIds.includes('F3'));assert(d.home.poolIds.includes('L2'));
+ assert(d.office.poolIds.includes('O2')&&!d.office.poolIds.includes('O5'));assert(d.money.poolIds.includes('debt'));assert(d.family.poolIds.includes('F3'));assert(d.home.poolIds.includes('L2'));
  d=fake({interactions:[{kind:'형',positions:[0,3]},{kind:'충',positions:[1,2]}],sinsal:[{key:'yeokma'},{key:'baekho'}]});
- assert(d.office.poolIds.includes('O1')&&d.office.poolIds.includes('O5'));assert(d.work.poolIds.includes('W4'));assert(d.home.poolIds.includes('L3'));
+ assert(d.office.poolIds.includes('O1')&&!d.office.poolIds.includes('O5'));assert(d.work.poolIds.includes('W4'));assert(d.home.poolIds.includes('L3'));
  // 별자리 조건: 배치만 바꿔도 같은 문단이 붙는다.
  d=fake({planets:[['Sun',10,0],['Moon',4,3],['Mercury',6,5],['Venus',10,7],['Mars',6,1],['Jupiter',9,8],['Saturn',9,2]],aspects:[{a:'Mars',b:'Saturn',angle:90},{a:'Jupiter',b:'Saturn',angle:180}]});
  assert(d.money.poolIds.includes('learning')&&d.money.poolIds.includes('effort'));
@@ -126,13 +126,77 @@ test('a paragraph appears only when its saju or star condition holds',()=>{
  assert(!fake({origin:'absent',causes:{family:'absentPoor'}}).family.poolIds.includes('F5'));assert(!fake({origin:'shown'}).family.poolIds.includes('F5'));
  assert(fake({origin:'hidden',levels:{재성:'weak'}}).family.poolIds.includes('F5'));
  d=fake({ten:{정관:1,편관:1,편재:1},levels:{관성:'strong'}});
- for(const id of ['O9','O7','O6'])assert(d.office.poolIds.includes(id),id);assert(d.body.poolIds.includes('B5')&&d.body.poolIds.includes('B6'));
+ for(const id of ['O9','O7','O5','O6'])assert(!d.office.poolIds.includes(id),id);assert(d.body.poolIds.includes('B5')&&d.body.poolIds.includes('B6'));
  d=fake({levels:{재성:'weak',관성:'weak'},strength:'신약',causes:{gwiin:'present'}});
  assert(d.body.poolIds.includes('B7'));assert(d.home.poolIds.includes('L8')&&d.home.poolIds.includes('L7'));assert(d.gwiin.poolIds.includes('G7'));
  assert(!fake({levels:{재성:'weak'},causes:{home:'생활을 합치는 날짜'}}).home.poolIds.includes('L7'));
  assert(fake({causes:{gwiin:'present'}}).gwiin.poolIds.includes('G6'));assert(!fake({causes:{gwiin:'absent'}}).gwiin.poolIds.includes('G6'));
  // 같은 배치라도 하우스가 없으면(생시 모름) 각도만으로 고른다.
  d=fake({planets:[['Mars',null,1],['Saturn',null,2]],aspects:[]});assert.deepEqual(d.work.poolIds,[]);
+});
+
+test('office scenes require their own material, document, incident or workplace-change evidence',()=>{
+ const has=(opts,id)=>fake(opts).office.poolIds.includes(id);
+ // 책임의 크기만으로 예산이 부족하다고 하지 않는다.
+ assert(!has({levels:{관성:'strong'}},'O9'));
+ assert(!has({levels:{재성:'weak'}},'O9'));
+ assert(has({levels:{관성:'strong',재성:'weak'}},'O9'));
+ // 규칙만 있거나 준비·문서만 강한 경우에는 서명 책임으로 건너뛰지 않는다.
+ assert(!has({ten:{정관:1}},'O7'));
+ assert(!has({levels:{인성:'strong'}},'O7'));
+ assert(has({ten:{정관:1},levels:{인성:'strong'}},'O7'));
+ // 다른 생활 영역의 마찰은 직장 경위서의 근거가 아니다.
+ const incident={ten:{편관:1},interactions:[{kind:'형',positions:[0,2]}]};
+ assert(!has(incident,'O5'));
+ assert(has({...incident,interactions:[{kind:'형',positions:[1,2]}]},'O5'));
+ assert(!has({sinsal:[{key:'baekho'}]},'O5'));
+ assert(!has({levels:{관성:'absent'},sinsal:[{key:'baekho'}],interactions:[{kind:'파',positions:[1,3]}]},'O5'));
+ assert(has({sinsal:[{key:'baekho'}],interactions:[{kind:'파',positions:[1,3]}]},'O5'));
+ // 인원 감축은 직장 영역의 변동과 압박이 함께 있을 때 고른다.
+ assert(!has({ten:{편관:1}},'O6'));
+ assert(!has({ten:{편관:1},interactions:[{kind:'충',positions:[0,2]}]},'O6'));
+ assert(!has({interactions:[{kind:'충',positions:[1,2]}]},'O6'));
+ assert(has({ten:{편관:1},interactions:[{kind:'충',positions:[1,2]}]},'O6'));
+ // 각각의 근거가 있으면 네 문단을 모두 보존한다. 분량 상한이나 짝 중 하나 뽑기가 아니다.
+ const all=fake({levels:{관성:'strong',재성:'weak',인성:'strong'},ten:{정관:1,편관:1},interactions:[{kind:'형',positions:[1,2]},{kind:'충',positions:[1,3]}]}).office;
+ for(const id of ['O9','O7','O5','O6'])assert(all.poolIds.includes(id),id);
+});
+
+test('each refined office scene keeps an independent Western route tied to the relevant life area',()=>{
+ const has=(opts,id)=>fake(opts).office.poolIds.includes(id);
+ const tight={a:'Mars',b:'Jupiter',angle:90};
+ assert(has({planets:[['Saturn',2],['Mars',6]]},'O9'));
+ assert(!has({planets:[['Saturn',2],['Mars',4]]},'O9'));
+ assert(has({planets:[['Mars',10],['Jupiter',1]],aspects:[tight]},'O9'));
+ assert(!has({planets:[['Mars',4],['Jupiter',1]],aspects:[tight]},'O9'));
+ const signature={a:'Mercury',b:'Saturn',angle:0};
+ assert(has({planets:[['Mercury',6],['Saturn',3]],aspects:[signature]},'O7'));
+ assert(!has({planets:[['Mercury',4],['Saturn',3]],aspects:[signature]},'O7'));
+ const friction={a:'Mars',b:'Saturn',angle:180};
+ assert(has({planets:[['Mars',6],['Saturn',12]],aspects:[friction]},'O5'));
+ assert(!has({planets:[['Mars',4],['Saturn',12]],aspects:[friction]},'O5'));
+ const restructure={a:'Saturn',b:'Uranus',angle:90};
+ assert(has({planets:[['Saturn',10],['Uranus',1]],aspects:[restructure]},'O6'));
+ assert(!has({planets:[['Saturn',8],['Uranus',1]],aspects:[restructure]},'O6'));
+ assert(has({planets:[['Uranus',6],['Sun',3]],aspects:[{a:'Sun',b:'Uranus',angle:180}]},'O6'));
+ // 생시 미상처럼 하우스가 없으면 직장 영역을 임의로 만들어 넣지 않는다.
+ for(const id of ['O9','O7','O5','O6'])assert(!has({planets:[['Mars',null],['Saturn',null],['Mercury',null],['Uranus',null]],aspects:[tight,signature,friction,restructure]},id),id);
+});
+
+test('real Western charts can add an incident or workplace change without the old generic saju trigger',()=>{
+ const incident=read(1989,5,18,{h:15,mi:8,pk:'daejeon',male:false});
+ const ic=ReadingPool.context(incident.result,incident.view);
+ assert.equal(ic.ten('편관'),0);assert(!ic.sin('baekho'));
+ assert(incident.view.domains.find(d=>d.id==='office').poolIds.includes('O5'));
+ const change=read(1975,10,22,{h:6,mi:52,pk:'busan',male:true});
+ const cc=ReadingPool.context(change.result,change.view);
+ assert.equal(cc.ten('편관'),0);assert(!cc.inter('충'));assert(![6,8].includes(cc.house('Saturn')));
+ assert(change.view.domains.find(d=>d.id==='office').poolIds.includes('O6'));
+ // 별자리 근거를 뺀 같은 명식에서는 새 장면이 사라진다.
+ for(const [example,id] of [[incident,'O5'],[change,'O6']]){
+  const withoutStars={...example.result,western:undefined};
+  assert(!core.v5Reading(withoutStars,NOW).domains.find(d=>d.id==='office').poolIds.includes(id));
+ }
 });
 
 test('a paragraph that would repeat its card opening is left out',()=>{

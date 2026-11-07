@@ -285,19 +285,44 @@
       {id:'O4',not:[],when:c=>c.vis('관성')||c.house('Sun')===10||c.asp('Moon','Saturn',H),
        text:'당신을 평가하는 사람은 당신이 하는 일을 매일 보지 않습니다. 보고서에 적힌 숫자와 가끔 마주친 표정으로 한 해를 정합니다. 그래서 일하는 시간만큼 일한 것을 보여 주는 시간도 일입니다.'},
       // 예산은 위에서 정하고 못 채운 목표는 아래에서 설명한다
-      {id:'O9',not:[],when:c=>c.hi('관성')||c.inter('파')||c.house('Saturn')===2||c.asp('Mars','Jupiter',H),
+      {id:'O9',not:[],when:c=>{
+        // 강한 책임과 부족한 재물이 함께 있어야 예산의 불균형으로 잇는다.
+        const saju=c.hi('관성')&&c.lo('재성');
+        // 돈의 제약 + 일의 영역, 또는 일에 걸린 행동·확장의 충돌.
+        const western=(c.house('Saturn')===2&&[6,10].includes(c.house('Mars')))
+          ||(c.asp('Mars','Jupiter',H)&&[2,6,10].includes(c.house('Mars')));
+        return saju||western;
+      },
        text:'일에 필요한 사람과 장비를 요청하면 올해는 예산이 없다는 답이 옵니다. 있는 인원과 장비로 할 수 있는 만큼만 하면 목표에 못 미친 사람이 됩니다. 예산은 회사 전체 사정을 보고 위에서 정하는 것이라서 목표를 못 채운 사정은 아래에서 위로 보고합니다.'},
       // 예외는 위에서 생긴다
       {id:'O2',not:[],when:c=>c.ten('정관')>0||[1,10].includes(c.house('Saturn'))||c.asp('Sun','Saturn',HC),
        text:'규칙은 지키는 사람이 많을수록 잘 돌아갑니다. 규칙을 만드는 사람은 규칙이 잘 지켜지는지 살피느라 직접 지킬 틈이 없습니다. 그래서 예외는 늘 위에서부터 생깁니다.'},
       // 서명한 날부터 책임은 서명한 사람에게
-      {id:'O7',not:[],when:c=>c.ten('정관')>0||c.hi('인성')||c.house('Saturn')===10||c.asp('Mercury','Saturn',HC),
+      {id:'O7',not:[],when:c=>{
+        // 규칙과 문서가 만날 때의 서명. 정관 또는 인성 하나만으로 붙이지 않는다.
+        const saju=c.ten('정관')>0&&c.hi('인성');
+        const western=c.asp('Mercury','Saturn',HC)
+          &&([6,10].includes(c.house('Mercury'))||[6,10].includes(c.house('Saturn')));
+        return saju||western;
+      },
        text:'새로 바뀐 규정은 아래에서 읽고 서명하는 것으로 시행됩니다. 서명한 날부터 그 규정을 지키지 못한 일은 서명한 사람의 책임이 됩니다. 그 규정을 지킬 만한 인원과 시간이 있는지는 서명지에서 묻지 않습니다.'},
       // 결정한 사람은 옮기고 일한 사람은 경위서를 쓴다
-      {id:'O5',not:[],when:c=>c.ten('편관')>0||c.sin('baekho'),
+      {id:'O5',not:[],when:c=>{
+        // 강한 책임/수습 신호와 직장·윗사람을 보는 달 자리의 마찰이 함께 있어야 한다.
+        const saju=(c.ten('편관')>0||(c.sin('baekho')&&c.has('관성')))
+          &&(c.inter('형',1)||c.inter('파',1));
+        const western=c.asp('Mars','Saturn',H)&&[6,10].includes(c.house('Mars'));
+        return saju||western;
+      },
        text:'일이 크게 잘못되면 결정한 사람은 다른 부서로 옮기고 그 일을 한 사람은 경위서를 씁니다. 옮긴 사람은 새 부서에서 다시 결정하고 경위서를 쓴 사람은 같은 일을 계속합니다.'},
       // 줄일 명단을 짠 사람은 명단에 없다
-      {id:'O6',not:[],when:c=>c.ten('편관')>0||c.inter('충')||[6,8].includes(c.house('Saturn')),
+      {id:'O6',not:[],when:c=>{
+        // 일반적인 마찰과 구별해 직장·근무 조건의 변동에 압박이 겹칠 때 고른다.
+        const saju=c.inter('충',1)&&(c.ten('편관')>0||c.hi('관성'));
+        const western=([6,10].includes(c.house('Saturn'))&&c.asp('Saturn','Uranus',H))
+          ||([6,10].includes(c.house('Uranus'))&&c.asp('Sun','Uranus',H));
+        return saju||western;
+      },
        text:'회사가 어려워지면 사람을 줄이는 계획은 위에서 짭니다. 누가 나갈지는 평가 점수로 정하고 평가 점수는 당신 위의 사람이 매깁니다. 사람을 고르려면 고르는 사람은 남아 있어야 하니 계획을 짠 사람들의 이름은 명단에 들어가지 않습니다.'},
       // 나라 일은 몇 년에 한 번 이름 고르기
       {id:'O3',not:[],when:c=>c.lo('관성')||c.weak||[11,12].includes(c.house('Saturn')),
