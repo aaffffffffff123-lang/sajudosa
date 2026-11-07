@@ -400,11 +400,6 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .none-card b{display:block;font-size:13.5px;color:var(--muted);margin-bottom:3px}
 .none-card span{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--red-d)}
 .fixed-note{margin:14px 0 0;font-size:13.5px;line-height:1.6;color:var(--muted);word-break:keep-all}
-.foot-note{margin:30px 2px 0;font-size:12.5px;line-height:1.7;color:var(--muted);word-break:keep-all}
-.last-line{margin:28px 6px 0;text-align:center;font-family:var(--serif);font-size:clamp(17px,4.9vw,20px);line-height:1.75;color:var(--ink-2);word-break:keep-all}
-.last-sentence{display:block;text-wrap:balance}
-.last-sentence + .last-sentence{margin-top:.45em}
-.last-predicate{display:inline-block;white-space:nowrap}
 .fate-end{margin-top:28px}
 .luck .wy.stage{background:var(--warning-surface);border:1.5px solid var(--line-2)}
 @media (max-width:370px){.ladder{grid-template-columns:1fr}.ladder svg{width:150px;margin:0 auto}}
@@ -422,7 +417,9 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .rule b,.basis b{display:inline-block;margin-right:7px;padding:0 5px;border:1.5px solid var(--line-2);border-radius:6px;font-size:11.5px;font-weight:700;line-height:1.55;color:var(--red-d);vertical-align:1px}
 .basis{margin:8px 0 0;font-size:12.5px;line-height:1.6;color:var(--muted);word-break:keep-all}
 .reading .rule{margin:12px 0 0}
-.reading .note{margin-top:2px!important}
+.reading .note{display:block;margin-top:2px!important}
+.reading .note b{display:block;margin-bottom:4px}
+.reading .note span{display:block;word-break:keep-all;overflow-wrap:break-word}
 .origin{margin-top:14px;padding:14px 15px 13px;border-radius:16px;background:var(--card);border:2px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
 .origin .basis{margin:0 0 6px;font-size:13.5px;color:var(--ink-2)}
 .origin .fate{margin:0;font-family:var(--serif);font-size:clamp(18px,5vw,20px);font-weight:700;line-height:1.55}
@@ -956,7 +953,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   </section>
   <div id="sections"></div>
 
-  <!-- 때: 지나온 해 → 올해(이번 달) → 내년 → 10년 → 해의 이치 → 감당할 것. 한 줄기 연표 -->
+  <!-- 때: 지나온 해 → 올해(이번 달) → 내년 → 10년 → 해의 이치. 한 줄기 연표 -->
   <section class="block timeline sym-oro" id="time-block"><h2 class="sec-label">지나온 해와 앞날</h2>
     <div class="tl" id="past-hits"></div>
     <div class="tl" id="years"></div>
@@ -969,8 +966,6 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   </section>
 
   <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><p class="fixed-note" id="fixed-note"></p><div class="caution" id="caution"></div></section>
-  <p class="foot-note" id="foot-note"></p>
-  <p class="last-line" id="last-line"></p>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
   <div id="edge-hint" class="shown"><button type="button" id="fate-go" class="edge-enter" aria-label="다음으로"><svg class="choice-cue" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 8v46M12 34l20 20 20-20" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
@@ -4101,7 +4096,7 @@ const V5={
   nation:'해의 큰 기운은 누구의 사정도 묻지 않습니다. 나라 사이에서도 큰 기운이 작은 기운을 누르는 해에는 작은 쪽이 비켜서고 사람 사이는 더 그렇습니다.',
   vessel:'같은 기회가 와도 필요한 돈은 각자 마련합니다. 이미 재산이 있는 사람은 시작하고 당장 생활비가 필요한 사람은 하던 일을 계속합니다.'
  },
- ruling:{peak:['지금보다 나은 10년','보이지 않음'],support:['좋은 운이 들어오면','그만큼 더 감당할 것'],flat:['운이 달라져도','결정권은 남의 손에']},
+ ruling:{peak:['지금보다 나은 10년','보이지 않음'],support:[],flat:['운이 달라져도','결정권은 남의 손에']},
  // 전체 풀이: 집안·일의 판정과 실제 본문에 실린 관계·별자리 문단을 묶어 운명으로 닫는다.
  sumOrigin:{absent:'물려받은 것 없이 시작해서',hidden:'집안의 복은 만져 보지도 못하고',shown:'물려받은 것은 지키는 데 다 쓰고'},
  sumWork:{
@@ -4126,10 +4121,94 @@ const V5={
   place:'지시받은 만큼만 하면 탈이 없습니다. 정할 권한까지 바라면 당신에게 지시하는 사람과 부딪칩니다.',
   risk:'위험한 일을 정하는 사람과 직접 하는 사람은 다릅니다. 다쳐서 빠진 사람 대신 일할 사람이 오면 일은 다시 돌아갑니다.'
  },
- fixedNote:'위 판정은 본인의 의사와 관계없이 적용됩니다.',
- footNote:'※ 풀이는 타고난 운명을 알려줄 뿐 바꾸지 않습니다. 바꾸려는 노력은 기운을 소모합니다.',
- lastLine:'남의 결정에 따라 사는 사람은 운을 묻습니다.\n남의 삶을 결정하는 사람은 운을 묻지 않습니다.'
+ fixedNote:'위 판정은 본인의 의사와 관계없이 적용됩니다.'
 };
+// 각 칸의 생활 항목: 본문과 같은 원인을 따라 고른다. 첫 값은 제목, 나머지는 구체적인 사례다.
+// 새로운 사건이나 사주 조건을 덧붙이지 않고 이미 선택된 장면을 생활 속 항목으로 짚는다.
+const V5_NOTES={
+ work:{
+  hurt_officer:['다시 하게 되는 일','정해진 양식으로 재작성','허락받지 않은 방법에 대한 설명'],
+  mixed_officer:['내가 해명하게 되는 일','전화로 바뀐 지시','서로 다른 작업 순서','기록에 없는 약속'],
+  officer_overload:['자꾸 내 몫이 되는 일','잘 끝냈던 일의 다음 차례','빈틈없는 일정에 얹힌 새 업무'],
+  killer_unchecked:['먼저 손댔다가 맡게 되는 일','담당자 없는 문의','독촉받는 답장','이후에 이어지는 연락'],
+  owl_food:['마감을 늦추는 손질','표의 줄 맞추기','다 쓴 문장 다시 고치기','제출 직전 전체 검토'],
+  wealth_weak_self:['끝낸 뒤에도 남는 일','추가 질문에 답하기','처음에 없던 부탁','계산서와 정산 맞추기'],
+  peer_robs_wealth:['몫을 나눌 때 빠지는 수고','업무 연락','마감 뒤 정리','따로 기록하지 않은 추가 업무'],
+  wealth_breaks_resource:['준비를 다시 시작하게 하는 것','생활비를 벌기 위한 중단','그사이 바뀐 지원 조건'],
+  resource_blocks_output:['시작보다 앞서는 준비','지난 공고 비교','비슷한 사례 수집','예상 질문 정리'],
+  peer_unchecked:['맡겨 놓고 다시 손대는 것','자료의 순서','파일 이름','내 방식과 다른 정리'],
+  weak_wealth:['쉬는 날에도 확인하는 것','대타 요청','추가 근무 일정','하루 더 일할 자리'],
+  weak_officer:['보고한 뒤에도 다시 보는 것','보낸 파일의 합계','빠진 첨부','이미 끝낸 작업 내역'],
+  strong_peer:['자꾸 내 몫이 되는 일','퇴사한 사람의 업무','채용이 미뤄진 자리','남은 인원으로 맞추는 마감'],
+  month_day_clash:['일 때문에 다시 맞추는 생활','출퇴근 경로','잠드는 시간','장보기와 빨래하는 날'],
+  palace_clash:['옮길 때마다 다시 배우는 것','보고서 양식','업무 처리 순서','새 담당자의 확인 기준'],
+  palace_punish:['한번 맡은 뒤 계속 오는 일','항의 전화','화난 손님 응대','다들 피하는 중재'],
+  palace_self:['방법을 바꾸기 전에 쓰는 시간','같은 작업 재시도','막힌 부분 다시 확인','다른 방법을 미룬 날'],
+  climate_hot:['오늘 더 끝내려다 미루는 것','퇴근 시간','그날 채워야 할 잠'],
+  climate_cold:['밤으로 넘어가는 일','낮에 미룬 마감 작업','뒤늦게 시작한 정리','잠들기 전 최종 제출'],
+  income:['성과를 낸 뒤 높아지는 기준','다음 해 목표','매번 맞춰야 할 실적','줄어든 주문을 메울 새 일'],
+  skill:['잘 해결한 뒤 더 맡는 일','다른 팀의 막힌 작업','사정 설명 없이 넘어온 문제','그동안 밀린 내 업무'],
+  speech:['말 한마디 전에 준비하는 것','근거 자료','예상 반론의 답','발언할 순서'],
+  backing:['도움을 받고 거절하기 어려운 것','선배의 행사 준비','주말에 들어온 부탁','이미 잡은 약속의 변경'],
+  self:['부탁하려다 직접 하는 일','자료 정리','작업 순서 맞추기','남에게 설명하기 번거로운 뒤처리'],
+  outlet:['스스로 시작해 계속 맡는 일','함께 쓰는 도구 관리','사용법 문의','고장 난 부분 수리'],
+  order:['허락을 기다리며 떠맡는 일','단계별 결재 확인','장비 없이 손으로 메우기','줄어든 기한에 맞춘 작업'],
+  관성:['끝난 뒤에도 마음에 남는 것','막혔던 질문','덜 설명한 부분','따로 보내는 보충 자료'],
+  재성:['일정을 겹쳐 쓰게 하는 것','끝나기 전에 받은 새 의뢰','두 곳의 마감','한쪽에서 바꾼 요구'],
+  식상:['말을 꺼낸 뒤 맡게 되는 일','회의에서 제안한 방법','직접 해 보겠다고 한 일','따로 시간을 받지 못한 실행'],
+  비겁:['나누지 못하고 쌓아 두는 일','설명하기 번거로운 업무','내 손에 익은 정리','넘길 때 필요한 인수인계'],
+  인성:['준비해도 따로 요구받는 것','실무 경력','직접 맡아 본 일','이미 내놓은 결과물']
+ },
+ body:{
+  '불편을 넘기며':['휴식을 뒤로 미루게 하는 것','조금 불편해도 지키는 일정','주말로 미뤄 둔 집안일'],
+  '활동이 적었던':['잠드는 시간을 늦추는 것','늦게 손에 붙은 작업','멈추기 아까운 마무리','밤으로 넘어간 생활'],
+  '쉬는 간격 없이':['쉬는 틈 없이 이어지는 것','끝낸 뒤 바로 잡는 다음 일','쉬는 시간까지 이어지는 작업'],
+  '외부 일정이 늘면':['일정이 겹칠 때 먼저 줄이는 것','수면 시간','제때 먹는 식사','밀린 생활을 정리할 시간'],
+  '집에 와서도':['집까지 가져오는 일 생각','빠뜨린 것 확인','다음 날 일정 점검','이미 끝낸 일의 걱정'],
+  '내일 확인해도':['잠들기 전에 다시 꺼내는 것','내일 할 일의 확인','미뤄 둔 작은 정리','하나만 더 끝내려는 작업'],
+  '빈 시간이 생기면':['쉬는 틈에 스스로 끼워 넣는 것','남아 있는 작은 일','미뤄 둔 정리','새로 시작한 작업'],
+  '시간을 아꼈는데':['바쁠 때 먼저 빼는 것','한 끼 식사','밤잠','일과 일 사이의 휴식'],
+  '그러다 하루를':['몸이 무거워도 그대로 두는 것','잡아 둔 약속','평소 작업량'],
+  fallback:['휴식보다 앞에 놓는 것','오늘의 남은 일','내일로 넘기기 싫은 마무리','다음 주로 미룬 휴식']
+ },
+ home:{
+  '같은 얘기를':['반복해서 부딪히는 문제','이번 달 생활비','서로 다른 지출 기준','다음 달에도 남는 부족분'],
+  '생활을 다시 짜는':['일 때문에 다시 맞추는 것','만나는 요일','연락할 시간','근무표가 바뀐 뒤의 약속'],
+  '연락은 끊깁니다':['서로 멀어지는 계기','말하지 않고 넘긴 서운함','늦어지는 답장','줄어든 첫 연락'],
+  '생활을 합치는 날짜':['함께 살 날짜보다 먼저 필요한 것','집 보증금','이사 비용','출퇴근이 가능한 집'],
+  '처리할 일도':['만남과 함께 늘어나는 부담','상대 가족의 병원 일정','함께 걱정하는 상환금','양가의 처리할 일'],
+  '대화가 빨리 줄어듭니다':['서로 멀어지는 계기','짧아진 답장의 뜻 짐작하기','묻지 않은 서운함','함께 줄어드는 대화'],
+  '생활 시간이 먼저':['만남을 자꾸 미루게 하는 것','서로 다른 쉬는 날','엇갈리는 퇴근 시간','다음 주로 넘긴 약속'],
+  '애매하게':['끝을 확인하지 못해 남는 것','먼저 하지 못하는 연락','다시 보자는 말의 기다림','무슨 사이인지 묻지 못한 질문'],
+  base:['가까운 사이라 넘기게 되는 것','내 쪽에서 맞춘 시간','말하지 않은 서운함','다음으로 미룬 대화']
+ },
+ family:{
+  cut:['일을 줄이기 전에 부딪히는 것','아이를 맡길 곳의 대기','돌봄에 드는 비용','대신 돌봐 줄 사람의 사정'],
+  care:['일하는 시간 위에 겹치는 돌봄','아이의 병원 방문','갑자기 비워야 하는 근무','집에서 마저 하는 업무'],
+  shown:['내 노후보다 먼저 보태는 돈','아이 교육비','자취방 보증금','독립할 때 필요한 비용'],
+  absentPoor:['다음 세대도 직접 마련할 것','첫 집 보증금','생활을 시작할 비용','부모가 보태지 못한 목돈'],
+  absent:['물려줄 돈보다 먼저 나가는 것','당장의 생활비','이사 비용','가족의 병원비'],
+  old:['내 노후보다 먼저 오는 부담','부모 생활비','병원비','돌봄에 드는 시간'],
+  young:['독립하기 전에 마련해야 하는 것','집 보증금','첫 달 월세','기본 살림살이']
+ },
+ gwiin:{
+  absent:['혼자 눈치로 익히는 것','메일에 넣을 사람','모임에서 앉을 자리','윗사람을 대하는 말투'],
+  present:['도움과 함께 받아야 하는 말','말투와 옷차림 지적','돈 쓰는 법에 대한 참견','사귀는 사람에 대한 간섭']
+ },
+ office:{
+  weak:['사정을 말해도 맞춰야 하는 것','신청서 양식','정해진 마감일','예외 없는 접수 조건'],
+  hidden:['내가 정하지 못해도 설명하는 것','답을 기다린 시간','허락이 늦어 밀린 일정','그동안의 업무 경과'],
+  regular:['허락을 받으며 설명하게 되는 것','처음 쓰는 반차','근무 변경의 사유','평소와 다른 출근 시간'],
+  pressure:['맡은 뒤에야 맞춰야 하는 것','이미 약속된 기한','갑자기 넘어온 작업량','일에 내줄 주말'],
+  mixed:['양쪽에 따로 해명하는 것','처리 속도','품질 기준','서로 다른 지시를 따른 이유'],
+  challenge:['맞는 말을 하고도 평가받는 것','말을 꺼낸 순서','윗사람 앞에서의 말투','회의에서 바뀐 분위기'],
+  supported:['권한과 함께 떠맡는 일','마감 연장 요청의 거절','근무 변경 부탁의 판단','내가 못 바꾼 기준의 전달']
+ }
+};
+function v5DomainNote(sec){
+ const entry=V5_NOTES[sec.id]&&V5_NOTES[sec.id][sec.cause];
+ return entry?{label:entry[0],value:entry.slice(1).join(' · ')}:null;
+}
 const v5Strength=a=>['극약','신약'].includes(a.strength.label)?'weak':['신강','극강'].includes(a.strength.label)?'strong':'mid';
 // 한 기둥에 어떤 기운(가족)이 있는지: 2 = 위 글자나 아래 글자 본기, 1 = 아래 글자 속 둘째·셋째 기운에만, 0 = 없음
 function v5PillarHas(a,p,family){
@@ -4303,7 +4382,7 @@ function v5Reading(R,now){
  const doms=[],love=v5Love(r),child=v5Child(r),parentWork=v5ParentWork(r,male);
  doms.push({
    id:'work',title:'일',cause:workKey,head:work.head,detail:work.detail,
-   fates:[work.fate],note:null,rule:work.rule
+   fates:[work.fate],rule:work.rule
  });
  { const key=v5MoneyKey(r),m=V5.money[key],fates=[m.fate];
    const relocationCost=v5Provincial(inp)&&(r.sinsal||[]).some(x=>x.key==='yeokma');
@@ -4319,6 +4398,7 @@ function v5Reading(R,now){
    doms.push({id:'family',title:'가족과 부양',cause:key,head:scene.head,detail:scene.detail,fates:[f],rule:V5.pairRule[scene.rule]||scene.rule}); }
  { const gw=v5Gwiin(r);doms.push({id:'gwiin',title:'귀인 · 도와줄 사람',cause:gw.key,head:gw.head,detail:gw.detail,fates:[gw.fate],rule:gw.rule,basis:gw.basis}); }
  doms.push({id:'office',title:'권한과 책임',cause:office.key,head:office.head,detail:office.detail,fates:[office.fate],rule:office.rule,basis:office.basis,evidenceIds:office.evidenceIds});
+ doms.forEach(sec=>{if(sec.id!=='money')sec.note=v5DomainNote(sec);});
  out.domains=doms;
  out.crowdAvoid=v5CrowdAvoid(r,ok,office.key);
  // 부족한 기운은 대사 선택의 우선순위로만 쓰고, 출현을 막는 조건으로 쓰지 않는다.
@@ -4343,7 +4423,6 @@ function v5Reading(R,now){
  // 탈 없이 지나가려면
  const c1=fate.good?V5.cmd.near:offK==='low'?V5.cmd.small:low('재성')?V5.cmd.poor:st==='weak'?V5.cmd.weak:ok==='absent'?V5.cmd.start:V5.cmd.keep;
  out.cautions=unique([c1,V5.cmd.boss,office.caution||(st==='weak'?V5.cmd.risk:V5.cmd.place)]);
- out.footNote=V5.footNote;out.lastLine=V5.lastLine;
  // 칸마다 조건이 맞는 문단을 붙이고, 별자리로 더해진 실제 본문도 전체 풀이에 반영한다.
  if(typeof ReadingPool!=='undefined')ReadingPool.weave(out,R);
  v5PeriodCopy(out,r,now);
@@ -4518,15 +4597,15 @@ function renderResult(R){
    +'<small class="tl-note">'+cy.endYear+'년까지 · '+cycleAgeLabel(cy,inp.unknown)+'부터 10년</small>'));
  });
  $('year-rule').textContent=v.yearRule;
- $('cycle-ruling').innerHTML='<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>';
+ const cycleRuling=$('cycle-ruling');
+ cycleRuling.hidden=!v.luck.ruling.length;
+ cycleRuling.innerHTML=v.luck.ruling.length?'<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>':'';
  // 전체 풀이
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
  R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,crowdAvoid:v.crowdAvoid};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
- $('foot-note').textContent=v.footNote;
- $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
  if(typeof runheadReset==='function')runheadReset();
 }
 function cycleAgeLabel(cy,unknown){
