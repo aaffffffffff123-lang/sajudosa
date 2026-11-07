@@ -8,7 +8,7 @@ const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a);assert(i>=0,a);const j=html.indexOf(b,i);assert(j>i,b);return html.slice(i,j);};
 const V5_SRC=slice('/* ---------- 자리 문서(V5)','/* 현재 월운:');
 const api=vm.runInNewContext(slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+V5_SRC+slice('function currentMonthView(','const MONTH_VIEW=')+slice('function luckGraph(','/* ---------- 입력 받기 ---------- */')
- +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2,sentenceListV2,pastReadingText})',{Intl,Date,ReadingPool});
+ +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2,sentenceListV2,pastReadingText,V5,V5_NOTES,v5DomainNote})',{Intl,Date,ReadingPool});
 const NOW=Date.UTC(2026,10,4),THIS_YEAR=2026;
 const PLACE={seoul:{name:'서울',lon:126.978,tz:'KR',std:9},busan:{name:'부산',lon:129.07,tz:'KR',std:9}};
 function make(y,m,d,{h=12,mi=0,unknown=false,male=true,pk='seoul',name=''}={}){
@@ -24,7 +24,7 @@ const ALL=(()=>{let seed=20261104;const rnd=()=>{seed=(seed*1103515245+12345)>>>
 const dom=(v,id)=>v.domains.find(x=>x.id===id);
 const fatesOf=v=>[v.origin.fate,v.core.fate,...v.domains.flatMap(x=>x.fates)];
 const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,...(x.rule?[x.rule]:[])]),...v.domains.map(x=>x.basis).filter(Boolean),
- v.yearRule,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,v.footNote,v.lastLine];
+ v.yearRule,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,...v.domains.flatMap(x=>x.note?[x.note.label,x.note.value]:[])];
 const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
 function bossOf(r){
@@ -37,7 +37,7 @@ test('a personal portrait opens the reading before the family verdict and wider 
  const view=slice('<main id="result-screen"','</main>');
  // 2026-11-07 구성: 태어난 때(사주·막대·별자리) → 당신을 보니 → 타고난 팔자(집안 → 부리는 기운 → 성향) → 일곱 칸 → 지나온 해와 앞날 → 전체 풀이
  const order=['id="runhead"','id="pillars"','id="share-leg"','id="saju-details"','id="western-chart"','id="reading-portrait"','id="portrait-symbol"','id="fate-card"','id="origin"','id="boss-line"','id="core-body"','id="sections"',
-  'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="year-rule"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fate-go"'];
+  'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="year-rule"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="fate-go"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
  for(const gone of ['id="me-card"','id="elements"','id="elem-lines"','id="past-block"','나를 나타내는 상징','타고난 다섯 가지 비율','올해와 내년','10년 단위 흐름'])assert(!view.includes(gone),gone);
  for(const label of ['>당신이 태어난 때<','>타고난 운명<','>지나온 해와 앞날<','>전체 풀이<'])assert(view.includes(label),label);
@@ -157,6 +157,62 @@ test('small comforts retain their own cause and a rule without taking over other
  for(const key of ['comfort','burden','share','holding','paper','reserve'])assert(kinds.has(key),key);
  assert(money.filter(x=>x.cause==='comfort').length<ALL.length/2);
  for(const m of money){assert(m.detail&&m.note.value);assert(!/세금과 회비와 윗사람/.test(m.fates.join(' ')));}
+});
+
+test('every life domain has a concrete note that stays tied to its selected cause',()=>{
+ const seen=new Map();
+ for(const {v} of ALL)for(const d of v.domains){
+  assert(d.note&&d.note.label&&d.note.value,d.id+':'+d.cause);
+  const key=d.id+':'+d.cause,note=JSON.stringify(d.note);
+  if(seen.has(key))assert.equal(note,seen.get(key),'same cause keeps the same concrete examples');
+  seen.set(key,note);
+  if(d.id!=='money'){
+   const items=d.note.value.split(' · ');
+   assert(items.length>=2&&items.length<=3,key);
+   assert.equal(new Set(items).size,items.length,key);
+   assert(items.every(x=>x.length>=2&&x.length<=24&&!/[.!?]|팔자|운명입니다/.test(x)),key);
+  }
+ }
+ for(const id of ['work','body','home','family','gwiin','office'])assert([...seen.keys()].filter(k=>k.startsWith(id+':')).length>=2,id+' varies with the reading');
+ // Include every authored branch, including branches too rare for this random sample.
+ const keys={work:Object.keys(api.V5.work),body:api.V5.body.map(x=>x[0]).concat('fallback'),home:api.V5.love.map(x=>x.key).concat('base'),family:Object.keys(api.V5.familyScene),gwiin:Object.keys(api.V5.gwiin),office:Object.keys(api.V5.office)};
+ for(const [id,causes] of Object.entries(keys))for(const cause of causes){
+  const n=api.v5DomainNote({id,cause});assert(n&&n.value,id+':'+cause);
+  assert(n.value.split(' · ').length>=2&&n.value.split(' · ').length<=3);
+ }
+ assert.equal(api.v5DomainNote({id:'home',cause:'unrecognized'}),null,'unknown branches must not invent an unrelated case');
+});
+
+test('notes distinguish silence, money conflict, unsupported help and actual authority',()=>{
+ const note=(id,cause)=>api.v5DomainNote({id,cause});
+ for(const key of ['연락은 끊깁니다','대화가 빨리 줄어듭니다','애매하게']){
+  const n=note('home',key);assert.match(n.label+n.value,/연락|답장|대화/);
+  assert.doesNotMatch(n.label+n.value,/생활비|돈 문제|싸움|양가/);
+ }
+ assert.match(note('home','같은 얘기를').value,/생활비/);
+ assert.match(note('office','supported').label,/권한과 함께/);
+ assert.match(note('office','supported').value,/판단|거절/);
+ assert.match(note('office','hidden').label,/정하지 못해도/);
+ assert.doesNotMatch(JSON.stringify(note('gwiin','absent')),/도움받|보답|은혜|거절하기 어려운/);
+ assert.match(note('gwiin','absent').value,/메일|말투/);
+ assert.match(note('gwiin','present').value,/지적|참견|간섭/);
+ for(const key of ['self','outlet','peer_unchecked'])assert.doesNotMatch(note('work',key).value,/윗사람의 지시|결원|퇴사한/);
+ assert.doesNotMatch(note('family','young').value,/아이|자식|교육비/);
+ assert.doesNotMatch(note('family','old').value,/아이|자식|교육비/);
+});
+
+test('the removed explanatory endings leave no text or blank footer containers',()=>{
+ assert.doesNotMatch(html,/좋은 운이 들어오면|그만큼 더 감당할 것|풀이는 타고난 운명을 알려줄 뿐|남의 삶을 결정하는 사람은 운을 묻지 않습니다/);
+ assert.doesNotMatch(html,/id="(?:foot-note|last-line)"/);
+ for(const {v} of ALL){
+  assert(!Object.hasOwn(v,'footNote')&&!Object.hasOwn(v,'lastLine'));
+  if(v.luck.rulingKey==='support')assert.equal(v.luck.ruling.length,0);
+ }
+ // A second reading can show the retained ruling again after the removed support branch.
+ const node={hidden:false,innerHTML:'old ruling'};
+ const render=vm.runInNewContext('(v)=>{'+slice(" const cycleRuling=$('cycle-ruling');",' // 전체 풀이')+'}',{$:()=>node,esc:x=>x});
+ render({luck:{ruling:[]}});assert(node.hidden);assert.equal(node.innerHTML,'');
+ render({luck:{ruling:['지금보다 나은 10년','보이지 않음']}});assert(!node.hidden);assert.match(node.innerHTML,/지금보다 나은 10년/);
 });
 
 test('an actual money conflict takes priority over a generic consumption habit',()=>{
@@ -298,7 +354,7 @@ test('every life domain keeps a distinct rule and uses the common reading order'
  for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){assert(d.rule,d.id);assert(!d.fates.includes(d.rule));}}
  const render=slice('function renderResult(R){','function cycleAgeLabel(');
  assert(!/sec.id==='money'/.test(render));
- // 장면과 이치는 같은 문단 줄에 놓고 이름표 없이 읽는다. 팔자 줄이 맨 뒤, 돈이 새는 곳 메모는 그 아래에 둔다.
+ // 장면과 이치는 같은 문단 줄에 놓고 이름표 없이 읽는다. 팔자 줄 뒤에 각 원인에 맞는 생활 항목을 둔다.
  assert(/woven-paragraph[\s\S]*woven-closing[\s\S]*\+note/.test(render));
  assert(!render.includes('<b>이치</b>'));assert(!/<b>근거<\/b>|western-link|expansion/.test(render));
  for(const {v} of ALL)for(const d of v.domains){
@@ -309,7 +365,7 @@ test('every life domain keeps a distinct rule and uses the common reading order'
  }
  for(const k of ['복은 집에서 내려옵니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
   '계약한 비용은 약속한 날에 치르는 법','먼저 재물을 내놓은 대가','나라 사이에서도 큰 기운이 작은 기운을 누르는',
-  '지시받은 만큼만 하면 탈이 없습니다','남의 결정에 따라 사는 사람은 운을 묻습니다'])assert(V5_SRC.includes(k),k);
+  '지시받은 만큼만 하면 탈이 없습니다'])assert(V5_SRC.includes(k),k);
 });
 
 test('readings differ from person to person and only the agreed lines are shared',()=>{
@@ -320,7 +376,7 @@ test('readings differ from person to person and only the agreed lines are shared
   yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,caution0:v=>v.cautions[0],caution2:v=>v.cautions[2]};
  for(const [k,f] of Object.entries(slots)){const m=count(f);assert(m.size>=2,k);assert(Math.max(...m.values())/n<=0.75,k);}
  const verdicts=count(v=>v.verdict);assert(verdicts.size>=n*0.5,String(verdicts.size));assert(Math.max(...verdicts.values())/n<=0.05);
- for(const f of [v=>v.cautions[1],v=>v.footNote,v=>v.lastLine,v=>v.fixedNote])assert.equal(count(f).size,1);
+ for(const f of [v=>v.cautions[1],v=>v.fixedNote])assert.equal(count(f).size,1);
 });
 
 test('subjects stay explicit and each card keeps its own cause',()=>{
