@@ -359,12 +359,13 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .caution p::before{content:"";position:absolute;left:3px;top:.64em;width:7px;height:7px;border-radius:2px;background:var(--red)}
 .caution p:last-child{margin-bottom:0}
 .fate-end{margin:52px 6px 0;text-align:center;font-family:var(--serif);font-weight:700;font-size:clamp(23px,6.4vw,27px);line-height:1.45;letter-spacing:-.03em;word-break:keep-all;color:var(--ink)}
-/* 결과 화면을 내려갈수록: 왼쪽 위 도사, 칸 제목 앞 표시, 숨은 상징 (움직이는 부분은 스크립트의 DOOM) */
+/* 결과 화면을 내려갈수록: 왼쪽 위 도사, 칸 제목 앞 표시(위 막대 머릿말에도 같은 표시), 칸 그림 속 세모, 숨은 상징 (움직이는 부분은 스크립트의 DOOM) */
+:root{--mk-tri:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M14 7L22 21.3H6Z' fill='none' stroke='%23ff8f7a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E");--mk-eye:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M6.6 17.2Q14 10.6 21.4 17.2Q14 23.4 6.6 17.2Z' fill='%23fff' stroke='%23261f3d' stroke-width='1.1'/%3E%3Cellipse cx='14' cy='17.2' rx='1.25' ry='2.7' fill='%23261f3d'/%3E%3C/svg%3E")}
 .topbar .home svg.mark.morph{width:44px;height:46px;margin:-5px 0}
-#sec-money .sec-label::before,#sec-money~.reading .sec-label::before,#sections~section .sec-label::before{width:14px;height:13px;border-radius:0;box-shadow:none;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M14 7L22 21.3H6Z' fill='none' stroke='%23ff8f7a' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E")}
-#sections~section .sec-label::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 26'%3E%3Cpath d='M14 2L26.4 24H1.6Z' fill='%23e0402a' stroke='%23b52a17' stroke-width='1.4' stroke-linejoin='round'/%3E%3Cpath d='M6.6 17.2Q14 10.6 21.4 17.2Q14 23.4 6.6 17.2Z' fill='%23fff' stroke='%23261f3d' stroke-width='1.1'/%3E%3Cellipse cx='14' cy='17.2' rx='1.25' ry='2.7' fill='%23261f3d'/%3E%3C/svg%3E")}
+#sec-money .sec-label::before,#sec-money~.reading .sec-label::before,#sections~section .sec-label::before{width:14px;height:13px;border-radius:0;box-shadow:none;background:center/contain no-repeat var(--mk-tri)}
+#sections~section .sec-label::before{background-image:var(--mk-eye)}
 .sym-pent>.sec-label::after,.sym-oro>.sec-label::after{content:"";flex:none;width:46px;height:46px;margin:-12px 0 -12px auto;background:center/contain no-repeat;opacity:.45}
-.sym-pent>.sec-label::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23261f3d' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='100' cy='100' r='95' stroke-width='5'/%3E%3Cpath d='M184.0 100.0L193.0 100.0M176.7 134.2L185.0 137.8M156.2 162.4L162.2 169.1M126.0 179.9L128.7 188.4M91.2 183.5L90.3 192.5M58.0 172.7L53.5 180.5M32.0 149.4L24.8 154.7M17.8 117.5L9.0 119.3M17.8 82.5L9.0 80.7M32.0 50.6L24.8 45.3M58.0 27.3L53.5 19.5M91.2 16.5L90.3 7.5M126.0 20.1L128.7 11.6M156.2 37.6L162.2 30.9M176.7 65.8L185.0 62.2' stroke-width='4'/%3E%3Ccircle cx='100' cy='100' r='64' stroke-width='4.4'/%3E%3Cpath d='M126.2 48.6L137.6 48.2L134.5 37.3M157.0 109.1L160.9 119.8L170.3 113.4M109.0 157.0L100.0 164.0L109.0 171.0M48.6 126.2L39.1 119.8L35.3 130.5M59.2 59.2L62.4 48.2L51.0 47.8' stroke-width='4.4'/%3E%3Cpath d='M100.0 36.0L137.6 151.8L39.1 80.2L160.9 80.2L62.4 151.8Z' stroke-width='5.6'/%3E%3C/g%3E%3Ccircle cx='100.0' cy='36.0' r='15' fill='%23f0612b' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='160.9' cy='80.2' r='15' fill='%23c4832f' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='137.6' cy='151.8' r='15' fill='%238a97a8' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='62.4' cy='151.8' r='15' fill='%232f76d6' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='39.1' cy='80.2' r='15' fill='%232f9e55' stroke='%23261f3d' stroke-width='4.4'/%3E%3C/svg%3E")}
+.sym-pent>.sec-label::after,.elem-strip::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23261f3d' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='100' cy='100' r='95' stroke-width='5'/%3E%3Cpath d='M184.0 100.0L193.0 100.0M176.7 134.2L185.0 137.8M156.2 162.4L162.2 169.1M126.0 179.9L128.7 188.4M91.2 183.5L90.3 192.5M58.0 172.7L53.5 180.5M32.0 149.4L24.8 154.7M17.8 117.5L9.0 119.3M17.8 82.5L9.0 80.7M32.0 50.6L24.8 45.3M58.0 27.3L53.5 19.5M91.2 16.5L90.3 7.5M126.0 20.1L128.7 11.6M156.2 37.6L162.2 30.9M176.7 65.8L185.0 62.2' stroke-width='4'/%3E%3Ccircle cx='100' cy='100' r='64' stroke-width='4.4'/%3E%3Cpath d='M126.2 48.6L137.6 48.2L134.5 37.3M157.0 109.1L160.9 119.8L170.3 113.4M109.0 157.0L100.0 164.0L109.0 171.0M48.6 126.2L39.1 119.8L35.3 130.5M59.2 59.2L62.4 48.2L51.0 47.8' stroke-width='4.4'/%3E%3Cpath d='M100.0 36.0L137.6 151.8L39.1 80.2L160.9 80.2L62.4 151.8Z' stroke-width='5.6'/%3E%3C/g%3E%3Ccircle cx='100.0' cy='36.0' r='15' fill='%23f0612b' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='160.9' cy='80.2' r='15' fill='%23c4832f' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='137.6' cy='151.8' r='15' fill='%238a97a8' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='62.4' cy='151.8' r='15' fill='%232f76d6' stroke='%23261f3d' stroke-width='4.4'/%3E%3Ccircle cx='39.1' cy='80.2' r='15' fill='%232f9e55' stroke='%23261f3d' stroke-width='4.4'/%3E%3C/svg%3E")}
 .sym-oro>.sec-label::after{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg opacity='1'%3E%3Cpath d='M80.4 36.2L112 43.6L84.2 47.6Z' fill='%236b1d2e' stroke='%23261f3d' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cg fill='none' stroke-linecap='round'%3E%3Cpath d='M126.3 46.1A60 60 0 0 1 93.7 159.7' stroke='%23261f3d' stroke-width='18.6'/%3E%3Cpath d='M95.8 159.9A60 60 0 0 1 81.5 157.1' stroke='%23261f3d' stroke-width='18.26'/%3E%3Cpath d='M83.5 157.7A60 60 0 0 1 70.0 152.0' stroke='%23261f3d' stroke-width='17.77'/%3E%3Cpath d='M71.8 153.0A60 60 0 0 1 59.9 144.6' stroke='%23261f3d' stroke-width='17.2'/%3E%3Cpath d='M61.4 146.0A60 60 0 0 1 51.5 135.3' stroke='%23261f3d' stroke-width='16.57'/%3E%3Cpath d='M52.7 136.9A60 60 0 0 1 45.2 124.4' stroke='%23261f3d' stroke-width='15.879999999999999'/%3E%3Cpath d='M46.1 126.3A60 60 0 0 1 41.3 112.5' stroke='%23261f3d' stroke-width='15.16'/%3E%3Cpath d='M41.8 114.5A60 60 0 0 1 40.0 100.0' stroke='%23261f3d' stroke-width='14.389999999999999'/%3E%3Cpath d='M40.0 102.1A60 60 0 0 1 41.3 87.5' stroke='%23261f3d' stroke-width='13.59'/%3E%3Cpath d='M40.9 89.6A60 60 0 0 1 45.2 75.6' stroke='%23261f3d' stroke-width='12.77'/%3E%3Cpath d='M44.4 77.5A60 60 0 0 1 51.5 64.7' stroke='%23261f3d' stroke-width='11.91'/%3E%3Cpath d='M50.3 66.4A60 60 0 0 1 59.9 55.4' stroke='%23261f3d' stroke-width='11.03'/%3E%3Cpath d='M58.3 56.8A60 60 0 0 1 70.0 48.0' stroke='%23261f3d' stroke-width='10.12'/%3E%3Cpath d='M68.2 49.1A60 60 0 0 1 81.5 42.9' stroke='%23261f3d' stroke-width='9.19'/%3E%3Cpath d='M79.5 43.6A60 60 0 0 1 91.6 40.6' stroke='%23261f3d' stroke-width='8.4'/%3E%3Cpath d='M126.3 46.1A60 60 0 0 1 93.7 159.7' stroke='%236f9a2e' stroke-width='15'/%3E%3Cpath d='M95.8 159.9A60 60 0 0 1 81.5 157.1' stroke='%236f9a2e' stroke-width='14.66'/%3E%3Cpath d='M83.5 157.7A60 60 0 0 1 70.0 152.0' stroke='%236f9a2e' stroke-width='14.17'/%3E%3Cpath d='M71.8 153.0A60 60 0 0 1 59.9 144.6' stroke='%236f9a2e' stroke-width='13.6'/%3E%3Cpath d='M61.4 146.0A60 60 0 0 1 51.5 135.3' stroke='%236f9a2e' stroke-width='12.97'/%3E%3Cpath d='M52.7 136.9A60 60 0 0 1 45.2 124.4' stroke='%236f9a2e' stroke-width='12.28'/%3E%3Cpath d='M46.1 126.3A60 60 0 0 1 41.3 112.5' stroke='%236f9a2e' stroke-width='11.56'/%3E%3Cpath d='M41.8 114.5A60 60 0 0 1 40.0 100.0' stroke='%236f9a2e' stroke-width='10.79'/%3E%3Cpath d='M40.0 102.1A60 60 0 0 1 41.3 87.5' stroke='%236f9a2e' stroke-width='9.99'/%3E%3Cpath d='M40.9 89.6A60 60 0 0 1 45.2 75.6' stroke='%236f9a2e' stroke-width='9.17'/%3E%3Cpath d='M44.4 77.5A60 60 0 0 1 51.5 64.7' stroke='%236f9a2e' stroke-width='8.31'/%3E%3Cpath d='M50.3 66.4A60 60 0 0 1 59.9 55.4' stroke='%236f9a2e' stroke-width='7.43'/%3E%3Cpath d='M58.3 56.8A60 60 0 0 1 70.0 48.0' stroke='%236f9a2e' stroke-width='6.52'/%3E%3Cpath d='M68.2 49.1A60 60 0 0 1 81.5 42.9' stroke='%236f9a2e' stroke-width='5.59'/%3E%3Cpath d='M79.5 43.6A60 60 0 0 1 91.6 40.6' stroke='%236f9a2e' stroke-width='4.8'/%3E%3Cpath d='M133.2 46.9A62.6 62.6 0 1 1 65.0 48.1' stroke='%233b5a16' stroke-width='6.4' stroke-dasharray='2.4 4.4' stroke-opacity='.7'/%3E%3Cpath d='M131.1 53.9A55.6 55.6 0 1 1 62.8 58.7' stroke='%23d3e27a' stroke-width='3' stroke-opacity='.9'/%3E%3C/g%3E%3Cpath d='M110.4 44.4C101.6 45.4 92.6 46.8 84.4 48.2C83.8 50 85.4 52.2 88.4 53C97 56.2 111 57 124 55L129.6 47.4Z' fill='%235f8a2a' stroke='%23261f3d' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M132.4 41.2C131.4 31.4 123.4 24.6 112.4 24.6C101.4 24.6 90.6 28.4 80.6 34.2C79.4 35 79.6 36.2 80.8 36.4C89.4 38 99.4 40.6 110.4 42.8L132 45.4Z' fill='%236f9a2e' stroke='%23261f3d' stroke-width='2.4' stroke-linejoin='round'/%3E%3Cpath d='M90 32.6C97.6 29.4 106 27.8 114.6 28' fill='none' stroke='%23c9df63' stroke-width='2' stroke-linecap='round' opacity='.85'/%3E%3Cpath d='M108 29.4C111.6 27.4 117.4 27.4 120.4 30.4' fill='none' stroke='%23261f3d' stroke-width='1.8' stroke-linecap='round'/%3E%3Cellipse cx='114.4' cy='34.4' rx='4.8' ry='4.1' fill='%23ffd21c' stroke='%23261f3d' stroke-width='1.7'/%3E%3Cpath d='M114.5 30.9C113.4 32.4 113.4 36.4 114.5 37.9C115.6 36.4 115.6 32.4 114.5 30.9Z' fill='%23120c1a'/%3E%3Cpath d='M85.4 34.6L88 34' stroke='%23261f3d' stroke-width='1.6' stroke-linecap='round'/%3E%3C/g%3E%3C/svg%3E")}
 #sections~section>.sec-label{color:var(--section-late)}
 #sections~section>.sec-label small,.past-intro{color:var(--caption)}
@@ -477,6 +478,64 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 #fate-go:focus-visible{position:static!important;width:auto;height:auto;margin:14px auto 0;clip:auto;overflow:visible;display:block;padding:10px 18px;border:2px solid var(--ink);border-radius:12px;background:var(--card);font-weight:700}
 .textbtn{display:block;margin:22px auto 0;background:none;border:0;color:var(--muted);text-decoration:underline;text-underline-offset:4px;font-size:15px;padding:8px}
+
+/* 2026-11-07 구성 정리: 막대 머릿말, 판정 카드, 칸 그림과 도장, 한 줄기 연표 */
+.topbar .home b{transition:font-size .25s ease}
+#result-screen .topbar.run .home b{font-size:17px}
+.runhead{display:flex;align-items:center;gap:6px;min-width:0;flex:1;margin-left:2px;padding-left:10px;border-left:2px solid var(--line-2);font-weight:700;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;opacity:0;transform:translateY(6px);transition:opacity .25s ease,transform .25s ease;pointer-events:none}
+.topbar.run .runhead{opacity:1;transform:none}
+.runhead .rh-emblem{width:28px;height:28px;flex:none}
+.runhead .rh-mark{width:12px;height:12px;flex:none;border-radius:3px;background:var(--red);box-shadow:inset 0 0 0 2px var(--accent-edge)}
+.runhead[data-mark="tri"] .rh-mark,.runhead[data-mark="eye"] .rh-mark{width:14px;height:13px;border-radius:0;box-shadow:none;background:center/contain no-repeat var(--mk-tri)}
+.runhead[data-mark="eye"] .rh-mark{background-image:var(--mk-eye)}
+.runhead[data-mark="eye"] .rh-name{color:var(--section-late)}
+.runhead .rh-name{overflow:hidden;text-overflow:ellipsis}
+.runhead.swap .rh-name,.runhead.swap .rh-emblem{animation:rh-in .28s ease}
+@keyframes rh-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.topbar::after{content:"";position:absolute;left:0;bottom:-2px;height:3px;width:var(--prog,0%);background:var(--red);border-radius:0 2px 2px 0;transition:width .15s linear;pointer-events:none}
+@media (min-width:760px){#result-screen .runhead{position:absolute;left:calc(50% - 300px);top:0;bottom:0;margin:0;padding-left:0;border-left:0}}
+@media (prefers-reduced-motion:reduce){.runhead,.runhead.swap .rh-name,.runhead.swap .rh-emblem{transition:none;animation:none}}
+.elem-strip{position:relative;margin:16px 2px 4px;padding-right:52px}
+.elem-strip .share{margin-top:0}
+.elem-strip::after{content:"";position:absolute;right:0;top:-8px;width:46px;height:46px;background-position:center;background-size:contain;background-repeat:no-repeat;opacity:.45}
+.share-leg em small{font-size:12px;font-weight:500;margin-left:4px}
+.chart-note{margin:8px 0 0;font-size:13.5px;line-height:1.7;color:var(--ink-2);word-break:keep-all}
+.portrait-symbol{margin:-2px 0 14px;padding-bottom:12px;border-bottom:1px dashed var(--line-2);font-size:14.5px;line-height:1.65;color:var(--ink-2);word-break:keep-all}
+.portrait-symbol b{font-family:var(--serif);font-size:17px;color:var(--ink);margin-right:5px}
+.portrait-symbol small{font-size:12.5px;color:var(--muted);margin-right:8px}
+#fate-card::before{content:none}
+#fate-card .origin{margin:4px 0 0;padding:0;border:0;border-radius:0;background:none;box-shadow:none}
+#fate-card .origin .basis{margin:0 0 8px;font-size:13.5px;line-height:1.6;color:var(--muted)}
+#fate-card .origin .origin-text{margin:0 0 12px;font-size:16px;line-height:1.8;color:var(--ink-2);word-break:keep-all}
+#fate-card .boss-line{margin:18px 0 0;padding-top:16px;border-top:2px dashed var(--line-2);font-size:16px;line-height:1.8;color:var(--ink-2);word-break:keep-all}
+#fate-card .core-part{margin-top:18px;padding-top:18px;border-top:2px dashed var(--line-2)}
+#sections>.reading+.reading{border-top:0;padding-top:0;margin-top:48px}
+#sections .sec-label{gap:10px;margin-bottom:10px}
+#sections .sec-emblem{order:-1;width:54px;height:54px;flex:none;margin:-4px 0 -4px -2px;filter:drop-shadow(0 2px 0 rgba(38,31,61,.12))}
+#sections .reading .woven-closing{margin:26px 0 0;padding-top:0;border-top:0}
+.fate-seal{display:inline-block;margin:0 0 0 8px;padding:2px;border:2px solid var(--red-d);border-radius:4px 2px 3px 2px;color:var(--red-d);font:700 11px/1.04 var(--serif);transform:rotate(-6deg) translateY(-2px);vertical-align:middle;opacity:.92;white-space:nowrap}
+.timeline .tl{margin:0;padding:0;list-style:none}
+.tl-intro{margin:-2px 0 10px;font-size:14px;line-height:1.6;color:var(--caption);word-break:keep-all}
+.tl-item{display:grid;grid-template-columns:70px minmax(0,1fr);gap:12px;margin:0;padding:15px 10px 16px;border-top:1.5px dashed var(--line-2)}
+.tl-item.this,.tl-item.now{background:var(--current-surface);box-shadow:inset 3px 0 0 var(--indigo)}
+.tl-item.worst{background:var(--warning-surface);box-shadow:inset 3px 0 0 var(--red)}
+.tl-item.now.worst{box-shadow:inset 3px 0 0 var(--indigo),inset 6px 0 0 var(--red)}
+.tl-when{min-width:0}
+.tl-when b{display:block;font-family:var(--serif);font-size:17px;line-height:1.3;color:var(--red-d)}
+.tl-when svg{display:block;width:40px;height:40px;margin:7px 0 0}
+.tl-body{min-width:0}
+.tl-body h3{margin:0 0 5px;font-size:16.5px;line-height:1.45;letter-spacing:-.02em;word-break:keep-all}
+.tl-body p{margin:0;font-size:15px;line-height:1.7;color:var(--ink-2);word-break:keep-all}
+.tl-body .flag{display:inline-block;font-size:12px;font-weight:700;color:#fff;border-radius:99px;padding:2px 8px;margin:0 4px 6px 0;background:var(--indigo)}
+.tl-body .flag.next{background:var(--ink-2)}
+.tl-body .flag.month{background:var(--gold-d)}
+.tl-body .flag.red{background:var(--red)}
+.tl-body .wy{margin-top:8px;font-size:14px;line-height:1.55;color:var(--ink);border-radius:10px;padding:7px 10px;word-break:keep-all;background:var(--warning-surface);border:1.5px solid var(--line-2)}
+.tl-note{display:block;margin-top:7px;font-size:12.5px;line-height:1.55;color:var(--muted);word-break:keep-all}
+.tl-luck{margin:20px 0 4px}
+.tl-luck .luck-start{margin:0 2px 8px;font-size:13px;line-height:1.6;color:var(--muted)}
+.timeline .year-rule{margin:20px 2px 0;font-size:16px;line-height:1.85;color:var(--ink);word-break:keep-all}
+@media (max-width:370px){.tl-item{grid-template-columns:58px minmax(0,1fr);gap:9px;padding-inline:8px}.tl-when svg{width:34px;height:34px}.elem-strip{padding-right:44px}.elem-strip::after{width:40px;height:40px}}
 
 /* 족치기 화면을 불러오지 못했을 때 */
 #fightWait{position:fixed;inset:0;z-index:90;background:rgba(255,246,214,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:30px;text-align:center;font-weight:700;font-size:16px}
@@ -900,7 +959,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 
 <!-- ===== 결과 화면 ===== -->
 <main id="result-screen" class="screen" hidden>
- <header class="topbar"><button type="button" class="home" id="go-home" aria-label="처음 화면으로"><svg class="mark" viewBox="0 0 188 200" aria-hidden="true"><use href="#dosa-mark"/></svg><b>사주도사</b></button></header>
+ <header class="topbar"><button type="button" class="home" id="go-home" aria-label="처음 화면으로"><svg class="mark" viewBox="0 0 188 200" aria-hidden="true"><use href="#dosa-mark"/></svg><b>사주도사</b></button><div class="runhead" id="runhead" aria-hidden="true"><svg class="rh-emblem" viewBox="0 0 64 64"><use href="#s-work"/></svg><i class="rh-mark"></i><span class="rh-name"></span></div></header>
  <div class="wrap">
   <section class="r-head"><h1 id="r-title"></h1><p id="r-birth"></p></section>
 
@@ -908,6 +967,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
     <div class="birth-profile">
       <h3 class="birth-source">사주 <small>태어난 해 · 달 · 날 · 시간</small></h3>
       <div id="pillars" class="pillars"></div><p class="pnote" id="pillar-note" hidden></p>
+      <div class="elem-strip"><div class="share" id="share" aria-hidden="true"></div><div class="share-leg" id="share-leg"></div></div>
       <div id="saju-details"></div>
       <h3 class="birth-source stars">별자리 <small>태양 · 달 · 상승궁</small></h3>
       <div id="western-chart"></div>
@@ -915,19 +975,30 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
     <article class="reading-portrait" id="reading-portrait" aria-labelledby="portrait-title">
       <span class="portrait-binding" aria-hidden="true"><i></i><i></i><i></i></span>
       <header class="portrait-head"><h3 class="portrait-title" id="portrait-title"></h3><span class="portrait-ribbon" id="portrait-ribbon" role="img"></span></header>
+      <p class="portrait-symbol" id="portrait-symbol"></p>
       <div class="portrait-text" id="portrait-text"></div>
       <span class="portrait-seal" aria-hidden="true">사주<br>도사</span>
-    </article>
-    <div class="origin" id="origin"></div></section>
-  <section class="block"><h2 class="sec-label">나를 나타내는 상징</h2><div class="me-card" id="me-card"></div></section>
-  <section class="block"><h2 class="sec-label">타고난 다섯 가지 비율</h2><div id="elements" class="elements"></div><div class="share" id="share" aria-hidden="true"></div><div class="share-leg" id="share-leg"></div><div class="elem-lines" id="elem-lines"></div></section>
+    </article></section>
 
-  <section class="block core"><h2 class="sec-label">타고난 성향</h2><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div></section>
-  <section class="block" id="past-block" hidden><h2 class="sec-label">지나온 흐름</h2><p class="past-intro">지나온 해 가운데 마찰이 겹친 해입니다.</p><div class="past-hits" id="past-hits"></div></section>
+  <!-- 판정 카드: 집안 → 당신을 부리는 기운 → 타고난 성향. 마지막 「전체 풀이」 카드와 같은 모양 -->
+  <section class="block core" id="fate-card"><h2 class="sec-label">타고난 팔자</h2>
+    <div class="origin" id="origin"></div>
+    <p class="boss-line" id="boss-line"></p>
+    <div class="core-part"><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div></div>
+  </section>
   <div id="sections"></div>
 
-  <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div><p class="year-rule" id="year-rule"></p><article class="month-reading" id="month-reading" aria-label="현재 월운" hidden></article></section>
-  <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol><div class="none-card" id="cycle-ruling"></div></section>
+  <!-- 때: 지나온 해 → 올해(이번 달) → 내년 → 10년 → 해의 이치 → 감당할 것. 한 줄기 연표 -->
+  <section class="block timeline sym-oro" id="time-block"><h2 class="sec-label">지나온 해와 앞날</h2>
+    <div class="tl" id="past-hits"></div>
+    <div class="tl" id="years"></div>
+    <div class="tl"><article class="tl-item month" id="month-reading" aria-label="이번 달" hidden></article></div>
+    <div class="tl" id="year-next"></div>
+    <div class="tl-luck"><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div></div>
+    <ol class="tl" id="luck-list"></ol>
+    <p class="year-rule" id="year-rule"></p>
+    <div class="none-card" id="cycle-ruling"></div>
+  </section>
 
   <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><p class="fixed-note" id="fixed-note"></p><div class="caution" id="caution"></div></section>
   <p class="foot-note" id="foot-note"></p>
@@ -1062,10 +1133,108 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <symbol id="e-earth" viewBox="0 0 64 64"><path d="M4 54c6-18 20-28 28-28s22 10 28 28z" fill="#c98c4e" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M14 50c6-10 12-14 18-14s12 4 18 14" fill="none" stroke="#8b5a2b" stroke-width="2.5" stroke-linecap="round"/><circle cx="22" cy="44" r="2.5" fill="#8b5a2b"/><circle cx="40" cy="46" r="2.5" fill="#8b5a2b"/></symbol>
 <symbol id="e-metal" viewBox="0 0 64 64"><path d="M8 48l10-24h28l10 24z" fill="#cfd6de" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M18 24l6-10h16l6 10" fill="#eef2f5" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 30l-4 12" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></symbol>
 <symbol id="e-water" viewBox="0 0 64 64"><path d="M32 6c12 14 18 22 18 32a18 18 0 0 1-36 0c0-10 6-18 18-32z" fill="#4f8fe0" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M22 40c0 5 3 8 7 9" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/></symbol>
+<!-- 일곱 칸 첫머리 그림. 돈부터 그림 속에 세모가 숨고 귀인·관운에서 눈이 드러난다 -->
+<!-- 일: 쌓인 서류철과 급한 꼬리표, 펜 -->
+<symbol id="s-work" viewBox="0 0 64 64">
+ <path d="M7 44.5h46.5a3 3 0 0 1 3 3V55a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-7.5a3 3 0 0 1 3-3z" fill="#7cc48a" stroke="#27242b" stroke-width="2.4"/>
+ <path d="M9 47.5h44" stroke="#4f9a5f" stroke-width="2" stroke-linecap="round"/>
+ <path d="M11 38.2l42-2.6 2.2 9.4-43.6 2.5z" fill="#fff" stroke="#27242b" stroke-width="2"/>
+ <path d="M15 42l14-.8M15 45l22-1.3" stroke="#b9c2d6" stroke-width="1.6" stroke-linecap="round"/>
+ <path d="M8.6 31.4l45.6-3.4a3 3 0 0 1 3.2 2.8l.5 7.6a3 3 0 0 1-2.8 3.2L9.5 45a3 3 0 0 1-3.2-2.8l-.5-7.6a3 3 0 0 1 2.8-3.2z" fill="#6fa8e8" stroke="#27242b" stroke-width="2.4"/>
+ <path d="M55.6 30.6l5-.4.8 9.6-5 .4" fill="#e0402a" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/>
+ <path d="M10 34.8l42-3" stroke="#bfe0ff" stroke-width="2" stroke-linecap="round"/>
+ <path d="M12 19h11.5l2.5 3.4H50a3 3 0 0 1 3 3V34a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3v-12a3 3 0 0 1 3-3z" fill="#f2c46d" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/>
+ <path d="M9.5 26.5H50" stroke="#fff3c9" stroke-width="2" stroke-linecap="round"/>
+ <path d="M14 30h18" stroke="#c9952e" stroke-width="2" stroke-linecap="round"/>
+ <g transform="rotate(-24 41 14)">
+  <rect x="24" y="11" width="30" height="6.4" rx="3.2" fill="#ffd23f" stroke="#27242b" stroke-width="2.2"/>
+  <path d="M54 11.6l6 2.6-6 2.6z" fill="#f7e2c4" stroke="#27242b" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M58.2 13.4l1.8.8-1.8.8z" fill="#27242b"/>
+  <rect x="24" y="11" width="6" height="6.4" rx="2" fill="#e0402a" stroke="#27242b" stroke-width="2"/>
+  <path d="M33 13.2h17" stroke="#fff3b0" stroke-width="1.6" stroke-linecap="round"/>
+ </g>
+</symbol><!-- 돈: 지갑, 비죽 나온 지폐, 길게 빠져나온 영수증, 동전 -->
+<symbol id="s-money" viewBox="0 0 64 64">
+ <g transform="rotate(-10 30 22)"><rect x="12" y="10" width="30" height="16" rx="2" fill="#9fd3a5" stroke="#27242b" stroke-width="2.2"/><circle cx="27" cy="18" r="4" fill="none" stroke="#4f9a5f" stroke-width="1.8"/><path d="M15 13.5h5M34 22.5h5" stroke="#4f9a5f" stroke-width="1.6" stroke-linecap="round"/></g>
+ <g transform="rotate(6 34 22)"><rect x="18" y="12" width="30" height="16" rx="2" fill="#c3e6c6" stroke="#27242b" stroke-width="2.2"/><path d="M33 15.4l4.8 8.2h-9.6z" fill="none" stroke="#4f9a5f" stroke-width="1.8" stroke-linejoin="round"/><path d="M30.6 21.4h4.8" stroke="#4f9a5f" stroke-width="1.2"/></g>
+ <path d="M44 30c6-1 10 0 12 3s-1 7 1 10 4 5 2 8-4 2-4 5l-3.2-2.4-2.6 2.6-2.4-2.6" fill="#fff" stroke="#27242b" stroke-width="2" stroke-linejoin="round"/>
+ <path d="M48 36h6M49 41h5M50 46h4" stroke="#b9c2d6" stroke-width="1.6" stroke-linecap="round"/>
+ <path d="M9 27h36a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V31a4 4 0 0 1 4-4z" fill="#b5713f" stroke="#27242b" stroke-width="2.5"/>
+ <path d="M5 34h44" stroke="#27242b" stroke-width="2.2"/>
+ <path d="M8.5 30.5h36" stroke="#d99a68" stroke-width="2" stroke-linecap="round"/>
+ <path d="M34 34v8a3 3 0 0 0 3 3h12" fill="#9c5d30" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/>
+ <circle cx="40" cy="39.5" r="2" fill="#ffc531" stroke="#27242b" stroke-width="1.4"/>
+ <path d="M9 50h20" stroke="#8a522a" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2.4 2.6"/>
+ <circle cx="13" cy="56.5" r="5.5" fill="#ffc531" stroke="#27242b" stroke-width="2.2"/><circle cx="13" cy="56.5" r="2.6" fill="none" stroke="#d99a00" stroke-width="1.6"/>
+ <circle cx="23.5" cy="58" r="4.5" fill="#ffd96b" stroke="#27242b" stroke-width="2.2"/>
+</symbol><!-- 몸: 베개 위에서 울리는 자명종 -->
+<symbol id="s-body" viewBox="0 0 64 64">
+ <path d="M6 44c0-6 5-9 13-9h26c8 0 13 3 13 9s-1 12-4 13H10c-3-1-4-7-4-13z" fill="#e9f1ff" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M12 50c6 2 14 2 20 0s14-2 20 0" fill="none" stroke="#b7c9e6" stroke-width="2" stroke-linecap="round"/>
+ <path d="M10 41c3-2 8-3 12-3" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+ <path d="M24 41l-3 5M40 41l3 5" stroke="#27242b" stroke-width="2.4" stroke-linecap="round"/>
+ <path d="M19.5 12.5a6 6 0 0 1 9-4.8M44.5 12.5a6 6 0 0 0-9-4.8" fill="#ffd23f" stroke="#27242b" stroke-width="2.2"/>
+ <circle cx="32" cy="27" r="14.5" fill="#e0402a" stroke="#27242b" stroke-width="2.5"/>
+ <circle cx="32" cy="27" r="10.5" fill="#fff" stroke="#27242b" stroke-width="2"/>
+ <path d="M32 27v-6.5M32 27l5 3" stroke="#27242b" stroke-width="2.4" stroke-linecap="round"/>
+ <circle cx="32" cy="27" r="1.6" fill="#27242b"/>
+ <path d="M32 18.2v1.6M40.8 27h-1.6M32 35.8v-1.6M23.2 27h1.6" stroke="#9aa3b8" stroke-width="1.6" stroke-linecap="round"/>
+ <path d="M23 17.5c1.6-2.2 4-3.5 6.5-4" stroke="#ff8f7a" stroke-width="2" stroke-linecap="round"/>
+ <path d="M8 22c-1.6 2.8-1.6 6.2 0 9M12.5 20.5c-1.2 3-1.2 6 0 9M56 22c1.6 2.8 1.6 6.2 0 9M51.5 20.5c1.2 3 1.2 6 0 9" fill="none" stroke="#27242b" stroke-width="2" stroke-linecap="round"/>
+</symbol><!-- 짝과 관계: 읽지 않은 메시지(1)가 남은 휴대폰 -->
+<symbol id="s-home" viewBox="0 0 64 64">
+ <rect x="15" y="3.5" width="34" height="57" rx="7" fill="#3e3a52" stroke="#27242b" stroke-width="2.5"/>
+ <rect x="18.5" y="9" width="27" height="44" rx="3" fill="#dfeefc"/>
+ <path d="M28 6.3h8" stroke="#6b6685" stroke-width="1.8" stroke-linecap="round"/>
+ <circle cx="32" cy="56.6" r="1.8" fill="#6b6685"/>
+ <path d="M21.5 13.5h13a2.5 2.5 0 0 1 2.5 2.5v4.5a2.5 2.5 0 0 1-2.5 2.5h-9l-3 2.6v-2.6h-1a2.5 2.5 0 0 1-2.5-2.5V16a2.5 2.5 0 0 1 2.5-2.5z" fill="#fff" stroke="#27242b" stroke-width="1.8" stroke-linejoin="round"/>
+ <path d="M23 17.5h10M23 20.2h6" stroke="#b9c2d6" stroke-width="1.5" stroke-linecap="round"/>
+ <path d="M42.5 30h-14a2.5 2.5 0 0 0-2.5 2.5v5a2.5 2.5 0 0 0 2.5 2.5h9.5l3 2.6V40h1.5a2.5 2.5 0 0 0 2.5-2.5v-5a2.5 2.5 0 0 0-2.5-2.5z" fill="#ffe14d" stroke="#27242b" stroke-width="1.8" stroke-linejoin="round"/>
+ <path d="M29 34.2h11M29 37h7" stroke="#c9a400" stroke-width="1.5" stroke-linecap="round"/>
+ <path d="M22.4 35.2v4.6" stroke="#f08a00" stroke-width="2" stroke-linecap="round"/><path d="M21 36.4l1.4-1.2" stroke="#f08a00" stroke-width="1.8" stroke-linecap="round"/>
+ <path d="M21 47.5h4M27.5 47.5h4M34 47.5h4" stroke="#9aa3b8" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>
+</symbol><!-- 가족과 부양: 닳은 어른 신발과 새 아이 신발 -->
+<symbol id="s-family" viewBox="0 0 64 64">
+ <path d="M4.5 47.5c0-6.5.6-11.5 3-14.5h12.5c2 3.6 6.6 5.6 13 6.6 6.6 1 10.5 3.4 10.5 7.9z" fill="#5b4334" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M8 33c1.6-2.4 9-2.4 12 0" fill="#2f2523" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/>
+ <path d="M3.5 47h41v4a3 3 0 0 1-3 3h-35a3 3 0 0 1-3-3z" fill="#3a2c2a" stroke="#27242b" stroke-width="2.2"/>
+ <path d="M22.5 37.6l3.6-2.4M26.6 39.2l3.6-2.4M30.8 40.4l3.6-2.4" stroke="#e8d5b5" stroke-width="2" stroke-linecap="round"/>
+ <path d="M8.5 37.5c.4-1.8 1.2-3 2.4-3.6" stroke="#8d6a55" stroke-width="2" stroke-linecap="round"/>
+ <path d="M35.5 44.6c2.4-.2 4.4.2 5.6 1.2" stroke="#8d6a55" stroke-width="1.8" stroke-linecap="round"/>
+ <path d="M14 50.5h3M21 50.5h3M28 50.5h3" stroke="#5f4a44" stroke-width="1.6" stroke-linecap="round"/>
+ <path d="M38 53.5c0-5.6 1.4-9.4 3.8-11.8 2-2 5-2 6.4 0 2 2.8 4.6 4.2 8 5.2 3 .9 4.6 2.8 4.6 5.2v1.4z" fill="#e0402a" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/>
+ <path d="M37.5 53.5h24v2.5a2.5 2.5 0 0 1-2.5 2.5H40a2.5 2.5 0 0 1-2.5-2.5z" fill="#fff" stroke="#27242b" stroke-width="2"/>
+ <path d="M44.5 46.3l9-2.4" stroke="#27242b" stroke-width="5.4" stroke-linecap="round"/>
+ <path d="M44.5 46.3l9-2.4" stroke="#ffd23f" stroke-width="3" stroke-linecap="round"/>
+ <path d="M41.5 44.3c.6-1.6 1.6-2.6 2.8-3" stroke="#ff8f7a" stroke-width="1.8" stroke-linecap="round"/>
+ <path d="M53.4 47.8l2.6 4.2h-5.2z" fill="#fff" stroke="#27242b" stroke-width="1.2" stroke-linejoin="round"/>
+</symbol><!-- 귀인: 구름에서 내려온 동아줄 -->
+<symbol id="s-gwiin" viewBox="0 0 64 64">
+ <path d="M30.5 19c-1.2 6 2.4 9 0 14s1.8 8 0 13 2 7 .4 9" fill="none" stroke="#27242b" stroke-width="8.4" stroke-linecap="round"/>
+ <path d="M30.5 19c-1.2 6 2.4 9 0 14s1.8 8 0 13 2 7 .4 9" fill="none" stroke="#d9a05b" stroke-width="4.6" stroke-linecap="round"/>
+ <path d="M28.6 22l4 2M28.4 27.5l4 2M29.6 33l4 2M28.2 38.5l4 2M29.4 44l4 2M28.8 49.5l4 2" stroke="#8b5a2b" stroke-width="1.6" stroke-linecap="round"/>
+ <path d="M26.4 55.5c-2.4 2.4-1.2 6 2.4 6s5-3 3.2-5.2" fill="none" stroke="#27242b" stroke-width="6" stroke-linecap="round"/>
+ <path d="M26.4 55.5c-2.4 2.4-1.2 6 2.4 6s5-3 3.2-5.2" fill="none" stroke="#d9a05b" stroke-width="2.8" stroke-linecap="round"/>
+ <path d="M9 22c-4 0-6-3-5-6s4-4 6-3c1-5 6-8 11-6 2-4 8-6 12-3 3-3 9-3 12 1 4-2 10 0 11 5 5 0 7 4 6 7s-4 5-7 5H9z" fill="#fff" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M12 18c2-1 4-1 6 0M38 13c2-1 4-.8 5.6.4" fill="none" stroke="#c9d6ea" stroke-width="2" stroke-linecap="round"/>
+ <path d="M31.6 8.6l6 10.2H25.6z" fill="#fff3d0" stroke="#27242b" stroke-width="1.6" stroke-linejoin="round"/>
+ <path d="M28.4 15.4q3.2-2.8 6.4 0q-3.2 2.6-6.4 0z" fill="#fff" stroke="#27242b" stroke-width="1.1"/>
+ <circle cx="31.6" cy="15.4" r="1.05" fill="#27242b"/>
+ </symbol><!-- 관운: 결재 도장과 붉은 인주 자국 -->
+<symbol id="s-office" viewBox="0 0 64 64">
+ <path d="M6 52l26-9 26 9-26 9z" fill="#f4ecd8" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/>
+ <path d="M14 51.5l9-3M18 54.4l9-3" stroke="#b9c2d6" stroke-width="1.6" stroke-linecap="round"/>
+ <g transform="rotate(-8 44 52)"><path d="M43.4 43.6l8.6 13.8H34.8z" fill="none" stroke="#e0402a" stroke-width="2.4" stroke-linejoin="round"/><path d="M39.4 52.6q4-3.4 8 0q-4 3.2-8 0z" fill="none" stroke="#e0402a" stroke-width="1.6"/><circle cx="43.4" cy="52.6" r="1.3" fill="#e0402a"/></g>
+ <path d="M24 34h16v6a2 2 0 0 1-2 2H26a2 2 0 0 1-2-2z" fill="#e0402a" stroke="#27242b" stroke-width="2.3"/>
+ <path d="M25.5 15c0-4 3-6.5 6.5-6.5s6.5 2.5 6.5 6.5c0 3-1.6 4.6-2.6 6.2-1.4 2.2-.4 6.3 1.6 8.3 1 1 1.5 2.3 1.5 4.5H24.9c0-2.2.5-3.5 1.5-4.5 2-2 3-6.1 1.6-8.3-1-1.6-2.5-3.2-2.5-6.2z" fill="#e8c88f" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M28.6 13.5c.6-1.8 2-2.8 3.6-3" stroke="#fff6dc" stroke-width="2" stroke-linecap="round"/>
+ <path d="M29 26.5c1 1.6 1 3.6-.4 5" stroke="#c99a4e" stroke-width="1.8" stroke-linecap="round"/>
+ <path d="M25 37.5h14" stroke="#ff8f7a" stroke-width="1.8" stroke-linecap="round"/>
+</symbol>
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="reading-pool.js?v=20261107-pool"></script>
+<script src="reading-pool.js?v=20261107-compose"></script>
 <script src="western.js?v=20261107-pool"></script>
 <script>
 /* =====================================================================
@@ -3314,10 +3483,52 @@ function doomApply(){
 window.addEventListener('scroll',()=>{if(!DOOM.req)DOOM.req=requestAnimationFrame(doomApply);},{passive:true});
 window.addEventListener('resize',()=>{if(!DOOM.req)DOOM.req=requestAnimationFrame(doomApply);});
 document.addEventListener('visibilitychange',doomRun);
+
+/* 위 막대 머릿말: 스크롤해도 지금 읽는 칸(그림·이름표 표시·이름)을 보여 주고, 막대 아래 붉은 선은 읽은 만큼 늘어난다.
+   이름표 표시는 칸 이름표와 같은 규칙이다: 돈 앞까지 네모, 돈부터 세모, 「지나온 해와 앞날」부터 눈 달린 세모 */
+const RUNHEAD={req:0,key:'',swap:0};
+function runheadParts(){return [...document.querySelectorAll('#result-screen .birth-opening,#reading-portrait,#fate-card,#sections>.reading,#time-block,#result-screen .verdict')];}
+function runheadMark(el){
+ const money=$('sec-money'),sections=$('sections');
+ if(sections&&!sections.contains(el)&&(sections.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING))return 'eye';
+ if(money&&(el===money||(money.compareDocumentPosition(el)&Node.DOCUMENT_POSITION_FOLLOWING)))return 'tri';
+ return 'sq';
+}
+function runheadName(el){
+ if(el.id==='reading-portrait')return $('portrait-title').textContent;
+ if(el.getAttribute('data-short'))return el.getAttribute('data-short');
+ const lab=el.querySelector(':scope>.sec-label');
+ return lab?[...lab.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join('').trim():'';
+}
+function runheadApply(){
+ RUNHEAD.req=0;
+ const R=$('result-screen');if(!R||R.hidden)return;
+ const bar=R.querySelector('.topbar'),rh=$('runhead'),start=R.querySelector('.birth-opening'),end=R.querySelector('.verdict');
+ if(!bar||!rh||!start||!end)return;
+ const bb=bar.getBoundingClientRect().bottom;let cur=null;
+ for(const p of runheadParts())if(p.getBoundingClientRect().top<=bb+12)cur=p;
+ bar.classList.toggle('run',!!cur);
+ if(cur){
+  const key=cur.id||cur.className;
+  if(key!==RUNHEAD.key){
+   RUNHEAD.key=key;
+   const id=(cur.id||'').replace(/^sec-/,''),em=rh.querySelector('.rh-emblem');
+   rh.dataset.mark=runheadMark(cur);
+   rh.querySelector('.rh-name').textContent=runheadName(cur);
+   em.style.display=SEC_EMBLEM[id]?'':'none';
+   if(SEC_EMBLEM[id])em.querySelector('use').setAttribute('href','#'+SEC_EMBLEM[id]);
+   rh.classList.remove('swap');void rh.offsetWidth;rh.classList.add('swap');
+  }
+ }
+ const s0=start.getBoundingClientRect().top+window.scrollY,e0=end.getBoundingClientRect().top+window.scrollY-window.innerHeight*.5;
+ bar.style.setProperty('--prog',(e0>s0?Math.max(0,Math.min(1,(window.scrollY-s0)/(e0-s0)))*100:0).toFixed(1)+'%');
+}
+function runheadReset(){RUNHEAD.key='';if(!RUNHEAD.req)RUNHEAD.req=requestAnimationFrame(runheadApply);}
+window.addEventListener('scroll',()=>{if(!RUNHEAD.req)RUNHEAD.req=requestAnimationFrame(runheadApply);},{passive:true});
+window.addEventListener('resize',runheadReset);
 // 계산 중 화면이 뜰 때 도사 그림을 미리 만들어 두고, 결과 화면이 뜨거나 가려질 때마다 색을 맞춘다
 try{const mo=new MutationObserver(()=>{if(!$('loading-screen').hidden)doomBuild();doomApply();});
- ['loading-screen','result-screen'].forEach(id=>mo.observe($(id),{attributes:true,attributeFilter:['hidden']}));
- $('elements').parentElement.classList.add('sym-pent');$('luck-graph').parentElement.classList.add('sym-oro');}catch(_){}
+ ['loading-screen','result-screen'].forEach(id=>mo.observe($(id),{attributes:true,attributeFilter:['hidden']}));}catch(_){}
 
 /* ---------- 결과 그리기 ---------- */
 const PILLAR_LB=[['태어난 해','집안·어린 시절'],['태어난 달','가족·학교·직장'],['태어난 날','나·가까운 관계'],['태어난 시간','자녀·나이 든 뒤']];
@@ -3582,10 +3793,11 @@ const V5={
  work:{
   hurt_officer:{
    daily:'여럿이 길을 찾을 때 누가 반대편 출구를 가리키면 그냥 따라가기가 어렵습니다. 지도를 한 번 더 보고 “우리 이쪽 아니야?” 하고 말을 꺼냅니다. 다 같이 먼 길을 돌아가는 게 더 마음에 걸립니다.',
-   head:'틀린 곳을 짚고 나면 설명할 일이 늘어납니다.',
-   detail:'그대로 넘기면 계속 걸립니다. 바로 말하고 나면 내용보다 말한 순서를 해명합니다.',
-   fate:'당신은 틀린 말을 바로잡고 나면 바로잡은 쪽이 불편한 사람으로 남는 팔자입니다.',
-   rule:'윗사람에게 먼저 귀띔했으면 그분이 잘못을 바로잡은 일이 됩니다. 여럿 앞에서 바로 말했으니 그분이 잘못을 지적받은 일이 되었습니다. 옳은 말을 할 때에도 윗사람의 체면을 살피는 것이 아랫사람의 도리입니다.'
+   // 2026-11-07: 성향 카드·관운(맞서는 갈래)과 늘 함께 나와서 일 칸은 바른말 대신 '시키지 않은 더 나은 방법' 얘기로 돌렸다.
+   head:'더 나은 방법도 시키지 않은 방법이면 다시 합니다.',
+   detail:'시킨 방법보다 나은 방법이 보이면 그쪽으로 먼저 해 봅니다. 결과가 맞아도 왜 시킨 대로 하지 않았는지부터 설명합니다.',
+   fate:'당신은 더 나은 방법을 찾고도 시킨 방법으로 다시 하는 팔자입니다.',
+   rule:'정해진 방법이 있는 일은 결과가 나아도 방법부터 맞춰야 합니다. 방법을 바꾸는 일은 방법을 정한 사람이 합니다.'
   },
   mixed_officer:{
    daily:'여럿이 만나기로 한 날 한 친구가 장소를 바꾸자고 하면 다른 친구에게도 꼭 물어봅니다. 말이 다 맞춰지면 마지막에는 날짜와 주소를 한 줄에 써서 다 같이 보는 곳에 남깁니다.',
@@ -4104,9 +4316,9 @@ function v5Reading(R,now){
    doms.push({id:'money',title:'돈',cause:key,head:m.head,detail:m.detail,fates,note:{label:'돈이 자꾸 빠져나가는 곳',value:m.leak},rule:m.rule,basis:fate.wealth&&fate.wealth.fact}); }
  { const o=obs('body'),b0=(o.body||[])[0]||'',hit=V5.body.find(x=>b0.indexOf(x[0])>=0);
    const key=hit?hit[0]:'fallback',rk=['집에 와서도','내일 확인해도'].includes(key)?'checking':['쉬는 간격 없이','빈 시간이 생기면'].includes(key)?'self':key==='활동이 적었던'?'night':st==='weak'?'weak':'strong';
-   doms.push({id:'body',title:'몸',cause:key,head:o.head,detail:b0,fates:[hit?hit[1]:V5.bodyFallback],rule:V5.bodyRule[rk]}); }
+   doms.push({id:'body',title:'몸',cause:key,head:o.head,detail:b0,fates:[hit?hit[1]:V5.bodyFallback],rule:V5.bodyRule[rk],ruleKey:rk}); }
  { const o=obs('love'),pr=love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':love&&['연락은 끊깁니다','대화가 빨리 줄어듭니다','애매하게'].includes(love.key)?'silence':'base';
-   doms.push({id:'home',title:'짝과 관계',cause:love?love.key:'base',head:o.head,detail:love&&love.detail||(o.body||[])[0]||'',fates:[love?love.fate:V5.loveFallback],rule:V5.pairRule[pr]}); }
+   doms.push({id:'home',title:'짝과 관계',cause:love?love.key:'base',head:o.head,detail:love&&love.detail||(o.body||[])[0]||'',fates:[love?love.fate:V5.loveFallback],rule:V5.pairRule[pr],ruleKey:pr}); }
  { const key=parentWork?(parentWork==='cut'?'cut':'care'):child?(child==='shown'?'shown':ok==='absent'?'absentPoor':'absent'):age>=35?'old':'young',scene=V5.familyScene[key];
    const f=parentWork?(parentWork==='cut'?V5.careerCut:V5.careerBurden):child?V5.child[key]:V5.parents[key];
    doms.push({id:'family',title:'가족과 부양',cause:key,head:scene.head,detail:scene.detail,fates:[f],rule:V5.pairRule[scene.rule]||scene.rule}); }
@@ -4175,10 +4387,9 @@ function renderCurrentMonth(years,now){
  clearTimeout(MONTH_VIEW.timer);MONTH_VIEW.timer=0;MONTH_VIEW.years=years;
  const box=$('month-reading'),m=currentMonthView(years,now);
  box.hidden=!m;if(!m){box.replaceChildren();return;}
- box.innerHTML='<div class="month-label">현재 월운</div><h3>'+plainEsc(m.title)+'</h3>'
-  +(m.text?'<p class="month-text">'+plainEsc(m.text)+'</p>':'')
-  +'<dl class="month-period"><div><dt>적용 기간</dt><dd>'+esc(m.period)+'</dd></div><div><dt>다음 전환</dt><dd>'+esc(m.transition)+'</dd></div></dl>'
-  +'<small class="month-note">월운은 절기를 기준으로 바뀝니다. 날짜·시간은 양력·한국시간 기준입니다.</small>';
+ box.innerHTML='<div class="tl-when"><b>이번 달</b></div><div class="tl-body"><span class="flag month">월운</span><h3>'+plainEsc(m.title)+'</h3>'
+  +(m.text?'<p>'+plainEsc(m.text)+'</p>':'')
+  +'<small class="tl-note">'+esc(m.period)+' · 다음 전환 '+esc(m.transition)+'</small></div>';
  // 초 단위 카운트 없이 절기가 바뀔 때만 다음 월운으로 갱신한다.
  MONTH_VIEW.timer=setTimeout(()=>{if(!$('result-screen').hidden)renderCurrentMonth(years,Date.now());},Math.min(2147483647,Math.max(1,m.end-now+50)));
 }
@@ -4186,6 +4397,8 @@ document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&!$('result-screen').hidden&&MONTH_VIEW.years.length)renderCurrentMonth(MONTH_VIEW.years,Date.now());
 });
 /* 사주 원국 접힌 표: 만세력(한자)·지장간·12운성·대운·신살·합충형파해와 칸별 근거. 본문에는 쓰지 않는 전문 정보만 모은다. */
+// 일곱 칸 첫머리 그림(svg symbol id)
+const SEC_EMBLEM={work:'s-work',money:'s-money',body:'s-body',home:'s-home',family:'s-family',gwiin:'s-gwiin',office:'s-office'};
 const EL_HANJA={목:'木',화:'火',토:'土',금:'金',수:'水'};
 // 지장간은 계산에 쓰는 글자(HIDDEN)를 여기·중기·정기 순서로 적는다.
 const JIJANG={子:'癸',丑:'癸辛己',寅:'戊丙甲',卯:'乙',辰:'乙癸戊',巳:'戊庚丙',午:'己丁',未:'丁乙己',申:'戊壬庚',酉:'辛',戌:'辛丁戊',亥:'甲壬'};
@@ -4213,6 +4426,9 @@ function sajuDetailsHtml(R,v){
  h+='</tbody></table></div>';
  const use=(a.use&&a.use.usefulElements||[]).map(x=>EL_HANJA[x]).join(' · ');
  h+='<dl class="chart-facts"><div><dt>격국</dt><dd>'+esc(a.structure.name)+'</dd></div><div><dt>강약</dt><dd>'+esc(a.strength.label)+' <small>'+a.strength.score+'점</small></dd></div>'+(use?'<div><dt>용신</dt><dd>'+use+'</dd></div>':'')+'</dl>';
+ // 다섯 기운: 겉에 보이는 글자 수·맡는 일·비율과 그 풀이(본문의 다섯 기운 카드와 설명을 여기로 옮겼다)
+ h+='<h4>다섯 기운</h4><ul class="chart-list elem-list">'+ORDER.map(k=>'<li><b>'+ELEMENTS[k].name+' '+(r.counts[k]===0?'겉에 없음':r.counts[k]+'개')+'</b><span>'+esc(v.elementRoles[k])+' · '+pct(r.shares[k])+'%</span></li>').join('')+'</ul>'
+  +'<p class="chart-note">'+esc(v.elementIntro)+' '+esc(v.elements[0])+'</p>';
  const L=r.luck,cyc=L.cycles.slice(0,10);
  h+='<h4>대운</h4><ol class="daeun">'+cyc.map(c=>'<li'+(c.i===L.current?' class="now"':'')+'><small>'+(R.input.unknown?'약 ':'')+c.age+'</small><b>'+esc(c.g)+'</b></li>').join('')+'</ol>';
  const place=w=>String(w||'').replace(/태어난 해/g,'연주').replace(/태어난 달/g,'월주').replace(/태어난 날/g,'일주').replace(/태어난 시간/g,'시주');
@@ -4249,58 +4465,63 @@ function renderResult(R){
  const ribbon=$('portrait-ribbon');
  ribbon.innerHTML=icon(r.me.icon);
  ribbon.setAttribute('aria-label',r.me.name+' 무늬 책갈피');
+ // 나를 나타내는 상징은 책자 첫머리 한 줄로 둔다(리본에 같은 그림)
+ const me=r.me,meEl=ELEMENTS[me.el];
+ $('portrait-symbol').innerHTML='<b>'+esc(me.name)+'</b><small>'+esc(meEl.name)+'</small><span>'+esc(v.symbol)+'</span>';
  $('portrait-text').replaceChildren(...v.portrait.map(line=>el('p','',esc(line))));
  // 이치는 이름표 없이 문단으로 읽고 팔자 줄로 닫는다.
  $('origin').innerHTML='<p class="basis">'+esc(v.origin.fact)+'</p><p class="origin-text">'+esc(v.origin.rule)+'</p><p class="fate">'+esc(v.origin.fate)+'</p>';
- // 상징
- const me=r.me,meEl=ELEMENTS[me.el];
- $('me-card').innerHTML=icon(me.icon)+'<div><div class="big">'+esc(me.name)+'<small>'+esc(meEl.name)+'</small></div><div class="sub2">'+esc(v.symbol)+'</div></div>';
- // 다섯 기운
- const E=$('elements');E.replaceChildren();
- ORDER.forEach(k=>{const e=ELEMENTS[k],n=r.counts[k];let dots='';for(let i=0;i<Math.max(4,n);i++)dots+='<i class="'+(i<n?'':'off')+'" style="--c:'+e.color+'"></i>';
-  E.append(el('div','elem'+(n===0?' zero':''),icon(e.icon)+'<div class="nm">'+esc(e.name)+'</div><div class="dots">'+dots+'</div><div class="cnt">'+(n===0?'겉에 없음':n+'개')+'</div><small class="elem-role">'+esc(v.elementRoles[k])+'</small>'));});
+ // 다섯 기운 비율 막대는 사주 카드 아래에 둔다. 글자 수·맡는 일·풀이는 접힌 표로, 당신을 부리는 기운은 판정 카드로 간다.
  $('share').innerHTML=ORDER.map(k=>'<i style="--c:'+ELEMENTS[k].color+';width:'+(r.shares[k]*100).toFixed(1)+'%"></i>').join('');
- $('share-leg').innerHTML='<em>카드는 겉에 보이는 글자 수<br>비율은 계절과 숨은 기운까지 반영</em>'+ORDER.map(k=>'<span style="--c:'+(ELEMENTS[k].labelColor||ELEMENTS[k].color)+'">'+ELEMENTS[k].name+' '+pct(r.shares[k])+'%</span>').join('');
- $('elem-lines').innerHTML='<p class="basis">'+esc(v.elementIntro)+'</p>'+v.elements.map(t=>'<p>'+esc(t)+'</p>').join('');
+ $('share-leg').innerHTML='<em>다섯 기운 비율 <small>계절과 숨은 기운까지 반영</small></em>'+ORDER.map(k=>'<span style="--c:'+(ELEMENTS[k].labelColor||ELEMENTS[k].color)+'">'+ELEMENTS[k].name+' '+pct(r.shares[k])+'%</span>').join('');
+ $('boss-line').textContent=v.elements[1];
  // 입력한 실제 출생시각으로 계산한 별자리
  $('western-chart').innerHTML=typeof Western!=='undefined'?Western.render(R.western,'summary'):'<p class="pnote">서양 출생차트를 불러오지 못했습니다. 다시 접속해 주세요.</p>';
  // 타고난 성향
  $('core-title').textContent=v.core.title;
  $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p>'+esc(v.core.rule)+'</p><p class="fate">'+esc(v.core.fate)+'</p>';
- // 지나온 흐름
- const PH=$('past-hits');PH.replaceChildren();$('past-block').hidden=!v.past.length;
- v.past.forEach(x=>PH.append(el('article','past-hit','<b>'+x.year+'년</b><div><h3>'+plainEsc(x.title)+'</h3>'+(x.text?'<p>'+plainMd(x.text)+'</p>':'')+'</div>')));
- // 영역
+ // 일곱 칸: 칸 그림 → (이름표 표시) 칸 이름 → 머리줄 → 장면 → 한 방 → 조건이 맞는 문단 → 팔자 줄과 도장
+ // 이름표 표시(네모 → 세모 → 눈 달린 세모)는 그대로 두고 칸 그림을 그 앞에 붙인다. 근거는 맨 위 접힌 표로 보낸다.
  const S=$('sections');S.replaceChildren();
  v.domains.forEach(sec=>{
   const box=el('section','block reading');box.id='sec-'+sec.id;
-  // 장면 → 이치 → 조건이 맞는 문단 → 팔자 줄. 이치에 이름표를 붙이지 않고 근거는 맨 위 접힌 표로 보낸다.
+  box.setAttribute('data-short',String(sec.title).split(' · ')[0]);
   const paragraphs=sec.paragraphs||[sec.detail,sec.rule].filter(Boolean),closing=sec.closing||sec.fates;
   const note=sec.note?'<p class="note"><b>'+esc(sec.note.label)+'</b><span>'+plainEsc(sec.note.value)+'</span></p>':'';
-  box.innerHTML='<h2 class="sec-label">'+esc(sec.title)+'</h2>'+(sec.head?'<h3 class="head">'+plainEsc(sec.head)+'</h3>':'')
+  const emblem=SEC_EMBLEM[sec.id]?'<svg class="sec-emblem" viewBox="0 0 64 64" aria-hidden="true"><use href="#'+SEC_EMBLEM[sec.id]+'"/></svg>':'';
+  box.innerHTML='<h2 class="sec-label">'+emblem+'<span class="sec-name">'+esc(sec.title)+'</span></h2>'+(sec.head?'<h3 class="head">'+plainEsc(sec.head)+'</h3>':'')
    +'<div class="woven">'+paragraphs.map(t=>'<p class="woven-paragraph">'+esc(t)+'</p>').join('')+'</div>'
-   +(closing.length?'<div class="woven-closing">'+closing.map(t=>'<p class="fate">'+esc(t)+'</p>').join('')+'</div>':'')+note;
+   +(closing.length?'<div class="woven-closing">'+closing.map((t,i)=>'<p class="fate">'+esc(t)+(i===closing.length-1?'<span class="fate-seal" aria-hidden="true">사주<br>도사</span>':'')+'</p>').join('')+'</div>':'')+note;
   S.append(box);
  });
- // 올해·내년
- const Y=$('years');Y.replaceChildren();
- (v.years||r.years).forEach((y,i)=>{
+ // 지나온 해와 앞날: 지나온 해 → 올해(이번 달) → 내년 → 10년을 같은 연표 줄로 잇는다.
+ // 계산 안내(적용 기간·전환 시각·10년 시작 시점)는 줄마다 작은 글씨 한 줄로 둔다.
+ const tl=(cls,when,body)=>el(cls.startsWith('li ')?'li':'article','tl-item '+cls.replace(/^li /,''),'<div class="tl-when">'+when+'</div><div class="tl-body">'+body+'</div>');
+ const PH=$('past-hits');PH.replaceChildren();
+ if(v.past.length)PH.append(el('p','tl-intro','지나온 해 가운데 마찰이 겹친 해입니다.'));
+ v.past.forEach(x=>{const b=BRANCHES[String(x.g||'')[1]];PH.append(tl('past','<b>'+x.year+'년</b>'+(b?icon(b.icon):''),'<h3>'+plainEsc(x.title)+'</h3>'+(x.text?'<p>'+plainMd(x.text)+'</p>':'')));});
+ const ys=v.years||r.years;
+ const yearItem=(y,i)=>{
   // 제목이 이미 '앞 해의 문제가 다시 겹치는 해'이면 같은 말을 본문에서 되풀이하지 않는다
   const yt=/다시 겹치는 해$/.test(y.title||'')&&/^\d+년에 짚은 문제가 이 시기에도 이어집니다\.$/.test(y.text||'')?'':y.text;
   const b=BRANCHES[y.g[1]],ps=new Date(y.periodStart+9*HOUR),pe=new Date(y.periodEnd+9*HOUR-1),period=(ps.getUTCMonth()+1)+'월 '+ps.getUTCDate()+'일~'+(pe.getUTCFullYear()===ps.getUTCFullYear()?'':pe.getUTCFullYear()+'년 ')+(pe.getUTCMonth()+1)+'월 '+pe.getUTCDate()+'일';
-  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')));
- });
- $('year-rule').textContent=v.yearRule;
- renderCurrentMonth(v.years||r.years,now);
+  return tl('tl-year'+(i===0?' this':''),'<b>'+y.year+'년</b>'+icon(b.icon),'<span class="flag'+(i===0?'':' next')+'">'+(i===0?'올해':'내년')+'</span><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')+'<small class="tl-note">실제 적용 '+period+'</small>');
+ };
+ $('years').replaceChildren(...ys.slice(0,1).map(y=>yearItem(y,0)));
+ $('year-next').replaceChildren(...ys.slice(1,2).map(y=>yearItem(y,1)));
+ renderCurrentMonth(ys,now);
  // 10년
  const L=r.luck,currentCycle=L.cycles.find(cy=>cy.i===L.current),fd=localYmd(inp.place,L.start);
- $('luck-start').innerHTML=plainMd('10년 흐름은 **'+fd.y+'년'+(inp.unknown?' 무렵':(' '+fd.m+'월'))+'**부터 시작합니다.'+(currentCycle?' 지금은 **'+currentCycle.startYear+'년에 시작한 흐름**을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':''));
+ $('luck-start').textContent='10년 흐름은 '+fd.y+'년'+(inp.unknown?' 무렵':(' '+fd.m+'월'))+'부터 시작합니다.'+(currentCycle?' 지금은 '+currentCycle.startYear+'년에 시작한 흐름을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':'');
  $('luck-graph').innerHTML=luckGraph(L,v.luck.cycles.map(x=>x.c),v.luck.worst);
  const LL=$('luck-list');LL.replaceChildren();
  v.luck.cycles.forEach(x=>{
   const cy=x.c,worst=cy.i===v.luck.worst;
-  LL.append(el('li',(x.now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+cycleAgeLabel(cy,inp.unknown)+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')+'</div>'));
+  LL.append(tl('li decade'+(x.now?' now':'')+(worst?' worst':''),'<b>'+cy.startYear+'년</b>'+icon(BRANCHES[cy.g[1]].icon),
+   (x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')
+   +'<small class="tl-note">'+cy.endYear+'년까지 · '+cycleAgeLabel(cy,inp.unknown)+'부터 10년</small>'));
  });
+ $('year-rule').textContent=v.yearRule;
  $('cycle-ruling').innerHTML='<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>';
  // 전체 풀이
  $('verdict').textContent=v.verdict;
@@ -4310,6 +4531,7 @@ function renderResult(R){
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
  $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
+ if(typeof runheadReset==='function')runheadReset();
 }
 function cycleAgeLabel(cy,unknown){
  if(unknown)return '약 만 '+cy.age+'세 무렵';
