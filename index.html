@@ -6,12 +6,12 @@
 <meta name="color-scheme" content="only light">
 <meta name="theme-color" content="#fff6d6">
 <meta name="referrer" content="no-referrer">
-<meta name="description" content="사주와 서양 출생차트로 성격, 돈, 일, 관계를 함께 풀고 사주의 10년 흐름을 살펴봅니다.">
+<meta name="description" content="사주와 별자리에 담긴 내 운명. 타고난 성향부터 돈, 일, 관계와 앞으로의 흐름까지.">
 
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="사주도사">
 <meta property="og:title" content="사주도사">
-<meta property="og:description" content="사주와 서양 출생차트로 성격, 돈, 일, 관계를 함께 풀고 사주의 10년 흐름을 살펴봅니다.">
+<meta property="og:description" content="사주와 별자리에 담긴 내 운명. 타고난 성향부터 돈, 일, 관계와 앞으로의 흐름까지.">
 <meta property="og:url" content="https://aaffffffffff123-lang.github.io/sajudosa/">
 <meta property="og:image" content="https://aaffffffffff123-lang.github.io/sajudosa/og.png">
 <meta property="og:image:width" content="1200">
@@ -435,12 +435,12 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .core #core-body .rule{margin:0}
 
 /* The back sheet sits outside document flow. The scroll boundary stays at the last line. */
-#edge-hint{position:relative;display:grid;place-items:center;min-height:76px;margin:32px auto 0;padding-bottom:12px;visibility:hidden}
+#edge-hint{position:relative;display:grid;place-items:center;min-height:92px;margin:16px auto 0;padding-bottom:12px;visibility:hidden}
 #edge-hint.shown{visibility:visible}
-#edge-hint .edge-enter{display:grid;place-items:center;width:72px;height:60px;padding:0;border:0;border-radius:24px;background:transparent;color:var(--red-d);cursor:pointer;touch-action:manipulation}
+#edge-hint .edge-enter{display:grid;place-items:center;width:88px;height:80px;padding:0;border:0;border-radius:24px;background:transparent;color:var(--red-d);cursor:pointer;touch-action:manipulation}
 #edge-hint .edge-enter:focus-visible{outline:2px solid currentColor;outline-offset:3px}
 #edge-hint .edge-enter:active{background:rgba(90,54,29,.08)}
-#edge-hint .choice-cue{width:42px;height:42px;margin:0;animation:edge-cue-pulse 2s ease-in-out infinite}
+#edge-hint .choice-cue{width:66px;height:66px;margin:0;animation:edge-cue-pulse 1.6s ease-in-out infinite}
 @keyframes edge-cue-pulse{0%,65%,100%{transform:translateY(0);opacity:.9}30%{transform:translateY(5px);opacity:1}}
 #result-screen.edge-lifted{transform:translateY(calc(0px - var(--edge-lift,0px)))}
 #result-screen.edge-lifted,.edge-sheet{transition:transform .19s cubic-bezier(.22,.76,.34,1)}
@@ -972,7 +972,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   <p class="foot-note" id="foot-note"></p>
   <p class="last-line" id="last-line"></p>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
-  <div id="edge-hint"><button type="button" id="fate-go" class="edge-enter" aria-label="다음으로" disabled><svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+  <div id="edge-hint" class="shown"><button type="button" id="fate-go" class="edge-enter" aria-label="다음으로"><svg class="choice-cue" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 8v46M12 34l20 20 20-20" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
  </div>
 </main>
@@ -4649,8 +4649,10 @@ function atEdge(){
 }
 function edgeHint(){
  const busy=FATE.phase==='loading',armed=FATE.phase==='armed',departing=FATE.phase==='pulling';
- $('edge-hint').classList.toggle('shown',armed);
- $('fate-go').disabled=!armed;
+ // Show the cue while reading; only a fresh action after reaching the end opens 3D.
+ const showCue=FATE.phase==='reading'||armed;
+ $('edge-hint').classList.toggle('shown',showCue);
+ $('fate-go').disabled=!showCue;
  const sheet=$('edge-sheet');
  sheet.hidden=!armed&&!busy&&!departing;
  sheet.classList.toggle('waiting',armed);
