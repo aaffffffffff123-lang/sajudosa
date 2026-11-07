@@ -2,7 +2,7 @@
 // - 확정한 재물 원고(COPY)는 글자 하나 바꾸지 않는다.
 // - 일·몸·짝과 관계·가족과 부양·귀인·관운은 원인별 [장면, 한 방]으로 시작하고, 한 방 끝에 그 칸의 원래 이치를 글자 그대로 품는다.
 // - 문단은 사주·별자리 조건이 맞을 때만 붙고 한 사람이 받는 문단 수에 상한을 두지 않는다.
-// - 별자리는 문단을 고르는 조건으로만 쓴다. 본문에 별자리·사주 용어를 쓰지 않고 같은 문장을 두 번 쓰지 않는다.
+// - 별자리는 문단을 고르는 조건이며 실제로 더한 내용은 총평에도 쓴다. 본문에 별자리·사주 용어를 쓰지 않고 같은 문장을 두 번 쓰지 않는다.
 // 이 검사가 깨지면 문장을 순하게 바꾸지 말고 조건과 제외 목록을 맞춘다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const W=require('../western.js'),ReadingPool=require('../reading-pool.js');
@@ -25,6 +25,53 @@ const ALL=(()=>{let seed=20261107;const rnd=()=>{seed=(seed*1103515245+12345)>>>
  out.push(read(1982,12,1,{h:21,mi:43,unknown:true}));
  return out;})();
 const ids=Object.fromEntries(Object.entries(POOL).map(([k,list])=>[k,list.map(x=>x.id)]));
+
+test('the final verdict follows a displayed western addition while keeping family and work context',()=>{
+ let mixed=0,fallback=0;
+ for(const {result,view} of ALL){
+  const noStars=core.v5Reading({...result,western:{available:false}},NOW);
+  assert.equal(noStars.verdictEvidence,undefined);
+  assert.equal(noStars.verdict,core.v5Reading({...result,western:{available:true,planets:[],aspects:[]}},NOW).verdict);
+  assert(view.verdict.endsWith('운명입니다.'));
+  assert(view.verdict.startsWith([view.verdictFrame.subject,view.verdictFrame.origin,view.verdictFrame.work].join(' ')));
+  if(view.verdictEvidence){
+   mixed++;
+   const {domain,poolId}=view.verdictEvidence,d=view.domains.find(d=>d.id===domain),base=noStars.domains.find(d=>d.id===domain);
+   assert(d.poolIds.includes(poolId));assert(d.westernAddedIds.includes(poolId));assert(!base.poolIds.includes(poolId));
+   assert.notEqual(view.verdict,noStars.verdict);
+  }else{fallback++;assert.equal(view.verdict,noStars.verdict);}
+  assert.equal(core.v5Reading(result,NOW).verdict,view.verdict,'same input yields the same conclusion');
+ }
+ assert(mixed>0,'actual charts contribute western conclusions');
+ assert(fallback>0,'no western addition keeps the original conclusion');
+});
+
+test('western changes can reach the final verdict from all seven domains without invented chart data',()=>{
+ const cases=[
+  {domain:'work',id:'W5',planets:[{id:'Mercury',house:3}],text:'퇴근 뒤 연락'},
+  {domain:'money',id:'debt',planets:[{id:'Sun',house:8}],text:'급해서 빌린 돈'},
+  {domain:'body',id:'B7',aspects:[{a:'Sun',b:'Neptune',angle:90}],text:'몸을 돌볼 시간'},
+  {domain:'home',id:'L5',planets:[{id:'Venus',sign:3}],unknown:true,text:'더 마음을 준 만큼'},
+  {domain:'office',id:'O4',planets:[{id:'Sun',house:10}],text:'일한 것을 보여 주는'},
+  {domain:'family',id:'F4',planets:[{id:'Moon',house:3}],peerAbsent:true,text:'집안에 드릴 돈'},
+  {domain:'gwiin',id:'G4',planets:[{id:'Jupiter',house:9}],moving:true,text:'받은 도움의 값'}
+ ];
+ for(const x of cases){
+  const families=Object.fromEntries(['비겁','식상','재성','관성','인성'].map(k=>[k,{level:x.peerAbsent&&k==='비겁'?'absent':'normal',visible:0}]));
+  const R={input:{male:true},reading:{a:{families,visibleTen:{},strength:{label:'중화'},interactions:[]},sinsal:x.moving?[{key:'yeokma'}]:[]},
+   western:{available:true,unknown:!!x.unknown,planets:x.planets||[],aspects:x.aspects||[]}};
+  const initial=()=>({origin:{key:'hidden'},core:{cause:'base'},verdict:'사주만의 결론',verdictFrame:{subject:'민수 님은',origin:'집안의 복은 만져 보지도 못하고',work:'일을 잘할수록 일이 늘어나고'},
+   domains:['work','money','body','home','family','gwiin','office'].map(id=>({id,cause:id==='gwiin'?'present':id==='money'?'reserve':'base',detail:'장면',rule:'이치',fates:['팔자 줄']}))});
+  const out=ReadingPool.weave(initial(),R),noStars=ReadingPool.weave(initial(),{...R,western:null});
+  assert.deepEqual(out.verdictEvidence,{domain:x.domain,poolId:x.id});assert(out.verdict.includes(x.text),out.verdict);
+  assert(out.verdict.startsWith('민수 님은 '));assert.notEqual(out.verdict,noStars.verdict);
+  // An excluded paragraph cannot appear merely to provide an astrology conclusion.
+  if(x.id==='G4'){
+   const excluded=initial();excluded.domains.find(d=>d.id==='gwiin').cause='absent';
+   ReadingPool.weave(excluded,R);assert(!excluded.verdictEvidence||excluded.verdictEvidence.poolId!=='G4');
+  }
+ }
+});
 
 // 조건 검사용 가짜 명식. 계산 엔진과 같은 모양의 값만 채운다.
 const FAMILIES=['비겁','식상','재성','관성','인성'];

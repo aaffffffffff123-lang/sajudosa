@@ -64,9 +64,7 @@ button{cursor:pointer;touch-action:manipulation}
 .dosa{display:block;width:min(300px,82vw);height:auto;margin:-2px auto -10px}
 .dosa .blink{transform-origin:186px 131px;animation:blink 4.2s infinite}
 @keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.12)}}
-.hanja{margin:4px 0 6px;font-family:var(--serif);font-size:14px;letter-spacing:.7em;padding-left:.7em;color:var(--gold-d);font-weight:700}
 .lead{margin:0;font-family:var(--serif);font-weight:700;font-size:clamp(25px,7.2vw,31px);line-height:1.42;letter-spacing:-.03em;color:var(--ink)}
-.sub{margin:12px 0 0;font-size:14.5px;line-height:1.75;color:var(--ink-2)}
 
 /* ===== 입력 ===== */
 .form{margin-top:26px;background:var(--card);border:2.5px solid var(--ink);border-radius:22px;padding:22px 18px 20px;box-shadow:0 6px 0 var(--ink)}
@@ -625,7 +623,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .year-rule{margin:16px 2px 0;font-size:15px;line-height:1.85;color:var(--ink-2);word-break:keep-all}
 .past-hit p+p,.year p+p{margin-top:12px}
 </style>
-<link rel="stylesheet" href="assets/celestial-ui.css?v=20261107-pool">
+<link rel="stylesheet" href="assets/celestial-ui.css?v=20261107-fate">
 </head>
 <body>
 <noscript><p style="padding:30px;line-height:1.8">이 화면을 쓰려면 브라우저의 자바스크립트를 켜 주세요.</p></noscript>
@@ -652,26 +650,15 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
    <h1 class="sign">사주도사</h1>
    <div class="dosa-sky">
     <img class="sky-dial" src="assets/sky-dial.svg" alt="" aria-hidden="true" width="360" height="360">
-   <svg class="dosa" viewBox="0 0 320 320" role="img" aria-label="윙크하는 도사">
+   <svg class="dosa" viewBox="50 0 220 290" role="img" aria-label="윙크하는 도사">
  <defs>
   <radialGradient id="dsHalo" cx="50%" cy="46%" r="50%"><stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#ece3ff"/><stop offset="1" stop-color="#ece3ff" stop-opacity="0"/></radialGradient>
   <radialGradient id="dsSkin" cx="42%" cy="34%" r="72%"><stop offset="0" stop-color="#ffe4c8"/><stop offset=".68" stop-color="#f7c39a"/><stop offset="1" stop-color="#e5a274"/></radialGradient>
   <linearGradient id="dsHat" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#17122a"/><stop offset=".3" stop-color="#3b3166"/><stop offset=".5" stop-color="#231c3f"/><stop offset="1" stop-color="#110d1d"/></linearGradient>
   <linearGradient id="dsGold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe372"/><stop offset=".55" stop-color="#ffbd18"/><stop offset="1" stop-color="#e08600"/></linearGradient>
   <linearGradient id="dsBeard" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e2dbf3"/></linearGradient>
-  <radialGradient id="dsPlanetA" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffa3c7"/><stop offset="1" stop-color="#d42f74"/></radialGradient>
-  <radialGradient id="dsPlanetB" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#93d3ff"/><stop offset="1" stop-color="#2b68d6"/></radialGradient>
-  <radialGradient id="dsPlanetC" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#93f2b9"/><stop offset="1" stop-color="#1c9658"/></radialGradient>
-  <symbol id="dsSpark" viewBox="-10 -10 20 20"><path d="M0-9C1-3 3-1 9 0C3 1 1 3 0 9C-1 3-3 1-9 0C-3-1-1-3 0-9Z"/></symbol>
  </defs>
  <circle cx="160" cy="150" r="128" fill="url(#dsHalo)"/>
- <!-- 궤도 뒤쪽 -->
- <g transform="rotate(-13 160 172)">
-  <ellipse cx="160" cy="172" rx="152" ry="46" fill="none" stroke="#c98a00" stroke-width="8" opacity=".16"/>
-  <ellipse cx="160" cy="172" rx="152" ry="46" fill="none" stroke="url(#dsGold)" stroke-width="3.2"/>
- </g>
- <circle cx="40" cy="134" r="9.5" fill="url(#dsPlanetB)" stroke="#261f3d" stroke-width="2.4"/>
- <circle cx="262" cy="104" r="7" fill="url(#dsPlanetC)" stroke="#261f3d" stroke-width="2.2"/>
  <!-- 귀 -->
  <ellipse cx="103" cy="150" rx="11.5" ry="16" fill="#f1b58b" stroke="#261f3d" stroke-width="3"/>
  <ellipse cx="217" cy="150" rx="11.5" ry="16" fill="#f1b58b" stroke="#261f3d" stroke-width="3"/>
@@ -715,16 +702,6 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
     <path d="M140 38L137 72" fill="none" stroke="#9b8fd4" stroke-width="2.5" stroke-linecap="round" opacity=".42"/>
     <path d="M139 29C151 27 169 27 181 29" fill="none" stroke="#b2a6e6" stroke-width="1.2" stroke-linecap="round" opacity=".35"/>
    </g>
- <!-- 궤도 앞쪽 -->
- <g transform="rotate(-13 160 172)">
-  <path d="M8 172A152 46 0 0 0 312 172" fill="none" stroke="url(#dsGold)" stroke-width="3.6"/>
- </g>
- <circle cx="272" cy="212" r="14" fill="url(#dsPlanetA)" stroke="#261f3d" stroke-width="2.6"/>
- <path d="M257 213c9-5 21-5 30 0" fill="none" stroke="#261f3d" stroke-width="2.2" opacity=".5"/>
- <circle cx="66" cy="231" r="6" fill="url(#dsGold)" stroke="#261f3d" stroke-width="2"/>
- <!-- 반짝이 -->
- <g fill="url(#dsGold)" stroke="#261f3d" stroke-width="1.6"><use href="#dsSpark" x="36" y="66" width="24" height="24"/><use href="#dsSpark" x="268" y="44" width="18" height="18"/></g>
- <g stroke="#3e2f8f" stroke-width="2.4" stroke-linecap="round"><path d="M292 146v12M286 152h12"/><path d="M24 184v10M19 189h10"/><path d="M98 42v8M94 46h8"/></g>
 <g class="dosa-charms" stroke="#261f3d" stroke-linecap="round" stroke-linejoin="round">
     <path d="M106 201v4M214 201v4" fill="none" stroke="#ae780b" stroke-width="1.8"/>
     <ellipse cx="106" cy="206" rx="2.4" ry="3" fill="none" stroke="#ae780b" stroke-width="1.3"/>
@@ -739,29 +716,9 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
      <path d="M-6.6-5.5C-9.8-.4-7.5 6.6-2.6 8.4" fill="none" stroke="#fff4bd" stroke-width="1.5"/>
     </g>
    </g>
-<g class="crystal-orb" transform="translate(160 267)" aria-hidden="true">
-    <defs>
-     <radialGradient id="dsGlass" cx="33%" cy="25%" r="78%"><stop stop-color="#e6f4f6"/><stop offset=".32" stop-color="#adbadb"/><stop offset=".7" stop-color="#626a9d"/><stop offset="1" stop-color="#36335e"/></radialGradient>
-     <radialGradient id="dsMist"><stop stop-color="#d3e4f7" stop-opacity=".55"/><stop offset="1" stop-color="#b4a9db" stop-opacity="0"/></radialGradient>
-     <clipPath id="dsGlassClip"><circle r="36"/></clipPath>
-    </defs>
-    <ellipse cy="43" rx="23" ry="3.2" fill="#453858" opacity=".13"/>
-    <circle r="43" fill="url(#dsMist)" opacity=".5"/>
-    <circle r="37" fill="url(#dsGlass)" stroke="#302840" stroke-width="2.4"/>
-    <g clip-path="url(#dsGlassClip)">
-     <ellipse cy="13" rx="36" ry="22" fill="url(#dsMist)"/>
-     <g class="crystal-content" fill="#fff3cc" stroke-linecap="round"><g fill="none" stroke="#d5d9f8" stroke-width=".8" opacity=".6"><ellipse rx="24" ry="9" transform="rotate(-30)"/><ellipse rx="24" ry="9" transform="rotate(45)"/></g><g fill="#fff1c6"><circle cx="-18" cy="-7" r="1.7"/><circle cx="14" cy="-16" r="1.3"/><circle cx="19" cy="9" r="1.7"/><path d="M0-6L1.4-1.4 6 0 1.4 1.4 0 6-1.4 1.4-6 0-1.4-1.4Z"/></g></g>
-    </g>
-    <path d="M-28-9C-25-23-13-30-3-30" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" opacity=".76"/>
-    <ellipse cx="-25" cy="-17" rx="3" ry="6" transform="rotate(32 -25 -17)" fill="#fff" opacity=".4"/>
-    <path d="M12 31C23 27 30 17 31 9" fill="none" stroke="#d8d5f1" stroke-width="1.5" stroke-linecap="round" opacity=".75"/>
-    <path d="M-22 32Q0 45 22 32" fill="none" stroke="#b89249" stroke-width="2" stroke-linecap="round"/>
-   </g>
 </svg>
    </div>
-  <p class="hanja">사주 · 서양 점성술</p>
-  <p class="lead">사주와 별자리에 담긴<br>내 삶의 흐름</p>
-   <p class="sub">성격 · 돈 · 일 · 관계 · 10년 흐름 풀이</p>
+  <p class="lead">사주와 별자리에 담긴<br>내 운명</p>
   </header>
   <form id="birth-form" class="form" novalidate>
    <div class="field"><label class="lbl" for="birth-name">이름 <small>선택</small></label><input id="birth-name" class="input" type="text" placeholder="이름을 입력해 주세요" maxlength="12" autocomplete="off"></div>
@@ -985,7 +942,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
     </article></section>
 
   <!-- 판정 카드: 집안 → 당신을 부리는 기운 → 타고난 성향. 마지막 「전체 풀이」 카드와 같은 모양 -->
-  <section class="block core" id="fate-card"><h2 class="sec-label">타고난 팔자</h2>
+  <section class="block core" id="fate-card"><h2 class="sec-label">타고난 운명</h2>
     <div class="origin" id="origin"></div>
     <div class="boss-line" id="boss-line"></div>
     <div class="core-part"><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div></div>
@@ -1239,7 +1196,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="reading-pool.js?v=20261107-context"></script>
+<script src="reading-pool.js?v=20261107-fate"></script>
 <script src="western.js?v=20261107-pool"></script>
 <script>
 /* =====================================================================
@@ -3553,7 +3510,7 @@ function monthWindowsHtml(months){
  * 1. 첫 문단은 독자가 자기 모습을 알아보는 평이한 사주풀이다. 집안 판정부터 꺾고 내려갈수록 범위를 넓힌다: 집안 → 나 → 일·돈·몸 → 짝 → 나라 → 세상 → 판정 → 명령.
  * 2. 독한 줄은 전부 사주·별자리 조건에 묶는다(reading-pool.js). 조건이 맞을 때만 뜨고 한 사람이 받는 문단 수에 상한을 두지 않는다. 근거와 별자리 이름은 본문에 쓰지 않고 맨 위 접힌 표에 모은다. 사주와 상관없는 숫자·지난 사건은 만들지 않는다.
  * 3. 칸마다 부조리를 '원래 그런 순리'처럼 말하는 이치를 문단 안에 둔다. 이름표를 따로 붙이지 않는다. 부조리 주제 하나는 한 칸에만 두고 같은 뜻을 되풀이하는 문단은 덜어낸다.
- * 4. 팔자 줄은 "당신은 …팔자입니다." 한 문장이다. 문장 중간 쉼표, 원인을 앞에 따로 세우는 꼴, "~이지 ~아닙니다"·"~가 아니라" 대구를 쓰지 않는다.
+ * 4. 각 칸의 도사 대사는 "당신은 …팔자입니다." 한 문장이다. 전체를 묶는 제목과 총평은 운명으로 쓴다. 문장 중간 쉼표, 원인을 앞에 따로 세우는 꼴, "~이지 ~아닙니다"·"~가 아니라" 대구를 쓰지 않는다.
  * 5. 생활 설명 → 팔자 → 이치는 같은 원인을 따른다. 타고난 습관도 외부 압박도 쓴다. 습관을 억지로 남의 명령으로 바꾸지 않는다.
  * 6. 오행의 양과 역할을 구별한다. 가장 적다는 이유만으로 결핍이나 가난을 단정하지 않는다.
  * 7. 사람마다 다르게 나온다. 공통 문장은 윗사람 조심 줄·각주·마지막 줄에 한정한다. 10년 흐름 본문은 계산된 흐름을 따른다.
@@ -4139,7 +4096,7 @@ const V5={
   vessel:'같은 기회가 와도 필요한 돈은 각자 마련합니다. 이미 재산이 있는 사람은 시작하고 당장 생활비가 필요한 사람은 하던 일을 계속합니다.'
  },
  ruling:{peak:['지금보다 나은 10년','보이지 않음'],support:['좋은 운이 들어오면','그만큼 더 감당할 것'],flat:['운이 달라져도','결정권은 남의 손에']},
- // 전체 풀이: "당신은 [집안] [일] 인연은 [짝] 팔자입니다."
+ // 전체 풀이: 집안·일의 판정과 실제 본문에 실린 관계·별자리 문단을 묶어 운명으로 닫는다.
  sumOrigin:{absent:'물려받은 것 없이 시작해서',hidden:'집안의 복은 만져 보지도 못하고',shown:'물려받은 것은 지키는 데 다 쓰고'},
  sumWork:{
   식상:'해 보겠다는 말에 쉴 날까지 내주고',비겁:'직접 끝내려다 넘길 사람을 잃고',인성:'준비한 시간을 인정받지 못하고',관성:'끝낸 일까지 혼자 다시 보고',재성:'돈 될 일을 지나치지 못하고',
@@ -4164,7 +4121,7 @@ const V5={
   risk:'위험한 일을 정하는 사람과 직접 하는 사람은 다릅니다. 다쳐서 빠진 사람 대신 일할 사람이 오면 일은 다시 돌아갑니다.'
  },
  fixedNote:'위 판정은 본인의 의사와 관계없이 적용됩니다.',
- footNote:'※ 사주는 타고난 팔자를 알려줄 뿐 바꾸지 않습니다. 바꾸려는 노력은 기운을 소모합니다.',
+ footNote:'※ 풀이는 타고난 운명을 알려줄 뿐 바꾸지 않습니다. 바꾸려는 노력은 기운을 소모합니다.',
  lastLine:'남의 결정에 따라 사는 사람은 운을 묻습니다.\n남의 삶을 결정하는 사람은 운을 묻지 않습니다.'
 };
 const v5Strength=a=>['극약','신약'].includes(a.strength.label)?'weak':['신강','극강'].includes(a.strength.label)?'strong':'mid';
@@ -4344,7 +4301,7 @@ function v5Reading(R,now){
    const f=parentWork?(parentWork==='cut'?V5.careerCut:V5.careerBurden):child?V5.child[key]:V5.parents[key];
    doms.push({id:'family',title:'가족과 부양',cause:key,head:scene.head,detail:scene.detail,fates:[f],rule:V5.pairRule[scene.rule]||scene.rule}); }
  { const gw=v5Gwiin(r);doms.push({id:'gwiin',title:'귀인 · 도와줄 사람',cause:gw.key,head:gw.head,detail:gw.detail,fates:[gw.fate],rule:gw.rule,basis:gw.basis}); }
- doms.push({id:'office',title:'관운 · 권한과 책임',cause:office.key,head:office.head,detail:office.detail,fates:[office.fate],rule:office.rule,basis:office.basis,evidenceIds:office.evidenceIds});
+ doms.push({id:'office',title:'권한과 책임',cause:office.key,head:office.head,detail:office.detail,fates:[office.fate],rule:office.rule,basis:office.basis,evidenceIds:office.evidenceIds});
  out.domains=doms;
  // 순응 장면의 군중이 「종이 봐」 하고 말할 근거: 그 사람 사주에 정말 있을 때만 true
  { const P2=P.slice(0,2).filter(p=>p&&p.known);
@@ -4362,14 +4319,14 @@ function v5Reading(R,now){
  // 일 부분은 일 칸의 첫 팔자 줄을 따른다.
  const ws=V5.sumWork[workKey]||V5.sumWork[top]||V5.sumWork.small;
  const ls=love?love.short:V5.loveShort;
- let verdict='당신은 '+V5.sumOrigin[ok]+' '+ws+' 인연은 '+ls+' 팔자입니다.';
- if(inp.name)verdict=inp.name+' 님은 '+verdict.slice(4);
- out.verdict=verdict;out.fixedNote=V5.fixedNote;
+ out.verdictFrame={subject:inp.name?inp.name+' 님은':'당신은',origin:V5.sumOrigin[ok],work:ws,relation:ls};
+ out.verdict=[out.verdictFrame.subject,out.verdictFrame.origin,ws,'인연은 '+ls,'운명입니다.'].join(' ');
+ out.fixedNote=V5.fixedNote;
  // 탈 없이 지나가려면
  const c1=fate.good?V5.cmd.near:offK==='low'?V5.cmd.small:low('재성')?V5.cmd.poor:st==='weak'?V5.cmd.weak:ok==='absent'?V5.cmd.start:V5.cmd.keep;
  out.cautions=unique([c1,V5.cmd.boss,office.caution||(st==='weak'?V5.cmd.risk:V5.cmd.place)]);
  out.footNote=V5.footNote;out.lastLine=V5.lastLine;
- // 칸마다 조건이 맞는 문단을 모두 붙인다. 별자리는 문단을 고르는 조건으로만 쓴다.
+ // 칸마다 조건이 맞는 문단을 붙이고, 별자리로 더해진 실제 본문도 전체 풀이에 반영한다.
  if(typeof ReadingPool!=='undefined')ReadingPool.weave(out,R);
  v5PeriodCopy(out,r,now);
  return out;

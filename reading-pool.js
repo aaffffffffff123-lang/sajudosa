@@ -465,12 +465,80 @@
   function hit(x,c,cause){
     return !x.not.includes(cause)&&!(x.workNot||[]).includes(c.cause('work'))&&!(x.coreNot||[]).includes(c.core)&&!(x.skip&&x.skip(c))&&!!x.when(c);
   }
+  // 총평은 본문에 이미 실린 문단만 줄인다. 조건·제외 목록은 POOL과 같은 것을 쓴다.
+  // 별자리 이름이나 새로운 사건을 덧붙이지 않고, 사주에서 읽은 집안·일의 맥락도 남긴다.
+  const VERDICT_LINES={
+    W1:'한 번 해낸 일을 다음에도 당연히 맡게 되는',
+    W2:'힘들다고 말한 날에도 덜어 낼 일을 정리하는 몫까지 받는',
+    W5:'퇴근 뒤 연락에 쓴 시간은 근무표에 남기지 못하는',
+    W7:'혼자 아는 일을 가르치는 동안에도 원래 하던 일은 그대로 맡는',
+    W3:'스스로 개선한 결과도 윗사람의 성과로 남기는',
+    W6:'어려울 때 줄인 몫을 형편이 나아진 뒤에도 돌려받지 못하는',
+    W4:'쌓은 경력도 일터를 옮길 때마다 처음부터 다시 증명하는',
+    learning:c=>c.origin==='shown'?'집에서 마련해 준 배움의 값까지 결과로 증명해야 하는':'배울 시간을 마련한 사람과 같은 자격으로 겨뤄야 하는',
+    debt:'급해서 빌린 돈도 약속한 날짜에 갚아야 하는',
+    effort:'더 힘들게 해낸 수고까지 같은 몫 안에서 감당하는',
+    M2:'돈이 모여 만드는 일터에서 자기 품을 보태는',
+    O1:'정하는 회의에 없었어도 정해진 날짜는 지켜야 하는',
+    O4:'일한 만큼 일한 것을 보여 주는 데도 시간을 쓰는',
+    O9:'남이 정한 예산 안에서 못 채운 목표를 자기 사정으로 설명하는',
+    O2:'위에서 생긴 예외를 보면서도 아래에서는 규칙을 지키는',
+    O7:'지킬 여건을 묻지 않은 규정에도 서명한 책임을 지는',
+    O5:'남이 결정한 일이 잘못됐을 때 경위를 적는 쪽에 남는',
+    O6:'남을지 떠날지까지 남이 매긴 평가에 맡겨야 하는',
+    O3:'고를 때만 뜻을 묻고 고른 뒤에는 남의 결정에 맞춰 사는',
+    L5:'더 마음을 준 만큼 상대가 정하는 것에 맞추는',
+    L4:'일 때문에 미룬 약속도 마음이 모자란 것으로 의심받는',
+    L3:'함께 살 집을 기다리는 동안에도 두 사람의 마음을 시험받는',
+    L2:'함께 사는 일을 시작할 때부터 두 집안의 체면까지 치르는',
+    L8:'함께 살 집을 정할 때부터 두 사람의 수입으로 생활을 맞추는',
+    L7:'인연을 끝내려는 날에도 함께 묶인 돈부터 풀어야 하는',
+    L1:'새 인연 앞에서도 마음보다 집안과 직장을 먼저 보이는',
+    L6:'만날 틈을 내지 못한 시간까지 눈이 높은 탓으로 돌려받는',
+    F2:'부모가 젊던 때의 셈으로 정한 기대를 지금의 노력으로 갚는',
+    F5:'집안에서 시작된 차이까지 각자의 성실함으로 평가받는',
+    F3:'먼저 벌게 된 만큼 집안의 급한 돈도 먼저 헤아리는',
+    F4:'형편이 달라도 집안에 드릴 돈은 같은 액수에 맞추는',
+    F1:'부모 곁에 쓴 시간이 많을수록 원래 여유 있던 사람으로 여겨지는',
+    F6:'집에서 먼저 본 길 가까이에서 일할 곳을 찾는',
+    B3:'쉬고 돌아온 뒤처짐도 자기 몫으로 메우는',
+    B4:'아파서 쉰 미안함 때문에 다음에는 더 참는',
+    B1:'아프다는 것을 증명할 시간도 쉬는 날에서 내는',
+    B5:'다시 검사받을 시간을 내는 일까지 자기 관리로 맡는',
+    B7:'몸을 돌볼 시간과 돈도 일하고 남은 데서 마련하는',
+    B6:'일하다 몸이 닳은 사정도 아픈 사람이 먼저 증명하는',
+    B2:'오래 일한 요령은 일터에 남기고 닳은 몸은 데리고 나오는',
+    G1:'소개 한 번의 값을 그곳에 있는 동안 체면으로 갚는',
+    G5:'공고를 보고 나선 뒤에야 먼저 오간 인맥과 겨루는',
+    G7:'도움을 받기 전부터 나중에 갚을 몫을 먼저 헤아리는',
+    G2:'받은 도움의 값을 하고 싶었던 말로 치르는',
+    G6:'끌어 준 사람의 힘이 기울면 자기 입지도 함께 흔들리는',
+    G4:'떠나려는 날에도 그동안 받은 도움의 값에 발이 묶이는'
+  };
+  function weaveVerdict(out,c){
+    if(!out.verdictFrame)return;
+    // 원래 총평의 관계 자리를 먼저 살핀다. 해당 문단이 없으면 다른 칸에서 실제로 더해진 내용을 쓴다.
+    const order=['home','work','money','body','office','family','gwiin'];
+    for(const id of order){
+      const d=out.domains.find(x=>x.id===id);
+      const key=d&&(d.westernAddedIds||[]).find(k=>VERDICT_LINES[k]);
+      if(!key)continue;
+      const line=typeof VERDICT_LINES[key]==='function'?VERDICT_LINES[key](c):VERDICT_LINES[key];
+      const f=out.verdictFrame;
+      out.verdict=[f.subject,f.origin,f.work,line,'운명입니다.'].join(' ');
+      out.verdictEvidence={domain:id,poolId:key};
+      return;
+    }
+  }
   // 돈 칸: [유형 장면, 유형 한 방, 문단…, 격차]. 나머지 여섯 칸: [장면, 한 방(원래 이치를 품음), 문단…]. 모두 팔자 줄로 닫는다.
   function weave(out,R){
     const c=context(R,out);
+    const withoutWestern=context(Object.assign({},R,{western:null}),out);
     out.domains.forEach(d=>{
       const pool=(POOL[d.id]||[]).filter(x=>hit(x,c,d.cause));
       d.poolIds=pool.map(x=>x.id);
+      // 같은 사주에서 별자리만 뺐을 때 사라지는 문단. 생시 미상·계산 실패는 원래 조건 그대로 걸러진다.
+      d.westernAddedIds=pool.filter(x=>!hit(x,withoutWestern,d.cause)).map(x=>x.id);
       // 선택된 장면 안에서만 앞의 지원·도움·생활 형편에 맞춰 문장을 잇는다.
       const paragraphs=pool.map(x=>(x.textFor&&x.textFor(c))||(x.originText&&x.originText[c.origin])||x.text);
       if(d.id==='money'){
@@ -483,6 +551,7 @@
       }else d.paragraphs=[d.detail,d.rule].concat(paragraphs).filter(Boolean);
       d.closing=d.fates.slice();
     });
+    weaveVerdict(out,c);
     return out;
   }
   return {COPY,LEAD,OPENING,POOL,context,weave};

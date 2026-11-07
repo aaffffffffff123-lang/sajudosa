@@ -40,7 +40,7 @@ test('a personal portrait opens the reading before the family verdict and wider 
   'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="year-rule"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fate-go"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
  for(const gone of ['id="me-card"','id="elements"','id="elem-lines"','id="past-block"','나를 나타내는 상징','타고난 다섯 가지 비율','올해와 내년','10년 단위 흐름'])assert(!view.includes(gone),gone);
- for(const label of ['>당신이 태어난 때<','>타고난 팔자<','>지나온 해와 앞날<','>전체 풀이<'])assert(view.includes(label),label);
+ for(const label of ['>당신이 태어난 때<','>타고난 운명<','>지나온 해와 앞날<','>전체 풀이<'])assert(view.includes(label),label);
  // 숨은 상징은 자리를 옮겨도 남는다: 오행 별 문양은 다섯 기운 막대 옆, 뱀 문양은 연표 이름표 옆
  assert(/class="elem-strip"/.test(view)&&/\.elem-strip::after\{background-image:/.test(html.replace(/\.sym-pent>\.sec-label::after,/,'')));
  assert(/class="block timeline sym-oro"/.test(view));
@@ -287,7 +287,7 @@ test('productive expression keeps both responsibilities while career loss requir
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
  for(const {v} of ALL){
   for(const f of fatesOf(v))assert.match(f,/^당신은 [^,]+팔자입니다\.$/,f);
-  assert.match(v.verdict,/^(당신은|\S+ 님은) [^,]+팔자입니다\.$/);
+  assert.match(v.verdict,/^(당신은|\S+ 님은) [^,]+운명입니다\.$/);
   for(const t of textsOf(v)){assert.equal(typeof t,'string');assert(t.length);assert(!/이지,|가 아니라|이 아니라|이지 [^.]*아닙니다/.test(t),t);}
   assert(!/undefined|NaN/.test(JSON.stringify(v)));
  }
