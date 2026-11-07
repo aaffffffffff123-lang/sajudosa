@@ -1,11 +1,11 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const ReadingProse=require('../reading-prose.js');
+const ReadingPool=require('../reading-pool.js');
 const W=require('../western.js'),A=require('../assets/astronomy.browser.min.js');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a),j=html.indexOf(b,i);assert(i>=0&&j>i,a);return html.slice(i,j);};
 const source=slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+slice('/* ---------- 자리 문서(V5)','/* 현재 월운:')+slice('function buildResult(inp,sd){','function resetAll(){');
 const NOW=Date.UTC(2026,10,6);
-function api(extra={}){return vm.runInNewContext(source+';({buildResult,v5Reading,lunarToSolar,solarToLunar,PLACES,wallToUtc,tenGod})',{Date,Intl,Western:W,ReadingProse,console,...extra});}
+function api(extra={}){return vm.runInNewContext(source+';({buildResult,v5Reading,lunarToSolar,solarToLunar,PLACES,wallToUtc,tenGod})',{Date,Intl,Western:W,ReadingPool,console,...extra});}
 const core=api();
 const places=Object.fromEntries(core.PLACES.flatMap(g=>g[1].map(p=>[p[0],{name:p[1],lon:p[2],lat:W.LATITUDES[p[0]],tz:p[3]||'KR',std:p[4]==null?9:p[4]}])));
 function read(y,m,d,{h=12,mi=0,unknown=false,pk='seoul',occurrence=0,male=true}={}){
@@ -82,45 +82,18 @@ test('repeated DST hours remain distinct, nonexistent hours fail, unknown days k
   assert.equal(korea.dayRange[1]-korea.dayRange[0]+1,23*3600000);
 });
 
-test('a fixed input produces fixed prose and preserves other money causes',()=>{
-  const kinds=new Set();
+test('a fixed input produces fixed prose and keeps each money cause on its own opening',()=>{
+  const kinds=new Set(),{COPY,LEAD}=ReadingPool;
   for(let m=1;m<=12;m++){
     const first=read(1980,m,15),again=read(1980,m,15),a=money(first.view),b=money(again.view);
     assert.deepEqual(first.result.western,again.result.western);assert.deepEqual(a,b);kinds.add(a.cause);
-    if(a.cause==='comfort'){
-      assert(a.paragraphs.includes(W.COPY.spending));assert.equal(a.closing,W.COPY.ending);
-      assert.doesNotMatch(JSON.stringify(a.paragraphs),/당신의 몫이 잘못|언젠가|당신을 응원/);
-    }else{assert.equal(a.paragraphs,undefined);assert.equal(a.closing,undefined);assert(!JSON.stringify(a).includes(W.COPY.spending));}
+    const opening=a.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[a.cause];
+    assert.deepEqual(a.paragraphs.slice(0,2),opening,a.cause);
+    assert.equal(a.paragraphs.at(-1),COPY.stability);assert.deepEqual(a.closing,a.fates);
+    if(a.cause!=='comfort')assert(!a.paragraphs.includes(COPY.spending)&&!a.paragraphs.includes(COPY.living));
+    assert.doesNotMatch(JSON.stringify(a.paragraphs),/하우스|별자리|목성|토성|화성|금성|수성|정인이/);
   }
   assert(kinds.size>=4);
-});
-
-test('the agreed long reading keeps every paragraph and never invents its astrological conditions',()=>{
-  // Synthetic chart to test the approved copy, independent of anyone's private birth information.
-  const {result,view}=read(2001,6,21,{unknown:true});
-  const out=structuredClone(view),m=money(out);m.cause='comfort';m.fates=[W.COPY.ending];
-  const c=W.compute({utc:NOW,lat:35,lon:127});
-  c.planets.forEach(p=>p.house=null);
-  W.planet(c,'Moon').house=2;W.planet(c,'Saturn').house=2;W.planet(c,'Jupiter').house=8;W.planet(c,'Mars').house=6;
-  c.aspects=[{a:'Moon',b:'Saturn',angle:0},{a:'Jupiter',b:'Saturn',angle:180},{a:'Sun',b:'Mars',angle:90}];
-  W.weave(out,{...result,western:c},{jeongin:3});
-  for(const key of ['living','spending','learning','debt','effort','stability'])assert(m.paragraphs.includes(W.COPY[key]),key);
-  assert(m.paragraphs.some(p=>p.includes('정인이 세 번 드러납니다')));
-  assert.equal(m.closing,W.COPY.ending);
-  c.aspects=[];c.planets.forEach(p=>p.house=null);W.weave(out,{...result,western:c},{jeongin:0});
-  const text=m.paragraphs.join(' ');
-  assert.doesNotMatch(text,/달과 토성이 함께|목성이 있습니다|태양과 사각|정인이 세 번/);
-  assert(!m.paragraphs.includes(W.COPY.learning));assert(!m.paragraphs.includes(W.COPY.debt));
-});
-
-test('supportive aspects and income placements are not relabeled adverse',()=>{
-  const {result,view}=read(1980,4,15),c=W.compute({utc:NOW,lat:35,lon:127});
-  c.planets.forEach(p=>p.house=null);W.planet(c,'Jupiter').house=2;
-  c.aspects=[{a:'Sun',b:'Mars',angle:120,name:'삼각'}];
-  const out=structuredClone(view);money(out).cause='reserve';W.weave(out,{...result,western:c},{jeongin:0});
-  assert.match(money(out).western.join(' '),/수입과 자원을 넓히는/);
-  assert.match(out.domains.find(d=>d.id==='work').western.join(' '),/비교적 매끄럽습니다/);
-  assert.doesNotMatch(JSON.stringify(out.domains.map(d=>d.western)),/사각|기회가 없|재물운이 없/);
 });
 
 test('missing astronomy asset leaves the original saju reading usable and tells the reader',()=>{
@@ -131,46 +104,54 @@ test('missing astronomy asset leaves the original saju reading usable and tells 
   assert.match(W.render({available:false,reason:'행성 계산 자료를 불러오지 못했습니다.'}),/불러오지 못했습니다/);
 });
 
-test('rendering consumes woven paragraphs in order and ends the money card on the approved line',()=>{
-  class Node{constructor(tag){this.tag=tag;this.children=[];this.innerHTML='';this.textContent='';}append(...items){this.children.push(...items)}replaceChildren(...items){this.children=items}setAttribute(){} }
+test('rendering keeps paragraph order, closes on the fate lines, and leaves no badge or expansion',()=>{
+  class Node{constructor(tag){this.tag=tag;this.children=[];this.innerHTML='';this.textContent='';this.hidden=false;}append(...items){this.children.push(...items)}replaceChildren(...items){this.children=items}setAttribute(){} }
   const nodes={};
   const dollar=id=>nodes[id]||(nodes[id]=new Node('div'));
-  const scope={Date,Intl,Western:W,ReadingProse,console,document:{getElementById:dollar,createElement:tag=>new Node(tag)},renderCurrentMonth(){}};
-  const renderSource=source+slice('function icon(','/* ---------- 태어난 곳 ---------- */')+slice('function hourWord(','function syncTimeField(')+slice('function glyphHtml(','function monthWindowsHtml(')+slice('function renderResult(R){','function cycleAgeLabel(')+slice('function cycleAgeLabel(','/* ---------- 입력 받기 ---------- */');
+  const scope={Date,Intl,Western:W,ReadingPool,console,document:{getElementById:dollar,createElement:tag=>new Node(tag)},renderCurrentMonth(){}};
+  const renderSource=source+slice('function icon(','/* ---------- 태어난 곳 ---------- */')+slice('function hourWord(','function syncTimeField(')+slice('function glyphHtml(','function monthWindowsHtml(')+slice('/* 사주 원국 접힌 표','function renderResult(R){')+slice('function renderResult(R){','function cycleAgeLabel(')+slice('function cycleAgeLabel(','/* ---------- 입력 받기 ---------- */');
   const render=vm.runInNewContext(renderSource+';({renderResult,buildResult,v5Reading})',scope);
-  const {result}=read(2001,6,21,{unknown:true});assert.equal(money(core.v5Reading(result,NOW)).cause,'comfort');
+  const {result}=read(2001,6,21,{unknown:true});
   render.renderResult(result);
-  const card=nodes.sections.children.find(x=>x.id==='sec-money');assert(card);
-  const m=money(core.v5Reading(result,NOW));let previous=-1;
-  for(const line of [...m.paragraphs,m.closing]){const offset=card.innerHTML.indexOf(line);assert(offset>previous,line);previous=offset;}
-  assert(card.innerHTML.endsWith(m.closing+'</p>'));
-  assert.match(nodes['western-chart'].innerHTML,/태어난 시간을 몰라/);
   const full=core.v5Reading(result,NOW);
-  for(const d of full.domains.filter(d=>d.id!=='money')){const rendered=nodes.sections.children.find(n=>n.id==='sec-'+d.id);assert(rendered,d.id);for(const paragraph of [...d.paragraphs,d.closing])assert(rendered.innerHTML.includes(paragraph),d.id+': '+paragraph);}
-  full.years.forEach((y,i)=>{if(y.expansion)assert(nodes.years.children[i].innerHTML.includes(y.expansion.text));});
-  full.luck.cycles.forEach((x,i)=>{if(x.expansion)assert(nodes['luck-list'].children[i].innerHTML.includes(x.expansion.text));});
+  for(const d of full.domains){
+    const card=nodes.sections.children.find(n=>n.id==='sec-'+d.id);assert(card,d.id);
+    let previous=-1;
+    for(const line of [...d.paragraphs,...d.closing]){const offset=card.innerHTML.indexOf(line);assert(offset>previous,d.id+': '+line);previous=offset;}
+    assert(!card.innerHTML.includes('<b>이치</b>')&&!card.innerHTML.includes('<b>근거</b>'),d.id);
+    if(d.id==='money')assert(card.innerHTML.indexOf('note')>card.innerHTML.indexOf(d.closing.at(-1)));
+  }
+  assert(!nodes['year-rule'].innerHTML.includes('이치'));assert.equal(nodes['year-rule'].textContent,full.yearRule);
+  assert.match(nodes['western-chart'].innerHTML,/태어난 시간을 몰라/);
+  assert.match(nodes['saju-details'].innerHTML,/사주 원국 자세히 보기/);
+  assert.doesNotMatch(JSON.stringify(nodes),/expansion/);
 });
 
 test('browser assets load in order and inline JavaScript remains valid',()=>{
   assert(html.indexOf('src="assets/astronomy.browser.min.js')<html.indexOf('src="western.js'));
+  assert(html.indexOf('src="reading-pool.js')<html.indexOf('src="western.js'));
   assert(html.indexOf('src="western.js')<html.indexOf("'use strict';"));
+  assert(!html.includes('reading-prose.js'));
   for(const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g))new vm.Script(match[1]);
-  assert(html.indexOf('src="reading-prose.js')<html.indexOf('src="western.js'));
-  const context=vm.createContext({console});vm.runInContext(fs.readFileSync(path.join(__dirname,'../reading-prose.js'),'utf8'),context);assert.equal(typeof context.ReadingProse.weave,'function');vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/astronomy.browser.min.js'),'utf8'),context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../western.js'),'utf8'),context);
+  const context=vm.createContext({console});vm.runInContext(fs.readFileSync(path.join(__dirname,'../reading-pool.js'),'utf8'),context);assert.equal(typeof context.ReadingPool.weave,'function');
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../assets/astronomy.browser.min.js'),'utf8'),context);vm.runInContext(fs.readFileSync(path.join(__dirname,'../western.js'),'utf8'),context);
   assert.equal(typeof context.Western.compute,'function');assert(context.Western.compute({utc:NOW}).available);
 });
 
-test('the birth summary and personality reading share one chart without repeating prose',()=>{
-  const c=W.compute({utc:NOW,lat:37.5665,lon:126.978});
-  const summary=W.render(c,'summary'),reading=W.render(c,'reading');
-  assert.match(summary,/natal-keys/);assert.match(summary,/<details/);
-  assert.doesNotMatch(summary,/natal-reading/);
-  assert.match(reading,/<b>태양 ·/);assert.match(reading,/<b>달 ·/);
-  assert.doesNotMatch(reading,/<details|natal-keys|<svg/);
-  assert.equal(W.render({available:false},'reading'),'');
+test('the birth summary shows drawn sign cards like the pillars and one line for the sun and moon',()=>{
+  const c=W.compute({utc:NOW,lat:37.5665,lon:126.978}),summary=W.render(c);
+  const sun=W.planet(c,'Sun'),moon=W.planet(c,'Moon');
+  assert.match(summary,/class="star-cards"/);assert.equal((summary.match(/class="pillar star-card/g)||[]).length,3);
+  for(const i of [sun.sign,moon.sign,c.asc.sign])assert(summary.includes('href="#'+W.SIGN_ICONS[i]+'"'));
+  assert(summary.includes('<b>태양 · '+W.SIGNS[sun.sign]+'</b>'+W.SUN[sun.sign].split('.')[0]+'.</li>'));
+  assert(summary.includes('<b>달 · '+W.SIGNS[moon.sign]+'</b>'+W.MOON[moon.sign].split('.')[0]+'.</li>'));
+  assert.match(summary,/<details class="chart-details natal-details">/);
+  assert.equal(W.SIGN_ICONS.length,12);for(const id of W.SIGN_ICONS)assert(html.includes('<symbol id="'+id+'" viewBox="0 0 64 64">'),id);
   const screen=slice('<main id="result-screen"','</main>');
+  assert(screen.indexOf('id="pillars"')<screen.indexOf('id="saju-details"'));
+  assert(screen.indexOf('id="saju-details"')<screen.indexOf('id="western-chart"'));
   assert(screen.indexOf('id="western-chart"')<screen.indexOf('id="reading-portrait"'));
-  assert(screen.indexOf('id="western-reading"')>screen.indexOf('id="core-body"'));
+  assert(!screen.includes('id="western-reading"'));
 });
 
 test('the wheel plots real longitudes relative to the ascendant and keeps crowded labels apart',()=>{

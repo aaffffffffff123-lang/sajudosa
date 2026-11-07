@@ -3,12 +3,12 @@
 // 이 검사가 깨지면 문장을 순하게 되돌리지 말고 조건과 근거를 맞춘다.
 // 엔진 판정은 reading-evidence.test.cjs가 따로 검사한다. V5는 생활 설명을 가져오거나 풀어 쓰되 제목·팔자의 원인을 일치시킨다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
-const ReadingProse=require('../reading-prose.js');
+const ReadingPool=require('../reading-pool.js');
 const html=fs.readFileSync(path.join(__dirname,'../index.html'),'utf8');
 const slice=(a,b)=>{const i=html.indexOf(a);assert(i>=0,a);const j=html.indexOf(b,i);assert(j>i,b);return html.slice(i,j);};
 const V5_SRC=slice('/* ---------- 자리 문서(V5)','/* 현재 월운:');
 const api=vm.runInNewContext(slice("'use strict';",'function icon(')+slice('const PLACES=','const PLACE_MAP=')+V5_SRC+slice('function currentMonthView(','const MONTH_VIEW=')+slice('function luckGraph(','/* ---------- 입력 받기 ---------- */')
- +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2})',{Intl,Date,ReadingProse});
+ +';({computeChart,makeReading,modernizeReadingDisplay,v5Reading,currentMonthView,luckGraph,TEN_FAMILY,tenGod,HIDDEN,ELEMENTS,CONTROLLED_BY,STEMS,elementFamilyV2,sentenceListV2,pastReadingText})',{Intl,Date,ReadingPool});
 const NOW=Date.UTC(2026,10,4),THIS_YEAR=2026;
 const PLACE={seoul:{name:'서울',lon:126.978,tz:'KR',std:9},busan:{name:'부산',lon:129.07,tz:'KR',std:9}};
 function make(y,m,d,{h=12,mi=0,unknown=false,male=true,pk='seoul',name=''}={}){
@@ -44,7 +44,7 @@ test('a personal portrait opens the reading before the family verdict and wider 
 
 test('the direction is written where the next editor sees it, and the screen copy comes only from v5Reading',()=>{
  const head=slice('/* ---------- 자리 문서(V5)','const V5=');
- for(const k of ['집안 판정부터 꺾고','사주 조건에 묶는다','이치 줄','당신은 …팔자입니다','사람마다 다르게'])assert(head.includes(k),k);
+ for(const k of ['집안 판정부터 꺾고','사주·별자리 조건에 묶는다','상한을 두지 않는다','이치를 문단 안에 둔다','이름표를 따로 붙이지 않는다','당신은 …팔자입니다','사람마다 다르게'])assert(head.includes(k),k);
  const render=slice('function renderResult(R){','function cycleAgeLabel(');
  assert(render.includes('v5Reading(R'));
  assert(!/\br\.(sections|verdict|cautions|observations)\b/.test(render));
@@ -161,7 +161,10 @@ test('element balance stays consistent while office follows the specific structu
   assert.match(v.elements[1],{absent:/확인한 글자에는 그 기운이 없어/,hidden:/겉에 드러나지 않은 기운/,high:/당신보다 세고/,mid:/힘이 비슷해서/,low:/부리는 기운이 약해서/}[b.key]);
   assert.equal(office.cause,v.keys.officeCase);assert(office.basis.startsWith(r.fate.officer.fact));
   assert.equal(work.rule==='해 보겠다고 한 말은 약속으로 남고, 그 말을 지키느라 쓴 휴일은 기록에 남지 않습니다.',work.cause==='식상');
-  assert(office.evidenceIds.length);assert(!/표 한 장|투표|선거|항의가 끝날 때까지 월급/.test(JSON.stringify(office)));
+  // 관운 칸의 V5 문장(제목·장면·팔자·이치)은 투표·항의 구호를 쓰지 않는다. 선거는 2026-11-07 초안에서 확정한 O3 문단 한 곳에서만 말한다.
+  const officeCopy=[office.head,office.detail,office.rule,...office.fates].join(' ');
+  assert(office.evidenceIds.length);assert(!/표 한 장|투표|선거|항의가 끝날 때까지 월급/.test(officeCopy));
+  assert(office.paragraphs.filter(t=>/선거/.test(t)).every(t=>t===ReadingPool.POOL.office.find(x=>x.id==='O3').text));
  }
 });
 
@@ -245,7 +248,7 @@ test('productive expression keeps both responsibilities while career loss requir
  assert(supported.r.a.structure.success.includes('식상생재'));
  assert.equal(supported.r.a.structure.failure.length,0);
  assert.match(home.fates.join(' '),/일하는 몫에 돌보는 몫까지/);
- assert(!/경력이 끊기|돌아갈 자리/.test(home.fates.join(' ')));
+ assert(!/경력이 끊기|돌아갈 일자리/.test(home.fates.join(' ')));
  assert.match(home.rule,/둘 다 감당해야/);
  const conflicts=ALL.filter(x=>!x.male&&hi(x.r,'식상')&&x.r.a.structure.failure.some(f=>f.id==='hurt_officer'));
  assert(conflicts.length>0);
@@ -266,7 +269,14 @@ test('every life domain keeps a distinct rule and uses the common reading order'
  for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){assert(d.rule,d.id);assert(!d.fates.includes(d.rule));}}
  const render=slice('function renderResult(R){','function cycleAgeLabel(');
  assert(!/sec.id==='money'/.test(render));
- assert(render.includes('+fates+note+rule+basis'));
+ // 장면과 이치는 같은 문단 줄에 놓고 이름표 없이 읽는다. 팔자 줄이 맨 뒤, 돈이 새는 곳 메모는 그 아래에 둔다.
+ assert(/woven-paragraph[\s\S]*woven-closing[\s\S]*\+note/.test(render));
+ assert(!render.includes('<b>이치</b>'));assert(!/<b>근거<\/b>|western-link|expansion/.test(render));
+ for(const {v} of ALL)for(const d of v.domains){
+  assert.equal(d.paragraphs.filter(t=>t===d.rule).length,d.id==='money'?0:1,d.id);
+  assert.deepEqual(d.closing,d.fates);
+  assert(d.closing.every(t=>!d.paragraphs.includes(t)),d.id);
+ }
  for(const k of ['복은 집에서 내려옵니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
   '계약한 비용은 약속한 날에 치르는 법','먼저 재물을 내놓은 대가','나라 사이에서도 큰 기운이 작은 기운을 누르는',
   '지시받은 만큼만 하면 탈이 없습니다','남의 결정에 따라 사는 사람은 운을 묻습니다'])assert(V5_SRC.includes(k),k);
@@ -312,7 +322,8 @@ test('the ten-year ruling follows the computed scores',()=>{
   const cur=v.luck.cycles.find(x=>x.now),later=v.luck.cycles.filter(x=>!x.now&&(!cur||x.c.i>cur.c.i));
   assert.equal(v.luck.rulingKey==='peak',!!cur&&later.length>0&&later.every(x=>x.c.score>cur.c.score));
   if(v.luck.rulingKey==='support')assert(later.some(x=>(x.c.evidence||[]).some(e=>e.valence==='support')));
-  for(const x of later){assert(x.stage);assert.equal(x.stage,x.c.text);}
+  // 앞에서 이미 나온 문장만 덜어 낸다. 남은 문장은 그 흐름의 계산된 문장이다.
+  for(const x of later){const own=api.sentenceListV2(x.c.text);assert(api.sentenceListV2(x.stage).every(t=>own.includes(t)),x.stage);}
  }
 });
 
@@ -378,4 +389,27 @@ test('crowd officer absence includes hidden stems and never assumes an unknown b
   if(!unknown&&present&&!P.some(p=>fam(r,p.stem)==='관성')){hidden++;assert(!v.marks.noOfficer);}
  }
  assert(absent>0);assert(hidden>0);
+});
+
+test('past, this year, the current month and the ten-year flow never repeat a sentence',()=>{
+ let same=0;
+ for(const {v} of ALL){
+  const month=v.years.flatMap(y=>y.months||[]).find(m=>m.start<=NOW&&NOW<m.end);
+  const cur=v.luck.cycles.find(x=>x.now);
+  const texts=[...v.past.map(x=>x.text),...v.years.map(x=>x.text),month&&month.text,cur&&cur.c.text,...v.luck.cycles.filter(x=>!x.now).map(x=>x.stage)].filter(Boolean);
+  const seen=new Set;
+  for(const t of texts)for(const s of api.sentenceListV2(t)){assert(!seen.has(s),s);seen.add(s);}
+  for(const y of v.years){
+   const p=v.past.find(x=>y.text===x.year+'년과 같은 일이 다시 옵니다.');
+   if(p){same++;assert(p.text);}
+   assert(!('expansion' in y));
+  }
+  assert(v.past.every(x=>!('expansion' in x)));
+ }
+ assert(same>0,'a year that repeats a past year points back to it');
+});
+
+test('role and job lines name what changes instead of a vague 자리',()=>{
+ for(const vague of ['그 자리를 벗어나지','돌아갈 자리는','담당이나 자리가'])assert(!V5_SRC.includes(vague),vague);
+ for(const plain of ['남들이 피하는 역할을 한 번 맡고 나면 다음에도 그 역할로 불리는 팔자입니다.','돌아갈 일자리는 남아 있지 않은','담당이나 부서가 바뀔 때마다'])assert(V5_SRC.includes(plain),plain);
 });
