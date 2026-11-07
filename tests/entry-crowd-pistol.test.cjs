@@ -171,9 +171,9 @@ test('the new pistol bank wins even when the old sound bank finishes later',asyn
  let finishOld;const old=new Promise(r=>finishOld=r),fresh={duration:2,sampleRate:44100},SFX={};
  const ctx={decodeAudioData:async bytes=>bytes==='new'?fresh:{duration:5,sampleRate:24000}};
  const scope={ctx,SFX,bankLoad:null,bankBuffer:null,pistolDownload:Promise.resolve('new'),bankDownload:old,
-  uncannyDownload:Promise.resolve([{sampleRate:24000,clips:[[0,29280],[31200,29280],[62400,29280]]},'uncanny'])};
+  uncannyDownload:Promise.resolve([{sampleRate:24000,clips:{'uncanny-human':[[0,29280],[31200,29280],[62400,29280]],'uncanny-reptile':[[0,29280]],'reptile-present':[[0,17000]]}},'uncanny'])};
  const load=vm.runInNewContext(cut(' function loadSoundBank(){',' function startClip(')+';loadSoundBank',scope);
  const done=load();await new Promise(r=>setImmediate(r));assert.equal(SFX.shot.length,4);assert.equal(SFX.shot[0].buffer,fresh);
- finishOld([{sampleRate:24000,clips:{shot:[[0,1000]],face:[[24000,2400]]}},'old']);await done;
- assert.equal(SFX.shot[0].buffer,fresh);assert.equal(SFX.face.length,1);assert.equal(SFX['v:uncanny'].length,3);
+ finishOld([{sampleRate:24000,clips:{shot:[[0,1000]],face:[[24000,2400]],'v:reptile':[[0,1000]]}},'old']);await done;
+ assert.equal(SFX.shot[0].buffer,fresh);assert.equal(SFX.face.length,1);assert.equal(SFX['v:uncanny-human'].length,3);assert.equal(SFX['v:uncanny-reptile'].length,1);assert.equal(SFX['v:reptile-present'][0].length,17000);
 });

@@ -1482,8 +1482,8 @@ const AUDIO=(()=>{
  // 별도 원본 총성 네 가지. 다른 타격음·목소리 뱅크는 그대로 둔다.
  const pistolDownload=fetch('assets/pistol-shots-v2.wav').then(r=>{if(!r.ok)throw new Error('pistol sounds');return r.arrayBuffer();}).catch(()=>null);
  const uncannyDownload=Promise.all([
-  fetch('assets/uncanny-cries-v1.json').then(r=>{if(!r.ok)throw new Error('uncanny index');return r.json();}),
-  fetch('assets/uncanny-cries-v1.wav').then(r=>{if(!r.ok)throw new Error('uncanny sounds');return r.arrayBuffer();})
+  fetch('assets/uncanny-cries-v2.json').then(r=>{if(!r.ok)throw new Error('uncanny index');return r.json();}),
+  fetch('assets/uncanny-cries-v2.wav').then(r=>{if(!r.ok)throw new Error('uncanny sounds');return r.arrayBuffer();})
  ]).catch(()=>null);
  let bankLoad=null,bankBuffer=null,fallbackVoice=null;
  function makeFallbackVoice(){
@@ -1495,9 +1495,12 @@ const AUDIO=(()=>{
   if(bankLoad||!ctx)return bankLoad;const ac=ctx;
   uncannyDownload.then(async data=>{
    if(!data)return;const [index,bytes]=data,buffer=await ac.decodeAudioData(bytes);
-   const clips=index.clips.map(([at,length])=>({buffer,offset:at/index.sampleRate,duration:length/index.sampleRate,length}));
-   if(clips.some(c=>c.offset+c.duration>buffer.duration+.002))return;
-   SFX['v:uncanny']=clips;
+   const bank={};for(const [name,ranges] of Object.entries(index.clips)){
+    const clips=ranges.map(([at,length])=>({buffer,offset:at/index.sampleRate,duration:length/index.sampleRate,length}));
+    if(clips.some(c=>c.offset+c.duration>buffer.duration+.002))return;
+    bank['v:'+name]=clips;
+   }
+   Object.assign(SFX,bank);
   }).catch(()=>{});
   pistolDownload.then(bytes=>bytes?ac.decodeAudioData(bytes):null).then(buffer=>{
    if(!buffer||buffer.duration<2)return;
@@ -1776,7 +1779,7 @@ const AUDIO=(()=>{
   }
  }
  function playReaction(name,k){
-  const list=SFX['v:'+name]||(fallbackVoice?[fallbackVoice]:null);if(!list||!list.length)return false;
+  const list=(name==='reptile'&&SFX['v:reptile-present'])||SFX['v:'+name]||(fallbackVoice?[fallbackVoice]:null);if(!list||!list.length)return false;
   let bag=reactionBags[name];
   if(!bag||!bag.length||bag.some(i=>i>=list.length)){
    bag=list.map((_,i)=>i);for(let i=bag.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[bag[i],bag[j]]=[bag[j],bag[i]];}
@@ -1796,7 +1799,7 @@ const AUDIO=(()=>{
   if(!ctx)return;
   const t=ctx.currentTime;
   for(const item of reactionLive.slice()){
-   if(!all&&item.name!=='uncanny')continue;
+   if(!all&&!item.name.startsWith('uncanny-'))continue;
    item.g.gain.cancelScheduledValues(t);item.g.gain.setTargetAtTime(.0001,t,.009);
    try{item.s.stop(t+.035);}catch(_){}
    const i=reactionLive.indexOf(item);if(i>=0)reactionLive.splice(i,1);
@@ -1807,6 +1810,9 @@ const AUDIO=(()=>{
  function say(name,k=1,raw){
   if(!ready())return;
   if(!raw&&!baking&&(combatPlayerVoiceBusy()||uncannyVoiceBusy()))return;
+  // All visible, complete reptile heads use their own voice, including the
+  // unmasking route. Brief eye flashes alone do not change the voice.
+  if(!raw&&!baking&&reactionNames.includes(name)&&deityHasReptileVoice(G.E))name='reptile';
   if(!raw&&jawGoneV&&!/^(gurgle|reptile)$/.test(name)){name='gurgle';k=Math.min(k,1)*.9;}
   if(name==='gurgle'){
    const now=ctx.currentTime;if(now-lastV<.16)return;lastV=now;
@@ -1818,8 +1824,9 @@ const AUDIO=(()=>{
    return;
   }
   if(reactionNames.includes(name)&&!baking){
-   const now=ctx.currentTime;if(now-lastV<.105)return;lastV=now;
-   if(SFX['v:uncanny']&&uncannyVoiceAllowed(name)){name='uncanny';uncannyVoiceStarted();}
+   const now=ctx.currentTime;if(now-lastV<(name==='reptile'?.42:.105))return;lastV=now;
+   const other='uncanny-'+(deityHasReptileVoice(G.E)?'reptile':'human');
+   if(!raw&&SFX['v:'+other]&&uncannyVoiceAllowed(name)){name=other;uncannyVoiceStarted();}
    if(playReaction(name,k))return;
    return;
   }
@@ -2268,6 +2275,7 @@ const COMBAT_STAGE=(()=>{
  for(const list of groups.values()){if(list.length<2)continue;const geo=mergeMeshes(list,new THREE.Matrix4());const m=new THREE.Mesh(geo,list[0].material);m.castShadow=true;m.receiveShadow=true;list.forEach(o=>o.removeFromParent());root.add(m);}
  metalEnv(root);return {root,throne,boot,shin,thigh,knee,contact,dust,grain,weave,robe};
 })();
+const THRONE_PLAQUE=window.ThronePlaque.create(THREE,COMBAT_STAGE.root,canvasTex);
 const STAFF=window.CeremonialStaff.create(THREE,COMBAT_STAGE.root,{onImpact:p=>AUDIO.staffLand(p)});
 function setCombatStage(active){
  WORLD.root.visible=!active;COMBAT_STAGE.root.visible=active;COMBAT_STAGE.boot.visible=false;
@@ -2340,7 +2348,7 @@ function snapCam(){CAM.pos.copy(CAM.goalPos);CAM.look.copy(CAM.goalLook);CAM.fov
 function setFrame(name,instant){CAM.frame=name;frameCamera(name,CAM.goalPos,CAM.goalLook);if(name!=='cut'&&name!=='debug')snapCam();else if(instant||!CAM.ready)snapCam();}
 function fitView(){
  INTRO.previewDirty=true;
- const w=innerWidth||1,h=innerHeight||1;renderer.setSize(w,h,false);
+ const w=innerWidth||1,h=innerHeight||1;renderer.setSize(w,h,false);THRONE_PLAQUE.layout(w,h);
  camera.aspect=w/h;vmCam.aspect=w/h;
  frameCamera(CAM.frame,CAM.goalPos,CAM.goalLook);
  if(CAM.frame!=='cut'&&CAM.frame!=='debug'&&CAM.frame!=='walk'||!CAM.ready)snapCam();
@@ -7731,10 +7739,8 @@ Object.assign(Emperor.prototype,{
 },
  voiceHit(tool,part,P,cut){
   const now=G.time;if(now<(this.voiceCool||0))return;
-  if(this.headKind==='rep'){
-   // Even the exposed creature mostly cries like the same person. Its other
-   // throat only leaks out through the sparse shared combat-voice policy.
-   AUDIO.voice(P>1.6?'scream':'yelp',clamp(P*.65,.5,1.1));this.voiceCool=now+.25;
+  if(deityHasReptileVoice(this)){
+   AUDIO.voice('reptile',clamp(P*.65,.5,1.1));this.voiceCool=now+.42;
    if(this.repFork&&this.repFork.k<0&&Math.random()<.3)this.repFork.k=0;return;
   }
   if(this.headDestroyed)return;
@@ -9705,18 +9711,18 @@ function combatCamera(dt){
   return true;
  }
  const down=clamp(Math.abs(E.pose.rx)/1.35,0,1),portrait=innerWidth<innerHeight;
- const aspect=innerWidth/innerHeight;
+ const aspect=innerWidth/innerHeight,tall=portrait&&innerHeight/innerWidth>=1.95;
  const distance=portrait?Math.max(2.55,1.7/aspect):3.05;
  const x=E.root.position.x,z=b.z;
  // Track the pelvis rather than recentering the opponent. Dolly and pitch follow the body together.
  CAM.goalPos.set(b.x*.8+.12,lerp(1.58,2.5,down),z+lerp(distance,portrait?2.35:2.5,down));
- CAM.goalLook.set(b.x,lerp(1.08,.3,down),z-down*.22);
+ CAM.goalLook.set(b.x,lerp(tall?1.08:1.16,.3,down),z-down*.22);
  if(b.mode==='grab'){CAM.goalPos.z-=.18;CAM.goalLook.y+=.08;}
  const k=1-Math.exp(-dt*(b.mode==='fall'?7:5));
  CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);
  COMBAT.landKick*=Math.exp(-dt*14);
  CAM.pos.y-=COMBAT.landKick*.012;
- CAM.fovBase=portrait?44:39;CAM.unit=clamp(1/(2*distance*Math.tan(CAM.fovBase*PI/360)),.3,.53);
+ CAM.fovBase=portrait?(tall?44:46):41;CAM.unit=clamp(1/(2*distance*Math.tan(CAM.fovBase*PI/360)),.3,.53);
  if(onCamUnit)onCamUnit(CAM.unit);
  return true;
 }
@@ -9904,10 +9910,12 @@ function firstStrikeLine(){
 /* Optional combat accents: successful hits only, never a playlist or a queued
  * reward. A round has at most two player lines and two non-human leaks. */
 const COMBAT_LINES={hand:'탈운명 펀치!',knife:'탈운명 칼빵!',gun:'탈운명 샷!'};
-const COMBAT_VOICE={n:0,last:-99,used:new Set(),playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
+function deityHasReptileVoice(E){return !!E&&!E.headGone&&!E.headDestroyed&&(E.headKind==='rep'||E.unmasked===true||E.repFull===true);}
+const COMBAT_VOICE={n:0,last:-99,used:new Set(),playerUntil:0,uncannyN:0,uncannyForms:new Set(),uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
 function combatVoiceReset(){
  Object.assign(COMBAT_VOICE,{n:0,last:-99,playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99});
  COMBAT_VOICE.used.clear();
+ COMBAT_VOICE.uncannyForms.clear();
 }
 function combatVoiceWindow(){
  const E=G.E;
@@ -9921,12 +9929,14 @@ function uncannyVoiceAllowed(name){
  const c=COMBAT_VOICE,E=G.E;
  if(!/^(yelp|scream|reptile)$/.test(name)||!combatVoiceWindow()||combatPlayerVoiceBusy()
   ||c.uncannyN>=2||G.time-G.t0<7||G.time-c.uncannyLast<16||G.time-c.last<5||G.time<c.uncannyCheck
-  ||E.headDestroyed||E.jawGone||!(G.bar<72||E.unmasked||E.headKind==='rep'))return false;
+  ||E.headGone||E.headDestroyed||E.jawGone||COMBAT_VOICE.uncannyForms.has(deityHasReptileVoice(E)?'reptile':'human')
+  ||!(G.bar<72||deityHasReptileVoice(E)))return false;
  c.uncannyCheck=G.time+1.4;
  return Math.random()<.22;
 }
 function uncannyVoiceStarted(){
  const c=COMBAT_VOICE;c.uncannyN++;c.uncannyLast=G.time;c.uncannyUntil=G.time+1.4;
+ c.uncannyForms.add(deityHasReptileVoice(G.E)?'reptile':'human');
 }
 function clearCombatAccent(){
  const c=COMBAT_VOICE;c.playerUntil=0;c.uncannyUntil=0;
@@ -10919,8 +10929,8 @@ function updateCrumple(dt){
 // 걸어서 도착할 자리 = 족치기 첫 구도(combatCamera가 옥좌에 앉은 천지신명을 보는 자리). 도착한 뒤 카메라가 튀지 않는다
 function walkGoal(){
  const portrait=innerWidth<innerHeight,aspect=innerWidth/innerHeight,distance=portrait?Math.max(2.55,1.7/aspect):3.05;
- const b=G.E&&G.E.combat,bx=b?b.x:0,bz=b?b.z:-.62;
- WALK.p1.set(bx*.8+.12,1.58,bz+distance);WALK.l1.set(bx,1.08,bz);WALK.f1=portrait?44:39;
+ const b=G.E&&G.E.combat,bx=b?b.x:0,bz=b?b.z:-.62,tall=portrait&&innerHeight/innerWidth>=1.95;
+ WALK.p1.set(bx*.8+.12,1.58,bz+distance);WALK.l1.set(bx,tall?1.08:1.16,bz);WALK.f1=portrait?(tall?44:46):41;
 }
 function walkStart(){
  const E=G.E;

@@ -4718,10 +4718,11 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261108-combat-voices';
+  const v='?v=20261108-plaque-reptile';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
+   .then(()=>loadScript(['throne-plaque.js'+v],()=>!!window.ThronePlaque))
    .then(()=>loadScript(['fight.js'+v],()=>!!window.PaljaBoot))
    .catch(error=>{fightScripts=null;throw error;});
  }

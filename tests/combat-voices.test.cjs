@@ -8,7 +8,7 @@ function setup(){
  const calls={hush:[],stopped:0};let random=0,ready=true;
  const AUDIO={combatLineReady:()=>ready,hushCombatAccent:all=>calls.hush.push(!!all)};
  const api=vm.runInNewContext(slice('const COMBAT_LINES=','/* ---- 추임새:')+
-  ';({COMBAT_LINES,COMBAT_VOICE,combatHitLine,combatVoiceReset,uncannyVoiceAllowed,uncannyVoiceStarted,uncannyVoiceBusy,combatPlayerVoiceBusy,clearCombatAccent})',{
+  ';({deityHasReptileVoice,COMBAT_LINES,COMBAT_VOICE,combatHitLine,combatVoiceReset,uncannyVoiceAllowed,uncannyVoiceStarted,uncannyVoiceBusy,combatPlayerVoiceBusy,clearCombatAccent})',{
   G,TALK,QUIP,AUDIO,Math:{random:()=>random,max:Math.max},
   talkBusy:()=>!!(TALK.cur||TALK.q.length||TALK.gap),
   clearTalk(){if(TALK.cur)calls.stopped++;TALK.cur=null;TALK.q.length=0;TALK.gap=0},
@@ -47,7 +47,8 @@ test('ordinary early cries stay human; double-throat cries remain sparse even wi
  assert(!h.uncannyVoiceAllowed('grunt'));assert(!h.uncannyVoiceAllowed('oof'));
  assert(h.uncannyVoiceAllowed('scream'));h.uncannyVoiceStarted();assert(h.uncannyVoiceBusy());
  for(let i=0;i<150;i++){h.G.time+=.1;assert(!h.uncannyVoiceAllowed('scream'))}
- h.G.time+=2;assert(h.uncannyVoiceAllowed('yelp'));h.uncannyVoiceStarted();
+ h.G.time+=2;assert(!h.uncannyVoiceAllowed('yelp'),'human cannot consume the reptile opportunity');
+ h.G.E.repFull=true;assert(h.uncannyVoiceAllowed('reptile'));h.uncannyVoiceStarted();
  h.G.time+=30;assert(!h.uncannyVoiceAllowed('scream'));assert.equal(h.COMBAT_VOICE.uncannyN,2);
  h.combatVoiceReset();assert(!h.uncannyVoiceBusy());assert(h.uncannyVoiceAllowed('scream'));
 });
@@ -68,16 +69,37 @@ test('skipped opportunities never build a delayed queue or consume the round quo
 test('all deployed optional audio is local and the cry index fits the actual PCM file',()=>{
  const root=path.join(__dirname,'../assets');
  for(const tool of ['punch','knife','shot'])assert(fs.statSync(path.join(root,`player-unfate-${tool}-ko-male.mp3`)).size>4000);
- const index=JSON.parse(fs.readFileSync(path.join(root,'uncanny-cries-v1.json')));
- const wav=fs.readFileSync(path.join(root,'uncanny-cries-v1.wav'));assert.equal(wav.toString('ascii',0,4),'RIFF');
- assert.equal(wav.readUInt32LE(24),index.sampleRate);assert.equal(index.clips.length,3);
+ const index=JSON.parse(fs.readFileSync(path.join(root,'uncanny-cries-v2.json')));
+ const wav=fs.readFileSync(path.join(root,'uncanny-cries-v2.wav'));assert.equal(wav.toString('ascii',0,4),'RIFF');
+ assert.equal(wav.readUInt32LE(24),index.sampleRate);assert.equal(index.clips['uncanny-human'].length,3);assert.equal(index.clips['uncanny-reptile'].length,3);assert.equal(index.clips['reptile-present'].length,8);
  let at=12,data;
  while(at+8<=wav.length){const len=wav.readUInt32LE(at+4);if(wav.toString('ascii',at,at+4)==='data'){data=wav.subarray(at+8,at+8+len);break}at+=8+len+(len%2)}
  assert(data);
- for(const [start,len] of index.clips){
+ for(const [kind,clips] of Object.entries(index.clips))for(const [start,len] of clips){
   assert((start+len)*2<=data.length);assert(len/index.sampleRate<1.5);
   let peak=0,tail=0;
   for(let i=0;i<len;i++){const x=Math.abs(data.readInt16LE((start+i)*2));peak=Math.max(peak,x);if(i>index.sampleRate*.8)tail+=x*x}
-  assert(peak>5000&&peak<31000);assert(tail>1e6,'the second throat leaves an audible, bounded tail');
+  assert(peak>5000&&peak<31000);if(kind.startsWith('uncanny-'))assert(tail>1e6,'the second throat leaves an audible, bounded tail');
+ }
+});
+
+test('all complete reptile reveal routes change the voice; a blink or absent head does not',()=>{
+ const h=setup();
+ for(const e of [{headKind:'rep'},{unmasked:true},{repFull:true}])assert(h.deityHasReptileVoice(e));
+ for(const e of [{headKind:'human'},{repFlash:1},{headKind:'rep',headGone:true},{repFull:true,headDestroyed:true}])assert(!h.deityHasReptileVoice(e));
+});
+
+test('the real audio entry point routes unmasking and lets at least 420 ms of the reptile cry survive rapid hits',()=>{
+ const h=setup(),played=[],ctx={currentTime:0};h.G.E={unmasked:true};
+ const scope={G:h.G,ctx,ready:()=>true,baking:false,combatPlayerVoiceBusy:()=>false,uncannyVoiceBusy:()=>false,
+  reactionNames:['grunt','oof','yelp','scream','groan','gasp','cough','reptile'],deityHasReptileVoice:h.deityHasReptileVoice,
+  jawGoneV:false,lastV:-99,SFX:{},uncannyVoiceAllowed:()=>false,playReaction:(name,k)=>{played.push(name);return true}};
+ const say=vm.runInNewContext(slice(' function say(name,k=1,raw){','  // 비웃음은 첫 대화')+'}\nsay',scope);
+ for(const at of [0,.105,.21,.315,.42,.525,.63,.735,.84]){ctx.currentTime=at;say('yelp',1)}
+ assert.deepEqual(played,['reptile','reptile','reptile']);
+ h.G.E={headKind:'human'};ctx.currentTime=1;say('yelp',1);assert.equal(played.at(-1),'yelp');
+ for(const form of ['human','reptile']){
+  h.G.E=form==='reptile'?{repFull:true}:{};scope.SFX['v:uncanny-'+form]=[{}];scope.uncannyVoiceAllowed=()=>true;scope.uncannyVoiceStarted=()=>{};ctx.currentTime+=2;say('scream',1);
+  assert.equal(played.at(-1),'uncanny-'+form);
  }
 });
