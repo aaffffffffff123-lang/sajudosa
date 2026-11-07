@@ -424,10 +424,9 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .basis{margin:8px 0 0;font-size:12.5px;line-height:1.6;color:var(--muted);word-break:keep-all}
 .reading .rule{margin:12px 0 0}
 .reading .note{margin-top:2px!important}
-#sec-money .fate{margin-top:16px}
 .origin{margin-top:14px;padding:14px 15px 13px;border-radius:16px;background:var(--card);border:2px solid var(--ink);box-shadow:0 4px 0 var(--ink)}
 .origin .basis{margin:0 0 6px;font-size:13.5px;color:var(--ink-2)}
-.origin .fate{margin:0 0 12px;font-family:var(--serif);font-size:clamp(18px,5vw,20px);font-weight:700;line-height:1.55}
+.origin .fate{margin:0;font-family:var(--serif);font-size:clamp(18px,5vw,20px);font-weight:700;line-height:1.55}
 .origin .rule{margin:0}
 .me-card .sub2{font-size:15.5px;font-weight:600;color:var(--ink);line-height:1.6}
 .elem-lines{margin-top:12px}
@@ -435,7 +434,6 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .elem-lines p:last-child{margin-bottom:0}
 .core #core-body .fate{margin:12px 0 10px;padding-top:12px;border-top:2px dashed var(--line-2)}
 .core #core-body .rule{margin:0}
-.year-rule{margin:12px 2px 0}
 
 /* The back sheet sits outside document flow. The scroll boundary stays at the last line. */
 #edge-hint{display:grid;place-items:center;min-height:38px;margin:14px auto 0;visibility:hidden}
@@ -502,20 +500,50 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 @media (prefers-reduced-motion:reduce){.dosa .blink{animation:none}.sheet{animation:none}}
 .privacy-note{margin:10px 0 0;text-align:center;font-size:11px;line-height:1.5;color:var(--muted);font-weight:400}
 .elem-role{display:block;margin:6px -5px 0;font-size:11px;line-height:1.4;color:#61584c;word-break:keep-all}.reading .daily{margin:0 0 12px;line-height:1.75}
-/* ===== 서양 출생차트: 본문과 함께 색이 변하는 종이 카드 ===== */
-.natal-keys{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:var(--paper-2)}
-.natal-key{padding:17px 7px;text-align:center;min-width:0}
-.natal-key+.natal-key{border-left:1px solid var(--line-2)}
-.natal-key svg{display:block;width:30px;height:30px;margin:0 auto 9px;color:var(--indigo)}
-.natal-key span{display:block;color:var(--ink-2);font-size:12px;font-weight:600}
-.natal-key strong{display:block;font-family:var(--serif);font-size:16px;line-height:1.5;margin:5px 0;color:var(--ink)}
-.natal-key small{display:block;font-size:10.5px;line-height:1.5;color:var(--ink-2)}
-.natal-reading{margin-top:20px;font-size:15px;line-height:1.95;color:var(--ink-2)}
-.natal-reading p{margin:16px 0 0}
-.natal-reading b{display:block;font-size:12px;color:var(--indigo);margin-bottom:4px}
-.natal-details{margin-top:22px;border-top:1px solid var(--line-2)}
-.natal-details summary{padding:15px 2px;min-height:48px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
-.natal-table-wrap{width:100%;overflow-x:auto}
+/* ===== 맨 위 별자리 카드와 접힌 표: 사주 기둥과 같은 종이 ===== */
+.star-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.star-card .glyph svg{width:50px;height:50px}
+.star-card .nm.two{font-size:12px;line-height:1.35;white-space:normal}
+.star-card .why{margin-top:auto}
+.star-lines{list-style:none;margin:14px 0 0;padding:0}
+.star-lines li{padding:9px 2px 0;font-size:14px;line-height:1.7;color:var(--ink-2);word-break:keep-all}
+.star-lines li+li{margin-top:9px;border-top:1px dashed var(--line)}
+.star-lines b{display:block;font-size:12px;font-weight:700;color:var(--red-d);margin-bottom:1px}
+.chart-details{margin-top:16px;border-top:1px solid var(--line)}
+.chart-details summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:48px;padding:14px 1px;list-style:none;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink-2)}
+.chart-details summary::-webkit-details-marker{display:none}
+.chart-details summary::after{content:"";width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin:0 5px 4px 0;flex:none}
+.chart-details[open] summary::after{transform:rotate(225deg);margin-top:6px}
+.chart-details h4{margin:18px 0 8px;font-size:12px;font-weight:700;color:var(--red-d)}
+.chart-table-wrap,.natal-table-wrap{width:100%;overflow-x:auto}
+.manse{width:100%;border-collapse:collapse;table-layout:fixed;text-align:center;font-size:12px;background:var(--card);border:1px solid var(--line-2);border-radius:12px}
+.manse th,.manse td{padding:7px 2px;border-bottom:1px solid var(--line);word-break:keep-all}
+.manse tbody tr:last-child th,.manse tbody tr:last-child td{border-bottom:0}
+.manse thead th{font-size:11.5px;font-weight:700;color:var(--ink-2)}
+.manse tbody th{width:46px;padding-left:8px;text-align:left;font-size:11px;font-weight:600;color:var(--caption)}
+.manse .hj{display:block;font-family:var(--serif);font-size:27px;line-height:1.15;font-weight:700;color:var(--c)}
+.manse small{display:block;margin-top:1px;font-size:10.5px;color:var(--caption)}
+.manse .ten td{font-weight:600;color:var(--ink)}
+.manse .me{display:inline-block;padding:1px 7px;border-radius:99px;background:var(--red-d);color:#fff;font-size:11px;font-weight:700}
+.manse .jj{font-family:var(--serif);font-size:14px;letter-spacing:.08em}
+.manse .none{color:var(--caption)}
+.chart-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0 0}
+.chart-facts div{padding:8px 4px;text-align:center;background:var(--card);border:1px solid var(--line-2);border-radius:10px}
+.chart-facts dt{font-size:11px;color:var(--caption)}
+.chart-facts dd{margin:2px 0 0;font-family:var(--serif);font-size:15px;font-weight:700;color:var(--ink)}
+.chart-facts dd small{font-family:var(--sans);font-size:11px;font-weight:500;color:var(--caption)}
+.daeun{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:0;padding:0;list-style:none}
+.daeun li{padding:5px 0 6px;text-align:center;background:var(--card);border:1px solid var(--line-2);border-radius:9px}
+.daeun li.now{border-color:var(--red);box-shadow:inset 0 0 0 1px var(--red)}
+.daeun small{display:block;font-size:10.5px;color:var(--caption)}
+.daeun b{font-family:var(--serif);font-size:16px;letter-spacing:.04em}
+.chart-list,.chart-basis{margin:0;padding:0;list-style:none}
+.chart-list li{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:7px 1px;border-bottom:1px solid var(--line);font-size:12.5px}
+.chart-list b{font-weight:700}
+.chart-list b small{font-size:11px;color:var(--caption)}
+.chart-list span{font-size:11.5px;color:var(--ink-2);white-space:nowrap}
+.chart-basis li{padding:8px 1px;border-bottom:1px solid var(--line);font-size:12.5px;line-height:1.7;color:var(--ink-2);word-break:keep-all}
+.chart-basis b{display:block;font-size:11.5px;color:var(--ink)}
 .natal-details table{width:100%;border-collapse:collapse;text-align:left;font-size:12px}
 .natal-details th,.natal-details td{padding:9px 4px;border-bottom:1px solid var(--line)}
 .natal-details thead{color:var(--ink-2)}
@@ -525,13 +553,18 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .natal-aspects li{display:flex;justify-content:space-between;flex-wrap:wrap;padding:5px 0;font-size:12px}
 .natal-aspects small{font-size:11px;color:var(--ink-2)}
 .natal-note,.natal-method{font-size:12px;line-height:1.85;color:var(--ink-2);margin:14px 0 0}
-.reading .western-link{font-size:14px;line-height:1.95;color:var(--ink-2);padding-left:13px;border-left:2px solid var(--line-2);margin:0 0 18px}
-.reading .woven-paragraph{font-size:15.5px;line-height:2;margin:0 0 20px;color:var(--ink)}
-.reading .woven-closing{margin:22px 0 0}
+.chart-details .natal-method{margin-bottom:16px}
+/* ===== 칸 본문: 장면 → 이치 → 조건이 맞는 문단 → 팔자 줄 ===== */
+.reading .woven-paragraph{margin:0;font-size:15.5px;line-height:1.95;color:var(--ink);word-break:keep-all}
+.reading .woven-paragraph+.woven-paragraph{margin-top:18px}
+.reading .woven-closing{margin:24px 0 0;padding-top:16px;border-top:2px dashed var(--line-2)}
+.reading .woven-closing .fate{margin:0;font-family:var(--serif);font-size:clamp(17px,4.7vw,19px);font-weight:700;line-height:1.6}
+.reading .woven-closing .fate+.fate{margin-top:12px}
+.origin .origin-text{margin:0 0 12px;font-size:15px;line-height:1.85;color:var(--ink-2);word-break:keep-all}
+.year-rule{margin:16px 2px 0;font-size:15px;line-height:1.85;color:var(--ink-2);word-break:keep-all}
 .past-hit p+p,.year p+p{margin-top:12px}
-@media(max-width:370px){.natal-key{padding:14px 5px}.natal-key strong{font-size:14px}.natal-key small{font-size:10px}}
 </style>
-<link rel="stylesheet" href="assets/celestial-ui.css?v=20261106d">
+<link rel="stylesheet" href="assets/celestial-ui.css?v=20261107-pool">
 </head>
 <body>
 <noscript><p style="padding:30px;line-height:1.8">이 화면을 쓰려면 브라우저의 자바스크립트를 켜 주세요.</p></noscript>
@@ -875,6 +908,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
     <div class="birth-profile">
       <h3 class="birth-source">사주 <small>태어난 해 · 달 · 날 · 시간</small></h3>
       <div id="pillars" class="pillars"></div><p class="pnote" id="pillar-note" hidden></p>
+      <div id="saju-details"></div>
       <h3 class="birth-source stars">별자리 <small>태양 · 달 · 상승궁</small></h3>
       <div id="western-chart"></div>
     </div>
@@ -888,11 +922,11 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   <section class="block"><h2 class="sec-label">나를 나타내는 상징</h2><div class="me-card" id="me-card"></div></section>
   <section class="block"><h2 class="sec-label">타고난 다섯 가지 비율</h2><div id="elements" class="elements"></div><div class="share" id="share" aria-hidden="true"></div><div class="share-leg" id="share-leg"></div><div class="elem-lines" id="elem-lines"></div></section>
 
-  <section class="block core"><h2 class="sec-label">타고난 성향</h2><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div><div class="natal-reading" id="western-reading"></div></section>
-  <section class="block" id="past-block" hidden><h2 class="sec-label">지나온 흐름</h2><p class="past-intro">지나온 해 가운데 사주에서 마찰 신호가 겹친 해입니다.</p><div class="past-hits" id="past-hits"></div></section>
+  <section class="block core"><h2 class="sec-label">타고난 성향</h2><h3 class="core-title" id="core-title"></h3><div class="txt" id="core-body"></div></section>
+  <section class="block" id="past-block" hidden><h2 class="sec-label">지나온 흐름</h2><p class="past-intro">지나온 해 가운데 마찰이 겹친 해입니다.</p><div class="past-hits" id="past-hits"></div></section>
   <div id="sections"></div>
 
-  <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div><p class="rule year-rule" id="year-rule"></p><article class="month-reading" id="month-reading" aria-label="현재 월운" hidden></article></section>
+  <section class="block"><h2 class="sec-label">올해와 내년</h2><div class="years" id="years"></div><p class="year-rule" id="year-rule"></p><article class="month-reading" id="month-reading" aria-label="현재 월운" hidden></article></section>
   <section class="block"><h2 class="sec-label">10년 단위 흐름 <small>지금과 가까운 앞날</small></h2><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div><ol class="luck" id="luck-list"></ol><div class="none-card" id="cycle-ruling"></div></section>
 
   <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><p class="fixed-note" id="fixed-note"></p><div class="caution" id="caution"></div></section>
@@ -1009,6 +1043,19 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <symbol id="z-rooster" viewBox="0 0 64 64"><path d="M22 14c-2-8 4-12 8-8 2-6 10-6 10 0 4-4 10 0 8 6-6 2-14 2-26 2z" fill="#d93a2b" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><path d="M12 36c0-12 9-22 20-22s20 10 20 22-8 20-20 20-20-8-20-20z" fill="#fff" stroke="#27242b" stroke-width="2.5"/><path d="M52 34l10 4-10 6z" fill="#f4b942" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><path d="M48 42c4 2 4 8 0 10-3-2-3-8 0-10z" fill="#d93a2b" stroke="#27242b" stroke-width="2.2"/><circle cx="40" cy="30" r="3.2" fill="#27242b"/><circle cx="41" cy="29" r="1" fill="#fff"/><path d="M14 44c6-2 12-2 18 0" stroke="#e5e5e5" stroke-width="2.4" stroke-linecap="round" fill="none"/></symbol>
 <symbol id="z-dog" viewBox="0 0 64 64"><path d="M12 20c-8 4-10 18-4 28 6 2 10-2 12-8M52 20c8 4 10 18 4 28-6 2-10-2-12-8" fill="#8b5a2b" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M12 34c0-12 9-22 20-22s20 10 20 22-8 22-20 22-20-10-20-22z" fill="#d9a066" stroke="#27242b" stroke-width="2.5"/><ellipse cx="32" cy="44" rx="12" ry="9" fill="#fff6e3" stroke="#27242b" stroke-width="2.3"/><circle cx="24" cy="30" r="3" fill="#27242b"/><circle cx="40" cy="30" r="3" fill="#27242b"/><ellipse cx="32" cy="41" rx="4.5" ry="3.5" fill="#27242b"/><path d="M32 44v3M27 49c2 2 4 2 5-1 1 3 3 3 5 1" fill="none" stroke="#27242b" stroke-width="2" stroke-linecap="round"/><path d="M30 50c0 4 2 6 4 6" fill="#ff8fb1" stroke="#27242b" stroke-width="1.8"/></symbol>
 <symbol id="z-pig" viewBox="0 0 64 64"><path d="M14 20l-4-14 14 8M50 20l4-14-14 8" fill="#ffb3c6" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M10 36c0-12 10-22 22-22s22 10 22 22-8 20-22 20S10 48 10 36z" fill="#ffb3c6" stroke="#27242b" stroke-width="2.5"/><circle cx="23" cy="32" r="3" fill="#27242b"/><circle cx="41" cy="32" r="3" fill="#27242b"/><ellipse cx="32" cy="44" rx="10" ry="7" fill="#ff8fb1" stroke="#27242b" stroke-width="2.4"/><circle cx="28" cy="44" r="2" fill="#27242b"/><circle cx="36" cy="44" r="2" fill="#27242b"/></symbol>
+<!-- 서양 12궁: 십이지 그림과 같은 결 -->
+<symbol id="w-aries" viewBox="0 0 64 64"><path d="M24 21C14 9 2 17 5 29c2 8 14 8 13 0-1-5-7-4-7 0" fill="none" stroke="#27242b" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 21C14 9 2 17 5 29c2 8 14 8 13 0-1-5-7-4-7 0" fill="none" stroke="#e8b45a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 21C50 9 62 17 59 29c-2 8-14 8-13 0 1-5 7-4 7 0" fill="none" stroke="#27242b" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 21C50 9 62 17 59 29c-2 8-14 8-13 0 1-5 7-4 7 0" fill="none" stroke="#e8b45a" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 28c0-9 5-15 12-15s12 6 12 15v8c0 11-5 19-12 19s-12-8-12-19z" fill="#f4ead6" stroke="#27242b" stroke-width="2.5"/><path d="M21 23a5 5 0 0 1 7-6 5 5 0 0 1 8 0 5 5 0 0 1 7 6c-3-2-7-3-11-3s-8 1-11 3z" fill="#fff" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/><circle cx="26" cy="32" r="2.8" fill="#27242b"/><circle cx="38" cy="32" r="2.8" fill="#27242b"/><ellipse cx="32" cy="46" rx="7.5" ry="5.5" fill="#efc9a4" stroke="#27242b" stroke-width="2.2"/><circle cx="29.5" cy="45.5" r="1.5" fill="#27242b"/><circle cx="34.5" cy="45.5" r="1.5" fill="#27242b"/></symbol>
+<symbol id="w-taurus" viewBox="0 0 64 64"><path d="M19 23C10 22 5 14 7 5c3 6 8 9 15 10M45 23c9-1 14-9 12-18-3 6-8 9-15 10" fill="#f6e7c1" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><ellipse cx="10" cy="29" rx="6" ry="3.6" fill="#6d7280" stroke="#27242b" stroke-width="2.2" transform="rotate(-18 10 29)"/><ellipse cx="54" cy="29" rx="6" ry="3.6" fill="#6d7280" stroke="#27242b" stroke-width="2.2" transform="rotate(18 54 29)"/><path d="M13 31c0-11 9-17 19-17s19 6 19 17-6 24-19 24-19-13-19-24z" fill="#6d7280" stroke="#27242b" stroke-width="2.5"/><path d="M27 17c2 3 8 3 10 0" fill="none" stroke="#27242b" stroke-width="2.3" stroke-linecap="round"/><circle cx="23.5" cy="30" r="3.6" fill="#fff" stroke="#27242b" stroke-width="1.6"/><circle cx="40.5" cy="30" r="3.6" fill="#fff" stroke="#27242b" stroke-width="1.6"/><circle cx="24" cy="30.5" r="1.8" fill="#27242b"/><circle cx="40" cy="30.5" r="1.8" fill="#27242b"/><ellipse cx="32" cy="45" rx="12" ry="7.5" fill="#eab1a2" stroke="#27242b" stroke-width="2.3"/><ellipse cx="27" cy="44" rx="2" ry="2.6" fill="#27242b"/><ellipse cx="37" cy="44" rx="2" ry="2.6" fill="#27242b"/><circle cx="32" cy="53" r="4.6" fill="none" stroke="#27242b" stroke-width="4.4"/><circle cx="32" cy="53" r="4.6" fill="none" stroke="#f2bf1a" stroke-width="2"/></symbol>
+<symbol id="w-gemini" viewBox="0 0 64 64"><path d="M7 59c0-9 5-15 12-15s12 6 12 15z" fill="#4f8fe0" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><circle cx="19" cy="28" r="11.5" fill="#ffd9b8" stroke="#27242b" stroke-width="2.4"/><path d="M7.5 27c0-8 5-12.5 11.5-12.5S30.5 19 30.5 27c-3-3-7-4.5-11.5-4.5S10.5 24 7.5 27z" fill="#3b2a1a" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/><circle cx="15" cy="30" r="2" fill="#27242b"/><circle cx="23" cy="30" r="2" fill="#27242b"/><circle cx="12" cy="34" r="2" fill="#ffb3c1"/><circle cx="26" cy="34" r="2" fill="#ffb3c1"/><path d="M16.5 35c1.5 1.6 3.5 1.6 5 0" fill="none" stroke="#27242b" stroke-width="1.8" stroke-linecap="round"/><path d="M33 59c0-9 5-15 12-15s12 6 12 15z" fill="#ffc531" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><circle cx="45" cy="28" r="11.5" fill="#ffd9b8" stroke="#27242b" stroke-width="2.4"/><path d="M33.5 27c0-8 5-12.5 11.5-12.5S56.5 19 56.5 27c-3-3-7-4.5-11.5-4.5S36.5 24 33.5 27z" fill="#3b2a1a" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/><circle cx="41" cy="30" r="2" fill="#27242b"/><circle cx="49" cy="30" r="2" fill="#27242b"/><circle cx="38" cy="34" r="2" fill="#ffb3c1"/><circle cx="52" cy="34" r="2" fill="#ffb3c1"/><path d="M42.5 35c1.5 1.6 3.5 1.6 5 0" fill="none" stroke="#27242b" stroke-width="1.8" stroke-linecap="round"/><path d="M27 52h10" stroke="#27242b" stroke-width="5.5" stroke-linecap="round"/><path d="M27 52h10" stroke="#ffd9b8" stroke-width="2.6" stroke-linecap="round"/><path d="M32 4l1.8 3.8 4.2.5-3.1 2.8.8 4.1-3.7-2.1-3.7 2.1.8-4.1-3.1-2.8 4.2-.5z" fill="#ffc531" stroke="#27242b" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+<symbol id="w-cancer" viewBox="0 0 64 64"><path d="M14 42l-8 3M14 47l-7 6M18 51l-5 7M50 42l8 3M50 47l7 6M46 51l5 7" stroke="#27242b" stroke-width="3" stroke-linecap="round"/><path d="M18 36l-4-6M46 36l4-6" stroke="#27242b" stroke-width="6" stroke-linecap="round"/><path d="M18 36l-4-6M46 36l4-6" stroke="#ef6b3a" stroke-width="2.6" stroke-linecap="round"/><path d="M14 31c-7 0-11-6-9-12 1-5 6-8 11-6l-5 6 7 0c1 5-1 10-4 12z" fill="#ef6b3a" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/><path d="M50 31c7 0 11-6 9-12-1-5-6-8-11-6l5 6-7 0c-1 5 1 10 4 12z" fill="#ef6b3a" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/><ellipse cx="32" cy="43" rx="18" ry="12" fill="#ef6b3a" stroke="#27242b" stroke-width="2.5"/><path d="M27 32l-2-9M37 32l2-9" stroke="#27242b" stroke-width="2.3" stroke-linecap="round"/><circle cx="25" cy="20" r="4.2" fill="#fff" stroke="#27242b" stroke-width="2"/><circle cx="39" cy="20" r="4.2" fill="#fff" stroke="#27242b" stroke-width="2"/><circle cx="25.5" cy="20.5" r="2" fill="#27242b"/><circle cx="38.5" cy="20.5" r="2" fill="#27242b"/><circle cx="23" cy="45" r="2.4" fill="#ffb3a1"/><circle cx="41" cy="45" r="2.4" fill="#ffb3a1"/><path d="M28 44c2 2.2 6 2.2 8 0" fill="none" stroke="#27242b" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="w-leo" viewBox="0 0 64 64"><circle cx="51.0" cy="33.0" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="48.5" cy="42.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="41.5" cy="49.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="32.0" cy="52.0" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="22.5" cy="49.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="15.5" cy="42.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="13.0" cy="33.0" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="15.5" cy="23.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="22.5" cy="16.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="32.0" cy="14.0" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="41.5" cy="16.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="48.5" cy="23.5" r="8.2" fill="#d9822b" stroke="#27242b" stroke-width="2.3"/><circle cx="32" cy="33" r="20" fill="#d9822b"/><circle cx="21" cy="21" r="4.6" fill="#ffc531" stroke="#27242b" stroke-width="2.2"/><circle cx="43" cy="21" r="4.6" fill="#ffc531" stroke="#27242b" stroke-width="2.2"/><circle cx="32" cy="34" r="14.5" fill="#ffc531" stroke="#27242b" stroke-width="2.5"/><circle cx="26.5" cy="31" r="2.6" fill="#27242b"/><circle cx="37.5" cy="31" r="2.6" fill="#27242b"/><ellipse cx="32" cy="41" rx="7" ry="5" fill="#fff3d6" stroke="#27242b" stroke-width="2"/><path d="M29.5 37.5h5l-2.5 3z" fill="#7a3e00" stroke="#27242b" stroke-width="1.4" stroke-linejoin="round"/><path d="M32 40.5v2.5M29 44c1.5 1.4 3 1.4 3 0 0 1.4 1.5 1.4 3 0" fill="none" stroke="#27242b" stroke-width="1.7" stroke-linecap="round"/></symbol>
+<symbol id="w-virgo" viewBox="0 0 64 64"><path d="M13 33c0-13 8-22 19-22s19 9 19 22v20H13z" fill="#7a4a2a" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><path d="M15 59c0-8 7-13 17-13s17 5 17 13z" fill="#c9b6f0" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><circle cx="32" cy="30" r="12" fill="#ffd9b8" stroke="#27242b" stroke-width="2.4"/><path d="M20 29c0-8 5-13 12-13s12 5 12 13c-2-4-5-6-9-7-2 3-6 5-15 7z" fill="#7a4a2a" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/><path d="M25.5 32c1.2 1.2 3 1.2 4.2 0M34.3 32c1.2 1.2 3 1.2 4.2 0" fill="none" stroke="#27242b" stroke-width="1.9" stroke-linecap="round"/><circle cx="24.5" cy="36" r="2" fill="#ffb3c1"/><circle cx="39.5" cy="36" r="2" fill="#ffb3c1"/><path d="M30 37.5c1.2 1.2 2.8 1.2 4 0" fill="none" stroke="#27242b" stroke-width="1.8" stroke-linecap="round"/><path d="M50 60c1-8 3-16 6-25" fill="none" stroke="#27242b" stroke-width="2.2" stroke-linecap="round"/><ellipse cx="57" cy="31" rx="2.4" ry="4.2" fill="#f2bf1a" stroke="#27242b" stroke-width="1.5" transform="rotate(18 57 31)"/><ellipse cx="53" cy="38" rx="2.4" ry="4.2" fill="#f2bf1a" stroke="#27242b" stroke-width="1.5" transform="rotate(-24 53 38)"/><ellipse cx="58.5" cy="40" rx="2.4" ry="4.2" fill="#f2bf1a" stroke="#27242b" stroke-width="1.5" transform="rotate(40 58.5 40)"/><ellipse cx="55" cy="46" rx="2.4" ry="4.2" fill="#f2bf1a" stroke="#27242b" stroke-width="1.5" transform="rotate(-20 55 46)"/><ellipse cx="60" cy="48" rx="2.4" ry="4.2" fill="#f2bf1a" stroke="#27242b" stroke-width="1.5" transform="rotate(44 60 48)"/><circle cx="18" cy="21" r="3.3" fill="#fff" stroke="#27242b" stroke-width="1.6"/><circle cx="18" cy="21" r="1.3" fill="#ffc531"/></symbol>
+<symbol id="w-libra" viewBox="0 0 64 64"><path d="M12 18l-6 18M12 18l6 18M52 18l-6 18M52 18l6 18" stroke="#27242b" stroke-width="1.8" stroke-linecap="round"/><rect x="29.5" y="15" width="5" height="39" rx="2" fill="#f2bf1a" stroke="#27242b" stroke-width="2.3"/><rect x="7" y="14" width="50" height="5" rx="2.5" fill="#f2bf1a" stroke="#27242b" stroke-width="2.3"/><circle cx="32" cy="11" r="4.4" fill="#ffd96b" stroke="#27242b" stroke-width="2.3"/><path d="M3 36h18c0 6-4 10-9 10s-9-4-9-10z" fill="#ffe08a" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/><path d="M43 36h18c0 6-4 10-9 10s-9-4-9-10z" fill="#ffe08a" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/><path d="M20 60h24l-4-7H24z" fill="#f2bf1a" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/></symbol>
+<symbol id="w-scorpio" viewBox="0 0 64 64"><path d="M24 50l-5 7M30 51l-2 8M36 51l1 8M42 49l4 7" stroke="#27242b" stroke-width="2.6" stroke-linecap="round"/><path d="M40 44c10 1 17-6 15-16-2-9-12-12-17-6" fill="none" stroke="#27242b" stroke-width="9.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 44c10 1 17-6 15-16-2-9-12-12-17-6" fill="none" stroke="#7c4dcc" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><path d="M37 23l-6 2 4 5z" fill="#f2bf1a" stroke="#27242b" stroke-width="2" stroke-linejoin="round"/><path d="M20 42l-8-7M20 46l-8 5" fill="none" stroke="#27242b" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 42l-8-7M20 46l-8 5" fill="none" stroke="#7c4dcc" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 36c-6 0-9-5-7-10 1-3 5-5 8-3l-4 4 5 1c1 3 0 6-2 8z" fill="#7c4dcc" stroke="#27242b" stroke-width="2.1" stroke-linejoin="round"/><path d="M12 50c-6 1-9 4-8 8 1 3 5 4 8 2l-4-3 5-1c1-2 1-4-1-6z" fill="#7c4dcc" stroke="#27242b" stroke-width="2.1" stroke-linejoin="round"/><ellipse cx="31" cy="45" rx="13" ry="8.5" fill="#7c4dcc" stroke="#27242b" stroke-width="2.5"/><path d="M30 38v14M36 39v12" stroke="#5b33a8" stroke-width="2" stroke-linecap="round"/><circle cx="22.5" cy="42" r="2.3" fill="#fff" stroke="#27242b" stroke-width="1.3"/><circle cx="22.8" cy="42.3" r="1.1" fill="#27242b"/></symbol>
+<symbol id="w-sagittarius" viewBox="0 0 64 64"><path d="M12 22L42 52" stroke="#27242b" stroke-width="1.6" stroke-linecap="round"/><path d="M12 22Q44 20 42 52" fill="none" stroke="#27242b" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 22Q44 20 42 52" fill="none" stroke="#b5703c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 45L52 12" stroke="#27242b" stroke-width="2.8" stroke-linecap="round"/><path d="M58 6l-3 12-3-3-3-3z" fill="#9ea3b0" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/><path d="M22 42l-9-1 3 6zM22 42l1 9-6-3z" fill="#e0402a" stroke="#27242b" stroke-width="1.9" stroke-linejoin="round"/><path d="M8 8l1.4 3 3.2.4-2.4 2.2.6 3.2L8 15.2 5.2 16.8l.6-3.2-2.4-2.2 3.2-.4z" fill="#ffc531" stroke="#27242b" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+<symbol id="w-capricorn" viewBox="0 0 64 64"><path d="M35 42c2 9 9 15 17 13 6-2 7-9 3-12" fill="none" stroke="#27242b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/><path d="M35 42c2 9 9 15 17 13 6-2 7-9 3-12" fill="none" stroke="#2a9d8f" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M55 43l7-6-1 10z" fill="#2a9d8f" stroke="#27242b" stroke-width="2.2" stroke-linejoin="round"/><path d="M44 56l2 3M50 55l1 4" stroke="#1d6f66" stroke-width="1.8" stroke-linecap="round"/><path d="M22 13C18 5 10 3 6 8" fill="none" stroke="#27242b" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 13C18 5 10 3 6 8" fill="none" stroke="#b98b4e" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 13c4-8 12-10 16-5" fill="none" stroke="#27242b" stroke-width="6.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M38 13c4-8 12-10 16-5" fill="none" stroke="#b98b4e" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><ellipse cx="13" cy="23" rx="6" ry="3.4" fill="#e9e1d0" stroke="#27242b" stroke-width="2.1" transform="rotate(20 13 23)"/><ellipse cx="47" cy="23" rx="6" ry="3.4" fill="#e9e1d0" stroke="#27242b" stroke-width="2.1" transform="rotate(-20 47 23)"/><path d="M18 24c0-8 5-13 12-13s12 5 12 13v7c0 9-5 15-12 15s-12-6-12-15z" fill="#e9e1d0" stroke="#27242b" stroke-width="2.5"/><path d="M26 45l4 11 4-11z" fill="#cdbf9f" stroke="#27242b" stroke-width="2" stroke-linejoin="round"/><circle cx="25" cy="28" r="2.6" fill="#27242b"/><circle cx="35" cy="28" r="2.6" fill="#27242b"/><ellipse cx="30" cy="38" rx="5.5" ry="4" fill="#f2c9a6" stroke="#27242b" stroke-width="2"/><circle cx="28" cy="37.6" r="1.2" fill="#27242b"/><circle cx="32" cy="37.6" r="1.2" fill="#27242b"/></symbol>
+<symbol id="w-aquarius" viewBox="0 0 64 64"><path d="M41 25c5 6 1 11 5 17s0 9 4 14" fill="none" stroke="#27242b" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M41 25c5 6 1 11 5 17s0 9 4 14" fill="none" stroke="#4f8fe0" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M32 59c3-3 6-3 9 0s6 3 9 0 6-3 9 0" fill="none" stroke="#27242b" stroke-width="2.4" stroke-linecap="round"/><g transform="rotate(-38 26 30)"><path d="M15 20h22l1 5c4 4 5 10 3 15-3 7-10 10-15 10s-12-3-15-10c-2-5-1-11 3-15z" fill="#e98a5a" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><rect x="13" y="14" width="26" height="6" rx="3" fill="#f7b98f" stroke="#27242b" stroke-width="2.3"/><path d="M14 34h24" stroke="#fff3d6" stroke-width="3" stroke-linecap="round"/><path d="M38 26c6 0 8 8 2 11" fill="none" stroke="#27242b" stroke-width="2.3" stroke-linecap="round"/></g><path d="M43 23c3 1 6 3 7 6" fill="none" stroke="#bfe0ff" stroke-width="2" stroke-linecap="round"/></symbol>
+<symbol id="w-pisces" viewBox="0 0 64 64"><path d="M47 18c10 3 12 17 2 24" fill="none" stroke="#b5703c" stroke-width="2" stroke-linecap="round" stroke-dasharray="0.1 4"/><path d="M17 19c7-9 22-9 30 0-8 9-23 9-30 0z" fill="#4f8fe0" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><path d="M17 19l-10-7 2 7-2 7z" fill="#4f8fe0" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/><circle cx="40" cy="17" r="2.2" fill="#27242b"/><path d="M27 14c-2 3-2 7 0 10" fill="none" stroke="#2f6ad0" stroke-width="2" stroke-linecap="round"/><path d="M47 45c-7-9-22-9-30 0 8 9 23 9 30 0z" fill="#f06aa0" stroke="#27242b" stroke-width="2.4" stroke-linejoin="round"/><path d="M47 45l10-7-2 7 2 7z" fill="#f06aa0" stroke="#27242b" stroke-width="2.3" stroke-linejoin="round"/><circle cx="24" cy="43" r="2.2" fill="#27242b"/><path d="M37 40c2 3 2 7 0 10" fill="none" stroke="#c94c85" stroke-width="2" stroke-linecap="round"/><circle cx="49" cy="18" r="2" fill="#b5703c" stroke="#27242b" stroke-width="1.2"/></symbol>
 <!-- 오행 5 -->
 <symbol id="e-wood" viewBox="0 0 64 64"><path d="M32 58V30" stroke="#8b5a2b" stroke-width="5" stroke-linecap="round"/><path d="M32 42c-10 0-18-8-18-20 12 0 20 8 18 20zM32 34c0-12 8-20 20-20 0 12-8 20-20 20z" fill="#5fbf6a" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/></symbol>
 <symbol id="e-fire" viewBox="0 0 64 64"><path d="M32 6c12 10 18 18 18 30a18 18 0 0 1-36 0c0-6 2-10 6-14 0 6 2 8 6 8-2-10 0-18 6-24z" fill="#ff8a3d" stroke="#27242b" stroke-width="2.5" stroke-linejoin="round"/><path d="M32 30c5 5 8 9 8 14a8 8 0 0 1-16 0c0-5 3-9 8-14z" fill="#ffd23f"/></symbol>
@@ -1018,8 +1065,8 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="reading-prose.js?v=20261107-domain-stars"></script>
-<script src="western.js?v=20261106b"></script>
+<script src="reading-pool.js?v=20261107-pool"></script>
+<script src="western.js?v=20261107-pool"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -3288,8 +3335,8 @@ function monthWindowsHtml(months){
 /* ---------- 자리 문서(V5) ----------
  * 풀이 화면의 방향은 사용자가 정했다 (2026-11-04). 이 부분을 고치는 사람은 아래를 지킨다.
  * 1. 첫 문단은 독자가 자기 모습을 알아보는 평이한 사주풀이다. 집안 판정부터 꺾고 내려갈수록 범위를 넓힌다: 집안 → 나 → 일·돈·몸 → 짝 → 나라 → 세상 → 판정 → 명령.
- * 2. 독한 줄은 전부 사주 조건에 묶는다. 조건이 맞을 때만 뜨고 근거를 작게 붙인다. 사주와 상관없는 숫자·지난 사건은 만들지 않는다.
- * 3. 칸마다 부조리를 '원래 그런 순리'처럼 말하는 이치 줄을 하나 둔다(대물림·돈의 흐름·상극·항의 비용·국운). 같은 뜻을 되풀이하는 줄은 덜어낸다.
+ * 2. 독한 줄은 전부 사주·별자리 조건에 묶는다(reading-pool.js). 조건이 맞을 때만 뜨고 한 사람이 받는 문단 수에 상한을 두지 않는다. 근거와 별자리 이름은 본문에 쓰지 않고 맨 위 접힌 표에 모은다. 사주와 상관없는 숫자·지난 사건은 만들지 않는다.
+ * 3. 칸마다 부조리를 '원래 그런 순리'처럼 말하는 이치를 문단 안에 둔다. 이름표를 따로 붙이지 않는다. 부조리 주제 하나는 한 칸에만 두고 같은 뜻을 되풀이하는 문단은 덜어낸다.
  * 4. 팔자 줄은 "당신은 …팔자입니다." 한 문장이다. 문장 중간 쉼표, 원인을 앞에 따로 세우는 꼴, "~이지 ~아닙니다"·"~가 아니라" 대구를 쓰지 않는다.
  * 5. 생활 설명 → 팔자 → 이치는 같은 원인을 따른다. 타고난 습관도 외부 압박도 쓴다. 습관을 억지로 남의 명령으로 바꾸지 않는다.
  * 6. 오행의 양과 역할을 구별한다. 가장 적다는 이유만으로 결핍이나 가난을 단정하지 않는다.
@@ -3634,7 +3681,7 @@ const V5={
   palace_clash:{
    daily:'새로운 사람들과 놀이를 할 때는 익숙한 게임이어도 첫판에 남들이 하는 걸 봅니다. 같은 이름으로 부르는 놀이에도 이 모임에서만 통하는 규칙이 하나씩 있다는 걸 잘 압니다.',
    head:'경력이 쌓여도 새 규칙부터 배웁니다.',
-   detail:'담당이나 자리가 바뀔 때마다 익숙한 방식이 통하지 않습니다.',
+   detail:'담당이나 부서가 바뀔 때마다 익숙한 방식이 통하지 않습니다.',
    fate:'당신은 쌓은 경력을 들고도 일터가 바뀔 때마다 처음 하는 사람처럼 다시 증명해야 하는 팔자입니다.',
    rule:'전에 하던 곳에서 옳았던 방법은 그곳에서 이미 대접을 받았습니다. 새로 맡긴 사람에게는 자기 방식대로 할 줄 안다는 것을 새로 보여야 합니다.'
   },
@@ -3642,7 +3689,7 @@ const V5={
    daily:'여럿이 먹고 싶은 것을 고를 때 의견이 갈리면 각자 못 먹는 것부터 물어봅니다. 다들 고개를 끄덕이고 메뉴판을 덮는 순간이 좋아서 당신이 먼저 말을 꺼내는 일이 꽤 있습니다.',
    head:'사람은 바뀌어도 같은 역할에서 걸립니다.',
    detail:'곤란한 일을 정리하고 나면 다음에도 그 대목에서 이름이 나옵니다.',
-   fate:'당신은 궂은 역할을 늘 도맡고 그 자리를 벗어나지 못하는 팔자입니다.',
+   fate:'당신은 남들이 피하는 역할을 한 번 맡고 나면 다음에도 그 역할로 불리는 팔자입니다.',
    rule:'다들 피하는 일을 맡아 별 탈 없이 마쳤으니 다음에도 맡길 만한 사람은 당신입니다. 궂은 차례를 고루 나누자고 일을 서툰 이에게 보낼 수는 없습니다.'
   },
   palace_self:{
@@ -3781,8 +3828,9 @@ const V5={
   {key:'애매하게',fate:'당신은 관계가 끝났는지 묻는 말까지 미루다가 상대가 떠난 뒤에도 혼자 기다리는 팔자입니다.',short:'끝을 묻지 못해 오래 남는'}
  ],
  loveShort:'생활 형편이 비슷한 사람만 남는',
+ loveFallback:'당신은 가까운 사이를 유지하려고 넘긴 일을 나중에는 꺼내기 어려워지는 팔자입니다.',
  // 여자이고 확인된 글자의 식상이 셀 때 쓰는 풍자. 경력 단절은 해소되지 않은 상관견관까지 있을 때만 고른다.
- careerCut:'당신은 아이를 낳으면 경력이 끊기고 돌아갈 자리는 남아 있지 않은 팔자입니다.',
+ careerCut:'당신은 아이를 낳으면 경력이 끊기고 돌아갈 일자리는 남아 있지 않은 팔자입니다.',
  careerBurden:'당신은 아이를 낳으면 일하는 몫에 돌보는 몫까지 더해져 어느 쪽도 내려놓지 못하는 팔자입니다.',
  // 자식의 자리(태어난 시간 기둥)의 재물 기운
  child:{
@@ -4058,7 +4106,7 @@ function v5Reading(R,now){
    const key=hit?hit[0]:'fallback',rk=['집에 와서도','내일 확인해도'].includes(key)?'checking':['쉬는 간격 없이','빈 시간이 생기면'].includes(key)?'self':key==='활동이 적었던'?'night':st==='weak'?'weak':'strong';
    doms.push({id:'body',title:'몸',cause:key,head:o.head,detail:b0,fates:[hit?hit[1]:V5.bodyFallback],rule:V5.bodyRule[rk]}); }
  { const o=obs('love'),pr=love&&love.house?'house':love&&love.key==='같은 얘기를'?'money':love&&['연락은 끊깁니다','대화가 빨리 줄어듭니다','애매하게'].includes(love.key)?'silence':'base';
-   doms.push({id:'home',title:'짝과 관계',cause:love?love.key:'base',head:o.head,detail:love&&love.detail||(o.body||[])[0]||'',fates:love?[love.fate]:[],rule:V5.pairRule[pr]}); }
+   doms.push({id:'home',title:'짝과 관계',cause:love?love.key:'base',head:o.head,detail:love&&love.detail||(o.body||[])[0]||'',fates:[love?love.fate:V5.loveFallback],rule:V5.pairRule[pr]}); }
  { const key=parentWork?(parentWork==='cut'?'cut':'care'):child?(child==='shown'?'shown':ok==='absent'?'absentPoor':'absent'):age>=35?'old':'young',scene=V5.familyScene[key];
    const f=parentWork?(parentWork==='cut'?V5.careerCut:V5.careerBurden):child?V5.child[key]:V5.parents[key];
    doms.push({id:'family',title:'가족과 부양',cause:key,head:scene.head,detail:scene.detail,fates:[f],rule:V5.pairRule[scene.rule]||scene.rule}); }
@@ -4088,8 +4136,28 @@ function v5Reading(R,now){
  const c1=fate.good?V5.cmd.near:offK==='low'?V5.cmd.small:low('재성')?V5.cmd.poor:st==='weak'?V5.cmd.weak:ok==='absent'?V5.cmd.start:V5.cmd.keep;
  out.cautions=unique([c1,V5.cmd.boss,office.caution||(st==='weak'?V5.cmd.risk:V5.cmd.place)]);
  out.footNote=V5.footNote;out.lastLine=V5.lastLine;
- if(typeof Western!=='undefined'&&R.western)Western.weave(out,R,{jeongin:P.filter((p,i)=>i!==2&&p.known&&tenGod(a.dayStem,p.stem)==='정인').length});
- if(typeof ReadingProse!=='undefined')ReadingProse.weave(out,R);
+ // 칸마다 조건이 맞는 문단을 모두 붙인다. 별자리는 문단을 고르는 조건으로만 쓴다.
+ if(typeof ReadingPool!=='undefined')ReadingPool.weave(out,R);
+ v5PeriodCopy(out,r,now);
+ return out;
+}
+/* 지나온 해 → 올해·내년 → 월운 → 10년 순서로 읽는다. 앞에서 나온 문장은 뒤에서 다시 쓰지 않는다. */
+function v5PeriodCopy(out,r,now){
+ const seen=new Set(),pastSentences=new Set();
+ out.past.forEach(p=>sentenceListV2(p.text).forEach(t=>{seen.add(t);pastSentences.add(t);}));
+ const fresh=(text,keep)=>sentenceListV2(text).filter(t=>{if(seen.has(t))return false;if(keep)seen.add(t);return true;}).join(' ');
+ out.years=r.years.map(y=>{
+  // 지난 해에 짚은 일이 그대로 다시 오면 같은 문장을 시제만 바꿔 되풀이하지 않는다.
+  const told=sentenceListV2(pastReadingText(y.text||'')),same=told.length?out.past.find(p=>told.every(t=>sentenceListV2(p.text).includes(t))):null;
+  const text=same?same.year+'년과 같은 일이 다시 옵니다.':fresh(y.text,true);
+  return Object.assign({},y,{text});
+ });
+ // 월운은 지금 달 하나만 보이므로 달끼리는 비교하지 않고 앞의 해와만 비교한다.
+ out.years.forEach((y,i)=>{y.months=(r.years[i].months||[]).map(m=>Object.assign({},m,{text:fresh(m.text,false)}));});
+ const month=out.years.flatMap(y=>y.months).find(m=>m.start<=now&&now<m.end);
+ if(month)sentenceListV2(month.text).forEach(t=>seen.add(t));
+ // 10년 흐름은 지금 흐름의 본문과 다음 흐름의 한 줄을 화면 순서대로 정리한다.
+ out.luck.cycles=out.luck.cycles.map(x=>x.now?(x.c.text?Object.assign({},x,{c:Object.assign({},x.c,{text:fresh(x.c.text,true)})}):x):(x.stage?Object.assign({},x,{stage:fresh(x.stage,true)}):x));
  return out;
 }
 /* 현재 월운: 풀이와 적용 기간, 다음 절기 전환일 */
@@ -4098,7 +4166,7 @@ function currentMonthView(years,now){
  if(!m)return null;
  const local=t=>new Date(t+9*HOUR),start=local(m.start),end=local(m.end);
  const date=(d,year)=>(year?d.getUTCFullYear()+'년 ':'')+(d.getUTCMonth()+1)+'월 '+d.getUTCDate()+'일';
- return {title:m.title,text:m.text||'',expansion:m.expansion?.text||'',end:m.end,
+ return {title:m.title,text:m.text||'',end:m.end,
   period:date(start,true)+' ~ '+date(end,start.getUTCFullYear()!==end.getUTCFullYear()),
   transition:date(end,true)+' '+end.getUTCHours()+':'+String(end.getUTCMinutes()).padStart(2,'0')+(m.endTerm?' · '+m.endTerm:'')};
 }
@@ -4109,7 +4177,6 @@ function renderCurrentMonth(years,now){
  box.hidden=!m;if(!m){box.replaceChildren();return;}
  box.innerHTML='<div class="month-label">현재 월운</div><h3>'+plainEsc(m.title)+'</h3>'
   +(m.text?'<p class="month-text">'+plainEsc(m.text)+'</p>':'')
-  +(m.expansion?'<p class="month-text">'+esc(m.expansion)+'</p>':'')
   +'<dl class="month-period"><div><dt>적용 기간</dt><dd>'+esc(m.period)+'</dd></div><div><dt>다음 전환</dt><dd>'+esc(m.transition)+'</dd></div></dl>'
   +'<small class="month-note">월운은 절기를 기준으로 바뀝니다. 날짜·시간은 양력·한국시간 기준입니다.</small>';
  // 초 단위 카운트 없이 절기가 바뀔 때만 다음 월운으로 갱신한다.
@@ -4118,6 +4185,46 @@ function renderCurrentMonth(years,now){
 document.addEventListener('visibilitychange',()=>{
  if(!document.hidden&&!$('result-screen').hidden&&MONTH_VIEW.years.length)renderCurrentMonth(MONTH_VIEW.years,Date.now());
 });
+/* 사주 원국 접힌 표: 만세력(한자)·지장간·12운성·대운·신살·합충형파해와 칸별 근거. 본문에는 쓰지 않는 전문 정보만 모은다. */
+const EL_HANJA={목:'木',화:'火',토:'土',금:'金',수:'水'};
+// 지장간은 계산에 쓰는 글자(HIDDEN)를 여기·중기·정기 순서로 적는다.
+const JIJANG={子:'癸',丑:'癸辛己',寅:'戊丙甲',卯:'乙',辰:'乙癸戊',巳:'戊庚丙',午:'己丁',未:'丁乙己',申:'戊壬庚',酉:'辛',戌:'辛丁戊',亥:'甲壬'};
+const UNSEONG=['장생','목욕','관대','건록','제왕','쇠','병','사','묘','절','태','양'];
+const UNSEONG_START={甲:'亥',丙:'寅',戊:'寅',庚:'巳',壬:'申',乙:'午',丁:'酉',己:'酉',辛:'子',癸:'卯'};
+const BRANCH_ORDER='子丑寅卯辰巳午未申酉戌亥';
+function unseong(dayStem,branch){
+ const s=BRANCH_ORDER.indexOf(UNSEONG_START[dayStem]),b=BRANCH_ORDER.indexOf(branch);
+ return UNSEONG[STEMS[dayStem].yin?(s-b+12)%12:(b-s+12)%12];
+}
+const SINSAL_NAME={gwimun:'귀문관살',wonjin:'원진살',dohwa:'도화살',hyeonchim:'현침살',yeokma:'역마살',gongmang:'공망',hongyeom:'홍염살',yangin:'양인살',goegang:'괴강살',hwagae:'화개살',gosin:'고신살',baekho:'백호살',gwasuk:'과숙살'};
+const INTERACTION_NAME={합:'천간합',육합:'육합',반합:'반합',삼합:'삼합',방합:'방합',충:'충',형:'형',자형:'자형',파:'파',해:'해'};
+function sajuDetailsHtml(R,v){
+ const r=R.reading,a=r.a,day=a.dayStem,cols=[3,2,1,0],head=['시주','일주','월주','연주'];
+ const hj=(ch,kind)=>{const info=kind==='stem'?STEMS[ch]:BRANCHES[ch],e=ELEMENTS[info.el];return '<b class="hj" style="--c:'+(e.labelColor||e.color)+'">'+ch+'</b><small>'+info.ko+' · '+EL_HANJA[info.el]+'</small>';};
+ const cell=(i,f)=>{const p=r.pillars[i];return '<td>'+(p&&p.known?f(p):'<span class="none">—</span>')+'</td>';};
+ const row=(label,f,cls)=>'<tr'+(cls?' class="'+cls+'"':'')+'><th scope="row">'+label+'</th>'+cols.map(i=>cell(i,f)).join('')+'</tr>';
+ let h='<details class="chart-details saju-details"><summary>사주 원국 자세히 보기</summary><div class="chart-table-wrap"><table class="manse"><caption class="sr-only">사주 원국 만세력</caption><thead><tr><th scope="col"></th>'+head.map(t=>'<th scope="col">'+t+'</th>').join('')+'</tr></thead><tbody>';
+ h+=row('십성',p=>p.pos===2?'<span class="me">일간</span>':tenGod(day,p.stem),'ten');
+ h+=row('천간',p=>hj(p.stem,'stem'),'gan');
+ h+=row('지지',p=>hj(p.branch,'branch'),'ji');
+ h+=row('십성',p=>tenGod(day,HIDDEN[p.branch][0][0]),'ten');
+ h+=row('지장간',p=>'<span class="jj">'+JIJANG[p.branch]+'</span>');
+ h+=row('12운성',p=>unseong(day,p.branch));
+ h+='</tbody></table></div>';
+ const use=(a.use&&a.use.usefulElements||[]).map(x=>EL_HANJA[x]).join(' · ');
+ h+='<dl class="chart-facts"><div><dt>격국</dt><dd>'+esc(a.structure.name)+'</dd></div><div><dt>강약</dt><dd>'+esc(a.strength.label)+' <small>'+a.strength.score+'점</small></dd></div>'+(use?'<div><dt>용신</dt><dd>'+use+'</dd></div>':'')+'</dl>';
+ const L=r.luck,cyc=L.cycles.slice(0,10);
+ h+='<h4>대운</h4><ol class="daeun">'+cyc.map(c=>'<li'+(c.i===L.current?' class="now"':'')+'><small>'+(R.input.unknown?'약 ':'')+c.age+'</small><b>'+esc(c.g)+'</b></li>').join('')+'</ol>';
+ const place=w=>String(w||'').replace(/태어난 해/g,'연주').replace(/태어난 달/g,'월주').replace(/태어난 날/g,'일주').replace(/태어난 시간/g,'시주');
+ const sin=(r.sinsal||[]).filter(x=>SINSAL_NAME[x.key]);
+ if(sin.length)h+='<h4>신살</h4><ul class="chart-list">'+sin.map(x=>'<li><b>'+SINSAL_NAME[x.key]+'</b><span>'+esc(place(x.where))+'</span></li>').join('')+'</ul>';
+ const PL=['연','월','일','시'],inter=(a.interactions||[]).filter(x=>INTERACTION_NAME[x.kind]);
+ if(inter.length)h+='<h4>합충형파해</h4><ul class="chart-list">'+inter.map(x=>'<li><b>'+(x.branches||x.stems||[]).join('')+' '+INTERACTION_NAME[x.kind]+(x.element?' <small>'+EL_HANJA[x.element]+'</small>':'')+'</b><span>'+x.positions.map(i=>PL[i]+(x.layer==='stem'?'간':'지')).join('·')+'</span></li>').join('')+'</ul>';
+ const basis=[['집안',v.origin.fact],['격국',a.structure.basis]].concat(v.domains.filter(d=>d.basis).map(d=>[d.title,d.basis]));
+ h+='<h4>칸별 근거</h4><ul class="chart-basis">'+basis.filter(x=>x[1]).map(x=>'<li><b>'+esc(x[0])+'</b>'+esc(x[1])+'</li>').join('')+'</ul>';
+ h+='<p class="natal-method">절기 기준 · 진태양시 보정<br>지장간은 여기·중기·정기 순서입니다. 지지의 십성은 정기로 셉니다. 12운성은 태어난 날의 천간 기준입니다.</p></details>';
+ return h;
+}
 function renderResult(R){
  const inp=R.input,r=R.reading,c=R.chart,now=Date.now(),v=v5Reading(R,now);
  $('r-title').textContent=inp.name?inp.name+'님의 운세':'나의 운세';
@@ -4136,13 +4243,15 @@ function renderResult(R){
   card.innerHTML=h;P.append(card);
  });
  const pn=$('pillar-note');pn.hidden=!inp.unknown&&!c.boundary;
+ $('saju-details').innerHTML=sajuDetailsHtml(R,v);
  pn.textContent=inp.unknown?'태어난 시간의 두 글자는 빼고 풀었습니다.'+(c.boundary&&c.boundary.day?' 날짜 경계는 정오를 기준으로 잡아 생시에 따라 날짜 기둥이 달라질 수 있습니다.':''):c.boundary?'태어난 시각이 기준이 바뀌는 때와 가까워 몇 분 차이로 일부 결과가 달라질 수 있습니다.':'';
  $('portrait-title').textContent=inp.name?inp.name+'님을 보니':'당신을 보니';
  const ribbon=$('portrait-ribbon');
  ribbon.innerHTML=icon(r.me.icon);
  ribbon.setAttribute('aria-label',r.me.name+' 무늬 책갈피');
  $('portrait-text').replaceChildren(...v.portrait.map(line=>el('p','',esc(line))));
- $('origin').innerHTML='<p class="basis">'+esc(v.origin.fact)+'</p><p class="fate">'+esc(v.origin.fate)+'</p><p class="rule"><b>이치</b>'+esc(v.origin.rule)+'</p>';
+ // 이치는 이름표 없이 문단으로 읽고 팔자 줄로 닫는다.
+ $('origin').innerHTML='<p class="basis">'+esc(v.origin.fact)+'</p><p class="origin-text">'+esc(v.origin.rule)+'</p><p class="fate">'+esc(v.origin.fate)+'</p>';
  // 상징
  const me=r.me,meEl=ELEMENTS[me.el];
  $('me-card').innerHTML=icon(me.icon)+'<div><div class="big">'+esc(me.name)+'<small>'+esc(meEl.name)+'</small></div><div class="sub2">'+esc(v.symbol)+'</div></div>';
@@ -4155,27 +4264,22 @@ function renderResult(R){
  $('elem-lines').innerHTML='<p class="basis">'+esc(v.elementIntro)+'</p>'+v.elements.map(t=>'<p>'+esc(t)+'</p>').join('');
  // 입력한 실제 출생시각으로 계산한 별자리
  $('western-chart').innerHTML=typeof Western!=='undefined'?Western.render(R.western,'summary'):'<p class="pnote">서양 출생차트를 불러오지 못했습니다. 다시 접속해 주세요.</p>';
- $('western-reading').innerHTML=typeof Western!=='undefined'?Western.render(R.western,'reading'):'';
  // 타고난 성향
  $('core-title').textContent=v.core.title;
- $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p class="fate">'+esc(v.core.fate)+'</p><p class="rule"><b>이치</b>'+esc(v.core.rule)+'</p>';
+ $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p>'+esc(v.core.rule)+'</p><p class="fate">'+esc(v.core.fate)+'</p>';
  // 지나온 흐름
  const PH=$('past-hits');PH.replaceChildren();$('past-block').hidden=!v.past.length;
- v.past.forEach(x=>PH.append(el('article','past-hit','<b>'+x.year+'년</b><div><h3>'+plainEsc(x.title)+'</h3>'+(x.text?'<p>'+plainMd(x.text)+'</p>':'')+(x.expansion?'<p>'+esc(x.expansion.text)+'</p>':'')+'</div>')));
+ v.past.forEach(x=>PH.append(el('article','past-hit','<b>'+x.year+'년</b><div><h3>'+plainEsc(x.title)+'</h3>'+(x.text?'<p>'+plainMd(x.text)+'</p>':'')+'</div>')));
  // 영역
  const S=$('sections');S.replaceChildren();
  v.domains.forEach(sec=>{
   const box=el('section','block reading');box.id='sec-'+sec.id;
-  const note=sec.note?'<p class="note"><b>'+esc(sec.note.label)+'</b><span>'+plainEsc(sec.note.value)+'</span></p>':'',
-   rule=sec.rule?'<p class="rule"><b>이치</b>'+esc(sec.rule)+'</p>':'',
-   basis=sec.basis?'<p class="basis"><b>근거</b>'+esc(sec.basis)+'</p>':'';
-  // 기본 문서는 생활 설명 → 팔자 → 이치. 합의한 긴 원고는 paragraphs의 순서와 closing을 그대로 쓴다.
-  const fates=sec.fates.map(t=>'<p class="fate">'+esc(t)+'</p>').join('');
-  const western=(sec.western||[]).map(t=>'<p class="western-link">'+esc(t)+'</p>').join('');
+  // 장면 → 이치 → 조건이 맞는 문단 → 팔자 줄. 이치에 이름표를 붙이지 않고 근거는 맨 위 접힌 표로 보낸다.
+  const paragraphs=sec.paragraphs||[sec.detail,sec.rule].filter(Boolean),closing=sec.closing||sec.fates;
+  const note=sec.note?'<p class="note"><b>'+esc(sec.note.label)+'</b><span>'+plainEsc(sec.note.value)+'</span></p>':'';
   box.innerHTML='<h2 class="sec-label">'+esc(sec.title)+'</h2>'+(sec.head?'<h3 class="head">'+plainEsc(sec.head)+'</h3>':'')
-   +(sec.paragraphs?sec.paragraphs.map(t=>'<p class="woven-paragraph">'+esc(t)+'</p>').join('')+'<p class="fate woven-closing">'+esc(sec.closing)+'</p>':
-    western+(sec.detail?'<p class="daily">'+plainEsc(sec.detail)+'</p>':'')
-    +fates+note+rule+basis);
+   +'<div class="woven">'+paragraphs.map(t=>'<p class="woven-paragraph">'+esc(t)+'</p>').join('')+'</div>'
+   +(closing.length?'<div class="woven-closing">'+closing.map(t=>'<p class="fate">'+esc(t)+'</p>').join('')+'</div>':'')+note;
   S.append(box);
  });
  // 올해·내년
@@ -4184,9 +4288,9 @@ function renderResult(R){
   // 제목이 이미 '앞 해의 문제가 다시 겹치는 해'이면 같은 말을 본문에서 되풀이하지 않는다
   const yt=/다시 겹치는 해$/.test(y.title||'')&&/^\d+년에 짚은 문제가 이 시기에도 이어집니다\.$/.test(y.text||'')?'':y.text;
   const b=BRANCHES[y.g[1]],ps=new Date(y.periodStart+9*HOUR),pe=new Date(y.periodEnd+9*HOUR-1),period=(ps.getUTCMonth()+1)+'월 '+ps.getUTCDate()+'일~'+(pe.getUTCFullYear()===ps.getUTCFullYear()?'':pe.getUTCFullYear()+'년 ')+(pe.getUTCMonth()+1)+'월 '+pe.getUTCDate()+'일';
-  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')+(y.expansion?'<p>'+esc(y.expansion.text)+'</p>':'')));
+  Y.append(el('article','year','<div class="yh">'+icon(b.icon)+'<div><b>'+y.year+'년</b><small>실제 적용: '+period+'</small></div><span class="badge">'+(i===0?'올해':'내년')+'</span></div><h3>'+plainEsc(y.title)+'</h3>'+(yt?'<p>'+plainMd(yt)+'</p>':'')));
  });
- $('year-rule').innerHTML='<b>이치</b>'+esc(v.yearRule);
+ $('year-rule').textContent=v.yearRule;
  renderCurrentMonth(v.years||r.years,now);
  // 10년
  const L=r.luck,currentCycle=L.cycles.find(cy=>cy.i===L.current),fd=localYmd(inp.place,L.start);
@@ -4195,7 +4299,7 @@ function renderResult(R){
  const LL=$('luck-list');LL.replaceChildren();
  v.luck.cycles.forEach(x=>{
   const cy=x.c,worst=cy.i===v.luck.worst;
-  LL.append(el('li',(x.now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+cycleAgeLabel(cy,inp.unknown)+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')+(x.expansion?'<p>'+esc(x.expansion.text)+'</p>':'')+'</div>'));
+  LL.append(el('li',(x.now?'now':'')+(worst?' worst':''),'<div class="when"><b>'+cy.startYear+'</b>~'+cy.endYear+'년<br>'+cycleAgeLabel(cy,inp.unknown)+'부터 10년'+icon(BRANCHES[cy.g[1]].icon)+'</div><div>'+(x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')+'</div>'));
  });
  $('cycle-ruling').innerHTML='<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>';
  // 전체 풀이

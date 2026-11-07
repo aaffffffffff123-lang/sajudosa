@@ -1,7 +1,7 @@
 /* 사주도사 · 서양 출생차트
  * Astronomy Engine: 지구 중심, 날짜 기준 열대황도 / Whole Sign houses.
  * 사주의 진태양시 보정값을 행성 계산에 다시 더하지 않는다.
- * 문구는 조건에 묶인 고정 원고다. 호출마다 재작성하거나 임의로 섞지 않는다.
+ * 여기서는 계산과 맨 위 별자리 카드·접힌 출생차트만 그린다. 본문 문단은 reading-pool.js가 별자리를 조건으로만 써서 고른다.
  */
 (function(root,factory){
   if(typeof module==='object'&&module.exports)module.exports=factory(require('./assets/astronomy.browser.min.js'));
@@ -71,12 +71,8 @@
   }
   const planet=(c,id)=>c.planets.find(p=>p.id===id);
   const aspect=(c,a,b,angle)=>c.aspects.find(x=>((x.a===a&&x.b===b)||(x.a===b&&x.b===a))&&(angle==null||x.angle===angle));
-  const house=(c,n)=>c.planets.filter(p=>p.house===n);
   function position(p){return p.sign==null?p.candidates.map(i=>SIGNS[i]).join(' / '):SIGNS[p.sign];}
   function degree(lon){const n=Math.floor(norm(lon)%30*60);return Math.floor(n/60)+'° '+String(n%60).padStart(2,'0')+'′';}
-  function joined(list){return list.map(p=>p.name).join('·');}
-  function particle(word,closed,open){return word+((word.charCodeAt(word.length-1)-44032)%28?closed:open);}
-  function placement(c,n,meaning){const ps=house(c,n);return ps.length?meaning+'을 보는 '+n+'하우스에 '+joined(ps)+'이 놓입니다.':'';}
   function aspectText(x){return NAMES[x.a]+'·'+NAMES[x.b]+' '+x.name;}
 
   // 태양은 지향, 달은 익숙한 반응. 두 체계를 같은 오행으로 억지 환산하지 않는다.
@@ -108,93 +104,9 @@
     '감정에 휩쓸릴수록 한 발 떨어져 이유를 따집니다. 설명할 수 있게 된 마음과 실제로 가라앉은 마음이 늘 같지는 않습니다.',
     '분위기를 바꾸는 작은 자극에도 마음이 오래 머뭅니다. 혼자 있는 시간이 생겨도 다른 사람에게서 받은 감정이 곧바로 사라지지는 않습니다.'
   ];
-  // 확정 원고. 대응하는 사주 유형과 출생차트 조건이 있을 때만 채택한다.
-  const COPY={
-    living:'당신에게 들어오는 재물은 생활비로 소진됩니다. 돈이 들어오고, 먹고 자고, 다시 돈을 벌러 나갑니다. 한 달을 일해서 한 달을 살고 나면 다음 달의 생활비가 다시 필요합니다. 지난달에 얼마나 애썼든 이번 달에 쓸 돈이 남아 있지 않으면 다시 벌어야 합니다.',
-    spending:'당신은 편하게 살고 싶어서 큰돈을 쓰기보다, 오늘을 끝낼 힘이 없어 작은돈을 씁니다. 직접 할 일을 남에게 맡기고 잠깐 숨을 돌립니다. 그러나 지출을 셀 때는 그 돈으로 무엇을 견뎠는지까지 계산하지 않습니다. 쉬지 않으면 버틸 수 없었다는 것은 당신의 사정이고, 돈이 남지 않았다는 것은 당신의 결과입니다.',
-    learning:'돈이 넉넉한 집에서 자란 사람은 당장 벌지 않아도 되는 동안 배웁니다. 실패해도 다시 준비하고, 좋은 기회를 기다립니다. 그렇게 얻은 자격과 안목은 그 사람의 능력이 됩니다. 당신에게 그런 시간이 없었더라도 갖추지 못한 것은 갖추지 못한 것입니다. 기회는 사정이 급한 사람보다 준비된 사람에게 주는 것이 옳습니다.',
-    debt:'남의 돈을 빌려 쓰면 갚을 일이 남습니다. 돈을 내어 준 사람은 당신이 편해지기를 기다리는 사람이 아닙니다. 약속한 만큼 돌아오기를 기다리는 사람입니다. 급한 일을 넘겼다면 그다음부터는 갚을 일을 해야 합니다. 받은 날의 절박함은 돈을 받은 것으로 해결되었으니, 갚는 날까지 같은 사정으로 헤아려 달라고 할 수는 없습니다.',
-    effort:'오래 애썼다는 사실만으로 더 많은 몫이 생기지는 않습니다. 같은 일을 더 힘들게 해냈다면, 그 차이는 당신이 견뎌야 했던 어려움이지 남이 더 값을 치러야 할 성과는 아닙니다. 고생을 알아주는 말과 돈을 더 주는 일은 별개입니다.',
-    stability:'당신의 생활은 일을 그만두지 않는 동안 유지됩니다. 그 생활을 유지하는 데 힘을 다 썼다면, 그 밖의 것을 마련할 여력은 남지 않습니다. 같은 나이에 더 많이 이룬 사람과의 차이는 그대로 남습니다.',
-    ending:'당신은 오늘을 덜 힘들게 넘기려고 쓴 돈을 내일의 품으로 메우는 팔자입니다.'
-  };
-  function moneyAnchor(c){
-    if(planet(c,'Moon').house===2&&planet(c,'Saturn').house===2&&aspect(c,'Moon','Saturn',0))return '서양 출생차트에서는 자신의 수입과 재산을 보는 두 번째 하우스에 달과 토성이 함께 놓입니다. 생활의 필요를 따라 움직이는 달 곁에, 한계를 정하고 지출을 따지는 토성이 붙어 있습니다. 돈을 얻는 일과 돈 때문에 마음을 놓는 일이 쉽게 함께 오지 않는 배치입니다.';
-    const p=house(c,2);
-    if(p.length){
-      const more=p.some(x=>x.id==='Jupiter')?'목성은 수입과 자원을 넓히는 쪽으로 읽습니다. 들어올 돈의 폭이 넓어져도 그중 얼마를 남길지는 지출과 함께 보아야 합니다.':
-        p.some(x=>x.id==='Venus')?'금성은 돈을 끌어들이는 방식과 돈으로 누리는 취향에 함께 놓입니다. 벌 때의 매력과 쓸 때의 만족을 따로 보지 않습니다.':
-        p.some(x=>x.id==='Saturn')?'토성은 모으고 지키는 일에 조건과 시간이 붙는 것으로 읽습니다. 잔액을 확인한 뒤에도 그 돈이 버텨야 할 기간을 함께 셉니다.':
-        p.some(x=>x.id==='Moon')?'달은 생활의 필요와 마음의 안정을 함께 봅니다. 필요한 돈의 기준도 그날그날의 생활을 따라 움직입니다.':
-        p.some(x=>x.id==='Mars')?'화성은 직접 움직여 자원을 확보하려는 힘으로 읽습니다. 버는 일에 쓰는 힘과 지출을 늘리는 속도를 함께 살핍니다.':'돈을 마련하고 소유를 유지하는 일이 이 배치의 관심사입니다. 수입의 규모와 지켜야 할 생활의 크기를 함께 봅니다.';
-      return placement(c,2,'자신의 수입과 재산')+' '+more;
-    }
-    const v=planet(c,'Venus');
-    return v.sign==null?'':('금성은 '+SIGNS[v.sign]+'에 있습니다. 점성술에서 금성은 끌리는 것과 값을 치르고 누리고 싶은 것을 함께 봅니다. 돈의 풀이에서는 들어오는 액수와 함께 무엇에 지갑을 여는지를 살핍니다.');
-  }
-  function sharedAnchor(c){
-    if(planet(c,'Jupiter').house!==8)return '';
-    let text='타인의 자금과 공동 재산을 보는 여덟 번째 하우스에는 목성이 있습니다. ';
-    if(aspect(c,'Jupiter','Saturn',180))text+='그 목성은 '+(planet(c,'Saturn').house===2?'당신의 재물 자리에 있는 ':'')+'토성과 거의 정면으로 마주합니다. ';
-    return text+'다룰 수 있는 돈의 규모가 커지는 것과, 그 돈을 자기 뜻대로 쓸 수 있는 것은 따로 보아야 합니다. 돈과 함께 들어오는 조건도 당신의 생활에 자리를 잡습니다.';
-  }
-  function workAnchor(c,r){
-    const mars=planet(c,'Mars'),square=aspect(c,'Sun','Mars',90);
-    if(mars.house===6&&square){
-      return '일상의 노동을 보는 여섯 번째 하우스에는 화성이 있고, 태양과 사각을 이룹니다. 해야 할 일을 처리하는 데 쓰는 힘과, 자신을 위해 남겨 둘 힘이 부딪힙니다.'+(r.a.structure.god==='상관'?' 사주에서도 월지의 상관은 방법을 찾고 결과를 만들어 내는 데 힘을 쓰게 합니다. 다만 힘을 썼다는 사실과 그 힘에 매겨지는 값은 다릅니다.':'');
-    }
-    const daily=placement(c,6,'매일 반복하는 일과 맡은 업무');
-    if(daily)return daily+' 이 배치는 일상의 일을 어떤 방식으로 감당하는지 살핍니다. 해야 할 일을 처리하는 능력과 그 일의 조건을 정하는 권한은 따로 보아야 합니다.';
-    if(square)return '태양과 화성이 사각을 이룹니다. 자신이 원하는 방향과 실제 행동에 쓰는 힘 사이의 마찰을 봅니다. 움직인 양이 그대로 원하는 결과가 되지는 않습니다.';
-    const easy=aspect(c,'Sun','Mars',120)||aspect(c,'Sun','Mars',60);
-    if(easy)return '태양과 화성이 '+easy.name+'을 이룹니다. 뜻을 행동으로 옮기는 흐름이 비교적 매끄럽습니다. 할 수 있는 일이 늘어나면 맡는 일의 범위도 함께 넓어집니다.';
-    return '';
-  }
-  function wealthIntro(r){
-    const days=['갑목','을목','병화','정화','무토','기토','경금','신금','임수','계수'],elements=['흙','흙','쇠','쇠','물','물','나무','나무','불','불'];
-    const index='甲乙丙丁戊己庚辛壬癸'.indexOf(r.a.dayStem),element=elements[index],w=r.fate.wealth;
-    let text=days[index]+' 일간인 당신에게 재물은 '+element+'의 기운입니다.';
-    if(w&&w.present&&!w.visible.length){
-      const positions=[...new Set(w.hidden.map(p=>p.pos))].sort().map(i=>['해','달','날','시간'][i]);
-      const locations=positions.length===2?particle(positions[0],'과','와')+' '+positions[1]:positions.join('·');
-      text+=' 그 '+particle(element,'은','는')+' 태어난 '+locations+'의 아래 글자에 들어 있습니다.';
-    }else if(w&&w.fact)text+=' '+w.fact;
-    return text;
-  }
-  function weave(out,R,evidence){
-    const c=R.western;if(!c||!c.available)return out;
-    const r=R.reading,money=out.domains.find(d=>d.id==='money'),work=out.domains.find(d=>d.id==='work');
-    const moneyText=moneyAnchor(c),shared=sharedAnchor(c),labor=workAnchor(c,r);
-    // 기존 사주의 원인 분기를 유지한다. 서양의 길한 배치를 흉한 배치로 바꾸지 않는다.
-    if(money.cause==='comfort'){
-      const paragraphs=[];
-      paragraphs.push(wealthIntro(r)+(moneyText?' '+moneyText:''));
-      paragraphs.push(COPY.living,COPY.spending);
-      const count=evidence&&evidence.jeongin||0;
-      if(count>=2){paragraphs.push('당신 명식에는 배움과 문서, 자격을 보는 정인이 '+['','한','두','세'][count]+' 번 드러납니다. 무엇을 알고 있는지뿐 아니라, 그것을 무엇으로 인정받았는지가 거듭 평가의 기준이 됩니다.',COPY.learning);}
-      if(shared)paragraphs.push(shared,COPY.debt);
-      if(labor)paragraphs.push(labor,COPY.effort);
-      paragraphs.push(COPY.stability);
-      money.paragraphs=paragraphs;money.closing=COPY.ending;
-      // 지역 이동에 관한 기존 추가 판정은 그 근거와 함께 앞에서 읽고, 합의한 마지막 문장은 끝에 둔다.
-      if(money.fates.length>1)money.paragraphs.push(...money.fates.slice(1));
-    }else{
-      money.western=[moneyText,shared].filter(Boolean);
-      if(labor)work.western=[labor];
-    }
-    const home=out.domains.find(d=>d.id==='home'),partner=placement(c,7,'짝과 일대일 관계');
-    if(partner)home.western=[partner+' 가까운 관계에서 드러나는 요구와 약속을 봅니다. 마음이 맞는지와 함께 생활을 어떻게 나눌지가 관계 안으로 들어옵니다.'];
-    const family=out.domains.find(d=>d.id==='family'),roots=placement(c,4,'집과 가족의 바탕');
-    if(roots)family.western=[roots+' 태어나면서 주어진 생활의 기반과 익숙해진 관계를 봅니다. 독립한 뒤에도 그곳에서 배운 기준을 가지고 다음 생활을 꾸립니다.'];
-    const office=out.domains.find(d=>d.id==='office'),career=placement(c,10,'사회적 지위와 공적인 역할');
-    if(career)office.western=[career+' 밖에서 어떤 역할로 평가받는지를 봅니다. 역할이 커질수록 결과를 설명해야 하는 범위도 넓어집니다.'];
-    return out;
-  }
-
-  function emblem(kind){
-    const paths=kind==='Sun'?'<circle cx="16" cy="16" r="5"/><path d="M16 2v5m0 18v5M2 16h5m18 0h5M6 6l4 4m12 12 4 4M6 26l4-4M22 10l4-4"/>':kind==='Moon'?'<path d="M24 24A12 12 0 1 1 18 3a10 10 0 0 0 6 21Z"/>':'<path d="M3 24h26M6 21a10 10 0 0 1 20 0M16 4v13m-5-8 5-5 5 5"/>';
-    return '<svg viewBox="0 0 32 32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">'+paths+'</svg>';
-  }
+  // 맨 위 카드의 12궁 그림. 십이지 그림(z-*)과 같은 결로 index.html의 w-* 심볼에 그려 두었다.
+  const SIGN_ICONS=['w-aries','w-taurus','w-gemini','w-cancer','w-leo','w-virgo','w-libra','w-scorpio','w-sagittarius','w-capricorn','w-aquarius','w-pisces'];
+  const firstSentence=t=>(String(t).match(/^[^.]+\./)||[t])[0];
   // 천지신명의 후광과 같은 선으로 그린 12궁. 글꼴/이모지에 의존하지 않는다.
   const ZODIAC_PATHS=["M0 0.9C0 -0.1 -0.15 -0.85 -0.5 -0.85C-0.9 -0.85 -0.95 -0.25 -0.62 -0.22M0 0.9C0 -0.1 0.15 -0.85 0.5 -0.85C0.9 -0.85 0.95 -0.25 0.62 -0.22","M0.42 0.32L0.42 0.32A0.42 0.42 0 1 1 -0.42 0.32A0.42 0.42 0 1 1 0.42 0.32M-0.9 -0.85C-0.65 -0.05 0.65 -0.05 0.9 -0.85","M-0.85 -0.82Q0 -0.55 0.85 -0.82M-0.85 0.82Q0 0.55 0.85 0.82M-0.38 -0.68L-0.38 0.68M0.38 -0.68L0.38 0.68","M-0.25 -0.28L-0.25 -0.28A0.22 0.22 0 1 1 -0.69 -0.28A0.22 0.22 0 1 1 -0.25 -0.28M-0.47 -0.5C0.1 -0.82 0.7 -0.62 0.85 -0.25M0.69 0.28L0.69 0.28A0.22 0.22 0 1 1 0.25 0.28A0.22 0.22 0 1 1 0.69 0.28M0.47 0.5C-0.1 0.82 -0.7 0.62 -0.85 0.25","M-0.22 0.32L-0.22 0.32A0.25 0.25 0 1 1 -0.72 0.32A0.25 0.25 0 1 1 -0.22 0.32M-0.3 0.14C-0.45 -0.95 0.6 -0.95 0.4 -0.05C0.25 0.55 0.45 0.9 0.85 0.62","M-0.85 -0.55L-0.85 0.78M-0.85 -0.3C-0.7 -0.85 -0.3 -0.75 -0.3 -0.3L-0.3 0.78M-0.3 -0.3C-0.15 -0.85 0.25 -0.75 0.25 -0.3L0.25 0.45C0.25 0.95 0.85 0.75 0.75 0.25C0.65 -0.1 0.15 0.35 0.05 0.9","M-0.85 0.62L0.85 0.62M-0.85 0.2L-0.38 0.2C-0.62 -0.75 0.62 -0.75 0.38 0.2L0.85 0.2","M-0.85 -0.55L-0.85 0.78M-0.85 -0.3C-0.7 -0.85 -0.3 -0.75 -0.3 -0.3L-0.3 0.78M-0.3 -0.3C-0.15 -0.85 0.25 -0.75 0.25 -0.3L0.25 0.5Q0.3 0.82 0.75 0.78M0.5 0.55L0.8 0.78L0.52 0.98","M-0.78 0.8L0.78 -0.78M0.08 -0.8L0.8 -0.8L0.8 -0.08M-0.5 -0.05L0.05 0.5","M-0.9 -0.6L-0.55 0.55L-0.2 -0.55C-0.05 0.9 0.85 0.85 0.7 0.3C0.55 -0.15 0.1 0.25 0.25 0.7Q0.3 0.95 0 0.95","M-0.9 -0.18L-0.5 -0.5L-0.1 -0.18L0.3 -0.5L0.7 -0.18L0.92 -0.36M-0.9 0.42L-0.5 0.1L-0.1 0.42L0.3 0.1L0.7 0.42L0.92 0.24","M-0.75 -0.88C-0.15 -0.4 -0.15 0.4 -0.75 0.88M0.75 -0.88C0.15 -0.4 0.15 0.4 0.75 0.88M-0.55 0L0.55 0"];
   function wheel(c){
@@ -245,24 +157,31 @@
     svg+='</svg><figcaption>점은 행성의 실제 위치, 안쪽 선은 행성 사이의 각도입니다.'+(c.asc?'<br>숫자는 삶의 영역을 나눈 12하우스입니다.':'')+'</figcaption></figure>';
     return svg;
   }
-  function render(c,part){
-    if(!c||!c.available)return part==='reading'?'':'<p class="pnote">'+esc(c&&c.reason||'서양 출생차트를 불러오지 못했습니다.')+' 다시 접속하면 함께 확인할 수 있습니다.</p>';
+  // 사주 네 기둥과 같은 카드로 태양·달·상승궁을 보여 주고, 확정된 태양·달만 한 줄씩 풀어 준다.
+  function render(c){
+    if(!c||!c.available)return '<p class="pnote">'+esc(c&&c.reason||'서양 출생차트를 불러오지 못했습니다.')+' 다시 접속하면 함께 확인할 수 있습니다.</p>';
     const sun=planet(c,'Sun'),moon=planet(c,'Moon'),asc=c.asc;
-    const card=(kind,label,p,small)=>'<div class="natal-key">'+emblem(kind)+'<span>'+label+'</span><strong>'+esc(p?position(p):c.unknown?'시간 필요':'정보 확인')+'</strong><small>'+small+'</small></div>';
-    let html='<div class="natal-keys">'+card('Sun','태양',sun,'내가 향하는 쪽')+card('Moon','달',moon,'익숙한 마음의 반응')+card('Asc','상승궁',asc?{sign:asc.sign}:null,asc?'세상에 드러나는 태도':c.unknown?'생시를 알아야 계산':'출생지 좌표 필요')+'</div>';
+    const card=(label,small,p,missing)=>{
+      let body;
+      if(p&&p.sign!=null)body='<div class="glyph"><svg viewBox="0 0 64 64" aria-hidden="true"><use href="#'+SIGN_ICONS[p.sign]+'"/></svg><span class="nm">'+SIGNS[p.sign]+'</span></div>';
+      else if(p&&p.candidates&&p.candidates.length)body='<div class="glyph"><span class="qmark">?</span><span class="nm two">'+p.candidates.map(i=>SIGNS[i]).join('<br>')+'</span></div><div class="why">그날 별자리가 바뀜</div>';
+      else body='<div class="glyph"><span class="qmark">?</span><span class="nm">모름</span></div><div class="why">'+missing+'</div>';
+      return '<div class="pillar star-card'+(p&&p.sign!=null?'':' unknown')+'"><div class="pl">'+label+'<small>'+small+'</small></div>'+body+'</div>';
+    };
+    let html='<div class="star-cards">'+card('태양','내가 향하는 쪽',sun)+card('달','마음의 반응',moon)
+      +card('상승궁','드러나는 태도',asc?{sign:asc.sign}:null,c.unknown?'생시를 알아야 계산':'출생지 좌표 필요')+'</div>';
     const lines=[];
-    if(sun.sign!=null)lines.push('<p><b>태양 · '+SIGNS[sun.sign]+'</b>'+SUN[sun.sign]+'</p>');
-    if(moon.sign!=null)lines.push('<p><b>달 · '+SIGNS[moon.sign]+'</b>'+MOON[moon.sign]+'</p>');
-    if(part==='reading')return lines.join('');
-    if(part!=='summary')html+='<div class="natal-reading">'+lines.join('')+'</div>';
+    if(sun.sign!=null)lines.push('<li><b>태양 · '+SIGNS[sun.sign]+'</b>'+firstSentence(SUN[sun.sign])+'</li>');
+    if(moon.sign!=null)lines.push('<li><b>달 · '+SIGNS[moon.sign]+'</b>'+firstSentence(MOON[moon.sign])+'</li>');
+    if(lines.length)html+='<ul class="star-lines">'+lines.join('')+'</ul>';
     if(c.unknown)html+='<p class="natal-note">태어난 시간을 몰라 상승궁과 하우스, 행성 사이 각도는 풀지 않았습니다. 그날 별자리가 바뀔 수 있는 행성은 두 후보를 함께 표시합니다.</p>';
-    html+='<details class="natal-details"><summary>내 출생차트 자세히 보기</summary>'+wheel(c)+'<div class="natal-table-wrap"><table><caption class="sr-only">행성의 별자리와 하우스</caption><thead><tr><th scope="col">행성</th><th scope="col">별자리'+(c.unknown?'':' · 도수')+'</th><th scope="col">하우스</th></tr></thead><tbody>';
+    html+='<details class="chart-details natal-details"><summary>내 출생차트 자세히 보기</summary>'+wheel(c)+'<div class="natal-table-wrap"><table><caption class="sr-only">행성의 별자리와 하우스</caption><thead><tr><th scope="col">행성</th><th scope="col">별자리'+(c.unknown?'':' · 도수')+'</th><th scope="col">하우스</th></tr></thead><tbody>';
     html+=c.planets.map(p=>'<tr><th scope="row">'+p.name+'</th><td>'+esc(position(p))+(p.longitude!=null?' <span>'+degree(p.longitude)+'</span>':'')+'</td><td>'+(p.house||'—')+'</td></tr>').join('');
     html+='</tbody></table></div>';
     if(asc)html+='<p class="natal-note">상승궁 · '+SIGNS[asc.sign]+' '+degree(asc.longitude)+'</p>';
     if(c.aspects.length)html+='<ul class="natal-aspects">'+c.aspects.map(x=>'<li><span>'+aspectText(x)+'</span><small>'+x.angle+'° · 오차 '+x.orb.toFixed(1)+'°</small></li>').join('')+'</ul>';
-    html+='<p class="natal-method">열대황도 · 홀사인 하우스<br>출생지의 당시 표준시·서머타임을 반영합니다. 사주의 진태양시 보정과는 별도로 계산합니다. 하우스는 삶의 영역을 나누는 12칸이며, 비어 있는 칸이 그 영역의 부재를 뜻하지는 않습니다.</p></details>';
+    html+='<p class="natal-method">열대황도 · 홀사인 하우스<br>출생지의 당시 표준시·서머타임을 반영합니다. 사주의 진태양시 보정과는 별도로 계산합니다. 하우스는 삶의 영역을 나누는 12칸이며, 비어 있는 칸이 그 영역의 부재를 뜻하지는 않습니다.<br>풀이 본문은 이 배치를 문단을 고르는 조건으로만 씁니다.</p></details>';
     return html;
   }
-  return {compute,render,weave,ascendant,findAspects,LATITUDES,SIGNS,COPY,aspect,planet};
+  return {compute,render,ascendant,findAspects,LATITUDES,SIGNS,SIGN_ICONS,SUN,MOON,aspect,planet};
 });
