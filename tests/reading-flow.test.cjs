@@ -35,11 +35,39 @@ function bossOf(r){
 
 test('a personal portrait opens the reading before the family verdict and wider judgments',()=>{
  const view=slice('<main id="result-screen"','</main>');
- const order=['id="pillars"','id="reading-portrait"','id="origin"','id="me-card"','id="elem-lines"','id="core-body"','id="past-hits"','id="sections"','id="years"','id="year-rule"','id="month-reading"',
-  'id="luck-graph"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fate-go"'];
+ // 2026-11-07 구성: 태어난 때(사주·막대·별자리) → 당신을 보니 → 타고난 팔자(집안 → 부리는 기운 → 성향) → 일곱 칸 → 지나온 해와 앞날 → 전체 풀이
+ const order=['id="runhead"','id="pillars"','id="share-leg"','id="saju-details"','id="western-chart"','id="reading-portrait"','id="portrait-symbol"','id="fate-card"','id="origin"','id="boss-line"','id="core-body"','id="sections"',
+  'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="year-rule"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="foot-note"','id="last-line"','id="fate-go"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
+ for(const gone of ['id="me-card"','id="elements"','id="elem-lines"','id="past-block"','나를 나타내는 상징','타고난 다섯 가지 비율','올해와 내년','10년 단위 흐름'])assert(!view.includes(gone),gone);
+ for(const label of ['>당신이 태어난 때<','>타고난 팔자<','>지나온 해와 앞날<','>전체 풀이<'])assert(view.includes(label),label);
+ // 숨은 상징은 자리를 옮겨도 남는다: 오행 별 문양은 다섯 기운 막대 옆, 뱀 문양은 연표 이름표 옆
+ assert(/class="elem-strip"/.test(view)&&/\.elem-strip::after\{background-image:/.test(html.replace(/\.sym-pent>\.sec-label::after,/,'')));
+ assert(/class="block timeline sym-oro"/.test(view));
  assert(!/id="judge"|자리 판정|id="countdown"/.test(view));
  for(const {v} of ALL)assert.equal(v.domains.map(x=>x.id).join(' '),'work money body home family gwiin office');
+});
+
+test('the dark-secret reveal survives the new layout: markers, running head, emblem triangles and hidden symbols',()=>{
+ // 이름표 표시: 일까지 네모, 돈부터 세모, 일곱 칸 뒤(연표·전체 풀이)는 눈 달린 세모
+ assert(/#sec-money \.sec-label::before,#sec-money~\.reading \.sec-label::before,#sections~section \.sec-label::before\{[^}]*var\(--mk-tri\)/.test(html));
+ assert(/#sections~section \.sec-label::before\{background-image:var\(--mk-eye\)\}/.test(html));
+ // 상단 머릿말도 같은 문양과 같은 규칙을 쓴다
+ assert(/\.runhead\[data-mark="tri"\] \.rh-mark[^{]*\{[^}]*var\(--mk-tri\)/.test(html)&&/\.runhead\[data-mark="eye"\] \.rh-mark\{background-image:var\(--mk-eye\)\}/.test(html));
+ const rh=slice('function runheadMark(el){','function runheadName(el){');
+ assert(/return 'eye'/.test(rh)&&/return 'tri'/.test(rh)&&/return 'sq'/.test(rh)&&rh.indexOf("'eye'")<rh.indexOf("'tri'"));
+ // 칸 그림 일곱 개. 돈·가족·귀인·관운 그림에는 세모가 숨어 있고 귀인·관운에는 눈이 있다
+ const sym=id=>{const m=html.match(new RegExp('<symbol id="'+id+'"[\\s\\S]*?</symbol>'));assert(m,id);return m[0];};
+ for(const id of ['s-work','s-money','s-body','s-home','s-family','s-gwiin','s-office'])sym(id);
+ for(const id of ['s-money','s-family','s-gwiin','s-office'])assert(/<path d="M[\d.]+ [\d.]+l[\d.]+ [\d.]+h-[\d.]+z"|<path d="M[\d.]+ [\d.]+l[\d.]+ [\d.]+H[\d.]+z"/.test(sym(id)),id);
+ for(const id of ['s-work','s-body','s-home'])assert(!/z" fill="none" stroke="#e0402a"/.test(sym(id)),id);
+ for(const id of ['s-gwiin','s-office'])assert(/q[\d.]+-[\d.]+ [\d.]+ 0q/.test(sym(id)),id+' eye');
+ // 숨은 상징: 오행 별 문양(막대 옆)과 뱀 문양(연표 이름표 옆), 마지막 문장 뒤 세모 눈
+ assert(/\.sym-pent>\.sec-label::after,\.elem-strip::after\{background-image:/.test(html));
+ assert(/\.sym-oro>\.sec-label::after\{background-image:/.test(html)&&/id="time-block"/.test(html));
+ assert(/\.fate-end::before\{/.test(html)&&/--doomEye/.test(html));
+ // 짙어지는 배경은 판정 카드(.core)에서 시작해 전체 풀이(.verdict)에서 끝난다
+ assert(/querySelector\('#result-screen \.core'\)/.test(html)&&/<section class="block core" id="fate-card">/.test(html));
 });
 
 test('the direction is written where the next editor sees it, and the screen copy comes only from v5Reading',()=>{
@@ -90,7 +118,7 @@ test('two charts with the same opening trait lead into their own work scene and 
  const correction=dom(first,'work'),extraWork=dom(second,'work');
  assert.equal(correction.cause,'hurt_officer');
  assert.match(first.portrait[2],/출구|지도/);
- assert.match(correction.rule,/체면/);
+ assert.match(correction.rule,/방법을 정한 사람/);assert.match(correction.head,/시키지 않은 방법/);
  assert.equal(extraWork.cause,'officer_overload');
  assert.match(second.portrait[2],/다음 여행/);
  assert.match(extraWork.rule,/이번에도.*맡기/);
@@ -273,7 +301,8 @@ test('every life domain keeps a distinct rule and uses the common reading order'
  assert(/woven-paragraph[\s\S]*woven-closing[\s\S]*\+note/.test(render));
  assert(!render.includes('<b>이치</b>'));assert(!/<b>근거<\/b>|western-link|expansion/.test(render));
  for(const {v} of ALL)for(const d of v.domains){
-  assert.equal(d.paragraphs.filter(t=>t===d.rule).length,d.id==='money'?0:1,d.id);
+  // 돈을 뺀 여섯 칸은 둘째 문단(한 방) 끝에 이치를 품는다. 돈은 유형별 한 방이 대신한다.
+  if(d.id!=='money'){assert.equal(d.paragraphs.filter(t=>t.endsWith(d.rule)).length,1,d.id);assert(d.paragraphs[1].endsWith(d.rule),d.id);}
   assert.deepEqual(d.closing,d.fates);
   assert(d.closing.every(t=>!d.paragraphs.includes(t)),d.id);
  }
