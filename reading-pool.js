@@ -241,9 +241,11 @@
        text:'시키지 않은 일을 해서 나아진 결과는 당신 윗사람의 이름으로 보고됩니다. 그 위에서는 그 사람이 팀을 잘 이끈 덕분으로 압니다. 당신 이름은 결재란 맨 앞 담당자 칸에만 남습니다.'},
       // 어려울 때 줄인 것은 돌아오지 않는다
       {id:'W6',not:[],when:c=>c.asp('Jupiter','Saturn',H)||(c.lo('재성')&&c.has('관성')),
+       // 개인의 빠듯한 형편은 회사의 불황이 아니라 줄어든 몫을 감수하는 이유로 잇는다.
+       textFor:c=>c.lo('재성')?'회사가 어렵다며 줄인 몫을 받아 달라고 하면 다음 달 생활비부터 셉니다. 그만두고 다른 일을 구하는 동안 쓸 돈이 없어 형편이 나아질 때까지만 버팁니다. 줄어든 몫으로 계속 일하기로 했으니 회사 형편이 나아졌다고 값을 다시 올릴 의무는 없습니다. 어려울 때 버틴 사람은 다음에 어려울 때도 버틸 수 있는 사람으로 기억됩니다.':null,
        text:'회사가 어려울 때는 다 같이 허리띠를 졸라매자고 합니다. 형편이 나아지면 아낀 만큼 돌아올 거라 믿고 버팁니다. 형편이 나아진 뒤에도 한 번 줄인 것은 원래대로 돌아오지 않습니다. 어려울 때 버틴 사람은 다음에 어려울 때도 버틸 수 있는 사람으로 기억됩니다.'},
       // 옮기면 몇 년이 몇 줄로 줄어든다
-      {id:'W4',not:['palace_clash','month_day_clash'],coreNot:['change'],when:c=>c.sin('yeokma')||c.inter('충',1)||c.inter('충',2)||c.asp('Sun','Uranus',H)||c.asp('Moon','Uranus',H),
+      {id:'W4',not:['palace_clash','month_day_clash'],coreNot:['change'],when:c=>c.moveSignal,
        text:'몇 년 동안 해낸 일도 회사를 옮기면 이력서 몇 줄로 줄어듭니다. 새 회사는 그 몇 줄을 믿기 전에 처음부터 다시 해 보이라고 합니다. 쌓은 것은 쌓은 곳에 두고 나옵니다.'}
     ],
     // 사정은 사정이고, 결과는 결과다
@@ -259,6 +261,8 @@
        text:'생활을 다시 줄이려고 사들인 것을 내놓으면 산 값으로는 팔리지 않습니다. 쓸 때는 새것 값을 냈지만 되팔 때는 쓰던 물건 값으로 받습니다. 덜 쓰기로 마음먹은 날에도 이미 쓴 돈은 돌아오지 않습니다. 그동안 누린 몫까지 다음 사람이 치러 줄 까닭은 없습니다.'},
       // 확정 원고: 배울 시간도 집안이 정한다
       {id:'learning',not:['interrupted','paper'],workNot:['wealth_breaks_resource'],when:c=>(c.vis('인성')&&!c.hi('재성'))||c.house('Saturn')===9||c.asp('Jupiter','Saturn',H),
+       // 이미 받은 지원을 없던 것으로 만들지 않고 그 지원에 걸린 기대와 증명 의무로 잇는다.
+       originText:{shown:'집에서 생활을 받쳐 준 동안 배운 것은 당신의 자격과 안목으로 남습니다. 다시 준비할 여유까지 받았으니 집에서는 그만큼 나은 결과를 기다립니다. 자격을 따고도 기대한 일을 얻지 못하면 다른 사람은 없어서 못 배운다며 무엇이 더 필요하냐고 묻습니다. 준비할 형편을 마련해 주었으니 그다음은 당신이 증명할 몫입니다.'},
        text:COPY.learning},
       // 확정 원고: 빌린 날의 사정은 갚는 날 쳐 주지 않는다
       {id:'debt',not:[],when:c=>c.inHouse(8)>0||(c.ten('겁재')>0&&!c.hi('재성')),
@@ -407,7 +411,8 @@
       {id:'B7',not:[],when:c=>c.lo('비겁')||c.lo('재성')||c.asp('Sun','Neptune',H),
        text:'몸을 챙기라는 말에는 운동하고 잘 먹고 일찍 자라는 뜻이 들어 있습니다. 운동할 시간과 장 볼 돈과 일곱 시간의 잠은 모두 일하고 남은 데서 나와야 합니다. 건강은 스스로 챙기는 것이라서 챙기지 못한 몸도 스스로 감당합니다.'},
       // 일하다 닳은 몸은 아픈 사람이 증명한다
-      {id:'B6',not:[],when:c=>c.hi('식상')||c.ten('편재')>0||[1,6].includes(c.house('Mars')),
+      // 돈·거래의 기운만으로 반복 노동을 정하지 않는다. 편재는 강한 업무 부담이 겹칠 때만 쓴다.
+      {id:'B6',not:[],when:c=>c.hi('식상')||(c.ten('편재')>0&&c.hi('관성'))||[1,6].includes(c.house('Mars')),
        text:'같은 동작을 몇 년 하다 보면 손목이나 무릎이 먼저 닳습니다. 일하다 생긴 병이라고 말하려면 언제부터 어디가 아팠는지 당신이 적어 와야 합니다. 회사도 확인된 것만 책임질 수 있으니 확인되기 전까지의 치료비는 아픈 사람이 냅니다.'},
       // 요령은 회사에 남고 허리는 데리고 나간다
       {id:'B2',not:[],when:c=>(c.hi('관성')&&!c.strong)||c.house('Saturn')===1||c.asp('Sun','Saturn',[0]),
@@ -426,12 +431,14 @@
        text:'도움을 받으면 언젠가는 갚아야 합니다. 갚을 것이 있는 사람은 마음 편히 받고 갚을 것이 없는 사람은 받는 순간부터 빚을 셉니다. 그래서 갚을 것이 없는 사람은 도움을 덜 받는 쪽을 고르고 그만큼 늦게 갑니다.'},
       // 도움받은 사람은 반대를 못 한다
       {id:'G2',not:[],workNot:['backing'],when:c=>c.hi('인성')||c.asp('Jupiter','Saturn',HC),
+       textFor:c=>c.cause('gwiin')==='absent'?'어렵게 도움을 한 번 받아도 그다음부터는 도와준 사람 앞에서 말을 고릅니다. 도와준 일과 다른 얘기여도 반대하면 은혜를 모르는 말로 들립니다. 작은 도움이라도 받은 것은 받은 것입니다. 받은 도움의 값은 그렇게 당신이 하고 싶었던 말로 치릅니다.':null,
        text:'도와준 사람 앞에서는 반대하는 말이 은혜를 모르는 말로 들립니다. 그래서 도움을 받은 사람은 도와준 사람의 생각에 맞춰 말을 고릅니다. 받은 도움의 값은 그렇게 당신이 하고 싶었던 말로 치릅니다.'},
       // 끌어 준 사람과 함께 내려온다
       {id:'G6',not:['absent'],when:c=>c.has('관성')||c.house('Jupiter')===10,
        text:'끌어 준 윗사람이 다른 곳으로 가거나 밀려나면 그 사람 밑에 있던 사람도 같이 눈에 띕니다. 새로 온 사람은 전 사람이 아끼던 사람부터 멀리 둡니다. 도움을 받은 만큼 그 사람이 밀려날 때 같이 밀려납니다.'},
       // 떠나겠다는 날 도움의 값이 매겨진다
-      {id:'G4',not:['absent'],when:c=>c.asp('Jupiter','Moon',H)||c.house('Jupiter')===9||c.hi('인성'),
+      // 개인의 이직을 전제로 하므로 이력서 문단과 같은 이동 신호를 먼저 확인한다.
+      {id:'G4',not:['absent'],when:c=>c.moveSignal&&(c.asp('Jupiter','Moon',H)||c.house('Jupiter')===9||c.hi('인성')),
        text:'끌어 준 사람은 당신이 곁에 오래 남기를 바랍니다. 더 좋은 곳으로 옮기겠다고 하면 그동안 받은 도움부터 다시 셉니다. 도움의 값은 떠나겠다고 말하는 날 매겨집니다.'},
       // 좋은 사람은 좋은 사람을 소개한다
       {id:'G3',not:['present'],when:c=>true,
@@ -452,7 +459,8 @@
     const inHouse=n=>W?W.planets.filter(p=>p.house===n).length:0;
     const cause=id=>(out.domains.find(d=>d.id===id)||{}).cause;
     const relocationCost=!!(out.domains.find(d=>d.id==='money')||{}).relocationCost;
-    return {hi,lo,has,vis,ten,weak,strong,inter,sin,house,sign,el,asp,inHouse,cause,relocationCost,core:out.core&&out.core.cause,coreRule:out.core&&out.core.rule||'',male:!!(R.input&&R.input.male),origin:out.origin&&out.origin.key};
+    const moveSignal=sin('yeokma')||inter('충',1)||inter('충',2)||asp('Sun','Uranus',H)||asp('Moon','Uranus',H);
+    return {hi,lo,has,vis,ten,weak,strong,inter,sin,house,sign,el,asp,inHouse,cause,relocationCost,moveSignal,core:out.core&&out.core.cause,coreRule:out.core&&out.core.rule||'',male:!!(R.input&&R.input.male),origin:out.origin&&out.origin.key};
   }
   function hit(x,c,cause){
     return !x.not.includes(cause)&&!(x.workNot||[]).includes(c.cause('work'))&&!(x.coreNot||[]).includes(c.core)&&!(x.skip&&x.skip(c))&&!!x.when(c);
@@ -463,8 +471,8 @@
     out.domains.forEach(d=>{
       const pool=(POOL[d.id]||[]).filter(x=>hit(x,c,d.cause));
       d.poolIds=pool.map(x=>x.id);
-      // 지원을 받은 출발점은 뒤의 부양 장면에서도 보존한다. 문단 수와 선택 조건은 그대로 둔다.
-      const paragraphs=pool.map(x=>(x.originText&&x.originText[c.origin])||x.text);
+      // 선택된 장면 안에서만 앞의 지원·도움·생활 형편에 맞춰 문장을 잇는다.
+      const paragraphs=pool.map(x=>(x.textFor&&x.textFor(c))||(x.originText&&x.originText[c.origin])||x.text);
       if(d.id==='money'){
         const lead=d.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[d.cause]||[d.detail,d.rule];
         d.paragraphs=lead.concat(paragraphs,[COPY.stability]).filter(Boolean);

@@ -53,8 +53,9 @@ test('the approved money manuscript is kept word for word and every other money 
 test('each card follows its own order of paragraphs and closes on every fate line',()=>{
  for(const k of Object.keys(POOL))assert.equal(new Set(ids[k]).size,ids[k].length,k);
  assert.deepEqual(ids,{work:['W1','W2','W5','W7','W8','W9','W3','W6','W4'],money:['M3','M4','M5','learning','debt','effort','M1','M2','M6'],office:['O1','O4','O9','O2','O7','O5','O6','O3'],home:['L5','L9','L11','L4','L10','L3','L2','L8','L7','L1','L6'],family:['F2','F5','F3','F4','F1','F6'],body:['B3','B4','B1','B5','B7','B6','B2'],gwiin:['G1','G5','G7','G2','G6','G4','G3']});
- for(const {view} of ALL)for(const d of view.domains){
-  const pool=d.poolIds.map(id=>{const x=POOL[d.id].find(x=>x.id===id);return (x.originText&&x.originText[view.origin.key])||x.text;});
+ for(const {result,view} of ALL)for(const d of view.domains){
+  const c=ReadingPool.context(result,view);
+  const pool=d.poolIds.map(id=>{const x=POOL[d.id].find(x=>x.id===id);return (x.textFor&&x.textFor(c))||(x.originText&&x.originText[view.origin.key])||x.text;});
   assert.deepEqual(d.poolIds,ids[d.id].filter(id=>d.poolIds.includes(id)),d.id);
   assert.deepEqual(d.closing,d.fates,d.id);assert(d.closing.length>=1,d.id);
   if(d.id==='money'){
@@ -171,6 +172,100 @@ test('office pressure survives personal wealth and needs no prediction of a spec
  assert(!office.poolIds.includes('O5')&&!office.poolIds.includes('O6'));
  const pressured=read(2003,6,18,{h:1,mi:25,pk:'busan',male:false}).view.domains.find(d=>d.id==='office');
  for(const id of ['O9','O7','O5','O6'])assert(pressured.poolIds.includes(id),id);
+});
+
+test('leaving a helper requires the same movement evidence as the resume scene',()=>{
+ const support={levels:{인성:'strong'},causes:{gwiin:'present'}};
+ assert(!fake(support).gwiin.poolIds.includes('G4'));
+ const moves=[
+  {sinsal:[{key:'yeokma'}]},
+  {interactions:[{kind:'충',positions:[0,1]}]},
+  {interactions:[{kind:'충',positions:[2,3]}]},
+  ...['Sun','Moon'].flatMap(a=>[90,180].map(angle=>({planets:[],aspects:[{a,b:'Uranus',angle}]})))
+ ];
+ for(const move of moves){
+  const d=fake({...support,...move});
+  assert(d.work.poolIds.includes('W4'));assert(d.gwiin.poolIds.includes('G4'));
+  assert(!fake({...support,...move,causes:{gwiin:'absent'}}).gwiin.poolIds.includes('G4'));
+ }
+ for(const noMove of [{interactions:[{kind:'충',positions:[0,3]}]},...[0,60,120].map(angle=>({planets:[],aspects:[{a:'Sun',b:'Uranus',angle}]}))]){
+  const d=fake({...support,...noMove});
+  assert(!d.work.poolIds.includes('W4'));assert(!d.gwiin.poolIds.includes('G4'));
+ }
+ // 다른 문단과의 중복 때문에 이력서를 뺀 경우에도 귀인의 대가는 별개의 장면이다.
+ const separate=fake({...support,sinsal:[{key:'yeokma'}],causes:{gwiin:'present',work:'palace_clash'}});
+ assert(!separate.work.poolIds.includes('W4'));assert(separate.gwiin.poolIds.includes('G4'));
+ // 이동이 없는 실제 입력에서도 기존의 도움·의무 문단은 남긴다.
+ const example=read(2002,5,12,{h:13,mi:32,pk:'daejeon',male:false});
+ const d=Object.fromEntries(example.view.domains.map(x=>[x.id,x]));
+ assert(!ReadingPool.context(example.result,example.view).moveSignal);
+ assert(!d.work.poolIds.includes('W4'));assert(!d.gwiin.poolIds.includes('G4'));
+ for(const id of ['G1','G7','G2','G6'])assert(d.gwiin.poolIds.includes(id),id);
+});
+
+test('repetitive work needs activity or workload evidence beyond a wealth god',()=>{
+ const has=opts=>fake(opts).body.poolIds.includes('B6');
+ assert(!has({ten:{편재:1}}));
+ assert(!has({ten:{편재:1},levels:{관성:'normal'}}));
+ assert(has({ten:{편재:1},levels:{관성:'strong'}}));
+ assert(!has({levels:{관성:'strong',재성:'strong'}}));
+ assert(has({levels:{식상:'strong'}}));
+ for(const house of [1,6])assert(has({planets:[['Mars',house]]}));
+ assert(!has({planets:[['Mars',10]]}));
+ const example=read(1991,7,10,{h:23,mi:37,pk:'busan',male:true});
+ const body=example.view.domains.find(x=>x.id==='body');
+ assert(!body.poolIds.includes('B6'));
+ for(const id of ['B3','B4','B7'])assert(body.poolIds.includes(id),id);
+});
+
+test('learning pressure preserves family support and the approved manuscript for other origins',()=>{
+ const support={visible:{인성:1}};
+ const supported=fake({...support,origin:'shown'}).money;
+ assert(supported.poolIds.includes('learning'));
+ assert(supported.paragraphs.some(t=>t.includes('집에서 생활을 받쳐 준 동안 배운 것')&&t.includes('그다음은 당신이 증명할 몫')));
+ assert(!supported.paragraphs.includes(COPY.learning));
+ for(const origin of ['hidden','absent',null]){
+  const other=fake({...support,origin}).money;
+  assert.deepEqual(other.poolIds,supported.poolIds);
+  assert(other.paragraphs.includes(COPY.learning));
+  assert.equal(other.paragraphs.length,supported.paragraphs.length);
+ }
+ assert(!fake({origin:'shown'}).money.poolIds.includes('learning'));
+ for(const money of ['paper','interrupted'])assert(!fake({...support,origin:'shown',causes:{money}}).money.poolIds.includes('learning'));
+ const example=read(1956,1,4,{h:10,mi:33,pk:'gwangju',male:true}).view;
+ assert.match(example.origin.rule,/생활을 받쳐 주고 배울 길/);
+ assert.equal(example.origin.key,'shown');
+ assert(example.domains.find(d=>d.id==='money').paragraphs.some(t=>t.includes('집에서 생활을 받쳐 준 동안 배운 것')));
+});
+
+test('occasional help connects to an absent-helper opening without inventing a patron',()=>{
+ const support={levels:{인성:'strong'}};
+ const absent=fake({...support,causes:{gwiin:'absent'}}).gwiin;
+ assert(absent.poolIds.includes('G2'));
+ assert(absent.paragraphs.some(t=>t.startsWith('어렵게 도움을 한 번 받아도')&&t.includes('작은 도움이라도 받은 것은 받은 것입니다')));
+ assert(!absent.poolIds.some(id=>['G1','G4','G6'].includes(id)));
+ const present=fake({...support,causes:{gwiin:'present'}}).gwiin;
+ assert(present.paragraphs.includes(POOL.gwiin.find(x=>x.id==='G2').text));
+ assert(!fake({causes:{gwiin:'absent'}}).gwiin.poolIds.includes('G2'));
+ assert(!fake({...support,causes:{gwiin:'absent',work:'backing'}}).gwiin.poolIds.includes('G2'));
+ const example=read(1982,3,29,{h:22,mi:43,pk:'daejeon',male:true}).view.domains.find(d=>d.id==='gwiin');
+ assert.equal(example.cause,'absent');
+ assert(example.paragraphs.some(t=>t.startsWith('어렵게 도움을 한 번 받아도')));
+});
+
+test('personal cash constraints explain staying through cuts rather than predict company finances',()=>{
+ const original=POOL.work.find(x=>x.id==='W6').text;
+ const short=fake({levels:{재성:'weak'}}).work;
+ assert(short.poolIds.includes('W6'));
+ assert(short.paragraphs.some(t=>t.includes('다른 일을 구하는 동안 쓸 돈이 없어')&&t.includes('값을 다시 올릴 의무는 없습니다')));
+ assert(!short.paragraphs.includes(original));
+ const stars={planets:[],aspects:[{a:'Jupiter',b:'Saturn',angle:90}]};
+ const funded=fake({...stars,levels:{재성:'strong'}}).work;
+ assert(funded.poolIds.includes('W6'));assert(funded.paragraphs.includes(original));
+ assert(!funded.paragraphs.some(t=>t.includes('다른 일을 구하는 동안 쓸 돈이 없어')));
+ assert(!fake({levels:{재성:'weak',관성:'absent'}}).work.poolIds.includes('W6'));
+ const example=read(1981,12,12,{h:17,mi:39,pk:'seoul',male:true}).view.domains.find(d=>d.id==='work');
+ assert(example.paragraphs.some(t=>t.includes('다른 일을 구하는 동안 쓸 돈이 없어')));
 });
 
 test('family obligations acknowledge earlier support without adding or suppressing scenes',()=>{
