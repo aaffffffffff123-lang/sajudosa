@@ -271,7 +271,10 @@
        text:'돈이 있는 사람은 잠든 동안에도 그 돈이 이자를 벌어 옵니다. 몸밖에 없는 사람은 몸을 쉬는 날에는 버는 것도 쉽니다. 같은 하루를 보내도 불어나는 쪽은 처음부터 정해져 있습니다.'},
       // 돈이 모인 곳으로 더 모인다
       {id:'M2',not:[],workNot:['weak_wealth'],when:c=>(c.hi('관성')&&!c.hi('재성'))||c.house('Saturn')===2,
-       text:'큰돈이 한곳에 모여야 공장도 짓고 사람도 씁니다. 그래서 돈이 많은 곳으로 돈이 더 모이는 것이 세상이 돌아가는 이치입니다. 작은 돈을 가진 사람은 그 공장에서 일하는 쪽에 섭니다.'}
+       text:'큰돈이 한곳에 모여야 공장도 짓고 사람도 씁니다. 그래서 돈이 많은 곳으로 돈이 더 모이는 것이 세상이 돌아가는 이치입니다. 작은 돈을 가진 사람은 그 공장에서 일하는 쪽에 섭니다.'},
+      // 이사비 판정과 같은 조건: 옮겨 번 돈보다 먼저 치르는 생활의 값
+      {id:'M6',not:[],when:c=>c.relocationCost,
+       text:'다른 지역의 일을 택하면 새로 번 돈을 받기 전에 이사비와 새집 보증금부터 마련해야 합니다. 전에 살던 집의 보증금이 돌아오기 전이라도 새집 계약 날짜는 기다려 주지 않습니다. 더 벌 기회를 따라간 것이니 그곳에서 일할 준비에 드는 값도 당신이 마련하는 법입니다.'}
     ],
     // 정하는 사람과 감당하는 사람은 따로 있다
     office:[
@@ -300,14 +303,9 @@
       {id:'O3',not:[],when:c=>c.lo('관성')||c.weak||[11,12].includes(c.house('Saturn')),
        text:'나라의 큰일을 정하는 사람은 따로 있습니다. 당신이 정할 수 있는 것은 몇 년에 한 번 이름 하나를 고르는 일입니다. 고른 뒤의 일은 뽑힌 사람이 정하고 당신은 다음 선거 날까지 그 결정에 맞춰 삽니다.'}
     ],
-    // 마음은 형편과 조건을 이기지 못한다
+    // 현재 관계 → 함께 살기 → 떠나기 → 새 인연. 다음 단계는 선택할 경우의 비용으로 잇는다.
+    // 첫머리의 관계를 갑자기 '지금 혼자'로 바꾸지 않도록 소개·만남 문단은 마지막에 둔다.
     home:[
-      // 소개는 집안과 직장부터
-      {id:'L1',not:[],when:c=>c.asp('Venus','Saturn',HC)||c.house('Saturn')===7||c.lo('재성')||c.lo('관성'),
-       text:'사람을 소개할 때는 집안과 직장을 먼저 말합니다. 착하다는 말은 그 뒤에 붙습니다. 앞의 말이 모자라면 뒤의 말은 꺼낼 기회도 오지 않습니다.'},
-      // 만날 시간이 없으면 눈 높은 사람
-      {id:'L6',not:[],when:c=>(c.male?c.lo('재성'):c.lo('관성'))||[6,12].includes(c.house('Venus'))||c.asp('Venus','Saturn',H),
-       text:'새로 사람을 만나려면 사람을 만날 곳에 나갈 시간과 돈이 있어야 합니다. 퇴근하면 씻고 잘 시간이고 쉬는 날은 밀린 집안일로 갑니다. 그렇게 몇 년이 지나면 사람들은 당신이 눈이 높아서 혼자라고 말합니다.'},
       // 덜 좋아하는 쪽이 정한다
       {id:'L5',not:[],when:c=>c.el('Venus')==='water'||c.asp('Venus','Neptune',HC)||(c.hi('인성')&&c.lo('비겁')),
        text:'먼저 마음을 보인 쪽이 더 많이 맞춥니다. 덜 좋아하는 쪽이 정하고 더 좋아하는 쪽이 따르는 것이 사람 사이의 순서입니다. 당신이 맞춰 준 만큼 상대는 당신을 원래 맞춰 주는 사람으로 압니다.'},
@@ -323,18 +321,24 @@
       // 둘의 사정이 남에게는 혼자 참석한 모습으로 남는다
       {id:'L10',not:[],when:c=>['생활 시간이 먼저','생활을 다시 짜는'].includes(c.cause('home')),
        text:'결혼식이나 가족 모임 날짜는 두 사람의 근무표를 기다리지 않습니다. 혼자 간 자리에서 상대가 왜 안 왔느냐는 질문은 당신이 받습니다. 같은 날 쉬는 사람은 참석만 하면 되는 자리에서 당신은 관계가 괜찮다는 설명부터 합니다. 못 온 사정을 설명해도 사람들은 혼자 온 모습으로 사이를 짐작합니다.'},
-      // 식은 집안 체면
-      {id:'L2',not:['처리할 일도'],when:c=>c.house('Venus')===10||c.ten('편재')>0||c.asp('Venus','Jupiter',H),
-       text:'결혼은 두 사람이 하지만 식은 두 집안이 치릅니다. 하객 수와 식장은 집안의 체면이라 줄이자는 말을 먼저 꺼내기 어렵습니다. 먼저 줄이자고 한 쪽은 그만큼 형편이 드러난 집이 됩니다.'},
       // 집값 때문에 끝나도 사람 탓
       {id:'L3',not:['생활을 합치는 날짜'],skip:c=>c.cause('family')==='young',when:c=>c.inter('충',2)||[4,7].includes(c.house('Saturn'))||c.asp('Moon','Saturn',H),
        text:'같이 살 집이 정해져야 결혼 날짜도 정해집니다. 집값은 두 사람이 모으는 속도를 기다려 주지 않습니다. 날짜를 미루다 사이가 끝나면 사람들은 둘 중 누가 먼저 지쳤는지를 묻습니다.'},
+      // 식은 집안 체면
+      {id:'L2',not:['처리할 일도'],when:c=>c.house('Venus')===10||c.ten('편재')>0||c.asp('Venus','Jupiter',H),
+       text:'결혼은 두 사람이 하지만 식은 두 집안이 치릅니다. 하객 수와 식장은 집안의 체면이라 줄이자는 말을 먼저 꺼내기 어렵습니다. 먼저 줄이자고 한 쪽은 그만큼 형편이 드러난 집이 됩니다.'},
       // 같이 살면 덜 버는 쪽이 멀리 다닌다
       {id:'L8',not:[],when:c=>c.lo('재성')||c.house('Venus')===4||c.asp('Moon','Mars',H)||c.inter('충',2),
        text:'같이 살 집을 구하면 둘 중 한 사람의 출퇴근이 길어집니다. 집은 대개 더 많이 버는 사람의 직장 가까이로 정해집니다. 길어진 출퇴근 시간만큼 집안일이 그 사람에게서 줄어들지는 않습니다.'},
       // 헤어지는 데도 돈이 든다
       {id:'L7',not:['생활을 합치는 날짜'],when:c=>c.inter('충',2)||c.inter('형',2)||c.asp('Venus','Uranus',H)||c.lo('재성'),
-       text:'헤어지자는 말도 꺼내는 데 돈이 듭니다. 같이 낸 보증금이 있으면 나갈 집부터 구해야 하고 같이 든 적금은 깰 날을 정해야 합니다. 그래서 형편이 빠듯한 사람은 마음이 끝난 뒤에도 계약이 끝나는 날까지 같은 집에 삽니다.'}
+       text:'관계를 끝내려 해도 헤어지자는 말부터 돈에 걸립니다. 같이 낸 보증금이 있으면 나갈 집부터 구해야 하고 같이 든 적금은 깰 날을 정해야 합니다. 그래서 형편이 빠듯한 사람은 마음이 끝난 뒤에도 계약이 끝나는 날까지 같은 집에 삽니다.'},
+      // 다른 인연을 찾으려 해도 소개는 집안과 직장부터
+      {id:'L1',not:[],when:c=>c.asp('Venus','Saturn',HC)||c.house('Saturn')===7||c.lo('재성')||c.lo('관성'),
+       text:'다른 인연을 소개받으려 해도 집안과 직장이 먼저 거론됩니다. 착하다는 말은 그 뒤에 붙습니다. 앞의 말이 모자라면 뒤의 말은 꺼낼 기회도 오지 않습니다.'},
+      // 새로 만날 틈이 없는 경우의 평가까지 잇는다
+      {id:'L6',not:[],when:c=>(c.male?c.lo('재성'):c.lo('관성'))||[6,12].includes(c.house('Venus'))||c.asp('Venus','Saturn',H),
+       text:'다른 사람을 만나려 해도 나갈 시간과 돈부터 있어야 합니다. 퇴근하면 씻고 잘 시간이고 쉬는 날은 밀린 집안일로 갑니다. 그렇게 몇 년이 지나면 사람들은 당신이 눈이 높아서 혼자라고 말합니다.'}
     ],
     // 버틴 세월은 물려지지 않고, 짐은 물려진다
     family:[
@@ -419,7 +423,8 @@
     const asp=(x,y,angles)=>!!W&&(W.aspects||[]).some(q=>((q.a===x&&q.b===y)||(q.a===y&&q.b===x))&&angles.includes(q.angle));
     const inHouse=n=>W?W.planets.filter(p=>p.house===n).length:0;
     const cause=id=>(out.domains.find(d=>d.id===id)||{}).cause;
-    return {hi,lo,has,vis,ten,weak,strong,inter,sin,house,sign,el,asp,inHouse,cause,core:out.core&&out.core.cause,coreRule:out.core&&out.core.rule||'',male:!!(R.input&&R.input.male),origin:out.origin&&out.origin.key};
+    const relocationCost=!!(out.domains.find(d=>d.id==='money')||{}).relocationCost;
+    return {hi,lo,has,vis,ten,weak,strong,inter,sin,house,sign,el,asp,inHouse,cause,relocationCost,core:out.core&&out.core.cause,coreRule:out.core&&out.core.rule||'',male:!!(R.input&&R.input.male),origin:out.origin&&out.origin.key};
   }
   function hit(x,c,cause){
     return !x.not.includes(cause)&&!(x.workNot||[]).includes(c.cause('work'))&&!(x.coreNot||[]).includes(c.core)&&!(x.skip&&x.skip(c))&&!!x.when(c);

@@ -52,7 +52,7 @@ test('the approved money manuscript is kept word for word and every other money 
 
 test('each card follows its own order of paragraphs and closes on every fate line',()=>{
  for(const k of Object.keys(POOL))assert.equal(new Set(ids[k]).size,ids[k].length,k);
- assert.deepEqual(ids,{work:['W1','W2','W5','W7','W8','W9','W3','W6','W4'],money:['M3','M4','M5','learning','debt','effort','M1','M2'],office:['O1','O4','O9','O2','O7','O5','O6','O3'],home:['L1','L6','L5','L9','L11','L4','L10','L2','L3','L8','L7'],family:['F2','F5','F3','F4','F1','F6'],body:['B3','B4','B1','B5','B7','B6','B2'],gwiin:['G1','G5','G7','G2','G6','G4','G3']});
+ assert.deepEqual(ids,{work:['W1','W2','W5','W7','W8','W9','W3','W6','W4'],money:['M3','M4','M5','learning','debt','effort','M1','M2','M6'],office:['O1','O4','O9','O2','O7','O5','O6','O3'],home:['L5','L9','L11','L4','L10','L3','L2','L8','L7','L1','L6'],family:['F2','F5','F3','F4','F1','F6'],body:['B3','B4','B1','B5','B7','B6','B2'],gwiin:['G1','G5','G7','G2','G6','G4','G3']});
  for(const {view} of ALL)for(const d of view.domains){
   const pool=d.poolIds.map(id=>POOL[d.id].find(x=>x.id===id).text);
   assert.deepEqual(d.poolIds,ids[d.id].filter(id=>d.poolIds.includes(id)),d.id);
@@ -162,6 +162,43 @@ test('the helper card never mixes paragraphs for people with and without a helpe
   if(g.cause==='absent'){assert(!g.poolIds.some(id=>withHelper.includes(id)),g.poolIds.join());assert(g.poolIds.includes('G3'));}
  }
  const seen=new Set(ALL.map(({view})=>view.domains.find(d=>d.id==='gwiin').cause));assert(seen.has('present')&&seen.has('absent'));
+});
+
+test('relocation costs get a scene exactly when the existing relocation fate is selected',()=>{
+ let withMove=0,withoutMove=0;
+ const cases=[...ALL,read(1984,8,16,{unknown:true,pk:'daejeon',male:false}),read(1984,8,16,{unknown:true,pk:'seoul',male:false})];
+ for(const {view} of cases){
+  const m=view.domains.find(d=>d.id==='money');
+  const selected=m.closing.includes(core.V5.yeokma);
+  assert.equal(m.relocationCost,selected);
+  assert.equal(m.poolIds.includes('M6'),selected);
+  assert.equal(m.paragraphs.some(t=>t.includes('새집 보증금')),selected);
+  if(selected)withMove++;else withoutMove++;
+ }
+ assert(withMove>0&&withoutMove>0);
+ // 역마만으로 지역 조건을 건너뛰어 문단을 붙이지 않는다.
+ assert(!fake({sinsal:[{key:'yeokma'}]}).money.poolIds.includes('M6'));
+});
+
+test('relationship options progress from the present to a shared home, leaving, and another meeting',()=>{
+ const long=read(1947,4,7,{h:9,mi:59,male:true}).view.domains.find(d=>d.id==='home');
+ for(const id of ['L5','L10','L3','L2','L8','L7','L1','L6'])assert(long.poolIds.includes(id),id);
+ const stages=[['L5','L9','L11','L4','L10'],['L3','L2','L8'],['L7'],['L1','L6']];
+ for(const {view} of [...ALL,{view:{domains:[long]}}]){
+  const d=view.domains.find(d=>d.id==='home'),o=OPENING.home;
+  assert.equal(d.paragraphs[0],o.scene[d.cause]);
+  assert.equal(d.paragraphs[1],o.blow[d.ruleKey]);
+  let last=-1;
+  for(const id of d.poolIds){const stage=stages.findIndex(s=>s.includes(id));assert(stage>=last,id);last=stage;}
+  if(d.poolIds.includes('L7'))assert(d.paragraphs.some(t=>t.startsWith('관계를 끝내려 해도')));
+  if(d.poolIds.includes('L1'))assert(d.paragraphs.some(t=>t.startsWith('다른 인연을 소개받으려 해도')));
+  if(d.poolIds.includes('L6'))assert(d.paragraphs.some(t=>t.startsWith('다른 사람을 만나려 해도')));
+ }
+ // 일부 조건만 맞아도 만남/이별을 확정된 현재 상태로 선언하지 않는다.
+ const onlyMeeting=fake({planets:[['Venus',6,1]],causes:{home:'생활 시간이 먼저'}}).home;
+ assert(onlyMeeting.poolIds.includes('L6'));assert(!onlyMeeting.poolIds.includes('L7'));
+ const onlyLeaving=fake({aspects:[{a:'Venus',b:'Uranus',angle:90}],planets:[],causes:{home:'애매하게'}}).home;
+ assert(onlyLeaving.poolIds.includes('L7'));assert(!onlyLeaving.poolIds.includes('L6'));
 });
 
 test('follow-on scenes respect the selected situation even without houses or extra matches',()=>{

@@ -1234,7 +1234,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="reading-pool.js?v=20261107-scenes"></script>
+<script src="reading-pool.js?v=20261107-links"></script>
 <script src="western.js?v=20261107-pool"></script>
 <script>
 /* =====================================================================
@@ -4312,8 +4312,9 @@ function v5Reading(R,now){
    fates:[work.fate],note:null,rule:work.rule
  });
  { const key=v5MoneyKey(r),m=V5.money[key],fates=[m.fate];
-   if(v5Provincial(inp)&&(r.sinsal||[]).some(x=>x.key==='yeokma'))fates.push(V5.yeokma);
-   doms.push({id:'money',title:'돈',cause:key,head:m.head,detail:m.detail,fates,note:{label:'돈이 자꾸 빠져나가는 곳',value:m.leak},rule:m.rule,basis:fate.wealth&&fate.wealth.fact}); }
+   const relocationCost=v5Provincial(inp)&&(r.sinsal||[]).some(x=>x.key==='yeokma');
+   if(relocationCost)fates.push(V5.yeokma);
+   doms.push({id:'money',title:'돈',cause:key,head:m.head,detail:m.detail,fates,relocationCost,note:{label:'돈이 자꾸 빠져나가는 곳',value:m.leak},rule:m.rule,basis:fate.wealth&&fate.wealth.fact}); }
  { const o=obs('body'),b0=(o.body||[])[0]||'',hit=V5.body.find(x=>b0.indexOf(x[0])>=0);
    const key=hit?hit[0]:'fallback',rk=['집에 와서도','내일 확인해도'].includes(key)?'checking':['쉬는 간격 없이','빈 시간이 생기면'].includes(key)?'self':key==='활동이 적었던'?'night':st==='weak'?'weak':'strong';
    doms.push({id:'body',title:'몸',cause:key,head:o.head,detail:b0,fates:[hit?hit[1]:V5.bodyFallback],rule:V5.bodyRule[rk],ruleKey:rk}); }
@@ -4876,6 +4877,7 @@ window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wall
 </script>
 </body>
 </html>
+
 
 
 
