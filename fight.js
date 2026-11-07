@@ -1810,8 +1810,8 @@ const AUDIO=(()=>{
  function say(name,k=1,raw){
   if(!ready())return;
   if(!raw&&!baking&&(combatPlayerVoiceBusy()||uncannyVoiceBusy()))return;
-  // All visible, complete reptile heads use their own voice, including the
-  // unmasking route. Brief eye flashes alone do not change the voice.
+  // The base voice changes only after a severed head regrows as a reptile.
+  // Exposing scales beneath the human face keeps the human base voice.
   if(!raw&&!baking&&reactionNames.includes(name)&&deityHasReptileVoice(G.E))name='reptile';
   if(!raw&&jawGoneV&&!/^(gurgle|reptile)$/.test(name)){name='gurgle';k=Math.min(k,1)*.9;}
   if(name==='gurgle'){
@@ -9910,7 +9910,7 @@ function firstStrikeLine(){
 /* Optional combat accents: successful hits only, never a playlist or a queued
  * reward. A round has at most two player lines and two non-human leaks. */
 const COMBAT_LINES={hand:'탈운명 펀치!',knife:'탈운명 칼빵!',gun:'탈운명 샷!'};
-function deityHasReptileVoice(E){return !!E&&!E.headGone&&!E.headDestroyed&&(E.headKind==='rep'||E.unmasked===true||E.repFull===true);}
+function deityHasReptileVoice(E){return !!E&&!E.headGone&&!E.headDestroyed&&E.headKind==='rep';}
 const COMBAT_VOICE={n:0,last:-99,used:new Set(),playerUntil:0,uncannyN:0,uncannyForms:new Set(),uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
 function combatVoiceReset(){
  Object.assign(COMBAT_VOICE,{n:0,last:-99,playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99});

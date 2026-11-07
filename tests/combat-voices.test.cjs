@@ -48,7 +48,7 @@ test('ordinary early cries stay human; double-throat cries remain sparse even wi
  assert(h.uncannyVoiceAllowed('scream'));h.uncannyVoiceStarted();assert(h.uncannyVoiceBusy());
  for(let i=0;i<150;i++){h.G.time+=.1;assert(!h.uncannyVoiceAllowed('scream'))}
  h.G.time+=2;assert(!h.uncannyVoiceAllowed('yelp'),'human cannot consume the reptile opportunity');
- h.G.E.repFull=true;assert(h.uncannyVoiceAllowed('reptile'));h.uncannyVoiceStarted();
+ h.G.E.headKind='rep';assert(h.uncannyVoiceAllowed('reptile'));h.uncannyVoiceStarted();
  h.G.time+=30;assert(!h.uncannyVoiceAllowed('scream'));assert.equal(h.COMBAT_VOICE.uncannyN,2);
  h.combatVoiceReset();assert(!h.uncannyVoiceBusy());assert(h.uncannyVoiceAllowed('scream'));
 });
@@ -83,23 +83,25 @@ test('all deployed optional audio is local and the cry index fits the actual PCM
  }
 });
 
-test('all complete reptile reveal routes change the voice; a blink or absent head does not',()=>{
+test('only a regrown reptile head changes the base voice; exposing the human face does not',()=>{
  const h=setup();
- for(const e of [{headKind:'rep'},{unmasked:true},{repFull:true}])assert(h.deityHasReptileVoice(e));
- for(const e of [{headKind:'human'},{repFlash:1},{headKind:'rep',headGone:true},{repFull:true,headDestroyed:true}])assert(!h.deityHasReptileVoice(e));
+ assert(h.deityHasReptileVoice({headKind:'rep'}));
+ for(const e of [{headKind:'human'},{headKind:'human',unmasked:true},{headKind:'human',repFull:true},{unmasked:true,repFull:true},{repFlash:1},{headKind:'rep',headGone:true},{headKind:'rep',headDestroyed:true}])assert(!h.deityHasReptileVoice(e));
 });
 
-test('the real audio entry point routes unmasking and lets at least 420 ms of the reptile cry survive rapid hits',()=>{
- const h=setup(),played=[],ctx={currentTime:0};h.G.E={unmasked:true};
+test('unmasking keeps human cries; regrowth switches to reptile cries with 420 ms of protection',()=>{
+ const h=setup(),played=[],ctx={currentTime:0};h.G.E={headKind:'rep'};
  const scope={G:h.G,ctx,ready:()=>true,baking:false,combatPlayerVoiceBusy:()=>false,uncannyVoiceBusy:()=>false,
   reactionNames:['grunt','oof','yelp','scream','groan','gasp','cough','reptile'],deityHasReptileVoice:h.deityHasReptileVoice,
   jawGoneV:false,lastV:-99,SFX:{},uncannyVoiceAllowed:()=>false,playReaction:(name,k)=>{played.push(name);return true}};
  const say=vm.runInNewContext(slice(' function say(name,k=1,raw){','  // 비웃음은 첫 대화')+'}\nsay',scope);
  for(const at of [0,.105,.21,.315,.42,.525,.63,.735,.84]){ctx.currentTime=at;say('yelp',1)}
  assert.deepEqual(played,['reptile','reptile','reptile']);
- h.G.E={headKind:'human'};ctx.currentTime=1;say('yelp',1);assert.equal(played.at(-1),'yelp');
+ for(const exposed of [{headKind:'human'},{headKind:'human',unmasked:true},{headKind:'human',repFull:true}]){
+  h.G.E=exposed;ctx.currentTime+=1;say('yelp',1);assert.equal(played.at(-1),'yelp');
+ }
  for(const form of ['human','reptile']){
-  h.G.E=form==='reptile'?{repFull:true}:{};scope.SFX['v:uncanny-'+form]=[{}];scope.uncannyVoiceAllowed=()=>true;scope.uncannyVoiceStarted=()=>{};ctx.currentTime+=2;say('scream',1);
+  h.G.E=form==='reptile'?{headKind:'rep'}:{headKind:'human',unmasked:true,repFull:true};scope.SFX['v:uncanny-'+form]=[{}];scope.uncannyVoiceAllowed=()=>true;scope.uncannyVoiceStarted=()=>{};ctx.currentTime+=2;say('scream',1);
   assert.equal(played.at(-1),'uncanny-'+form);
  }
 });
