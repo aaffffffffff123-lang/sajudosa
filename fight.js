@@ -2646,11 +2646,11 @@ const LINES={
  /* 추종자들은 학벌·집안·직장을 운세로 재단한다.
   * who는 팔을 붙잡는 0·1번과 같다. 같은 얼굴·보증서·목소리가 이어진다. */
  whisper:[
-  {aside:'고졸인가?',say:'',mark:'noStudy',seen:'사주에 공부 기운이 없잖아',who:1},
-  {aside:'가정교육을 안 받았나?',say:'',mark:'noStudy',seen:'부모복 없는 사주라 보고 배운 게 없지',who:1},
-  {aside:'좆소 다니나?',say:'',mark:'noOfficer',seen:'직장복이 없는데 좋은 데를 다녀봤겠어?',who:1},
+  {aside:'고졸인가?',say:'사주에 공부 기운이 없잖아',mark:'noStudy',who:1},
+  {aside:'가정교육을 안 받았나?',say:'부모복 없는 사주라 보고 배운 게 없지',mark:'noStudy',who:1},
+  {aside:'좆소 다니나?',say:'직장복이 없는데 좋은 데를 다녀봤겠어?',mark:'noOfficer',who:1},
   {aside:'저런 것까지 가르쳐야 돼?',say:'가난하고 못 배운 애들은 저런 데서 티가 확 난다니까',who:1},
-  {aside:'딱 봐도 회사에서도 폐급이네.',say:'',mark:'noOfficer',seen:'평생 말단일 팔자잖아.',who:1}
+  {aside:'딱 봐도 회사에서도 폐급이네.',say:'평생 말단일 팔자잖아.',mark:'noOfficer',who:1}
  ],
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
@@ -2679,7 +2679,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say+(w.seen||'')).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -3839,9 +3839,11 @@ const SUBMISSION=(()=>{
   if(STARE.exchange)return;
   if(!crowd||!crowd.visible)return;
   const marks=lastResult?.paper?.marks||{};
-  if(STARE.used.size===LINES.whisper.length)STARE.used.clear();
-  const pool=LINES.whisper.filter(w=>!STARE.used.has(w));
-  const pair=pick(pool.concat(pool.filter(w=>w.mark&&marks[w.mark])));
+  const eligible=LINES.whisper.filter(w=>!w.mark||marks[w.mark]);
+  if(!eligible.length)return;
+  if(eligible.every(w=>STARE.used.has(w)))STARE.used.clear();
+  const pool=eligible.filter(w=>!STARE.used.has(w));
+  const pair=pick(pool.concat(pool.filter(w=>w.mark)));
   const side=innerWidth<innerHeight?1:(Math.random()<.5?-1:1),head=V3();
   let aside=null,best=Infinity;
   forPlaces(v=>{
@@ -3851,7 +3853,7 @@ const SUBMISSION=(()=>{
    const score=Math.hypot(v.cx-CAM.pos.x,v.z-CAM.pos.z)+Math.abs(head.x)*.2;
    if(score<best){aside=v;best=score;}
   });
-  STARE.exchange={pair,side,aside,say:pair.mark&&marks[pair.mark]?pair.seen:pair.say};
+  STARE.exchange={pair,side,aside,say:pair.say};
   if(aside){aside.goal=1;aside.noticeAt=G.time;CROWD.witness(aside);}
  }
  function startWhispers(){
