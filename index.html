@@ -435,9 +435,13 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .core #core-body .rule{margin:0}
 
 /* The back sheet sits outside document flow. The scroll boundary stays at the last line. */
-#edge-hint{display:grid;place-items:center;min-height:38px;margin:14px auto 0;visibility:hidden}
+#edge-hint{position:relative;display:grid;place-items:center;min-height:76px;margin:32px auto 0;padding-bottom:12px;visibility:hidden}
 #edge-hint.shown{visibility:visible}
-#edge-hint .choice-cue{margin:0}
+#edge-hint .edge-enter{display:grid;place-items:center;width:72px;height:60px;padding:0;border:0;border-radius:24px;background:transparent;color:var(--red-d);cursor:pointer;touch-action:manipulation}
+#edge-hint .edge-enter:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+#edge-hint .edge-enter:active{background:rgba(90,54,29,.08)}
+#edge-hint .choice-cue{width:42px;height:42px;margin:0;animation:edge-cue-pulse 2s ease-in-out infinite}
+@keyframes edge-cue-pulse{0%,65%,100%{transform:translateY(0);opacity:.9}30%{transform:translateY(5px);opacity:1}}
 #result-screen.edge-lifted{transform:translateY(calc(0px - var(--edge-lift,0px)))}
 #result-screen.edge-lifted,.edge-sheet{transition:transform .19s cubic-bezier(.22,.76,.34,1)}
 html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none}
@@ -446,6 +450,8 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
  background:repeating-linear-gradient(0deg,transparent 0 4px,#a6935910 4px 5px),linear-gradient(#b8b99a,#e1dfbf 9px,#eeebd2 22px,#e8e4c9);
  color:#3d4232;text-align:center}
 .edge-sheet::before{content:"";position:absolute;inset:2px 0 auto;height:1px;background:#fcf8de}
+.edge-sheet.waiting{transform:translateY(calc(100% - 12px - var(--edge-lift,0px)))}
+.edge-sheet.waiting .edge-stage{visibility:hidden}
 .edge-sheet.departing{opacity:0;transition:opacity .22s ease-out}
 .edge-stage{position:relative;margin:5px auto 0;width:104px;height:65px}
 .edge-actor{position:absolute;left:26px;bottom:0;width:52px;height:54px;transform-origin:50% 88%}
@@ -469,6 +475,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 @media(prefers-reduced-motion:reduce){
  .edge-sheet,.edge-sheet.departing,#result-screen.edge-lifted{transition:none}
  .edge-sheet.busy .edge-actor,.edge-sheet.busy .edge-star,.edge-sheet.busy .edge-dosa{animation:none}
+ #edge-hint .choice-cue{animation:none;opacity:1}
 }
 .choice-cue{display:block;width:30px;height:30px;margin:16px auto 0;color:var(--red-d);pointer-events:none;animation:choice-cue-pulse 1.6s ease-in-out infinite;transform-origin:center}
 @keyframes choice-cue-pulse{0%,58%,100%{transform:translateY(0) scale(1);opacity:.65}18%{transform:translateY(4px) scale(1.15);opacity:1}32%{transform:translateY(1px) scale(1.02);opacity:.8}44%{transform:translateY(3px) scale(1.1);opacity:1}}
@@ -965,9 +972,8 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   <p class="foot-note" id="foot-note"></p>
   <p class="last-line" id="last-line"></p>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
-  <div id="edge-hint"><svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div id="edge-hint"><button type="button" id="fate-go" class="edge-enter" aria-label="다음으로" disabled><svg class="choice-cue" viewBox="0 0 30 30" aria-hidden="true" focusable="false"><path d="M15 4v20m-8-8 8 8 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
-  <button type="button" id="fate-go" class="sr-only">다음으로</button>
  </div>
 </main>
 <div class="edge-sheet" id="edge-sheet" hidden>
@@ -4505,7 +4511,7 @@ function renderResult(R){
  $('verdict').textContent=v.verdict;
  $('fixed-note').textContent=v.fixedNote;
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
- R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks};
+ R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,westernIds:v.domains.flatMap(d=>d.westernAddedIds||[])};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  $('foot-note').textContent=v.footNote;
  $('last-line').innerHTML=v.lastLine.split('\n').map(t=>'<span class="last-sentence">'+esc(t).replace(/(운을 .+)$/,'<span class="last-predicate">$1</span>')+'</span>').join('');
@@ -4609,7 +4615,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261107-encounter-murmur';
+  const v='?v=20261107-entry-voices-pistol';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
@@ -4632,8 +4638,10 @@ function atEdge(){
 function edgeHint(){
  const busy=FATE.phase==='loading',armed=FATE.phase==='armed',departing=FATE.phase==='pulling';
  $('edge-hint').classList.toggle('shown',armed);
+ $('fate-go').disabled=!armed;
  const sheet=$('edge-sheet');
  sheet.hidden=!armed&&!busy&&!departing;
+ sheet.classList.toggle('waiting',armed);
  sheet.classList.toggle('busy',busy||departing);sheet.classList.toggle('departing',departing);
  const label=busy||departing?'들어가는 중…':'';
  if($('edge-label').textContent!==label)$('edge-label').textContent=label;
@@ -4854,6 +4862,7 @@ window.SAJU={computeChart,makeReading,buildResult,lunarToSolar,solarToLunar,wall
 </script>
 </body>
 </html>
+
 
 
 
