@@ -130,8 +130,7 @@ const FIGHT_CSS = `
 #fight .defeat-total{margin:0;color:#e6dcc5;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums;text-shadow:0 1px 5px #000}
 #fight #defeatCount{color:#bcae8e;font-size:10px;line-height:1.2}
 #fight #again .btn:active{box-shadow:0 1px 0 var(--ink),0 6px 16px rgba(25,18,45,.3)}
-#fight #again .ending-tools{display:flex;gap:8px;max-width:calc(100vw - 32px)}
-#fight #again #trophyBtn,#fight #again #readingSaveBtn{min-height:42px;min-width:0;padding:6px 16px;font-size:13px;color:#e6dcc5;background:#25201ce8;border:1px solid #8b795b;box-shadow:none}
+#fight #again #trophyBtn{min-height:42px;min-width:0;padding:6px 16px;font-size:13px;color:#e6dcc5;background:#25201ce8;border:1px solid #8b795b;box-shadow:none}
 #fight #trophyModal{z-index:35;background:rgba(12,10,9,.94);padding:12px;overscroll-behavior:contain}
 #fight .trophy-sheet{width:min(100%,430px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);display:flex;flex-direction:column;color:#f3e8cf;background:#211c18;border:1px solid #65513b;border-radius:16px;overflow:hidden;box-shadow:0 15px 70px #000}
 #fight .trophy-top{display:flex;align-items:center;justify-content:space-between;flex:none;padding:8px 12px 8px 18px}
@@ -291,7 +290,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><div class="ending-tools"><button type="button" class="btn" id="trophyBtn">족친 기록</button><button type="button" class="btn" id="readingSaveBtn" hidden>운세풀이 저장</button></div></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
@@ -1339,7 +1338,7 @@ const AUDIO=(()=>{
   const len=ctx.sampleRate*2;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
   // 성대 소리: 배음이 부드럽게 줄어드는 펄스
   const N=48,re=new Float32Array(N+1),im=new Float32Array(N+1);for(let n=1;n<=N;n++){im[n]=Math.pow(n,-1.55)*(n%2?1:.85);}glot=ctx.createPeriodicWave(re,im,{disableNormalization:false});
-  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadFirstHitVoice();loadVictoryVoice();loadQuipVoice();loadRetortVoice();loadCombatVoices();loadMusic();
+  makeFallbackVoice();loadSoundBank();loadBackVoice();loadOpeningVoice();loadGreetingVoice();loadFirstHitVoice();loadVictoryVoice();loadRetortVoice();loadCombatVoices();loadMusic();
  }
  function unlock(primed){try{init(primed);if(ctx&&ctx.state!=='running'){const p=ctx.resume();if(p&&p.catch)p.catch(()=>{});}}catch(_){}}
  // 잠깐 멈춤(설정 창): 이미 걸어 둔 소리(말소리 글자들)까지 그 자리에서 멈췄다가 이어진다
@@ -1351,7 +1350,6 @@ const AUDIO=(()=>{
  let greetingBuffer=null,greetingLoad=null;
  let firstHitBuffer=null,firstHitLoad=null;
  let victoryBuffer=null,victoryLoad=null;
- let quipBuffer=null,quipLoad=null;
  let retortBuffer=null,retortLoad=null;
  const combatClips={
   '탈운명 펀치!':{file:'punch',buffer:null,load:null},
@@ -1396,12 +1394,6 @@ const AUDIO=(()=>{
   if(!ctx)return Promise.resolve(null);
   if(!victoryLoad){const ac=ctx;victoryLoad=fetch('assets/player-victory-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>victoryBuffer=b).catch(()=>{victoryLoad=null;return null;});}
   return victoryLoad;
- }
- // 「운명 최고」: 암백과 같은 목소리로 미리 녹음한 한마디
- function loadQuipVoice(){
-  if(!ctx)return Promise.resolve(null);
-  if(!quipLoad){const ac=ctx;quipLoad=fetch('assets/fate-best-ko-male.mp3').then(r=>{if(!r.ok)throw new Error('voice load');return r.arrayBuffer();}).then(data=>ac.decodeAudioData(data)).then(b=>quipBuffer=b).catch(()=>null);}
-  return quipLoad;
  }
  // 「뭘 꼬라봐 씨발아」: 엔딩의 그 눈에 대고 뱉는 내 한마디. 내 인사와 같은 목소리로 미리 녹음한 것
  function loadRetortVoice(){
@@ -1448,7 +1440,6 @@ const AUDIO=(()=>{
   else if(text==='천지신명이시여...'&&ctx){if(greetingBuffer)play(greetingBuffer);else loadGreetingVoice().then(play);}
   else if(text==='죽어!'&&ctx){if(firstHitBuffer)play(firstHitBuffer);else loadFirstHitVoice().then(play);}
   else if(text==='운명 좁밥'&&ctx){if(victoryBuffer)play(victoryBuffer);else loadVictoryVoice().then(play);}
-  else if(text==='운명 최고'&&ctx){if(quipBuffer)play(quipBuffer);else loadQuipVoice().then(play);}
   else if(text==='뭘 꼬라봐 씨발아'&&ctx){if(retortBuffer)play(retortBuffer);else loadRetortVoice().then(play);}
   // Optional hit lines only use already decoded clips: never speak late after a download.
   else if(combatClips[text])play(combatClips[text].buffer);
@@ -2686,7 +2677,7 @@ const LINES={
  pray:[[2,'제 것만은\n지켜 주세요!',3.3],[5,'지금 이대로면\n돼요!',4.3]],
  cheer:[[1,'살아나셨다!',0],[4,'천지신명님 만세!',.45]],
  back:'암백ㅋ', // 작가가 지정한 부활 대사. 화면 문구를 그대로 보존한다.
- quip:'운명 최고', // 족치는 중에 뜬금없이 한 번씩 뱉는 한마디(미리 녹음한 목소리)
+ quip:'운명 최고', // 설교와 같은 천지신명의 음절 목소리로 뱉는 한마디
  // 운명을 받아들인 사람들 앞에서 되풀이하는 설교. 한 마디씩만 재생한다.
  submit:[
   ['저마다 태어난 자리가 있고, 받아야 할 몫이 있느니라.',4,.8],
@@ -10014,7 +10005,7 @@ function quipAllowed(){
 }
 function sayQuip(){
  QUIP.last=G.time;QUIP.n++;
- queueTalk([['boss',LINES.quip,1.3,0,1.35,LINES.quip,true]]);
+ queueTalk([['boss',LINES.quip,1.3,0,1.35,null,true]]);
 }
 function updateQuip(){
  if(G.mode!=='fight'||!G.started||G.ended)return;
@@ -10945,15 +10936,8 @@ const TROPHIES=(()=>{
 
 
 // 끝: 누적 처치 수와 후임 천지신명으로 넘어가는 버튼.
-function showAgain(){const w=$('#again');$('#readingSaveBtn').hidden=!(G.result&&G.result.savedReading&&window.PaljaReadingExport);w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));}
+function showAgain(){const w=$('#again');w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));}
 function hideAgain(){const w=$('#again');w.classList.remove('on');w.hidden=true;}
-$('#readingSaveBtn').addEventListener('click',()=>{
- if($('#again').hidden||!G.ended||!G.result||!G.result.savedReading||!window.PaljaReadingExport)return;
- const wasPaused=G.paused;
- if(window.PaljaReadingExport.open(G.result.savedReading,()=>{G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();})){
-  G.paused=true;clearPointers();AUDIO.hold(true);
- }
-});
 // 후임 족치러 가기: 버튼이 사라지고, 나를 내려다보는 그 눈에 대고 한마디 뱉는다(말풍선 + 녹음한 목소리). 다 뱉고 나면 updateStory()가 다음 판을 연다
 function retortAndRestart(){
  if(G.retorting||!G.ended)return;
@@ -11131,7 +11115,6 @@ $('#offerPaper').addEventListener('click',e=>{
 });
 /* ---- 라운드 ---- */
 function startRound(mode){
- if(window.PaljaReadingExport)window.PaljaReadingExport.close(false);
  TROPHIES.close(false);
  G.round++;
  SUBMISSION.reset();
@@ -11284,7 +11267,6 @@ function arrive(){
  focusCanvas();return true;
 }
 function leave(home){
- if(window.PaljaReadingExport)window.PaljaReadingExport.close(false);
  TROPHIES.close(false);
  pause();
  INTRO.stage='off';crumpleReset();$('#fight').classList.remove('behind');$('#crumpleHint').classList.add('off');
