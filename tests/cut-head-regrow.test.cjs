@@ -3,7 +3,7 @@ const THREE=require('../three.min.js'),source=fs.readFileSync(path.join(__dirnam
 const slice=(a,b)=>{const i=source.indexOf(a),j=source.indexOf(b,i);assert(i>=0&&j>i,a);return source.slice(i,j)};
 if(!THREE.Object3D.prototype.removeFromParent)THREE.Object3D.prototype.removeFromParent=function(){if(this.parent)this.parent.remove(this);return this;};
 const V3=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),sat=x=>Math.max(0,Math.min(1,x));
-const ctx={THREE,V3,PI:Math.PI,TAU:Math.PI*2,lerp:(a,b,t)=>a+(b-a)*t,sat,clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),smooth:x=>{x=sat(x);return x*x*(3-2*x)},smoother:x=>{x=sat(x);return x*x*x*(x*(x*6-15)+10)},rnd:(a,b)=>(a+b)/2,isFleshMat:()=>false,ensureDmg:()=>{},PREF:{blood:true},FASTRAY:{grid:()=>{}},AUDIO:{boneOut(){},squelch(){},scaleSet(){},hiss(){}},BLOOD:{emit(){}}};
+const ctx={FLESH:{clone:g=>g.clone()},THREE,V3,PI:Math.PI,TAU:Math.PI*2,lerp:(a,b,t)=>a+(b-a)*t,sat,clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),smooth:x=>{x=sat(x);return x*x*(3-2*x)},smoother:x=>{x=sat(x);return x*x*x*(x*(x*6-15)+10)},rnd:(a,b)=>(a+b)/2,isFleshMat:()=>false,ensureDmg:()=>{},PREF:{blood:true},FASTRAY:{grid:()=>{}},AUDIO:{boneOut(){},squelch(){},scaleSet(){},hiss(){}},BLOOD:{emit(){}}};
 const api=vm.runInNewContext(
  slice('function mk(geo,','/* 굵기가 변하는 관')+slice('const _mgM=','/* 빠른 짧은 광선 검사')+
  slice('const SLICE=','/* ===== 3. 소리')+slice('const CUT_DETAIL=','/* 바지:')+

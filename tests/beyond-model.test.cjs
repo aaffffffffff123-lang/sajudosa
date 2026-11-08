@@ -3,7 +3,9 @@ const THREE=require('../three.min.js'),source=fs.readFileSync(require('node:path
 const slice=(a,b)=>source.slice(source.indexOf(a),source.indexOf(b,source.indexOf(a)));
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)),smooth=x=>{x=clamp(x,0,1);return x*x*(3-2*x)};
 const scope={THREE,PI:Math.PI,TAU:Math.PI*2,V3:(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),col:h=>new THREE.Color(h),smooth,canvasTex:()=>new THREE.Texture()};
-const model=vm.runInNewContext(slice('function createBeyondEye(){','const BEYOND=')+';createBeyondEye()',scope);
+const build=slice('function createBeyondEye(){','const BEYOND=');
+// Geometry tests skip texture rasterization but exhaust the same sliced builder.
+const model=vm.runInNewContext(build+';eyeCanvasTex=function*(){return new THREE.Texture()};createBeyondEye()',scope);
 test('the ending eye uses a rotating sphere and a curved iris behind fixed opaque lids',()=>{
  assert.equal(model.ball.children[0].geometry.type,'SphereGeometry');
  const iris=model.ball.children.find(x=>x.material.name==='beyond-iris'),p=iris.geometry.attributes.position;

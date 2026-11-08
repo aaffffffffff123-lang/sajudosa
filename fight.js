@@ -587,19 +587,38 @@ const FASTRAY=(()=>{
   const res=Math.max(2,Math.min(18,Math.round(Math.cbrt(tri/2.5))));
   const nx=size.x>1e-6?res:1,ny=size.y>1e-6?res:1,nz=size.z>1e-6?res:1;
   const cx=Math.max(size.x/nx,1e-6),cy=Math.max(size.y/ny,1e-6),cz=Math.max(size.z/nz,1e-6);
-  const A=new Float32Array(tri*9);const lists=Array.from({length:nx*ny*nz},()=>[]);
-  for(let t=0;t<tri;t++){
-   let mnx=1e9,mny=1e9,mnz=1e9,mxx=-1e9,mxy=-1e9,mxz=-1e9;
-   for(let k=0;k<3;k++){const vi=idx?idx[t*3+k]:t*3+k;const x=pos.getX(vi),y=pos.getY(vi),z=pos.getZ(vi);A[t*9+k*3]=x;A[t*9+k*3+1]=y;A[t*9+k*3+2]=z;
-    if(x<mnx)mnx=x;if(y<mny)mny=y;if(z<mnz)mnz=z;if(x>mxx)mxx=x;if(y>mxy)mxy=y;if(z>mxz)mxz=z;}
-   const i0=clamp(Math.floor((mnx-bb.min.x)/cx),0,nx-1),i1=clamp(Math.floor((mxx-bb.min.x)/cx),0,nx-1);
-   const j0=clamp(Math.floor((mny-bb.min.y)/cy),0,ny-1),j1=clamp(Math.floor((mxy-bb.min.y)/cy),0,ny-1);
-   const k0=clamp(Math.floor((mnz-bb.min.z)/cz),0,nz-1),k1=clamp(Math.floor((mxz-bb.min.z)/cz),0,nz-1);
-   for(let i=i0;i<=i1;i++)for(let j=j0;j<=j1;j++)for(let k=k0;k<=k1;k++)lists[i+nx*(j+ny*k)].push(t);
+  const A=new Float32Array(tri*9),bounds=new Uint8Array(tri*6),counts=new Uint32Array(nx*ny*nz);
+  const raw=pos.isInterleavedBufferAttribute||pos.normalized?null:pos.array,bins=new Uint8Array(pos.count*3);
+  // Quantize each vertex once. Monotonic floor/clamp gives exactly the same
+  // triangle cell bounds as quantizing each triangle's min/max six times.
+  for(let v=0;v<pos.count;v++){
+   const q=v*pos.itemSize,x=raw?raw[q]:pos.getX(v),y=raw?raw[q+1]:pos.getY(v),z=raw?raw[q+2]:pos.getZ(v);
+   const i=Math.floor((x-bb.min.x)/cx),j=Math.floor((y-bb.min.y)/cy),k=Math.floor((z-bb.min.z)/cz);
+   bins[v*3]=clamp(i,0,nx-1);bins[v*3+1]=clamp(j,0,ny-1);bins[v*3+2]=clamp(k,0,nz-1);
   }
-  const cells=lists.map(l=>l.length?Int32Array.from(l):null);
+  for(let t=0;t<tri;t++){
+   let i0=255,j0=255,k0=255,i1=0,j1=0,k1=0;
+   for(let k=0;k<3;k++){
+    const vi=idx?idx[t*3+k]:t*3+k,q=vi*pos.itemSize,o=t*9+k*3,v=vi*3;
+    A[o]=raw?raw[q]:pos.getX(vi);A[o+1]=raw?raw[q+1]:pos.getY(vi);A[o+2]=raw?raw[q+2]:pos.getZ(vi);
+    const x=bins[v],y=bins[v+1],z=bins[v+2];
+    if(x<i0)i0=x;if(y<j0)j0=y;if(z<k0)k0=z;if(x>i1)i1=x;if(y>j1)j1=y;if(z>k1)k1=z;
+   }
+   const q=t*6;bounds[q]=i0;bounds[q+1]=i1;bounds[q+2]=j0;bounds[q+3]=j1;bounds[q+4]=k0;bounds[q+5]=k1;
+   for(let k=k0;k<=k1;k++)for(let j=j0;j<=j1;j++){const row=nx*(j+ny*k);for(let i=i0;i<=i1;i++)counts[row+i]++;}
+  }
+  // One contiguous allocation replaces thousands of growing JS arrays. Preserve
+  // ascending triangle order within every cell, including equal-distance hits.
+  const offsets=new Uint32Array(counts.length+1);for(let i=0;i<counts.length;i++)offsets[i+1]=offsets[i]+counts[i];
+  const entries=new Int32Array(offsets[counts.length]),cursor=offsets.slice(0,-1);
+  for(let t=0;t<tri;t++){const q=t*6;
+   for(let k=bounds[q+4];k<=bounds[q+5];k++)for(let j=bounds[q+2];j<=bounds[q+3];j++){const row=nx*(j+ny*k);for(let i=bounds[q];i<=bounds[q+1];i++)entries[cursor[row+i]++]=t;}
+  }
+  const cells=Array.from(counts,(n,i)=>n?entries.subarray(offsets[i],offsets[i+1]):null);
   return {bb,nx,ny,nz,cx,cy,cz,cells,A,mark:new Uint32Array(tri),stamp:1};
  }
+ // Cell membership is immutable. Mutable vertices, marks and bounds are never shared.
+ function copy(G){return {...G,bb:G.bb.clone(),A:G.A.slice(),mark:new Uint32Array(G.mark.length),stamp:1};}
  function grid(g){return g.userData.fastGrid||(g.userData.fastGrid=build(g));}
  // 지역 좌표 선분 a→b 와 만나는 가장 가까운 앞면 삼각형. 결과: t(0..1), 지역 법선
  function segment(G,a,b,out){
@@ -671,7 +690,7 @@ const FASTRAY=(()=>{
   const k=bi*9;_e1.set(A[k+3]-A[k],A[k+4]-A[k+1],A[k+5]-A[k+2]);_e2.set(A[k+6]-A[k],A[k+7]-A[k+1],A[k+8]-A[k+2]);
   out.t=best;out.tri=bi;out.normal.crossVectors(_e1,_e2).normalize();return true;
  }
- return {grid,segment,ray};
+ return {grid,segment,ray,copy};
 })();
 
 /* ===== 2-2. 살덩이(찌그러지고 파이고 썰리는 메시) =====
@@ -740,6 +759,10 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
  }
 
  /* ---- 메시 ---- */
+ // Only explicit clones of immutable source geometry can use these templates.
+ // Dynamic positions, damage, displacement and ray stamps remain private to each body.
+ const sources=new WeakMap(),templates=new WeakMap();
+ function clone(g){const copy=g.clone();copy.userData={...g.userData};delete copy.userData.fastGrid;sources.set(copy,g);return copy;}
  const _v1=V3(),_v2=V3(),_v3=V3();
  /* 옮겨진 꼭짓점 찾기 나무(k-d 나무): 한 번 맞을 때 옮겨진 꼭짓점(주먹이면 수천~수만 개)마다 거기 붙은 피·상처 점(수천~1만 개)이
   * 가장 가까운 것을 찾는다. 하나하나 다 훑으면 (점 수 × 꼭짓점 수)라 칼질 뒤 주먹 한 대에 수백 ms씩 멈췄다.
@@ -790,6 +813,9 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
   // 새 지오메트리(처음 만들 때·쪼갠 뒤·썬 뒤): 지금 모양을 쉬는 모양으로 삼는다
   setGeometry(g,keepDmg){
    this._cancelRayRebuild();this._rayDead=false;
+   const source=sources.get(g);sources.delete(g);
+   const key=source?JSON.stringify([this.maxFrac,this.maxAbs,this.center&&this.center.toArray(),this.axisA&&this.axisA.toArray(),this.axisB&&this.axisB.toArray(),!!this.o.keepNormals]):'';
+   let bank=source&&templates.get(source);const ready=bank&&bank.get(key);
    if(!g.index){const n=g.attributes.position.count,a=new Uint32Array(n);for(let i=0;i<n;i++)a[i]=i;g.setIndex(new THREE.BufferAttribute(a,1));}
    if(!g.attributes.normal)g.computeVertexNormals();
    const n=g.attributes.position.count;this.g=g;this.n=n;
@@ -799,10 +825,24 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
    if(g.attributes.aDmg&&g.attributes.aDmg.count===n){this.dmg=g.attributes.aDmg.array;}
    else{this.dmg=new Float32Array(n*4);g.setAttribute('aDmg',new THREE.BufferAttribute(this.dmg,4));}
    g.attributes.aDmg.setUsage(THREE.DynamicDrawUsage);
-   this.cap=new Float32Array(n);
-   for(let i=0;i<n;i++)this.cap[i]=this.capAt(this.rest[i*3],this.rest[i*3+1],this.rest[i*3+2]);
-   this._weld();this._adj();if(!this.o.keepNormals){this._normals(null);this.restN.set(this.nor);}
-   g.computeBoundingSphere();g.computeBoundingBox();delete g.userData.fastGrid;
+   if(ready){
+    this.cap=ready.cap.slice();this.nor.set(ready.normal);this.restN.set(ready.normal);
+    for(const name of ['canon','nc','cvStart','cvList','cfStart','cfList','tri','_wn'])this[name]=ready[name];
+    this._wmap=new Map(ready.wmap);
+    g.boundingSphere=ready.sphere.clone();g.boundingBox=ready.box.clone();
+    g.userData.fastGrid=FASTRAY.copy(ready.grid);
+   }else{
+    this.cap=new Float32Array(n);
+    for(let i=0;i<n;i++)this.cap[i]=this.capAt(this.rest[i*3],this.rest[i*3+1],this.rest[i*3+2]);
+    this._weld();this._adj();if(!this.o.keepNormals){this._normals(null);this.restN.set(this.nor);}
+    g.computeBoundingSphere();g.computeBoundingBox();delete g.userData.fastGrid;
+    if(source){
+     if(!bank){bank=new Map();templates.set(source,bank);}
+     const data={cap:this.cap.slice(),normal:this.nor.slice(),wmap:new Map(this._wmap),sphere:g.boundingSphere.clone(),box:g.boundingBox.clone(),grid:FASTRAY.copy(FASTRAY.grid(g))};
+     for(const name of ['canon','nc','cvStart','cvList','cfStart','cfList','tri','_wn'])data[name]=this[name];
+     bank.set(key,data);
+    }
+   }
    this.trans.length=0;this.toff=null;this.tlist=null;
   }
   // 이 자리에서 안쪽으로 최대 얼마나 들어갈 수 있나(반대편을 뚫고 나가지 않게)
@@ -1124,7 +1164,7 @@ else if(this._refitRay(verts)){
   }
  }
  const _sph=new THREE.Sphere(),_inv=new THREE.Matrix4(),_ray=new THREE.Ray(),_hit={t:0,normal:V3(),tri:0};
- return {patch,Flesh,MEAT,shared};
+ return {patch,Flesh,MEAT,shared,clone};
 })();
 
 /* ===== 2-4. 썰기 =====
@@ -1132,7 +1172,7 @@ else if(this._refitRay(verts)){
  * 손상 값(aDmg.y)을 매겨서 살 셰이더가 결 있는 단면으로 칠하게 한다. dist(p)=n·p-d 가 0보다 크면 잘려 나가는 쪽. */
 const SLICE=(()=>{
  const RINGS=[[1,.1],[.95,.28],[.88,.46],[.74,.78],[.5,1],[.22,1.1],[0,1.15]];
- function slice(geo,n,d,close=true){
+ function slice(geo,n,d,close=true,keepOnly=false){
   const A=geo.attributes,P=A.position.array,N=A.normal?A.normal.array:null,UV=A.uv?A.uv.array:null,C=A.color?A.color.array:null,Dm=A.aDmg?A.aDmg.array:null;
   const idx=geo.index?geo.index.array:null,nv=P.length/3,T=(idx?idx.length:nv)/3;
   const dist=new Float32Array(nv);for(let i=0;i<nv;i++)dist[i]=n.x*P[i*3]+n.y*P[i*3+1]+n.z*P[i*3+2]-d;
@@ -1148,20 +1188,20 @@ const SLICE=(()=>{
    let nx=N?L(N[a*3],N[b*3]):0,ny=N?L(N[a*3+1],N[b*3+1]):1,nz=N?L(N[a*3+2],N[b*3+2]):0;const nl=Math.hypot(nx,ny,nz)||1;nx/=nl;ny/=nl;nz/=nl;
    const u=UV?L(UV[a*2],UV[b*2]):0,v=UV?L(UV[a*2+1],UV[b*2+1]):0,cr=C?L(C[a*3],C[b*3]):1,cg=C?L(C[a*3+1],C[b*3+1]):1,cb=C?L(C[a*3+2],C[b*3+2]):1;
    const d0=Dm?L(Dm[a*4],Dm[b*4]):0,d1=Dm?L(Dm[a*4+1],Dm[b*4+1]):0,d2=Dm?L(Dm[a*4+2],Dm[b*4+2]):0,d3=Dm?L(Dm[a*4+3],Dm[b*4+3]):0;
-   const k0=push(B[0],px,py,pz,nx,ny,nz,u,v,cr,cg,cb,d0,Math.max(d1,.12),d2,d3),k1=push(B[1],px,py,pz,nx,ny,nz,u,v,cr,cg,cb,d0,Math.max(d1,.12),d2,d3);
+   const k0=push(B[0],px,py,pz,nx,ny,nz,u,v,cr,cg,cb,d0,Math.max(d1,.12),d2,d3),k1=keepOnly?-1:push(B[1],px,py,pz,nx,ny,nz,u,v,cr,cg,cb,d0,Math.max(d1,.12),d2,d3);
    // 같은 자리(겹친 꼭짓점의 변)는 같은 열쇠로 묶어 고리를 잇는다
    const q=Math.round(px*1e5)+','+Math.round(py*1e5)+','+Math.round(pz*1e5);
    m={k0,k1,q,p:[px,py,pz],c:[cr,cg,cb],uv:[u,v],dm:[d0,d2,d3]};mids.set(key,m);if(!pk.has(q))pk.set(q,m);return m;}
   const segs=[];
   for(let t=0;t<T;t++){
    const ia=idx?idx[t*3]:t*3,ib=idx?idx[t*3+1]:t*3+1,ic=idx?idx[t*3+2]:t*3+2,sa=dist[ia]>0?1:0,sb=dist[ib]>0?1:0,sc=dist[ic]>0?1:0;
-   if(sa===sb&&sb===sc){const b=B[sa];b.idx.push(vtx(sa,ia),vtx(sa,ib),vtx(sa,ic));continue;}
+   if(sa===sb&&sb===sc){if(keepOnly&&sa===1)continue;const b=B[sa];b.idx.push(vtx(sa,ia),vtx(sa,ib),vtx(sa,ic));continue;}
    // 혼자 다른 쪽인 꼭짓점을 맨 앞으로(감는 순서는 그대로)
    let L_,M1,M2;if(sa!==sb&&sa!==sc){L_=ia;M1=ib;M2=ic;}else if(sb!==sa&&sb!==sc){L_=ib;M1=ic;M2=ia;}else{L_=ic;M1=ia;M2=ib;}
    const sL=dist[L_]>0?1:0,sO=1-sL,i1=mid(L_,M1),i2=mid(L_,M2);
    const k1L=sL?i1.k1:i1.k0,k2L=sL?i2.k1:i2.k0,k1O=sO?i1.k1:i1.k0,k2O=sO?i2.k1:i2.k0;
-   B[sL].idx.push(vtx(sL,L_),k1L,k2L);
-   B[sO].idx.push(k1O,vtx(sO,M1),vtx(sO,M2),k1O,vtx(sO,M2),k2O);
+   if(!keepOnly||sL===0)B[sL].idx.push(vtx(sL,L_),k1L,k2L);
+   if(!keepOnly||sO===0)B[sO].idx.push(k1O,vtx(sO,M1),vtx(sO,M2),k1O,vtx(sO,M2),k2O);
    if(i1.q!==i2.q)segs.push([i1.q,i2.q]);
   }
   // 잘린 테두리를 고리로 잇기
@@ -1171,8 +1211,8 @@ const SLICE=(()=>{
    for(let g=0;g<20000;g++){const nb=adj.get(cur).filter(x=>x!==prev&&(!used.has(x)||(x===st&&loop.length>2)));if(!nb.length)break;const nx=nb.find(x=>!used.has(x))||nb[0];if(nx===st)break;loop.push(nx);used.add(nx);prev=cur;cur=nx;}
    if(loop.length>=3)loops.push(loop.map(q=>pk.get(q)));}
   // 단면 막기: 두 쪽에 각각(남는 쪽은 +n, 떨어지는 쪽은 -n을 본다)
-  if(close)for(const loop of loops)for(const s of [0,1])cap(B[s],loop,s===0?n.clone():n.clone().negate());
-  return {keep:build(B[0]),cut:build(B[1]),loops:loops.length};
+  if(close)for(const loop of loops)for(const s of (keepOnly?[0]:[0,1]))cap(B[s],loop,s===0?n.clone():n.clone().negate());
+  return {keep:build(B[0]),cut:keepOnly?null:build(B[1]),loops:loops.length};
   function cap(b,loop,nn){
    const U=Math.abs(nn.x)>.8?V3(0,1,0):V3(1,0,0);U.addScaledVector(nn,-U.dot(nn)).normalize();const Vv=V3().crossVectors(nn,U);
    const L=loop.length;let cx=0,cy=0,cz=0;for(const m of loop){cx+=m.p[0];cy+=m.p[1];cz+=m.p[2];}cx/=L;cy/=L;cz/=L;
@@ -1216,6 +1256,9 @@ const SCULPT=(()=>{
  function smax(a,b,k){return -smin(-a,-b,k);}
  /* sdf(x,y,z), 가운데 c, 가로·세로 칸 수, 바깥 한계 tmax. 결과: 색(tint 함수가 있으면 꼭짓점 색) 포함 지오메트리 */
  function star(sdf,c,W,H,tmax,o={}){
+  const job=starSteps(sdf,c,W,H,tmax,o);let step;do{step=job.next();}while(!step.done);return step.value;
+ }
+ function* starSteps(sdf,c,W,H,tmax,o={}){
   const g=new THREE.SphereGeometry(1,W,H),P=g.attributes.position,N=g.attributes.normal,n=P.count;
   const cols=o.tint?new Float32Array(n*3):null,e=.0009,cv=new THREE.Color();
   for(let i=0;i<n;i++){
@@ -1229,6 +1272,7 @@ const SCULPT=(()=>{
    let nx=sdf(x+e,y,z)-sdf(x-e,y,z),ny=sdf(x,y+e,z)-sdf(x,y-e,z),nz=sdf(x,y,z+e)-sdf(x,y,z-e);const l=Math.hypot(nx,ny,nz)||1;
    nx/=l;ny/=l;nz/=l;if(nx*dx+ny*dy+nz*dz<.05){nx=dx;ny=dy;nz=dz;}N.setXYZ(i,nx,ny,nz);
    if(cols){o.tint(x,y,z,cv);cols[i*3]=cv.r;cols[i*3+1]=cv.g;cols[i*3+2]=cv.b;}
+   if((i&7)===7)yield;
   }
   // 타우빈 다듬기: 반직선 사이로 생긴 계단을 문질러 없앤다(부피는 거의 그대로)
   const it=o.smooth==null?2:o.smooth;
@@ -1266,7 +1310,7 @@ const SCULPT=(()=>{
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);
   g.computeVertexNormals();g.computeBoundingSphere();return g;
  }
- return {ell,cap,smin,smax,star,tube};
+ return {ell,cap,smin,smax,star,starSteps,tube};
 })();
 /* ===== 3. 소리 =====
  * 부활 대사만 고정 한국어 남성 음성 파일을 쓴다. 타격음은 여러 겹(낮은 쿵 + 살 철썩 + 뼈 딱 + 공간 울림)으로 쌓고,
@@ -2379,18 +2423,29 @@ const _cv=V3(),_cf=V3();
 /* ===== 4-1. 궁전 너머의 존재: 그림자 → 고개 들기 → 3D 안구의 시선 → 동공 확대 ===== */
 /* 실제 곡면 안구·홍채·동공. 고정된 눈꺼풀 안에서 안구 전체가 회전한다. */
 function createBeyondEye(){
+ const job=createBeyondEyeSteps();let step;do{step=job.next();}while(!step.done);return step.value;
+}
+function* eyeCanvasTex(w,h,draw){
+ const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d',TEX_CTX);
+ yield* draw(g,w,h);
+ const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;t.userData={canvas:c,ctx:g};
+ c.addEventListener('contextrestored',()=>{g.clearRect(0,0,w,h);const job=draw(g,w,h);while(!job.next().done){}t.needsUpdate=true;});
+ return t;
+}
+function* createBeyondEyeSteps(){
  const root=new THREE.Group(),ball=new THREE.Group();root.name='beyond-eye-3d';ball.name='rotating-eyeball';root.add(ball);
  const R=4.9,IR=2.03;
- let seed=73913;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
- const irisTex=canvasTex(1024,1024,(g,w,h)=>{
-  const image=g.createImageData(w,h),d=image.data;
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+ let seed=73913;
+ const irisSeed=seed;
+ const irisTex=yield* eyeCanvasTex(1024,1024,function*(g,w,h){
+  let texSeed=irisSeed;const random=()=>{texSeed=(Math.imul(texSeed,1664525)+1013904223)>>>0;return texSeed/4294967296;};const image=g.createImageData(w,h),d=image.data;
+  for(let y=0;y<h;y++){for(let x=0;x<w;x++){
    const dx=(x-w/2)/(w/2),dy=(y-h/2)/(h/2),r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
    const f=.5+.22*Math.sin(a*183+Math.sin(r*29+a*7)*2.2)+.16*Math.sin(a*331-r*19)+.12*Math.sin(a*79+r*41);
    const fibers=(.28+.72*f)*(.6+.4*Math.sin(r*9+.4)),edge=1-smooth((r-.79)/.21),inner=.72+.28*smooth(r/.25);
    const n=(random()-.5)*17,k=(y*w+x)*4;
    d[k]=Math.max(0,(74+126*fibers)*edge*inner+n);d[k+1]=Math.max(0,(66+108*fibers)*edge*inner+n);d[k+2]=Math.max(0,(40+62*fibers)*edge*inner+n);d[k+3]=255;
-  }g.putImageData(image,0,0);
+  }if((y&1)===1)yield;}g.putImageData(image,0,0);yield;
   // Lacunae between irregular bundles. One lip catches light while the recessed side stays dark.
   for(let i=0;i<230;i++){
    const a=random()*TAU,r=140+random()*280,len=12+random()*52,width=2+random()*8;
@@ -2398,31 +2453,35 @@ function createBeyondEye(){
    g.beginPath();g.moveTo(-len,0);g.quadraticCurveTo(-len*.14,-width*1.6,len*.7,-width*.2);
    g.quadraticCurveTo(len*.20,width*1.1,-len,0);
    g.fillStyle='rgba(22,22,14,.66)';g.fill();g.beginPath();g.moveTo(-len,0);
-   g.quadraticCurveTo(-len*.14,-width*1.6,len*.7,-width*.2);g.strokeStyle='rgba(237,213,151,.72)';g.lineWidth=1.4+random()*2;g.stroke();g.restore();
+   g.quadraticCurveTo(-len*.14,-width*1.6,len*.7,-width*.2);g.strokeStyle='rgba(237,213,151,.72)';g.lineWidth=1.4+random()*2;g.stroke();g.restore();if((i&15)===15)yield;
   }
   // Uneven radial threads, with fine branches rather than a printed ring.
   for(let i=0;i<1250;i++){
    const a=random()*TAU,r0=60+random()*130,r1=350+random()*135;
    g.strokeStyle=i%3?'rgba(228,213,151,.13)':'rgba(17,22,14,.30)';g.lineWidth=.5+random()*2;
    g.beginPath();g.moveTo(512+Math.cos(a)*r0,512+Math.sin(a)*r0);
-   g.quadraticCurveTo(512+Math.cos(a+.025)*280,512+Math.sin(a+.025)*280,512+Math.cos(a)*r1,512+Math.sin(a)*r1);g.stroke();
+   g.quadraticCurveTo(512+Math.cos(a+.025)*280,512+Math.sin(a+.025)*280,512+Math.cos(a)*r1,512+Math.sin(a)*r1);g.stroke();if((i&31)===31)yield;
   }
+  seed=texSeed;
  });
- const skinTex=canvasTex(512,512,(g,w,h)=>{
-  g.fillStyle='#272e30';g.fillRect(0,0,w,h);
+ const skinSeed=seed;
+ const skinTex=yield* eyeCanvasTex(512,512,function*(g,w,h){
+  let texSeed=skinSeed;const random=()=>{texSeed=(Math.imul(texSeed,1664525)+1013904223)>>>0;return texSeed/4294967296;};g.fillStyle='#272e30';g.fillRect(0,0,w,h);
   for(let y=-1;y<25;y++)for(let x=-1;x<22;x++){
    const cx=x*26+(y%2)*13+(random()-.5)*9,cy=y*23+(random()-.5)*7;
    const v=Math.floor(35+random()*17);g.fillStyle=`rgb(${v},${v+5},${v+7})`;g.strokeStyle='rgba(9,13,15,.3)';g.lineWidth=.7;
    g.beginPath();g.ellipse(cx,cy,11+random()*3,8+random()*3,(random()-.5)*.5,0,TAU);g.fill();g.stroke();
   }
-  for(let i=0;i<14000;i++){g.fillStyle=i%2?'rgba(165,183,183,.08)':'rgba(0,0,0,.11)';g.fillRect(random()*w,random()*h,random()*3+1,1);}
+  for(let i=0;i<14000;i++){g.fillStyle=i%2?'rgba(165,183,183,.08)':'rgba(0,0,0,.11)';g.fillRect(random()*w,random()*h,random()*3+1,1);if((i&127)===127)yield;}
+  seed=texSeed;
  });
  skinTex.wrapS=skinTex.wrapT=THREE.RepeatWrapping;skinTex.repeat.set(5,3);
- const scleraTex=canvasTex(1024,512,(g,w,h)=>{
-  g.fillStyle='#ad9e87';g.fillRect(0,0,w,h);
+ const scleraSeed=seed;
+ const scleraTex=yield* eyeCanvasTex(1024,512,function*(g,w,h){
+  let texSeed=scleraSeed;const random=()=>{texSeed=(Math.imul(texSeed,1664525)+1013904223)>>>0;return texSeed/4294967296;};g.fillStyle='#ad9e87';g.fillRect(0,0,w,h);
   for(let i=0;i<350;i++){
    const x=random()*w,y=random()*h,r=3+random()*28,patch=g.createRadialGradient(x,y,0,x,y,r);
-   patch.addColorStop(0,i%3?'rgba(90,69,62,.18)':'rgba(209,197,166,.26)');patch.addColorStop(1,'transparent');g.fillStyle=patch;g.fillRect(x-r,y-r,2*r,2*r);
+   patch.addColorStop(0,i%3?'rgba(90,69,62,.18)':'rgba(209,197,166,.26)');patch.addColorStop(1,'transparent');g.fillStyle=patch;g.fillRect(x-r,y-r,2*r,2*r);if((i&15)===15)yield;
   }
   function vein(x,y,angle,len,width,depth){
    for(let j=0;j<5;j++){
@@ -2434,8 +2493,9 @@ function createBeyondEye(){
   }
   for(const side of [-1,1])for(let i=0;i<32;i++){
    const x=w*.25+side*(110+random()*65),y=h*(.32+random()*.36);
-   vein(x,y,(side<0?0:PI)+(random()-.5)*.9,37+random()*65,1.1+random()*1.7,2);
+   vein(x,y,(side<0?0:PI)+(random()-.5)*.9,37+random()*65,1.1+random()*1.7,2);yield;
   }
+  seed=texSeed;
  });
  const skin=new THREE.MeshStandardMaterial({map:skinTex,bumpMap:skinTex,bumpScale:.06,roughness:.81,color:col('#8c9695')});skin.name='beyond-skin';
  const wet=new THREE.MeshStandardMaterial({color:col('#6b5044'),roughness:.29,metalness:.02});wet.name='beyond-lid-rim';
@@ -2443,7 +2503,7 @@ function createBeyondEye(){
  const irisMat=new THREE.MeshStandardMaterial({map:irisTex,bumpMap:irisTex,bumpScale:.034,color:col('#f2debb'),roughness:.53});irisMat.name='beyond-iris';
  const pupilMat=new THREE.MeshStandardMaterial({color:col('#030606'),roughness:.19});pupilMat.name='beyond-pupil';
  const add=(g,m,parent=root)=>{const mesh=new THREE.Mesh(g,m);parent.add(mesh);return mesh;};
- add(new THREE.SphereGeometry(R,96,64),white,ball);
+ add(new THREE.SphereGeometry(R,96,64),white,ball);yield;
  // Project every iris/pupil vertex onto the eyeball instead of putting a decal on a plane.
  function cap(rx,ry,lift){
   const p=[],uv=[],idx=[],rings=32,segments=128;
@@ -2454,8 +2514,8 @@ function createBeyondEye(){
   }
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();return geo;
  }
- add(cap(IR,IR,.012),irisMat,ball);
- const pupil=add(cap(1,1.72,.027),pupilMat,ball);pupil.name='slit-pupil';
+ add(cap(IR,IR,.012),irisMat,ball);yield;
+ const pupil=add(cap(1,1.72,.027),pupilMat,ball);pupil.name='slit-pupil';yield;
  const pp=pupil.geometry.attributes.position,base=pp.array.slice();
  let pupilWidth=-1,contactPitch=0;
  function setPupil(width){
@@ -2470,7 +2530,7 @@ function createBeyondEye(){
  const upper=[225,190,162,147,149,166,196,225,253],lower=[237,262,281,293,301,302,294,277,253];
  const skinUV=[];
  const p=[],uv=[],idx=[],segments=192,rows=42;
- for(let j=0;j<=rows;j++)for(let i=0;i<=segments;i++){
+ for(let j=0;j<=rows;j++){for(let i=0;i<=segments;i++){
   const a=i/segments*TAU,t=j/rows,e=edge(a),spread=t*10;
   const x=e.x+Math.cos(a)*spread,y=e.y+Math.sin(a)*spread,z=e.z*(1-smooth(t/.43))-.9*t;
   const ridge=(.18*Math.sin(t*98+Math.sin(a*11)*.55)+.09*Math.sin(t*173+a*7))*Math.exp(-t*4)*Math.sin(Math.min(1,t*20)*PI/2);
@@ -2481,9 +2541,10 @@ function createBeyondEye(){
   const horizontal=Math.cos(a),vertical=Math.sin(a);
   skinUV.push((ex+horizontal*t*(horizontal<0?ex:512-ex))/512,1-(ey-vertical*t*(vertical<0?768-ey:ey))/768);
   if(j<rows&&i<segments){const k=j*(segments+1)+i;idx.push(k,k+segments+1,k+1,k+1,k+segments+1,k+segments+2);}
- }
+ }yield;}
+ yield;
  const lidGeo=new THREE.BufferGeometry();lidGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));lidGeo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));lidGeo.setIndex(idx);lidGeo.computeVertexNormals();
- const lids=add(lidGeo,skin);lids.name='fixed-eyelids';
+ const lids=add(lidGeo,skin);lids.name='fixed-eyelids';yield;
  if(typeof document!=='undefined')new THREE.TextureLoader().load('assets/fate-beyond-v2.webp',tex=>{
   tex.encoding=THREE.sRGBEncoding;tex.anisotropy=4;
   lidGeo.setAttribute('uv',new THREE.Float32BufferAttribute(skinUV,2));
@@ -2524,9 +2585,15 @@ function createBeyondEye(){
 const BEYOND=(()=>{
  const far=new THREE.Scene();far.background=col('#080d11');
  const fcam=new THREE.PerspectiveCamera(40,1,30,60000);
- let model=null,compiled=false;
- function prepare(){
-  if(!model){model=createBeyondEye();far.add(model.root);}
+ let model=null,compiled=false,builder=null;
+ function prepare(budget=Infinity){
+  const until=performance.now()+budget;
+  if(!model){
+   if(!builder)builder=createBeyondEyeSteps();
+   do{const next=builder.next();if(next.done){model=next.value;builder=null;far.add(model.root);break;}}while(performance.now()<until);
+   if(!model)return false;
+   if(performance.now()>=until)return false;
+  }
   if(!compiled){compiled=true;try{renderer.compile(far,fcam);}catch(_){}}
   return true;
  }
@@ -5599,6 +5666,22 @@ const CROWN_FIT=(()=>{
  }
  return {apply};
 })();
+// Build hidden, immutable regrowth geometry in short slices before it is needed.
+function* prepareRegrowth(){
+ if(!GEO.regrowSkull){const g=yield* SCULPT.starSteps(HEADGEO.rep,V3(0,0,.02),48,36,.34,{smooth:0});if(!GEO.regrowSkull)GEO.regrowSkull=g;else g.dispose();}
+ if(!GEO.regrowJaw){const g=yield* SCULPT.starSteps(HEADGEO.repJaw,V3(0,-.14,.075),40,24,.2,{smooth:0});if(!GEO.regrowJaw)GEO.regrowJaw=g;else g.dispose();}
+}
+function warmCombatAssets(){
+ const regrow=prepareRegrowth();let grown=false,eye=false;
+ const run=()=>{
+  if(document.hidden){setTimeout(run,250);return;}
+  const until=performance.now()+4;
+  if(!grown){do{grown=regrow.next().done;}while(!grown&&performance.now()<until);}
+  else if(!eye)eye=BEYOND.prepare(4);
+  if(!grown||!eye)setTimeout(run,16);
+ };
+ setTimeout(run,0);
+}
 class Emperor{
  constructor(result,lookIndex=0){
   this.result=result;this.lookIndex=lookIndex;
@@ -5689,7 +5772,7 @@ class Emperor{
   const pelvis=this.bone('pelvis',this.root,[0,.62,0]);
   const spine=this.bone('spine',pelvis,[0,.06,0]);
   // 배: 늘어진 똥배(돼지저금통). 출렁일 때는 가운데를 붙든 채 크기만 바뀐다
-  this.belly=this.addFlesh(BG.belly.clone(),M.belly,spine,{part:'belly',center:BELLY_C,maxFrac:.42,maxAbs:.16,minEdge:.007});
+  this.belly=this.addFlesh(FLESH.clone(BG.belly),M.belly,spine,{part:'belly',center:BELLY_C,maxFrac:.42,maxAbs:.16,minEdge:.007});
   // Keep the attachment group, without the rigid ring that protruded through a deformed belly.
   const belt=grp(spine,[0,.035,.045]);belt.rotation.x=.2;this.belt=belt;
   // 옷자락: 허리띠 아래로 옆과 뒤만 두르고 앞은 터 있다(바지 입은 다리가 보이게). 안감은 보라
@@ -5700,13 +5783,13 @@ class Emperor{
   this.apronFMesh=null;
   // 가슴(어깨 위 살·가슴살까지 한 덩어리)
   const chest=this.bone('chest',spine,[0,.24,-.01]);
-  this.chestMesh=this.addFlesh(BG.chest.clone(),M.chest,chest,{part:'chest',center:V3(0,.13,0),maxFrac:.4,maxAbs:.12,minEdge:.007});
+  this.chestMesh=this.addFlesh(FLESH.clone(BG.chest),M.chest,chest,{part:'chest',center:V3(0,.13,0),maxFrac:.4,maxAbs:.12,minEdge:.007});
   // 깃: 와이셔츠 깃(목둘레). 앞섶과 영대는 가슴·배 그림에 그려져 있다
   mk(new THREE.TorusGeometry(.125,.028,10,40),M.shirt,chest,{p:[0,.29,.035],r:[PI/2+.38,0,0],s:[1,1.05,1],part:'chest'});
   this._tie(chest);
   // 목
   const neck=this.bone('neck',chest,[0,.265,0]);
-  this.neckMesh=this.addFlesh(BG.neck.clone(),M.skin,neck,{part:'neck',axisA:V3(0,-.04,.02),axisB:V3(0,.125,.028),maxFrac:.45,maxAbs:.06});
+  this.neckMesh=this.addFlesh(FLESH.clone(BG.neck),M.skin,neck,{part:'neck',axisA:V3(0,-.04,.02),axisB:V3(0,.125,.028),maxFrac:.45,maxAbs:.06});
  }
 
  /* 와이셔츠 깃 + 넥타이: 매듭은 가슴에, 넥타이 몸통은 배에 붙어 배를 타고 내려간다(배가 출렁이면 같이 출렁).
@@ -5761,13 +5844,13 @@ class Emperor{
    // 위팔·아래팔은 가운데에 뼈를 하나 더 둔다(그은 자리 가까이에서 잘리게)
    const sh=this.bone('shoulder'+nm,this.bones.chest,[s*.265,.19,.1]);
    const BG=BODYGEO.build(),ap='arm'+nm,ax=(a,b)=>({axisA:V3(0,a,0),axisB:V3(0,b,0)});
-   this.addFlesh(BG.shoulder.clone(),M.robe,sh,Object.assign({part:ap,center:V3(0,-.05,0),maxFrac:.4,maxAbs:.06}));
+   this.addFlesh(FLESH.clone(BG.shoulder),M.robe,sh,Object.assign({part:ap,center:V3(0,-.05,0),maxFrac:.4,maxAbs:.06}));
    const um=this.bone('uarmMid'+nm,sh,[0,-.118,0]);
-   this.addFlesh(BG.uarm.clone(),M.robe,um,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.01,-.13)));
+   this.addFlesh(FLESH.clone(BG.uarm),M.robe,um,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.01,-.13)));
    const el=this.bone('elbow'+nm,um,[0,-.117,0]);
-   this.addFlesh(BG.elbow.clone(),M.robe,el,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.04,-.11)));
+   this.addFlesh(FLESH.clone(BG.elbow),M.robe,el,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.04,-.11)));
    const fm=this.bone('farmMid'+nm,el,[0,-.108,0]);
-   this.addFlesh(BG.farm.clone(),M.robe,fm,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.01,-.137)));
+   this.addFlesh(FLESH.clone(BG.farm),M.robe,fm,Object.assign({part:ap,maxFrac:.42,maxAbs:.06},ax(.01,-.137)));
    mk(new THREE.TorusGeometry(.083,.016,8,30),M.trim,fm,{p:[0,-.135,0],r:[PI/2,0,0],part:'arm'+nm});
    mk(cylGeo(.078,.078,.012,24,true),M.robeIn,fm,{p:[0,-.139,0],cast:false});
    // 소매 안감: 뚫린 소매 아가리 속을 메우는 컵(안쪽 면만 그린다). 맞힘 판정에는 넣지 않는다
@@ -5782,8 +5865,8 @@ class Emperor{
  }
  _hand(wr,s,part){
   const M=this.M,h={fingers:[],thumb:null},BG=BODYGEO.build();
-  this.addFlesh(BG.wrist.clone(),M.skin,wr,{part,axisA:V3(0,.025,0),axisB:V3(0,-.034,0),maxFrac:.4,maxAbs:.02});
-  h.palm=this.addFlesh(BG.palm.clone(),M.skin,wr,{part,center:V3(0,-.06,.004),maxFrac:.35,maxAbs:.018});
+  this.addFlesh(FLESH.clone(BG.wrist),M.skin,wr,{part,axisA:V3(0,.025,0),axisB:V3(0,-.034,0),maxFrac:.4,maxAbs:.02});
+  h.palm=this.addFlesh(FLESH.clone(BG.palm),M.skin,wr,{part,center:V3(0,-.06,.004),maxFrac:.35,maxAbs:.018});
   for(let i=0;i<4;i++){
    const z=.032-i*.021,len=i===3?.026:i===0?.034:.036;
    const f=grp(wr,[-s*.004,-.1+(i===0||i===3?.006:0),z]);
@@ -5814,18 +5897,18 @@ class Emperor{
  _legs(){
   const M=this.M,BG=BODYGEO.build();this.legs=[];
   // 바지 엉덩이(가랑이를 덮는다)
-  this.addFlesh(BG.seat.clone(),M.trouser,this.bones.pelvis,{part:'pelvis',center:V3(0,-.035,0),maxFrac:.35,maxAbs:.07});
+  this.addFlesh(FLESH.clone(BG.seat),M.trouser,this.bones.pelvis,{part:'pelvis',center:V3(0,-.035,0),maxFrac:.35,maxAbs:.07});
   for(const s of [-1,1]){
    const nm=s<0?'L':'R',ax=(a,b)=>({axisA:V3(0,a,0),axisB:V3(0,b,0)});
    // 허벅지·정강이도 가운데에 뼈를 하나 더 둔다
    const hip=this.bone('hip'+nm,this.bones.pelvis,[s*.135,-.02,0]);
-   this.addFlesh(BG.hip.clone(),M.trouser,hip,{part:'thigh'+nm,center:V3(0,-.06,0),maxFrac:.4,maxAbs:.07});
+   this.addFlesh(FLESH.clone(BG.hip),M.trouser,hip,{part:'thigh'+nm,center:V3(0,-.06,0),maxFrac:.4,maxAbs:.07});
    const tm=this.bone('thighMid'+nm,hip,[0,-.145,0]);
-   this.addFlesh(BG.thigh.clone(),M.trouser,tm,Object.assign({part:'thigh'+nm,maxFrac:.42,maxAbs:.07},ax(.012,-.152)));
+   this.addFlesh(FLESH.clone(BG.thigh),M.trouser,tm,Object.assign({part:'thigh'+nm,maxFrac:.42,maxAbs:.07},ax(.012,-.152)));
    const knee=this.bone('knee'+nm,tm,[0,-.145,0]);
-   this.addFlesh(BG.knee.clone(),M.trouser,knee,{part:'shin'+nm,center:V3(0,-.05,0),maxFrac:.4,maxAbs:.06});
+   this.addFlesh(FLESH.clone(BG.knee),M.trouser,knee,{part:'shin'+nm,center:V3(0,-.05,0),maxFrac:.4,maxAbs:.06});
    const sm=this.bone('shinMid'+nm,knee,[0,-.128,0]);
-   this.addFlesh(BG.shin.clone(),M.trouser,sm,Object.assign({part:'shin'+nm,maxFrac:.42,maxAbs:.06},ax(.01,-.132)));
+   this.addFlesh(FLESH.clone(BG.shin),M.trouser,sm,Object.assign({part:'shin'+nm,maxFrac:.42,maxAbs:.06},ax(.01,-.132)));
    // 대님(발목 끈)
    mk(new THREE.TorusGeometry(.086,.0085,8,26),M.red,sm,{p:[0,-.114,0],r:[PI/2,0,0],part:'shin'+nm,cast:false});
    const ank=this.bone('ankle'+nm,sm,[0,-.127,0]);
@@ -5850,7 +5933,7 @@ const F=this.face=grp(head,[0,.215,0],'face');
   // 맞은 자리로 부위 이름을 정한다(코·입·얼굴·머리)
   const partAt=p=>{const ax=Math.abs(p.x);if(p.z>.205&&ax<.05&&p.y>-.062&&p.y<.07)return 'nose';if(p.z>.15&&ax<.095&&p.y<-.06&&p.y>-.13)return 'mouth';if(p.z>.06&&p.y<.13)return 'face';return 'head';};
   // 머리 한 덩어리(두개골·볼살·이중턱·코)
-  this.skull=flesh(G.head.clone(),M.flesh,F,{part:'head',partAt,center:V3(0,-.012,.004),maxFrac:.46,maxAbs:.095});
+  this.skull=flesh(FLESH.clone(G.head),M.flesh,F,{part:'head',partAt,center:V3(0,-.012,.004),maxFrac:.46,maxAbs:.095});
   this.jowls=[];
   // 가면이 벗겨질 때 떨어져 나가는 사람 얼굴 부품(귀·콧수염·머리카락)은 합치지 않고 따로 둔다
   this.maskParts=[];const keep=m=>{m.userData.keep=true;this.maskParts.push(m);return m;};
@@ -5861,7 +5944,7 @@ const F=this.face=grp(head,[0,.215,0],'face');
    const m=keep(flesh(g,M.flesh,F,{part:'head',center:V3(s*.2,.002,-.008),maxFrac:.35,maxAbs:.02}));m.userData.ear=s<0?0:1;this.earMeshes.push(m);
   }
   // 뒷머리(면류관 밑으로 보이는 검은 머리)
-  this.hairMesh=keep(flesh(G.hair.clone(),M.hairF,F,{part:'head',kind:'cloth',center:V3(0,.03,-.04),maxFrac:.3,maxAbs:.03}));
+  this.hairMesh=keep(flesh(FLESH.clone(G.hair),M.hairF,F,{part:'head',kind:'cloth',center:V3(0,.03,-.04),maxFrac:.3,maxAbs:.03}));
   // 코: 콧구멍과 코피 자리만 따로 잡아 둔다(코는 머리 덩어리에 빚어져 있다)
   this.noseG=grp(F,[0,-.032,.248]);
   this.nostrils=[];
@@ -5901,7 +5984,7 @@ const F=this.face=grp(head,[0,.215,0],'face');
   this.lipPtsU=Array.from({length:13},()=>V3());this.lipPtsL=Array.from({length:13},()=>V3());
   {const n=13,pos=new Float32Array(n*2*3),idx=[];for(let i=0;i<n-1;i++){const a=i,b=i+1,c=n+i,d=n+i+1;idx.push(a,c,b,b,c,d);}const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3).setUsage(THREE.DynamicDrawUsage));g.setIndex(idx);g.computeVertexNormals();this.mouthIn=mk(g,M.mouth,F,{cast:false,part:'mouth'});this.mouthIn.frustumCulled=false;this.mouthIn.userData.keep=true;}
   const jaw=this.bone('jaw',F,[0,-.03,-.02]);this.jaw=jaw;
-  this.chin=flesh(G.chin.clone(),M.flesh,jaw,{part:'chin',center:V3(0,-.13,.13),maxFrac:.4,maxAbs:.05});
+  this.chin=flesh(FLESH.clone(G.chin),M.flesh,jaw,{part:'chin',center:V3(0,-.13,.13),maxFrac:.4,maxAbs:.05});
   this.teethU=[];this.teethL=[];
   for(let i=0;i<8;i++){const x=(i-3.5)*.0155,z=.165-Math.pow(x/.06,2)*.012;const t=mk(sphereGeo(10),M.teeth,F,{p:[x,-.083,z],s:[.0078,.0115,.0062],cast:false,part:'mouth'});t.userData.tooth=true;t.userData.keep=true;this.teethU.push(t);}
   for(let i=0;i<6;i++){const x=(i-2.5)*.015,z=.172-Math.pow(x/.06,2)*.012;const t=mk(sphereGeo(10),M.teeth,jaw,{p:[x,-.067,z+.02],s:[.007,.0095,.0058],cast:false,part:'mouth'});t.userData.tooth=true;t.userData.keep=true;this.teethL.push(t);}
@@ -7050,9 +7133,9 @@ const rg=grp(grow,[0,.15,.02]);this.repFaceG=rg;
  
  
   // 두개골·아래턱(비늘 살)
-  this.repSkull=this.addFlesh(G.rep.clone(),M.lizHead,rg,{part:'head',kind:'liz',center:V3(0,0,.02),maxFrac:.42,maxAbs:.09,minEdge:.0052});
+  this.repSkull=this.addFlesh(FLESH.clone(G.rep),M.lizHead,rg,{part:'head',kind:'liz',center:V3(0,0,.02),maxFrac:.42,maxAbs:.09,minEdge:.0052});
   const jaw=this.repJawBone=grp(rg,[0,-.07,-.03]);
-  this.repJaw=this.addFlesh(G.repJaw.clone(),M.lizHead,jaw,{part:'mouth',kind:'liz',center:V3(0,-.05,.1),maxFrac:.4,maxAbs:.05,minEdge:.0052});
+  this.repJaw=this.addFlesh(FLESH.clone(G.repJaw),M.lizHead,jaw,{part:'mouth',kind:'liz',center:V3(0,-.05,.1),maxFrac:.4,maxAbs:.05,minEdge:.0052});
   // Forward-facing eyes sit inside sculpted lids; no separate goggle-like rings.
   this.repEyes=[];this.repEyeHits=[0,0];this.repMemK=-1;this.repMemWait=rnd(5,9);
   for(const s of [-1,1]){
@@ -8127,7 +8210,7 @@ trimCutEnd(root,cap,r,sign){
    if(f)f.bake();const a=o.geometry.attributes.position;let lo=Infinity,hi=-Infinity;
    for(let i=0;i<a.count;i++){const v=n.x*a.getX(i)+n.y*a.getY(i)+n.z*a.getZ(i)-d;lo=Math.min(lo,v);hi=Math.max(hi,v);}
    if(lo<0&&hi>0){
-    const clipped=SLICE.slice(o.geometry,n,d,false);
+    const clipped=SLICE.slice(o.geometry,n,d,false,true);
     if(clipped.keep){const old=o.geometry;o.geometry=clipped.keep;if(f){f.setGeometry(clipped.keep,true);if(o.userData.detached)f.disposeWork();}this.disposables.push(clipped.keep);this.releaseGeometry(old);}
     if(clipped.cut)clipped.cut.dispose();
    }
@@ -10665,10 +10748,12 @@ const TROPHIES=(()=>{
  const modal=$('#trophyModal'),img=$('#trophyImage'),status=$('#trophyStatus'),save=$('#trophySave');
  const nextFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
  const artCache = new Map();
+ let portraitQueue=Promise.resolve();
  function loadArt(name) {
   if (artCache.has(name)) return artCache.get(name);
   if(name!=='trophy-field'){
-   const loading=Promise.resolve().then(()=>{const outfit=name==='trophy-eye'?2:name==='trophy-jaw'?3:Number(name.replace('trophy-head-',''))-1;return trophyPortrait(outfit,name==='trophy-eye'?'eye':name==='trophy-jaw'?'jaw':'');}).catch(error=>{artCache.delete(name);throw error;});
+   const loading=portraitQueue.then(nextFrame).then(()=>{const outfit=name==='trophy-eye'?2:name==='trophy-jaw'?3:Number(name.replace('trophy-head-',''))-1;return trophyPortrait(outfit,name==='trophy-eye'?'eye':name==='trophy-jaw'?'jaw':'');}).catch(error=>{artCache.delete(name);throw error;});
+   portraitQueue=loading.catch(()=>{});
    artCache.set(name,loading);return loading;
   }
   const loading = new Promise((resolve, reject) => {
@@ -11277,6 +11362,7 @@ let rsT=0;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{i
 addEventListener('blur',clearPointers);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();crumpleRelease();AUDIO.stop(true);}else{last=performance.now();if(G.running){fitView();if(BEYOND.active){AUDIO.unlock();setTimeout(()=>{if(BEYOND.active&&!document.hidden)AUDIO.beyond();},250);}}}});
 
+warmCombatAssets();
 window.PaljaGame={enter,leave,pause,prepare,peek,pull,arrive,paperRect(){return SUBMISSION.rect();},unlock(primed){AUDIO.unlock(primed);},get stage(){return INTRO.stage;},fonts(){BUB.preload();},
  tick(dt=1/60,draw=true){step(dt);if(draw)render(dt);},
  pick:pickAt,setTool,
