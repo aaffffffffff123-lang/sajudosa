@@ -10998,13 +10998,16 @@ function trophyPortrait(spec=0,damage=''){
  const previous={target:renderer.getRenderTarget(),clear:renderer.getClearColor(new THREE.Color()),alpha:renderer.getClearAlpha(),exposure:renderer.toneMappingExposure,auto:renderer.autoClear,viewport:renderer.getViewport(new THREE.Vector4()),scissor:renderer.getScissor(new THREE.Vector4()),scissorTest:renderer.getScissorTest()};
  const pixels=new Uint8Array(512*512*4);
  try{
-  renderer.setRenderTarget(target);renderer.setViewport(0,0,512,512);renderer.setScissorTest(false);renderer.setClearColor(0x000000,0);renderer.autoClear=true;renderer.toneMappingExposure=1;
+  // Render-target viewports use physical pixels. setViewport() would multiply these
+  // 512 pixels by the screen DPR, enlarging/shifting the head away from its anchors.
+  // Binding the target already installs its own 512×512 viewport and scissor state.
+  renderer.setRenderTarget(target);renderer.setClearColor(0x000000,0);renderer.autoClear=true;renderer.toneMappingExposure=1;
   renderer.clear();renderer.render(stage,view);renderer.readRenderTargetPixels(target,0,0,512,512,pixels);
   const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const context=canvas.getContext('2d'),data=context.createImageData(512,512);
   for(let y=0;y<512;y++)data.data.set(pixels.subarray((511-y)*2048,(512-y)*2048),y*2048);
   context.putImageData(data,0,0);canvas.anchors=anchors;canvas.face=face;return canvas;
  }finally{
-  renderer.setRenderTarget(previous.target);renderer.setViewport(previous.viewport);renderer.setScissor(previous.scissor);renderer.setScissorTest(previous.scissorTest);renderer.setClearColor(previous.clear,previous.alpha);renderer.toneMappingExposure=previous.exposure;renderer.autoClear=previous.auto;
+  renderer.setViewport(previous.viewport);renderer.setScissor(previous.scissor);renderer.setScissorTest(previous.scissorTest);renderer.setRenderTarget(previous.target);renderer.setClearColor(previous.clear,previous.alpha);renderer.toneMappingExposure=previous.exposure;renderer.autoClear=previous.auto;
   target.dispose();for(const geometry of owned)geometry.dispose();for(const mat of new Set([...materials,...model.disposables]))if(mat&&mat.dispose)mat.dispose();
  }
 }
