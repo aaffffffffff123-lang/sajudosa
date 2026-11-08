@@ -68,3 +68,21 @@ test('repeated cuts preserve the original clothing radius, material and cut posi
   }
  }
 });
+test('both rings lie around their fingers instead of standing across them',()=>{
+ for(const s of [-1,1]){
+  const E=rig(),wr=new THREE.Group();E.root.add(wr);const hand=E._hand(wr,s,s<0?'handL':'handR');E.root.updateMatrixWorld(true);
+  let rings=0;
+  for(const i of [2,3]){
+   const finger=hand.fingers[i].f;
+   for(const m of finger.children){
+    if(!(m.geometry instanceof THREE.TorusGeometry))continue;rings++;
+    // 고리 구멍의 축(토러스 z축)이 손가락이 뻗는 축(손가락 y축)과 나란해야 손가락을 감싼다
+    const axis=V3(0,0,1).applyQuaternion(m.quaternion);
+    assert(Math.abs(axis.dot(V3(0,1,0)))>.99,'ring hole axis follows the finger: '+axis.toArray());
+    // 손가락 굵기(.0118)보다 고리가 조금 커서 살에 반쯤 묻힌 띠로 보인다
+    const r=m.geometry.parameters.radius,t=m.geometry.parameters.tube;assert(r>.0105&&r-t<.0105);
+   }
+  }
+  assert.equal(rings,2);
+ }
+});

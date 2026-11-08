@@ -34,10 +34,10 @@ test('the record stays unavailable before the completed reveal and before a fina
  h.G.ended=true;h.PROGRESS.defeated=0;await h.open();assert(!h.$('#trophyModal').hidden);assert(h.$('#trophyReset').hidden);h.TROPHIES.close(false);
 });
 test('the card contains the exact count; close releases its blob and restores focus/pause',async()=>{
- const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.equal(h.calls.texts.join(''),'족친천지신명7놈梟首');assert.equal(h.calls.images,9,'sky + field + one portrait per outfit + the front head');assert(h.G.paused);
+ const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.equal(h.calls.texts.join(''),'족친천지신명7놈','no 梟首 seal');assert.equal(h.calls.images,8,'field + one portrait per outfit + the front head (no sky eye picture)');assert(h.G.paused);
  assert.equal(h.calls.portraits.filter(s=>s.eyes==='stare'&&s.tongue).length,1,'only the newest head stares out with its tongue hanging');assert(!h.$('#trophySave').hidden);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'족친천지신명_7놈.png');
  h.$('#trophyClose').click();assert(!h.G.paused);assert(h.$('#trophyModal').hidden);assert.deepEqual(h.calls.revoked,['blob:1']);assert.equal(h.document.activeElement,h.$('#trophyBtn'));
- await h.open();assert.equal(h.calls.images,9,'reuse the sky, field and portraits');h.TROPHIES.close(false);
+ await h.open();assert.equal(h.calls.images,8,'reuse the field and portraits');h.TROPHIES.close(false);
 });
 test('closing during creation cannot reopen the panel or attach a stale image',async()=>{
  const h=setup();h.$('#trophyBtn').click();h.$('#trophyClose').click();await h.flush();assert(h.$('#trophyModal').hidden);assert.equal(h.$('#trophyImage').src,undefined);assert.equal(h.calls.images,0);
@@ -63,4 +63,13 @@ test('reset cancel preserves totals; confirmation clears only the count and redr
 });
 test('a failed persistent reset leaves the prior record intact',async()=>{
  const h=setup(47);await h.open();h.calls.failReset=true;h.$('#trophyReset').click();h.$('#trophyResetYes').click();assert.equal(h.PROGRESS.defeated,47);assert.match(h.$('#trophyStatus').textContent,/지우지 못했어요/);h.TROPHIES.close(false);
+});
+
+test('the card has no eye in the sky, no crows and no 梟首 seal',async()=>{
+ const card=source.slice(source.indexOf('const TROPHY_CARD='),source.indexOf('// 끝: 누적 처치 수'));
+ assert.doesNotMatch(card,/fate-beyond|drawCrows|perchedCrow|eyeLid|animateSky|梟|'noto'/);
+ assert.doesNotMatch(source,/id="trophySky"/);
+ const h=setup(3);await h.open();
+ assert.equal(h.calls.texts.join(''),'족친천지신명3놈');assert.match(h.$('#trophyImage').alt,/밤 들판/);assert.doesNotMatch(h.$('#trophyImage').alt,/눈/);
+ h.TROPHIES.close(false);
 });
