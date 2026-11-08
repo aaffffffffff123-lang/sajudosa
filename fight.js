@@ -10974,7 +10974,8 @@ function trophyPortrait(spec=0,damage=''){
  {const p=stumpGeo.attributes.position;let seed=outfit*97+11;const r=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   for(let i=0;i<p.count;i++){const y=p.getY(i);if(y<-.06)p.setY(i,y-.004-r()*.045);else if(y<0)p.setX(i,p.getX(i)*(1+(r()-.5)*.05));}
   stumpGeo.computeVertexNormals();}
- const stump=mk(stumpGeo,M.liz,model.bones.head,{p:[0,-.005,-.06],r:[-.18,0,0],cast:false});
+ // Keep the neck socket in the same tilted frame as the skull, including yaw/droop.
+ const stump=mk(stumpGeo,M.liz,model.repHead,{p:[0,-.07,-.04],r:[-.18,0,0],cast:false});
  const cutGeo=new THREE.CircleGeometry(.074,22);owned.add(cutGeo);
  mk(cutGeo,M.blueCore,stump,{p:[0,-.07,0],r:[PI/2,0,0],cast:false});
  // New crown geometry belongs to this short-lived render; cache meshes stay live.
@@ -10990,7 +10991,7 @@ function trophyPortrait(spec=0,damage=''){
  const view=new THREE.OrthographicCamera(-half,half,half,-half,.01,10);view.position.copy(center).add(V3(0,.04,2));view.lookAt(center);view.updateMatrixWorld(true);
  // 2D 카드가 피를 흘릴 자리: 목 밑동·눈구멍·입(캔버스 0~1 좌표)
  const at=v=>{const q=v.clone().project(view);return [q.x*.5+.5,.5-q.y*.5];};
- const anchors={neck:at(stump.localToWorld(V3(0,-.075,0))),top:at(V3(center.x,bounds.max.y,center.z)),
+ const anchors={neck:at(stump.localToWorld(V3(0,-.075,0))),stake:at(stump.localToWorld(V3(0,.075,0))),top:at(V3(center.x,bounds.max.y,center.z)),
   mouth:at(model.repJawBone.localToWorld(V3(0,-.02,.17))),eyes:model.repEyes.map(e=>at(e.socket.localToWorld(V3(0,-.012,.03)))),
   gouged:face.eyes==='gouged',jawGone:face.jaw==='gone',tongue:!!face.tongue&&face.jaw!=='gone'};
  const target=new THREE.WebGLRenderTarget(512,512,{depthBuffer:true,stencilBuffer:false});target.texture.encoding=THREE.sRGBEncoding;
@@ -11230,6 +11231,15 @@ const TROPHIES=(()=>{
  }
  // 머리 그림 안의 자리(0~1) → 카드 자리
  function headPoint(h,u,v){const sx=(h.flip?-1:1)*(u-.5)*h.size,sy=(v-.5)*h.size,c=Math.cos(h.tilt),s=Math.sin(h.tilt);return [h.x+sx*c-sy*s,h.y+sx*s+sy*c];}
+ // One line through the neck opening and a buried point inside the head.
+ // The shaft, ground contact and any exposed tip all share this line after flip/tilt.
+ function stakeMount(h,pic){
+  const neck=h.empty?[h.x,h.y]:headPoint(h,...pic.anchors.neck);
+  const inside=h.empty?neck:headPoint(h,...pic.anchors.stake);
+  const slope=h.empty?-Math.sin(h.lean):(inside[0]-neck[0])/Math.max(1,neck[1]-inside[1]);
+  const xAt=y=>neck[0]+slope*(neck[1]-y);
+  return {neck,inside,xAt,baseX:xAt(h.footY)};
+ }
  function drip(g,x0,y0,x1,y1,w,r){
   g.lineCap='round';g.strokeStyle='rgba(9,14,44,.95)';g.lineWidth=w;
   g.beginPath();g.moveTo(x0,y0);g.quadraticCurveTo((x0+x1)/2+(r()-.5)*w*2,(y0+y1)/2,x1,y1);g.stroke();
@@ -11246,11 +11256,11 @@ const TROPHIES=(()=>{
  }
  function drawStake(g,h,pic,blood){
   const w=Math.max(2.4,h.size*(h.empty?.05:.055)),r=trophyRng(h.ordinal*31+5+(h.empty?Math.round(h.x):0));
-  const [nx,ny]=h.empty?[h.x,h.y]:headPoint(h,pic.anchors.neck[0],pic.anchors.neck[1]);
-  const baseX=nx+Math.sin(h.lean)*(h.footY-ny),footY=h.footY;
+  const mount=stakeMount(h,pic),[nx,ny]=mount.neck,[ix,iy]=mount.inside;
+  const baseX=mount.baseX,footY=h.footY;
   g.fillStyle='rgba(4,6,7,.6)';g.beginPath();g.ellipse(baseX+w*.8,footY+1,w*3.4,Math.max(1.4,w*.6),0,0,TAU);g.fill();
   if(!h.empty&&blood){g.fillStyle='rgba(9,16,50,.82)';g.beginPath();g.ellipse(baseX+w*(.6+r()),footY+w*.15,w*(2.4+r()*2.6),Math.max(1.2,w*.5),0,0,TAU);g.fill();}
-  stakeBody(g,baseX,footY,nx,ny,w,h.empty);
+  stakeBody(g,baseX,footY,ix,iy,w,h.empty);
   if(h.empty||!blood)return;
   // 목에서 흘러 장대를 타고 내려간 피(맨 앞만 길게)
   const drips=2+Math.floor(r()*3);
@@ -11262,9 +11272,10 @@ const TROPHIES=(()=>{
  function drawGore(g,h,pic,blood){
   const a=pic.anchors,r=trophyRng(h.ordinal*131+7),u=h.size/400;
   if(h.tip){// 장대 끝이 면류관을 뚫고 나왔다
-   const [tx,ty]=headPoint(h,.5+(r()-.5)*.12,a.top[1]+.02),w=Math.max(2,h.size*.05),len=h.size*.2;
-   g.fillStyle='#2b231c';g.beginPath();g.moveTo(tx-w*.45,ty+4);g.lineTo(tx+Math.sin(h.tilt)*len,ty-len);g.lineTo(tx+w*.45,ty+4);g.closePath();g.fill();
-   if(blood)drip(g,tx,ty-len*.5,tx+1,ty+6,Math.max(.8,w*.35),r);
+   const mount=stakeMount(h,pic),ty=headPoint(h,a.top[0],a.top[1]+.02)[1],w=Math.max(2,h.size*.05),len=h.size*.2;
+   const tx=mount.xAt(ty+4),tipX=mount.xAt(ty-len);
+   g.fillStyle='#2b231c';g.beginPath();g.moveTo(tx-w*.45,ty+4);g.lineTo(tipX,ty-len);g.lineTo(tx+w*.45,ty+4);g.closePath();g.fill();
+   if(blood)drip(g,mount.xAt(ty-len*.5),ty-len*.5,mount.xAt(ty+6)+1,ty+6,Math.max(.8,w*.35),r);
   }
   if(!blood||h.size<26)return;
   // 눈: 피눈물, 파낸 눈구멍은 줄줄

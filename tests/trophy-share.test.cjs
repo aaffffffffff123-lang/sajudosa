@@ -11,7 +11,7 @@ function setup(count=7){
  class Image{set src(value){calls.images++;this.url=value;queueMicrotask(()=>calls.failImages?this.onerror():this.onload())}}
  const G={paused:false,ended:true},PROGRESS={defeated:count,reset(){calls.resets++;if(calls.failReset)return false;this.defeated=0;return true}};let urlId=0;
  const navigator={};const URL={createObjectURL:()=>`blob:${++urlId}`,revokeObjectURL:u=>calls.revoked.push(u)};
- const api=vm.runInNewContext(code+';({trophyLayout,TROPHIES})',{$,G,PROGRESS,PREF:{deform:true},document,navigator,Image,URL,Blob,File,requestAnimationFrame:f=>queueMicrotask(f),setTimeout,clearTimeout,console,performance,TAU:Math.PI*2,trophyPortrait:spec=>{calls.images++;calls.portraits.push(spec);return {url:'portrait-'+JSON.stringify(spec),anchors:{neck:[.5,.85],top:[.5,.05],mouth:[.5,.55],eyes:[[.42,.38],[.56,.38]],gouged:spec.eyes==='gouged',jawGone:spec.jaw==='gone',tongue:!!spec.tongue}}},updateDefeatCount(){},clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),clearPointers(){},AUDIO:{hold:x=>calls.holds.push(x)},last:0});
+ const api=vm.runInNewContext(code.replace('return {close,draw:', 'return {close,stakeMount,draw:')+';({trophyLayout,TROPHIES})',{$,G,PROGRESS,PREF:{deform:true},document,navigator,Image,URL,Blob,File,requestAnimationFrame:f=>queueMicrotask(f),setTimeout,clearTimeout,console,performance,TAU:Math.PI*2,trophyPortrait:spec=>{calls.images++;calls.portraits.push(spec);return {url:'portrait-'+JSON.stringify(spec),anchors:{neck:[.5,.85],stake:[.5,.67],top:[.5,.05],mouth:[.5,.55],eyes:[[.42,.38],[.56,.38]],gouged:spec.eyes==='gouged',jawGone:spec.jaw==='gone',tongue:!!spec.tongue}}},updateDefeatCount(){},clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),clearPointers(){},AUDIO:{hold:x=>calls.holds.push(x)},last:0});
  const flush=()=>new Promise(r=>setImmediate(r));
  return {$,calls,G,PROGRESS,navigator,document,...api,flush,async open(){ $('#trophyBtn').click();await flush()}};
 }
@@ -45,6 +45,22 @@ test('more kills raise and pull back the camera, so a big record looks different
  // 2000놈이면 화면 폭을 다 채운 들판이 지평선 가까이까지 이어지고, 맨 앞 머리는 아래 숫자 위에 온다
  const big=h.trophyLayout(2000),xs=big.heads.map(x=>x.x),front=big.heads.find(x=>x.hero);
  assert(Math.min(...xs)<60&&Math.max(...xs)>1020);assert(big.heads[0].y-big.horizon<120);assert(big.rows>=60);assert(front.y+front.size/2<1150);
+});
+test('a tilted or mirrored head stays pierced through its neck centre on one continuous shaft',()=>{
+ const h=setup(),pic={anchors:{neck:[.49,.85],stake:[.51,.67]}};
+ for(const count of [1,6,24,2000])for(const head of h.trophyLayout(count).heads){
+  const mount=h.TROPHIES.stakeMount(head,pic);
+  if(head.empty){assert.equal(mount.inside[0],head.x);assert.equal(mount.inside[1],head.y);continue;}
+  const [nx,ny]=mount.neck,[ix,iy]=mount.inside;
+  assert(ny-iy>head.size*.16,'shaft reaches well inside the neck rather than stopping at its edge');
+  assert(Math.abs(mount.xAt(iy)-ix)<1e-8,'shaft intersects the internal mounting point');
+  assert(Math.abs(mount.xAt(ny)-nx)<1e-8,'shaft intersects the centre of the cut opening');
+  assert(Number.isFinite(mount.baseX));
+  const cross=(ix-nx)*(head.footY-ny)-(iy-ny)*(mount.baseX-nx);
+  assert(Math.abs(cross)<1e-7,'buried shaft and ground contact are collinear');
+  const reverse=h.TROPHIES.stakeMount({...head,tilt:-head.tilt,flip:!head.flip},pic);
+  assert(Math.abs(mount.baseX+reverse.baseX-2*head.x)<1e-7,'mirrored portraits mirror the shaft too');
+ }
 });
 test('the record stays unavailable before the completed reveal and before a final kill',async()=>{
  const h=setup();h.$('#again').hidden=true;await h.open();assert(h.$('#trophyModal').hidden);assert.equal(h.calls.images,0);
