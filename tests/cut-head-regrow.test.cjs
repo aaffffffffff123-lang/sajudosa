@@ -10,7 +10,7 @@ const api=vm.runInNewContext(
  slice('const HEADGEO=','const BELLY_C=')+slice('function eyeCapGeo(','\n}')+'\n}\n'+
  slice('const REP_TOOTH=','Object.assign(Emperor.prototype,')+
  slice('function deityHasReptileVoice(E){','const COMBAT_VOICE=')+
- 'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice(' voiceHit(tool,part,P,cut){',' // 날아간 살점의 겉 색:')+slice('makeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
+ 'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice(' updateRepFace(dt,time){','\n});\n/* ===== 6-4-4.')+slice(' voiceHit(tool,part,P,cut){',' // 날아간 살점의 겉 색:')+slice('makeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
 function makeRig(){
  const root=new THREE.Group(),neck=new THREE.Group();root.add(neck);const E={...api.methods,root,bones:{neck},goreMeshes:[],disposables:[],parts:[],flow:{},headGone:true,headDestroyed:true,headKind:'human',
   bone(name,parent,pos){const g=api.grp(parent,pos);g.userData.bone=name;this.bones[name]=g;return g},
@@ -50,6 +50,35 @@ test('head growth shader keeps the original material hook and uniform survives r
  const m=new THREE.MeshStandardMaterial();let calls=0;m.onBeforeCompile=()=>calls++;
  const reveal=api.headGrowthMaterial(m,-.07);const compile=()=>{const sh={uniforms:{},vertexShader:THREE.ShaderLib.standard.vertexShader,fragmentShader:THREE.ShaderLib.standard.fragmentShader};reveal.onBeforeCompile(sh);return sh;};
  const a=compile(),b=compile();assert.equal(calls,2);assert.equal(a.uniforms.uHeadGrowth,b.uniforms.uHeadGrowth);assert(a.fragmentShader.includes('discard;'));assert(a.vertexShader.includes('vHeadGrowth=position;'));
+});
+
+test('upright reptilian anatomy has visible recessed eyes, a short nose and finite intact meshes',()=>{
+ const E=makeRig();E.buildRepHead();E.repHead.scale.setScalar(1);E.root.updateMatrixWorld(true);
+ const skull=E.repSkull.geometry;skull.computeBoundingBox();
+ assert(skull.boundingBox.max.y>.22,'human-height forehead');
+ assert(skull.boundingBox.max.z<.23,'no long animal muzzle');
+ for(const mesh of [E.repSkull,E.repJaw])for(const v of mesh.geometry.attributes.position.array)assert(Number.isFinite(v));
+ for(const eye of E.repEyes){
+  const target=eye.eg.getWorldPosition(V3()),ray=new THREE.Raycaster(target.clone().add(V3(0,0,1)),V3(0,0,-1));
+  const hits=ray.intersectObjects([E.repSkull,eye.ball,eye.iris]);
+  assert(hits.length&&hits[0].object!==E.repSkull,'the lids never bury the central iris');
+  assert(eye.eg.position.z<.15,'eyes seated in the face');
+ }
+});
+
+test('reptilian stare does not emote, mouth remains nearly shut, membrane skips missing eyes',()=>{
+ const E=makeRig();E.buildRepHead();E.repHead.scale.setScalar(1);E.root.updateMatrixWorld(true);
+ E.headGone=false;E.talk=0;E.flinch=0;E.mouthCoinUntil=0;E.repFlickT=1e6;
+ E.M.repMem.map=new THREE.Texture();ctx._fv2=V3();ctx.camera=new THREE.PerspectiveCamera();ctx.camera.position.set(0,.3,2);
+ E.emo='smug';E.updateRepFace(0,2);const eyes=E.repEyes.map(e=>e.eg.quaternion.clone());
+ const open=E.repJawBone.rotation.x;assert(open<.02,'no resting grin or panting');
+ E.emo='scared';E.updateRepFace(0,2);
+ E.repEyes.forEach((e,i)=>assert(e.eg.quaternion.equals(eyes[i]),'emotion cannot move the stare'));
+ assert.equal(E.repJawBone.rotation.x,open);
+ E.repEyes[0].ejected=true;E.repMemWait=0;E.updateRepFace(.1,2.1);
+ assert.equal(E.repEyes[0].mem.visible,false);assert.equal(E.repEyes[1].mem.visible,true);
+ E.updateRepFace(.5,2.6);assert(E.repEyes.every(e=>!e.mem.visible));assert.equal(E.M.repMem.map.offset.x,0);
+ E.jawGone=true;const held=E.repJawBone.rotation.clone();E.flinch=1;E.updateRepFace(.1,2.7);assert(E.repJawBone.rotation.equals(held));
 });
 
 test('completed regrowth restores impact cries while the severed human face stays disabled',()=>{

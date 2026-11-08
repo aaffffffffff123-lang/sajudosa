@@ -12,7 +12,7 @@ test('an intact belly can eject the requested coins from either mouth and finish
  for(const rep of [false,true]){
   const h=setup(rep);h.E.vomitCoins(14,1);h.step();
   assert.equal(h.emitted.length,14);assert.equal(h.sounds.length,1);assert.equal(h.E.mouthCoinQ,0);
-  for(const coin of h.emitted){assert.ok(coin.p.distanceTo(new THREE.Vector3(0,rep?-.116:-.126,rep?.284:.226))<1e-9);assert.ok(coin.v.z>1);}
+  for(const coin of h.emitted){assert.ok(coin.p.distanceTo(new THREE.Vector3(0,rep?-.118:-.126,rep?.196:.226))<1e-9);assert.ok(coin.v.z>1);}
  }
 });
 test('emission follows a rotated and moving head after a fall',()=>{
@@ -46,10 +46,10 @@ test('actual hit handling ejects from blunt belly hits while preserving the open
  }
 });
 test('the leg pass keeps separate depth from the hand pass and restores the camera layer',()=>{
- const start=source.indexOf('function render(){'),end=source.indexOf('function frame(',start),events=[];
+ const start=source.indexOf('function render(dt=0){'),end=source.indexOf('function frame(',start),events=[];
  const scene={},vmScene={},fx={},camera={},vmCam={layers:{mask:1,set(n){this.mask=1<<n;}}},COMBAT_STAGE={boot:{visible:true}};
  const renderer={clear(){},clearDepth(){events.push('clearDepth');},render(s,c){events.push(s===scene?'world':s===fx?'fx':'vm:'+c.layers.mask);}};
- const scope={renderer,scene,vmScene,camera,vmCam,COMBAT_STAGE,BEYOND:{active:false},FX:{scene:fx},BUB:{draw(){}}};
+ const scope={renderer,scene,vmScene,camera,vmCam,COMBAT_STAGE,BEYOND:{active:false},FX:{scene:fx},BUB:{draw(){}},VM:{afterRender(){}},gunLT:0};
  vm.runInNewContext(source.slice(start,end)+'render();',scope);
  assert.deepEqual(events,['world','clearDepth','vm:2','clearDepth','vm:1','clearDepth','fx']);assert.equal(vmCam.layers.mask,1);
  events.length=0;COMBAT_STAGE.boot.visible=false;vm.runInNewContext(source.slice(start,end)+'render();',scope);

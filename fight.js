@@ -4969,6 +4969,15 @@ const REP_IRIS_TEX=canvasTex(256,256,(g,w,h)=>{
  for(let i=0;i<240;i++){const a=i/240*TAU,j=.5+.5*Math.sin(i*87.43),r0=22+j*24,r1=100+j*22;g.strokeStyle=i%3?'rgba(229,194,95,.36)':'rgba(42,29,8,.65)';g.lineWidth=.6+j;g.beginPath();g.moveTo(128+Math.cos(a)*r0,128+Math.sin(a)*r0);g.quadraticCurveTo(128+Math.cos(a+.015)*72,128+Math.sin(a+.015)*72,128+Math.cos(a)*r1,128+Math.sin(a)*r1);g.stroke();}
  g.fillStyle='#080b09';g.beginPath();g.moveTo(128,10);g.bezierCurveTo(148,85,148,176,128,246);g.bezierCurveTo(108,176,108,85,128,10);g.fill();
 });
+// Regrown eyes are pale and opaque, with no bright, expressive cartoon iris.
+const REP_HEAD_IRIS_TEX=canvasTex(256,256,(g,w,h)=>{
+ const r=g.createRadialGradient(128,128,8,128,128,126);
+ r.addColorStop(0,'#575e42');r.addColorStop(.28,'#b7bb8b');r.addColorStop(.63,'#959d75');r.addColorStop(.88,'#727d5f');r.addColorStop(1,'#2d392b');g.fillStyle=r;g.fillRect(0,0,w,h);
+ for(let i=0;i<300;i++){const a=i/300*TAU,j=.5+.5*Math.sin(i*73.47),r0=17+j*26,r1=105+j*20;
+  g.strokeStyle=i%3?'rgba(215,213,157,.27)':'rgba(30,46,29,.42)';g.lineWidth=.6+j;
+  g.beginPath();g.moveTo(128+Math.cos(a)*r0,128+Math.sin(a)*r0);g.quadraticCurveTo(128+Math.cos(a+.02)*70,128+Math.sin(a+.02)*70,128+Math.cos(a)*r1,128+Math.sin(a)*r1);g.stroke();}
+ g.fillStyle='#080d09';g.beginPath();g.moveTo(128,5);g.bezierCurveTo(144,82,143,180,128,251);g.bezierCurveTo(113,178,112,83,128,5);g.fill();
+});
 /* 도마뱀 살갗(이어 붙는 비늘). 쓰는 곳마다 비늘 크기가 맞게 반복 횟수만 다른 복사본을 쓴다 */
 const REPTILE_MAPS=(()=>{
  const maps={},size=512,cols=12,rows=16,cw=size/cols,ch=size/rows;
@@ -5330,43 +5339,53 @@ const HEADGEO=(()=>{
   let a=lo,b=lo+.006;for(let i=0;i<14;i++){const m=(a+b)/2;if(human(x,y,m)<0)a=m;else b=m;}
   z=(a+b)/2;zc.set(k,z);return z;
  }
- /* 도마뱀 머리(다시 자라는 머리): 납작하고 뒤가 넓은 두개골, 길게 튀어나온 주둥이, 불거진 눈두덩, 볼 비늘판, 콧구멍 틈, 입 선 */
+ /* 다시 자라는 얼굴: 사람의 이마·관자·광대·턱, 짧은 파충류 코와 고정된 안와.
+  * 눈두덩과 입꼬리에 감정의 기울기를 넣지 않는다. 살의 반응은 골격의 충격으로만 전달한다. */
  function rep(x,y,z){
   const ax=Math.abs(x);
-  const box=(cx,cy,cz,bx,by,bz,r)=>{const qx=Math.abs(x-cx)-bx,qy=Math.abs(y-cy)-by,qz=Math.abs(z-cz)-bz;return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))+Math.min(Math.max(qx,qy,qz),0)-r;};
-  let d=ell(x,y,z,0,.057,-.038,.149,.138,.171);
-  // Flat maxilla and long nasal shelf: no spherical muzzle or inflated cheeks.
-  d=smin(d,box(0,-.019,.174,.071,.027,.093,.024),.018);
-  d=smin(d,ell(ax,y,z,.112,-.032,.015,.055,.061,.089),.013);
-  d=smin(d,cap(ax,y,z,.026,.105,.167,.137,.077,.084,.03,.017),.005);
-  d=smax(d,-ell(ax,y,z,.091,.049,.153,.048,.034,.042),.004);
-  d=smin(d,cap(x,y,z,0,.106,.012,0,.028,.276,.024,.015),.008);
-  // Cranial ridges and paired plate edges are part of the deformable skull.
-  d=smin(d,cap(ax,y,z,.051,.18,-.105,.119,.13,.058,.023,.014),.005);
-  d=smin(d,cap(ax,y,z,.146,.027,-.07,.112,-.061,.112,.017,.012),.006);
-  d=smax(d,-ell(ax,y,z,.028,-.004,.282,.012,.006,.018),.003);
-  d=smax(d,-cap(ax,y,z,0,-.065,.283,.103,-.065,.043,.004,.005),.004);
-  d=smin(d,ell(x,y,z,0,-.107,-.032,.106,.089,.111),.025);
+  let d=ell(x,y,z,0,.065,-.036,.148,.183,.154);
+  // Upright forehead and temples keep a human cranial silhouette.
+  d=smin(d,ell(x,y,z,0,.132,.072,.131,.102,.095),.024);
+  d=smin(d,ell(ax,y,z,.112,.036,.016,.039,.098,.104),.022);
+  // Angular cheekbones flow down into a narrow face instead of a long muzzle.
+  d=smin(d,ell(ax,y,z,.098,-.014,.083,.035,.043,.050),.020);
+  d=smin(d,ell(x,y,z,0,-.051,.055,.109,.085,.115),.026);
+  // A level, heavy orbital shelf: neither a scowl nor a raised eyebrow.
+  d=smin(d,cap(ax,y,z,.028,.106,.145,.114,.104,.122,.014,.012),.018);
+  d=smin(d,ell(ax,y,z,.074,.065,.133,.046,.035,.038),.016);
+  d=smax(d,-ell(ax,y,z,.074,.064,.171,.035,.022,.025),.004);
+  // Flattened nasal bridge and a vestigial human nose; no projecting snout.
+  d=smin(d,cap(x,y,z,0,.087,.166,0,-.040,.191,.013,.020),.013);
+  d=smin(d,ell(x,y,z,0,-.047,.186,.033,.024,.031),.012);
+  d=smax(d,-ell(ax,y,z,.016,-.055,.213,.007,.0045,.012),.003);
+  // Thin upper mouth plate; the slit stays horizontal through both corners.
+  const upper=smax(ell(x,y,z,0,-.078,.112,.095,.065,.064),-(y+.111),.006);
+  d=smin(d,upper,.015);
+  d=smax(d,-ell(x,y,z,0,-.113,.164,.102,.004,.044),.003);
+  // Back of the mandible connects continuously to the existing neck.
+  d=smin(d,ell(x,y,z,0,-.114,-.034,.098,.069,.097),.022);
   return d;
  }
- // 도마뱀 아래턱(턱뼈 자리 (0,-.07,-.03)를 빼서 붙인다)
+ // The lower jaw has a human chin, with the same level mouth seam as the skull.
  function repJaw(x,y,z){
-  let d=ell(x,y,z,0,-.082,.12,.078,.024,.133);
-  d=smin(d,ell(x,y,z,0,-.097,.022,.078,.035,.08),.018);
-  d=smin(d,cap(Math.abs(x),y,z,.062,-.076,.02,.056,-.081,.215,.019,.012),.006);
+  let d=ell(x,y,z,0,-.137,.071,.089,.042,.095);
+  d=smin(d,ell(Math.abs(x),y,z,.070,-.127,.014,.023,.042,.063),.018);
+  d=smin(d,ell(x,y,z,0,-.154,.117,.064,.025,.051),.015);
+  d=smax(d,y+.112,.004);
   return d;
  }
  function tintRep(x,y,z,c){
-  // 비늘맵의 색을 살리고 정수리·턱밑·안와에만 약한 색 차이를 준다.
-  const top=smooth((y+.02)/.12),belly=smooth((-.05-y)/.06)*smooth((z+.05)/.1);
-  const brow=Math.exp(-(((Math.abs(x)-.09)**2)/(2*.032*.032)+((y-.095)**2)/(2*.018*.018)));
-  c.setRGB(.82-.22*top+.23*belly+.13*brow,.94-.17*top+.12*belly+.08*brow,.76-.2*top+.12*belly-.08*brow);
+  const front=smooth((z+.01)/.13),temple=smooth((Math.abs(x)-.08)/.07);
+  const under=smooth((-.065-y)/.10)*front;
+  const eye=Math.exp(-(((Math.abs(x)-.074)**2)/.0015+((y-.063)**2)/.0018))*front;
+  // Desaturated olive, pale jaw and a muted flesh tone around the sockets.
+  c.setRGB(.90-.10*temple+.13*under+.09*eye,.91-.12*temple+.07*under-.13*eye,.86-.09*temple+.05*under-.06*eye);
  }
  function build(){
   if(G.head)return G;
   G.head=SCULPT.star(human,V3(0,-.012,.004),136,104,.33,{tint:tintHuman});
-  G.rep=SCULPT.star(rep,V3(0,.0,.02),136,104,.34,{tint:tintRep,smooth:0});
-  G.repJaw=SCULPT.star(repJaw,V3(0,-.075,.12),72,48,.2,{tint:(x,y,z,c)=>{c.setRGB(1.15,1.06,.78);}});
+  G.rep=SCULPT.star(rep,V3(0,.0,.02),136,104,.34,{tint:tintRep,smooth:2});
+  G.repJaw=SCULPT.star(repJaw,V3(0,-.14,.075),72,48,.2,{tint:tintRep});
   G.repJaw.translate(0,.07,.03);
   G.chin=SCULPT.star(chin,V3(0,-.16,.115),72,54,.16,{tint:(x,y,z,c)=>{const l=Math.exp(-((x*.7)**2+(y+.122)**2+(z-.17)**2)/(2*.028*.028));c.setRGB(1,1-.08*l,1-.07*l);}});
   G.chin.translate(0,.03,.02);
@@ -5626,7 +5645,7 @@ class Emperor{
    regBone:S('#e2dcc4',{roughness:.3}),rawFlesh:S('#ffffff',{map:rawFleshTex(),bumpMap:rawFleshTex(),bumpScale:.0034,roughness:.3,emissive:col('#0a1c5c'),emissiveIntensity:.18}),
    rawVessel:S('#3f6fe0',{roughness:.2,emissive:col('#10287a'),emissiveIntensity:.3}),
    claw:S('#f3ebd2',{roughness:.22}),blueCore:S('#1b45c4',{roughness:.2,emissive:col('#0a1c66'),emissiveIntensity:.35,side:THREE.DoubleSide}),
-   lizEye:S('#ffffff',{map:REP_IRIS_TEX,roughness:.12,emissive:col('#ffffff'),emissiveMap:REP_IRIS_TEX,emissiveIntensity:.45}),lizEyeBall:S('#3a4a12',{roughness:.3}),
+   lizEye:S('#ffffff',{map:REP_HEAD_IRIS_TEX,roughness:.23,emissive:col('#ffffff'),emissiveMap:REP_HEAD_IRIS_TEX,emissiveIntensity:.025}),lizEyeBall:S('#404936',{roughness:.3}),
    // 배 속(돼지저금통): 갈라진 천 가장자리
    slitLip:S('#f5eedf',{roughness:.6,side:THREE.DoubleSide}),
   };
@@ -5636,8 +5655,10 @@ class Emperor{
   const M=this.M;
   M.flesh=S('#eda882',{roughness:.48,vertexColors:true});M.hairF=S('#231b1b',{roughness:.62});
   M.lizHead=S('#ffffff',{vertexColors:true});
+  const repMemTex=MEM_TEX.clone();repMemTex.offset.x=0;repMemTex.needsUpdate=true;D.push(repMemTex);
+  M.repMem=S('#d4dcca',{map:repMemTex,transparent:true,depthWrite:false,roughness:.16,opacity:.72});
   reptileMaterial(M.liz,1.6,1.1);reptileMaterial(M.lizHand,.8,.85,.0014);reptileMaterial(M.lizHead,2.2,1.7,.0028);
-  M.lizIn.color.set('#7c8970');M.claw.color.set('#bcb395');M.lizEye.emissiveIntensity=.025;M.lizEyeBall.color.set('#292e16');
+  M.lizIn.color.set('#7c8970');M.claw.color.set('#bcb395');M.lizEye.emissiveIntensity=.025;
   M.cutTissue=S('#96a7ad',{map:rawFleshTex(),bumpMap:rawFleshTex(),bumpScale:.0018,roughness:.67,side:THREE.DoubleSide});
   M.cutDepth=S('#0d1b29',{roughness:.83,side:THREE.DoubleSide});M.cutFascia=S('#839b9c',{roughness:.72,side:THREE.DoubleSide});
   M.cutSafe=S('#465847',{roughness:.9,side:THREE.DoubleSide});
@@ -5652,7 +5673,7 @@ class Emperor{
   for(const k of ['flesh','skin'])FLESH.patch(M[k],'skin',{sss:1});
   for(const k of ['robe','hem','belly','chest','hairF'])FLESH.patch(M[k],'cloth');
   FLESH.patch(M.trouser,'trouser');for(const k of ['liz','lizHand','lizHead'])FLESH.patch(M[k],'liz',{meatScale:60,sss:.12});
-  reptileProjection(M.lizHead,2.8);M.lizHead.bumpScale=.0055;
+  reptileProjection(M.lizHead,3.6);M.lizHead.bumpScale=.0032;M.lizHead.roughness=.78;
   // 맞을 때 번쩍이는 재질
   this.flashMats=[M.flesh,M.skin,M.skinD,M.blush,M.robe,M.lip,M.hem,M.belly,M.chest,M.lizHead];
  }
@@ -6947,7 +6968,7 @@ Object.assign(Emperor.prototype,{
    mesh.userData.noHit=true;mesh.userData.gore=true;mesh.visible=PREF.blood;mesh.castShadow=false;this.goreMeshes.push(mesh);parent.add(mesh);return mesh;
   };
   const skull=GEO.regrowSkull||(GEO.regrowSkull=SCULPT.star(HEADGEO.rep,V3(0,0,.02),48,36,.34,{smooth:0}));
-  const jaw=GEO.regrowJaw||(GEO.regrowJaw=SCULPT.star(HEADGEO.repJaw,V3(0,-.075,.12),40,24,.2,{smooth:0}));
+  const jaw=GEO.regrowJaw||(GEO.regrowJaw=SCULPT.star(HEADGEO.repJaw,V3(0,-.14,.075),40,24,.2,{smooth:0}));
   r.boneMeshes=[stage(new THREE.Mesh(skull),r.frame,M.regBone),stage(new THREE.Mesh(jaw),r.frame,M.regBone)];
   r.boneMeshes[0].scale.set(.88,.91,.9);r.boneMeshes[1].scale.set(.9,.9,.9);
   r.rawMeshes=[stage(new THREE.Mesh(skull),r.raw,M.rawFlesh),stage(new THREE.Mesh(jaw),r.raw,M.rawFlesh)];
@@ -7036,42 +7057,42 @@ const rg=grp(grow,[0,.15,.02]);this.repFaceG=rg;
   this.repSkull=this.addFlesh(G.rep.clone(),M.lizHead,rg,{part:'head',kind:'liz',center:V3(0,0,.02),maxFrac:.42,maxAbs:.09,minEdge:.0052});
   const jaw=this.repJawBone=grp(rg,[0,-.07,-.03]);
   this.repJaw=this.addFlesh(G.repJaw.clone(),M.lizHead,jaw,{part:'mouth',kind:'liz',center:V3(0,-.05,.1),maxFrac:.4,maxAbs:.05,minEdge:.0052});
-  // 세로 동공 눈. 눈알 뒤에는 처음부터 어두운 빈 안와를 따로 둔다.
-  this.repEyes=[];this.repEyeHits=[0,0];
+  // Forward-facing eyes sit inside sculpted lids; no separate goggle-like rings.
+  this.repEyes=[];this.repEyeHits=[0,0];this.repMemK=-1;this.repMemWait=rnd(5,9);
   for(const s of [-1,1]){
-   const side=s<0?'L':'R',pos=[s*.094,.052,.11];
-   const socket=grp(rg,pos);socket.rotation.y=s*.18;
-   const cavity=mk(GEO.repSocket||(GEO.repSocket=eyeCapGeo(.0445,1.12,false)),M.mouth,socket,{p:[0,0,-.012],s:[1,.84,.28],cast:false});cavity.userData.noHit=true;
-   const rim=mk(GEO.repSocketRim||(GEO.repSocketRim=new THREE.TorusGeometry(.0415,.0048,6,28)),M.liz,socket,{p:[0,0,-.001],s:[1,.82,1],cast:false});rim.userData.noHit=true;
-   const eg=grp(rg,pos);eg.rotation.y=s*.18;const root=grp(eg);
-   const ball=mk(sphereGeo(22),M.lizEyeBall,root,{s:[.039,.029,.029],part:'repEye'+side,cast:false});
-   const iris=mk(GEO.repEyeIris||(GEO.repEyeIris=eyeCapGeo(.0365,1.0,false)),M.lizEye,root,{s:[1.065,.82,.87],cast:false,part:'repEye'+side});
-   const hl=mk(sphereGeo(10),M.hl,root,{p:[-.009,.009,.032],s:.0025,cast:false});hl.userData.noHit=true;
-   this.repEyes.push({s,eg,root,ball,iris,hl,socket,ejected:false});
+   const side=s<0?'L':'R',pos=[s*.074,.064,.133];
+   const socket=grp(rg,pos);socket.rotation.y=s*.045;
+   const cavity=mk(GEO.repSocket||(GEO.repSocket=eyeCapGeo(.043,1.12,false)),M.mouth,socket,{p:[0,0,-.013],s:[1,.77,.32],cast:false});cavity.userData.noHit=true;
+   const eg=grp(rg,pos);eg.rotation.y=s*.045;const root=grp(eg);
+   const ball=mk(sphereGeo(22),M.lizEyeBall,root,{s:[.034,.024,.031],part:'repEye'+side,cast:false});
+   const iris=mk(GEO.repEyeIris||(GEO.repEyeIris=eyeCapGeo(.034,1.08,false)),M.lizEye,root,{s:[1,.78,.94],cast:false,part:'repEye'+side});
+   const hl=mk(sphereGeo(10),M.hl,root,{p:[-.008,.008,.034],s:.0018,cast:false});hl.userData.noHit=true;
+   const mem=mk(GEO['repMem'+side]||(GEO['repMem'+side]=eyeCapGeo(.0355,1.08,s>0)),M.repMem,socket,{s:[1,.78,.96],cast:false});
+   mem.visible=false;mem.renderOrder=3;mem.userData.noHit=true;
+   this.repEyes.push({s,eg,root,ball,iris,hl,socket,mem,ejected:false});
   }
-  // 윗니(뾰족한 원뿔) + 아랫니
+  // Teeth stay behind the neutral lipless seam, visible only when the jaw opens.
   const tooth=REP_TOOTH();
-  for(let i=0;i<7;i++){const u=(i-3)/3.2,x=u*.07,z=.2-Math.abs(u)*.03;
-   mk(tooth,M.claw,rg,{p:[x,-.095,z],s:[.009,.03,.009],cast:false,part:'mouth'});}
-  for(let i=0;i<5;i++){const u=(i-2)/2.4,x=u*.06,z=.2-Math.abs(u)*.03;
-   const t=mk(tooth,M.claw,jaw,{p:[x,-.03,z+.02],s:[.008,.024,.008],r:[PI,0,0],cast:false,part:'mouth'});}
-  // 콧구멍 틈
-  for(const s of [-1,1])mk(sphereGeo(10),M.mouth,rg,{p:[s*.022,-.012,.258],s:[.01,.006,.008],cast:false,part:'head'}).userData.noHit=true;
+  for(let i=0;i<7;i++){const u=(i-3)/3.2,x=u*.068,z=.140-Math.abs(u)*.018;
+   mk(tooth,M.claw,rg,{p:[x,-.118,z],s:[.005,.012,.005],cast:false,part:'mouth'});}
+  for(let i=0;i<5;i++){const u=(i-2)/2.4,x=u*.058,z=.140-Math.abs(u)*.018;
+   mk(tooth,M.claw,jaw,{p:[x,-.064,z+.03],s:[.004,.010,.004],r:[PI,0,0],cast:false,part:'mouth'});}
+  for(const s of [-1,1])mk(sphereGeo(10),M.mouth,rg,{p:[s*.016,-.055,.211],s:[.0055,.0026,.003],cast:false,part:'head'}).userData.noHit=true;
   // 갈라진 혀
   {const ts=new THREE.Shape();ts.moveTo(-.008,0);ts.lineTo(-.009,.09);ts.lineTo(-.016,.125);ts.lineTo(-.004,.1);ts.lineTo(0,.104);ts.lineTo(.004,.1);ts.lineTo(.016,.125);ts.lineTo(.009,.09);ts.lineTo(.008,0);ts.closePath();
    const fg=new THREE.ExtrudeGeometry(ts,{depth:.006,bevelEnabled:true,bevelThickness:.002,bevelSize:.0016,bevelSegments:2,curveSegments:2});fg.rotateX(PI/2);
-   const fork=grp(jaw,[0,-.04,.16]);fork.rotation.x=.55;const fm=mk(fg,M.fork,fork,{cast:false});fm.userData.noHit=true;fork.visible=false;this.repFork={g:fork,k:-1};}
+   const fork=grp(jaw,[0,-.039,.177]);fork.rotation.x=.10;const fm=mk(fg,M.fork,fork,{cast:false});fm.userData.noHit=true;fork.visible=false;this.repFork={g:fork,k:-1};}
   rg.updateMatrixWorld(true);
   rg.traverse(ob=>{if(!ob.isMesh)return;ob.userData.seg='head';if(ob.userData.part&&!ob.userData.noHit&&!this.parts.includes(ob))this.parts.push(ob);if(ob.userData.flow){(this.flow.head||(this.flow.head=[])).push(ob);FASTRAY.grid(ob.geometry);}});
-  this._flowAll=null;this.headKind='rep';this.headR=.2;this.repFlickT=rnd(1,2.5);
+  this._flowAll=null;this.headKind='rep';this.headR=.235;this.repFlickT=rnd(2.5,4);
  },
- // 파충류 얼굴: 턱 숨쉬기·가끔 혀 날름·눈이 나를 본다
+ // 파충류 얼굴: 무표정한 안와·입꼬리는 고정, 호흡과 시선만 살아 있다
  updateRepFace(dt,time){
   if(this.headGone||this.headKind!=='rep'||!this.repHead)return;
   // 말할 때는 턱을 벌렸다 닫는다
   if(this.talk>.01)this.talkPhase=(this.talkPhase||0)+dt*TAU*5.4;
-  const talkOpen=this.talk>.01?this.talk*(.05+.24*Math.max(0,Math.sin(this.talkPhase))*(.6+.4*Math.sin(this.talkPhase*.43+1.7))):0;
-  const open=.1+.09*Math.max(0,Math.sin(time*1.1))+(this.flinch>.2?.25*this.flinch:0)+talkOpen+(time<this.mouthCoinUntil?.38:0);
+  const talkOpen=this.talk>.01?this.talk*(.012+.055*Math.max(0,Math.sin(this.talkPhase))*(.6+.4*Math.sin(this.talkPhase*.43+1.7))):0;
+  const open=.004+.004*(.5+.5*Math.sin(time*1.1))+(this.flinch>.2?.12*this.flinch:0)+talkOpen+(this.repFork&&this.repFork.k>=0?.025:0)+(time<this.mouthCoinUntil?.38:0);
   // 턱이 빠졌으면 벌어진 채 비뚤게 늘어진다. 떨어졌으면 건드리지 않는다
   const D=this.jawDisloc,da=D?D.sp.x:0;
   if(this.repJawBone&&!this.jawGone&&!this.repJawBone.userData.detached){this.repJawBone.rotation.set(open+da*.5,0,D?D.side*da*.3:0);this.repJawBone.position.x=D?D.side*da*.014:0;}
@@ -7080,10 +7101,16 @@ const rg=grp(grow,[0,.15,.02]);this.repFaceG=rg;
   if(this.repEyes)for(const e of this.repEyes){if(e.ejected)continue;const eg=e.eg;eg.parent.updateWorldMatrix(true,false);
    const l=_fv2.copy(camera.position);eg.parent.worldToLocal(l).sub(eg.position);
    const yaw=Math.atan2(l.x,l.z),pitch=-Math.atan2(l.y,Math.hypot(l.x,l.z));
-   eg.rotation.set(clamp(pitch,-.38,.38),clamp(e.s*.1+yaw,-.5,.6),0);}
+   eg.rotation.set(clamp(pitch,-.18,.18),clamp(yaw,-.22,.22),0);}
+  // Rare nictitating sweep; the surrounding lids never blink or emote.
+  this.repMemWait-=dt;if(this.repMemWait<=0&&this.repMemK<0){this.repMemK=0;this.repMemWait=rnd(6,11);}
+  if(this.repMemK>=0){this.repMemK+=dt/.42;const k=this.repMemK,m=k<.42?smooth(k/.42):1-smooth((k-.42)/.58);
+   this.M.repMem.map.offset.x=.5*m;for(const e of this.repEyes)e.mem.visible=!e.ejected&&m>.01;
+   if(k>=1){this.repMemK=-1;this.M.repMem.map.offset.x=0;for(const e of this.repEyes)e.mem.visible=false;}
+  }
   // 혀 날름
-  this.repFlickT-=dt;if(this.repFlickT<=0){this.repFlickT=rnd(1.8,3.6);if(this.repFork&&this.repFork.k<0){this.repFork.k=0;AUDIO.hiss(.8);}}
-  const f=this.repFork;if(f&&f.k>=0){f.k+=dt/.7;const k=f.k,e=k<.2?smooth(k/.2):k<.55?1:1-smooth((k-.55)/.45);f.g.visible=e>.03;f.g.scale.set(1,1,Math.max(.02,e));f.g.rotation.x=.55+Math.sin(time*36)*.2*e;if(k>=1){f.k=-1;f.g.visible=false;}}
+  this.repFlickT-=dt;if(this.repFlickT<=0){this.repFlickT=rnd(4.5,8);if(this.repFork&&this.repFork.k<0){this.repFork.k=0;AUDIO.hiss(.8);}}
+  const f=this.repFork;if(f&&f.k>=0){f.k+=dt/.7;const k=f.k,e=k<.2?smooth(k/.2):k<.55?1:1-smooth((k-.55)/.45);f.g.visible=e>.03;f.g.scale.set(1,1,Math.max(.02,e));f.g.rotation.x=.10+Math.sin(time*36)*.04*e;if(k>=1){f.k=-1;f.g.visible=false;}}
  },
 });
 /* ===== 6-4-4. 머리 부위 파괴 =====
@@ -7119,10 +7146,10 @@ Object.assign(Emperor.prototype,{
   const jawBone=rep?this.repJawBone:this.jaw;for(let p=o;p&&jawBone;p=p.parent)if(p===jawBone)return 'jaw';
   const l=this.headLocal(h.point);
   if(rep){
-   if(l.y>.105&&l.z<.17)return 'top';
+   if(l.y>.12)return 'top';
    if(Math.abs(l.x)>.1&&l.y>-.05&&l.z<.12)return l.x<0?'sideL':'sideR';
-   if(l.z>.2&&Math.abs(l.x)<.06&&l.y>-.06)return 'nose';
-   if(l.y<-.055&&l.z>.02)return 'jaw';
+   if(l.z>.185&&Math.abs(l.x)<.038&&l.y>-.077&&l.y<.085)return 'nose';
+   if(l.y<-.103&&l.z>.02)return 'jaw';
    return 'face';
   }
   if(part==='nose')return 'nose';
@@ -7392,7 +7419,7 @@ Object.assign(Emperor.prototype,{
   const xEdge=side*Math.max(Math.abs(l.x)-.015,rep?.1:.122);
   const pL=V3(xEdge,clamp(l.y,-.02,.14),clamp(l.z,-.04,.1));
   // 눈알은 남긴다(평면이 눈 가운데보다 바깥을 지나게 바깥으로 민다)
-  {const eyeD=nL.dot(V3(side*(rep?.094:.076),rep?.052:.05,rep?.11:.154)),d=nL.dot(pL);if(d<eyeD+.014)pL.x+=side*(eyeD+.014-d)/Math.abs(nL.x);}
+  {const eyeD=nL.dot(V3(side*(rep?.074:.076),rep?.064:.05,rep?.133:.154)),d=nL.dot(pL);if(d<eyeD+.014)pL.x+=side*(eyeD+.014-d)/Math.abs(nL.x);}
   const piece=this.sliceHead(nL,pL,{kind:'side',dir:V3(side*1.2,.4,-.9),speed:1.4});
   if(!piece)return false;
   this.headLost[side<0?'sideL':'sideR']=true;this.headLost[side<0?'earL':'earR']=true;
@@ -7514,7 +7541,7 @@ Object.assign(Emperor.prototype,{
   const nL=V3(0,-.3,1).normalize();
   const mid=la.clone().lerp(lb,.5);
   // 평면이 지나는 점: 그은 높이를 코끝 높이(y -.02)로 옮겨 잡는다. 인중(앞으로 .242)은 남고 코끝(.29)만 떨어지게 z 범위를 묶는다
-  const pL=rep?V3(0,-.02,clamp(mid.z-.3*(mid.y+.02),.235,.258)):V3(0,-.02,clamp(mid.z-.3*(mid.y+.02),.266,.284));
+  const pL=rep?V3(0,-.047,clamp(mid.z-.3*(mid.y+.047),.197,.211)):V3(0,-.02,clamp(mid.z-.3*(mid.y+.02),.266,.284));
   const piece=this.sliceHead(nL,pL,{kind:'nose',dir:V3((lb.x-la.x)>0?1:-1,.3,1),speed:1.2});
   if(!piece)return false;
   this.headLost.nose=true;
@@ -7531,7 +7558,7 @@ Object.assign(Emperor.prototype,{
  // 코에 총 두 발: 코가 얼굴 안으로 뭉개져 들어간다
  smashNose(pt,n,dir){
   const F=this.headFrame(),rep=this.headKind==='rep';if(!F)return false;F.updateWorldMatrix(true,false);
-  const tip=F.localToWorld(rep?V3(0,-.02,.25):V3(0,-.024,.252)),into=F.localToWorld(V3(0,0,.08)).sub(tip).normalize();
+  const tip=F.localToWorld(rep?V3(0,-.047,.211):V3(0,-.024,.252)),into=F.localToWorld(V3(0,0,.08)).sub(tip).normalize();
   const skull=rep?this.repSkull:this.skull;
   this.deform('crater',tip,into,rep?.04:.05,.07,{soak:.75,jag:.35,only:[skull.userData.flesh]});
   this.headLost.nose=true;
@@ -8019,7 +8046,7 @@ updateMouthCoins(dt){
  if(!(this.mouthCoinQ>0)||dt<=0)return;
  if(this.mouthCoinDelay>0){this.mouthCoinDelay-=dt;return;}
  const F=this.headFrame();if(!F)return;F.updateWorldMatrix(true,false);
- const rep=this.headKind==='rep',origin=V3(0,rep?-.116:-.126,rep?.284:.226);
+ const rep=this.headKind==='rep',origin=V3(0,rep?-.118:-.126,rep?.196:.226);
  const forward=V3(0,-.22,1).transformDirection(F.matrixWorld);
  const side=V3(1,0,0).transformDirection(F.matrixWorld),pw=this.mouthCoinPower||1;
  this.mouthCoinAcc+=dt*38;
