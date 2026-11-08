@@ -3688,8 +3688,8 @@ const SUBMISSION=(()=>{
  function fortune(result){
   if(lastResult!==result)fontWait=false;lastResult=result;
   const P=result&&result.paper||{},r=result&&result.reading||{},name=clean(result&&result.input&&result.input.name);
-   const title=name?name+'님의 운세':'나의 운세',verdict=clean(P.verdict||r.verdict),note=clean(P.fixed)||'위 판정은 본인의 의사와 관계없이 적용됩니다.',end='당신은 그렇게 태어났습니다.';
-  $('#heldFortuneText').textContent=[title,'전체 풀이',verdict,note,end].filter(Boolean).join('\n');
+   const title=name?name+'님의 운세':'나의 운세',verdict=clean(P.verdict||r.verdict),end='당신은 그렇게 태어났습니다.';
+  $('#heldFortuneText').textContent=[title,'전체 풀이',verdict,end].filter(Boolean).join('\n');
   if(texture)texture.dispose();
   texture=canvasTex(592,800,(g,w,h)=>{
    const gr=g.createLinearGradient(0,0,w,h);gr.addColorStop(0,'#fff8de');gr.addColorStop(1,'#ecd9a8');g.fillStyle=gr;g.fillRect(0,0,w,h);
@@ -3703,15 +3703,13 @@ const SUBMISSION=(()=>{
    g.fillStyle='#b52a17';g.font='700 23px '+SANS;g.fillText('전체 풀이',X+30,142);
    drawSeal(g,w-112,104,96);
    g.strokeStyle='#c9ac72';g.lineWidth=2;g.setLineDash([9,7]);g.beginPath();g.moveTo(X,176);g.lineTo(X+W,176);g.stroke();g.setLineDash([]);
-   // 전체 풀이: 길면 글자를 줄여 판정 안내와 끝 문장 사이에 들어가게
+   // 전체 풀이: 길면 글자를 줄여 끝 문장 위 구분선 안쪽에 들어가게
    let size=37,rows;
-   for(;size>=17;size--){g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);if(232+rows.length*size*1.46<=592)break;}
+   for(;size>=17;size--){g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);if(232+rows.length*size*1.46<=636)break;}
    // 긴 총평도 마지막 검사 크기와 실제 그리는 크기를 같게 유지한다.
    size=Math.max(17,size);g.font='700 '+size+'px '+SERIF;rows=wrapWords(g,verdict,W);
    g.fillStyle='#261f3d';g.font='700 '+size+'px '+SERIF;
    let y=232;rows.forEach(t=>{g.fillText(t,X,y);y+=size*1.46;});
-   g.fillStyle='#7a7290';g.font='400 20px '+SANS;
-   y+=8;for(const t of wrapWords(g,note,W)){g.fillText(t,X,y);y+=30;}
    g.strokeStyle='#a68b56';g.lineWidth=1.5;g.beginPath();g.moveTo(X,676);g.lineTo(X+W,676);g.stroke();
    g.textAlign='center';g.fillStyle='#261f3d';g.font='700 33px '+SERIF;g.fillText(end,w/2,738,W);
   },{srgb:true});

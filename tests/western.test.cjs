@@ -121,7 +121,7 @@ test('rendering keeps paragraph order, closes on the fate lines, and leaves no b
     assert(!card.innerHTML.includes('<b>이치</b>')&&!card.innerHTML.includes('<b>근거</b>'),d.id);
     if(d.id==='money')assert(card.innerHTML.indexOf('note')>card.innerHTML.indexOf(d.closing.at(-1)));
   }
-  assert(!nodes['year-rule'].innerHTML.includes('이치'));assert.equal(nodes['year-rule'].textContent,full.yearRule);
+  for(const id of ['year-rule','cycle-ruling','fixed-note'])assert(!nodes[id]);
   assert.match(nodes['western-chart'].innerHTML,/태어난 시간을 몰라/);
   assert.match(nodes['saju-details'].innerHTML,/사주 원국 자세히 보기/);
   assert.doesNotMatch(JSON.stringify(nodes),/expansion/);

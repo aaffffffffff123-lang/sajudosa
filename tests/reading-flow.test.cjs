@@ -24,7 +24,7 @@ const ALL=(()=>{let seed=20261104;const rnd=()=>{seed=(seed*1103515245+12345)>>>
 const dom=(v,id)=>v.domains.find(x=>x.id===id);
 const fatesOf=v=>[v.origin.fate,v.core.fate,...v.domains.flatMap(x=>x.fates)];
 const textsOf=v=>[...fatesOf(v),v.origin.fact,v.origin.rule,v.symbol,v.elementIntro,...Object.values(v.elementRoles),...v.elements,v.core.rule,...v.domains.flatMap(x=>[x.head,x.detail,...(x.rule?[x.rule]:[])]),...v.domains.map(x=>x.basis).filter(Boolean),
- v.yearRule,...v.luck.cycles.map(x=>x.stage).filter(Boolean),...v.luck.ruling,v.verdict,v.fixedNote,...v.cautions,...v.domains.flatMap(x=>x.note?[x.note.label,x.note.value]:[])];
+ ...v.luck.cycles.map(x=>x.stage).filter(Boolean),v.verdict,...v.cautions,...v.domains.flatMap(x=>x.note?[x.note.label,x.note.value]:[])];
 const fam=(r,stem)=>api.TEN_FAMILY[api.tenGod(r.a.dayStem,stem)];
 const hi=(r,f)=>['strong','excess'].includes(r.a.families[f].level);
 function bossOf(r){
@@ -37,7 +37,7 @@ test('a personal portrait opens the reading before the family verdict and wider 
  const view=slice('<main id="result-screen"','</main>');
  // 2026-11-07 구성: 태어난 때(사주·막대·별자리) → 당신을 보니 → 타고난 팔자(집안 → 부리는 기운 → 성향) → 일곱 칸 → 지나온 해와 앞날 → 전체 풀이
  const order=['id="runhead"','id="pillars"','id="share-leg"','id="saju-details"','id="western-chart"','id="reading-portrait"','id="portrait-symbol"','id="fate-card"','id="origin"','id="boss-line"','id="core-body"','id="sections"',
-  'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="year-rule"','id="cycle-ruling"','id="verdict"','id="fixed-note"','id="caution"','id="fate-go"'];
+  'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="verdict"','id="caution"','id="fate-go"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
  for(const gone of ['id="me-card"','id="elements"','id="elem-lines"','id="past-block"','나를 나타내는 상징','타고난 다섯 가지 비율','올해와 내년','10년 단위 흐름'])assert(!view.includes(gone),gone);
  for(const label of ['>당신이 태어난 때<','>타고난 운명<','>지나온 해와 앞날<','>전체 풀이<'])assert(view.includes(label),label);
@@ -203,16 +203,13 @@ test('notes distinguish silence, money conflict, unsupported help and actual aut
 
 test('the removed explanatory endings leave no text or blank footer containers',()=>{
  assert.doesNotMatch(html,/좋은 운이 들어오면|그만큼 더 감당할 것|풀이는 타고난 운명을 알려줄 뿐|남의 삶을 결정하는 사람은 운을 묻지 않습니다/);
- assert.doesNotMatch(html,/id="(?:foot-note|last-line)"/);
+ assert.doesNotMatch(html,/id="(?:foot-note|last-line|year-rule|cycle-ruling|fixed-note)"/);
  for(const {v} of ALL){
   assert(!Object.hasOwn(v,'footNote')&&!Object.hasOwn(v,'lastLine'));
-  if(v.luck.rulingKey==='support')assert.equal(v.luck.ruling.length,0);
+  assert(!Object.hasOwn(v,'yearRule')&&!Object.hasOwn(v,'fixedNote'));
+  assert(!Object.hasOwn(v.luck,'ruling')&&!Object.hasOwn(v.luck,'rulingKey'));
  }
- // A second reading can show the retained ruling again after the removed support branch.
- const node={hidden:false,innerHTML:'old ruling'};
- const render=vm.runInNewContext('(v)=>{'+slice(" const cycleRuling=$('cycle-ruling');",' // 전체 풀이')+'}',{$:()=>node,esc:x=>x});
- render({luck:{ruling:[]}});assert(node.hidden);assert.equal(node.innerHTML,'');
- render({luck:{ruling:['지금보다 나은 10년','보이지 않음']}});assert(!node.hidden);assert.match(node.innerHTML,/지금보다 나은 10년/);
+
 });
 
 test('an actual money conflict takes priority over a generic consumption habit',()=>{
@@ -351,7 +348,7 @@ test('every fate line is one sentence in the agreed form and no line uses the ba
 });
 
 test('every life domain keeps a distinct rule and uses the common reading order',()=>{
- for(const {v} of ALL){assert(v.origin.rule&&v.core.rule&&v.yearRule);for(const d of v.domains){assert(d.rule,d.id);assert(!d.fates.includes(d.rule));}}
+ for(const {v} of ALL){assert(v.origin.rule&&v.core.rule);for(const d of v.domains){assert(d.rule,d.id);assert(!d.fates.includes(d.rule));}}
  const render=slice('function renderResult(R){','function cycleAgeLabel(');
  assert(!/sec.id==='money'/.test(render));
  // 장면과 이치는 같은 문단 줄에 놓고 이름표 없이 읽는다. 팔자 줄 뒤에 각 원인에 맞는 생활 항목을 둔다.
@@ -364,7 +361,7 @@ test('every life domain keeps a distinct rule and uses the common reading order'
   assert(d.closing.every(t=>!d.paragraphs.includes(t)),d.id);
  }
  for(const k of ['복은 집에서 내려옵니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
-  '계약한 비용은 약속한 날에 치르는 법','먼저 재물을 내놓은 대가','나라 사이에서도 큰 기운이 작은 기운을 누르는',
+  '계약한 비용은 약속한 날에 치르는 법','먼저 재물을 내놓은 대가',
   '지시받은 만큼만 하면 탈이 없습니다'])assert(V5_SRC.includes(k),k);
 });
 
@@ -373,10 +370,9 @@ test('readings differ from person to person and only the agreed lines are shared
  const slots={origin:v=>v.origin.fate,symbol:v=>v.symbol,boss:v=>v.elements[1].replace(/^.*?입니다\. /,''),mind:v=>v.core.fate,
   work:v=>dom(v,'work').fates[0],money:v=>dom(v,'money').fates[0],body:v=>dom(v,'body').fates[0],home:v=>dom(v,'home').fates[0],office:v=>dom(v,'office').fates[0],
   workRule:v=>dom(v,'work').rule,moneyRule:v=>dom(v,'money').rule,bodyRule:v=>dom(v,'body').rule,homeRule:v=>dom(v,'home').rule,officeRule:v=>dom(v,'office').rule,
-  yearRule:v=>v.yearRule,ruling:v=>v.luck.rulingKey,caution0:v=>v.cautions[0],cautionCount:v=>v.cautions[0]};
+  caution0:v=>v.cautions[0],cautionCount:v=>v.cautions[0]};
  for(const [k,f] of Object.entries(slots)){const m=count(f);assert(m.size>=2,k);assert(Math.max(...m.values())/n<=0.75,k);}
  const verdicts=count(v=>v.verdict);assert(verdicts.size>=n*0.5,String(verdicts.size));assert(Math.max(...verdicts.values())/n<=0.05);
- assert.equal(count(v=>v.fixedNote).size,1);
  for(const {v} of ALL){assert.equal(v.cautions.length,2);assert.notEqual(v.cautions[0],v.cautions[1]);}
 });
 
@@ -404,11 +400,9 @@ test('supported core traits keep the matching cause instead of the largest eleme
  assert(n>10);assert(groups.size>=3);
 });
 
-test('the ten-year ruling follows the computed scores',()=>{
+test('the ten-year descriptions retain their computed evidence',()=>{
  for(const {v} of ALL){
   const cur=v.luck.cycles.find(x=>x.now),later=v.luck.cycles.filter(x=>!x.now&&(!cur||x.c.i>cur.c.i));
-  assert.equal(v.luck.rulingKey==='peak',!!cur&&later.length>0&&later.every(x=>x.c.score>cur.c.score));
-  if(v.luck.rulingKey==='support')assert(later.some(x=>(x.c.evidence||[]).some(e=>e.valence==='support')));
   // 앞에서 이미 나온 문장만 덜어 낸다. 남은 문장은 그 흐름의 계산된 문장이다.
   for(const x of later){const own=api.sentenceListV2(x.c.text);assert(api.sentenceListV2(x.stage).every(t=>own.includes(t)),x.stage);}
  }

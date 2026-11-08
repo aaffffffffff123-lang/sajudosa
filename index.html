@@ -397,10 +397,6 @@ strong.hl{font-weight:700;color:var(--ink);background:linear-gradient(transparen
 .month-period dt{color:var(--muted)}
 .month-period dd{margin:0;font-weight:600;color:var(--ink-2);word-break:keep-all;overflow-wrap:break-word}
 .month-reading .month-note{display:block;margin-top:9px;font-size:12px;line-height:1.5;color:var(--muted)}
-.none-card{margin-top:12px;border:2px dashed var(--ink);background:var(--empty);border-radius:16px;padding:13px 14px;text-align:center}
-.none-card b{display:block;font-size:13.5px;color:var(--muted);margin-bottom:3px}
-.none-card span{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--red-d)}
-.fixed-note{margin:14px 0 0;font-size:13.5px;line-height:1.6;color:var(--muted);word-break:keep-all}
 .fate-end{margin-top:28px}
 .luck .wy.stage{background:var(--warning-surface);border:1.5px solid var(--line-2)}
 @media (max-width:370px){.ladder{grid-template-columns:1fr}.ladder svg{width:150px;margin:0 auto}}
@@ -539,7 +535,6 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .tl-note{display:block;margin-top:7px;font-size:12.5px;line-height:1.55;color:var(--muted);word-break:keep-all}
 .tl-luck{margin:20px 0 4px}
 .tl-luck .luck-start{margin:0 2px 8px;font-size:13px;line-height:1.6;color:var(--muted)}
-.timeline .year-rule{margin:20px 2px 0;font-size:16px;line-height:1.85;color:var(--ink);word-break:keep-all}
 @media (max-width:370px){.tl-item{grid-template-columns:58px minmax(0,1fr);gap:9px;padding-inline:8px}.tl-when svg{width:34px;height:34px}.elem-strip{padding-right:44px}.elem-strip::after{width:40px;height:40px}}
 
 /* 족치기 화면을 불러오지 못했을 때 */
@@ -625,7 +620,6 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .reading .woven-closing .fate{margin:0;font-family:var(--serif);font-size:clamp(17px,4.7vw,19px);font-weight:700;line-height:1.6}
 .reading .woven-closing .fate+.fate{margin-top:12px}
 .origin .origin-text{margin:0 0 12px;font-size:15px;line-height:1.85;color:var(--ink-2);word-break:keep-all}
-.year-rule{margin:16px 2px 0;font-size:15px;line-height:1.85;color:var(--ink-2);word-break:keep-all}
 .past-hit p+p,.year p+p{margin-top:12px}
 </style>
 <link rel="stylesheet" href="assets/celestial-ui.css?v=20261107-fate">
@@ -962,11 +956,9 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
     <div class="tl" id="year-next"></div>
     <div class="tl-luck"><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div></div>
     <ol class="tl" id="luck-list"></ol>
-    <p class="year-rule" id="year-rule"></p>
-    <div class="none-card" id="cycle-ruling"></div>
   </section>
 
-  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><p class="fixed-note" id="fixed-note"></p><div class="caution" id="caution"></div></section>
+  <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><div class="caution" id="caution"></div></section>
   <p class="fate-end">당신은 그렇게 태어났습니다.</p>
   <div id="edge-hint" class="shown"><button type="button" id="fate-go" class="edge-enter" aria-label="다음으로"><svg class="choice-cue" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><path d="M32 8v46M12 34l20 20 20-20" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </div>
@@ -4093,12 +4085,6 @@ const V5={
  ],
  bodyFallback:'당신은 남은 일을 다 끝낸 뒤 쉬려고 하다가 쉬는 때를 끝내 남기지 못하는 팔자입니다.',
  bodyRule:{weak:'아파서 일을 쉬어도 생활비는 나갑니다. 치료할 돈과 쉬는 동안 쓸 돈이 모두 있어야 몸을 돌봅니다.',strong:'튼튼한 몸은 튼튼하다는 이유로 먼저 쓰이고 쉬는 순서는 맨 뒤로 갑니다.',self:'스스로 맡은 몫은 부담으로 쳐 주지 않습니다. 시킨 사람이 없으니 덜어 줄 사람도 없습니다.',checking:'끝난 일을 붙들고 쓴 시간은 일한 시간으로 세지 않습니다. 마음을 놓지 못한 사정도 당신 몫입니다.',night:'남들이 쉬는 밤에도 일하는 사람이 있어야 세상이 돌아갑니다. 그 일을 맡은 당신의 잠은 낮으로 밀립니다.'},
- // 올해: 그해 기운에 부딪히는 작용이 있으면 국운, 없으면 그릇
- yearRule:{
-  nation:'해의 큰 기운은 누구의 사정도 묻지 않습니다. 나라 사이에서도 큰 기운이 작은 기운을 누르는 해에는 작은 쪽이 비켜서고 사람 사이는 더 그렇습니다.',
-  vessel:'같은 기회가 와도 필요한 돈은 각자 마련합니다. 이미 재산이 있는 사람은 시작하고 당장 생활비가 필요한 사람은 하던 일을 계속합니다.'
- },
- ruling:{peak:['지금보다 나은 10년','보이지 않음'],support:[],flat:['운이 달라져도','결정권은 남의 손에']},
  // 전체 풀이의 로딩 실패 대비 한 문장. 정상 경로는 closing-reading.js에서 본문을 종합한다.
  sumOrigin:{absent:'물려받은 것 없이 시작해서',hidden:'집안의 복은 만져 보지도 못하고',shown:'물려받은 것은 지키는 데 다 쓰고'},
  sumWork:{
@@ -4123,7 +4109,6 @@ const V5={
   place:'지시받은 만큼만 하면 탈이 없습니다. 정할 권한까지 바라면 당신에게 지시하는 사람과 부딪칩니다.',
   risk:'위험한 일을 정하는 사람과 직접 하는 사람은 다릅니다. 다쳐서 빠진 사람 대신 일할 사람이 오면 일은 다시 돌아갑니다.'
  },
- fixedNote:'위 판정은 본인의 의사와 관계없이 적용됩니다.'
 };
 // 각 칸의 생활 항목: 본문과 같은 원인을 따라 고른다. 첫 값은 제목, 나머지는 구체적인 사례다.
 // 새로운 사건이나 사주 조건을 덧붙이지 않고 이미 선택된 장면을 생활 속 항목으로 짚는다.
@@ -4406,22 +4391,17 @@ function v5Reading(R,now){
  // 부족한 기운은 대사 선택의 우선순위로만 쓰고, 출현을 막는 조건으로 쓰지 않는다.
  { const P2=P.slice(0,2).filter(p=>p&&p.known);
    out.marks={noStudy:P2.length>0&&P2.every(p=>!v5PillarHas(a,p,'인성')),noMoney:ok==='absent',noOfficer:!inp.unknown&&P.length===4&&P.every(p=>p&&p.known&&!v5PillarHas(a,p,'관성'))}; }
- // 올해·내년
- const y0=r.years[0],adverse=!!(y0&&(y0.evidence||[]).some(e=>e.valence==='adverse'));
- out.yearRule=adverse?V5.yearRule.nation:V5.yearRule.vessel;
  // 10년
- const L=r.luck,at=L.cycles.findIndex(c=>c.i===L.current),cyc=L.cycles.slice(Math.max(0,at),Math.max(0,at)+3),cur=cyc.find(c=>c.i===L.current),later=cyc.filter(c=>!cur||c.i>cur.i);
+ const L=r.luck,at=L.cycles.findIndex(c=>c.i===L.current),cyc=L.cycles.slice(Math.max(0,at),Math.max(0,at)+3),cur=cyc.find(c=>c.i===L.current);
  const worst=cyc.slice().sort((x,y)=>y.riskUnits-x.riskUnits||y.score-x.score||x.i-y.i)[0];
- const peak=!!cur&&later.length>0&&later.every(c=>c.score>cur.score),supportLater=later.some(c=>(c.evidence||[]).some(e=>e.valence==='support'));
  // 앞으로의 본문도 제목·그래프와 같은 대운 계산을 따른다. 나이만으로 사건을 덧붙이지 않는다.
- out.luck={cycles:cyc.map(c=>({c:c,now:!!cur&&c.i===cur.i,stage:cur&&c.i===cur.i?'':c.text})),worst:worst&&worst.score>=45?worst.i:-1,ruling:peak?V5.ruling.peak:supportLater?V5.ruling.support:V5.ruling.flat,rulingKey:peak?'peak':supportLater?'support':'flat'};
+ out.luck={cycles:cyc.map(c=>({c:c,now:!!cur&&c.i===cur.i,stage:cur&&c.i===cur.i?'':c.text})),worst:worst&&worst.score>=45?worst.i:-1};
  // 전체 풀이
  // 일 부분은 일 칸의 첫 팔자 줄을 따른다.
  const ws=V5.sumWork[workKey]||V5.sumWork[top]||V5.sumWork.small;
  const ls=love?love.short:V5.loveShort;
  out.verdictFrame={subject:inp.name?inp.name+' 님은':'당신은',origin:V5.sumOrigin[ok],work:ws,relation:ls};
  out.verdict=[out.verdictFrame.subject,out.verdictFrame.origin,ws,'인연은 '+ls,'운명입니다.'].join(' ');
- out.fixedNote=V5.fixedNote;
  // 두 주의사항은 생활의 조건과 권한의 질서를 나눠 말한다.
  // 집안에 숨은 복을 이미 받은 재산으로 취급하거나 같은 복종 명령을 두 번 쓰지 않는다.
  const money=doms.find(x=>x.id==='money');
@@ -4608,15 +4588,10 @@ function renderResult(R){
    (x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(cy.title)+'</h3>'+(x.now&&cy.text?'<p>'+plainMd(cy.text)+'</p>':'')+(x.stage?'<div class="wy stage">'+esc(x.stage)+'</div>':'')
    +'<small class="tl-note">'+cy.endYear+'년까지 · '+cycleAgeLabel(cy,inp.unknown)+'부터 10년</small>'));
  });
- $('year-rule').textContent=v.yearRule;
- const cycleRuling=$('cycle-ruling');
- cycleRuling.hidden=!v.luck.ruling.length;
- cycleRuling.innerHTML=v.luck.ruling.length?'<b>'+esc(v.luck.ruling[0])+'</b><span>'+esc(v.luck.ruling[1])+'</span>':'';
  // 전체 풀이
  $('verdict').textContent=v.verdict;
- $('fixed-note').textContent=v.fixedNote;
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
- R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,crowdAvoid:v.crowdAvoid};
+ R.paper={verdict:v.verdict,marks:v.marks,crowdAvoid:v.crowdAvoid};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
  if(typeof runheadReset==='function')runheadReset();
 }
@@ -4718,7 +4693,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261108-sermon-quip';
+  const v='?v=20261108-reading-trim';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
