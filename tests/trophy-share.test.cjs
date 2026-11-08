@@ -1,11 +1,11 @@
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../fight.js'),'utf8');
-const code=source.slice(source.indexOf('const TROPHY_FIELD='),source.indexOf('// 끝: 누적 처치 수'));
+const code=source.slice(source.indexOf('function setFightModal('),source.indexOf("$('#settingsBtn').addEventListener"))+source.slice(source.indexOf('const TROPHY_FIELD='),source.indexOf('// 끝: 누적 처치 수'));
 function setup(count=7){
  const elements=new Map(),calls={draws:[],texts:[],images:0,portraits:[],revoked:[],download:0,holds:[],resets:0,reads:0};
  class Element{constructor(id){this.id=id;this.hidden=false;this.disabled=false;this.listeners={};this.isConnected=true;this.textContent='';this.attrs={};}addEventListener(k,f){this.listeners[k]=f}click(){if(this.id==='#trophySave')calls.download++;return this.listeners.click?.({target:this})}focus(){document.activeElement=this}removeAttribute(k){delete this[k]}getClientRects(){return this.hidden?[]:[{}]}querySelectorAll(){return [...elements.values()]}}
  const $=id=>{if(!elements.has(id))elements.set(id,new Element(id));return elements.get(id)};
- $('#trophyModal').hidden=true;$('#again').hidden=false;
+ $('#trophyModal').hidden=true;$('#settingsModal').hidden=true;$('#again').hidden=false;
  const ctx=new Proxy({fillText(text){calls.texts.push(text)},drawImage(...args){if(args[0]&&args[0].trophyHead)calls.draws.push(args)},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}},getImageData(x,y,w,h){calls.reads++;return {data:new Uint8ClampedArray(w*h*4)}}},{get(t,p){return p in t?t[p]:()=>{}},set(t,p,v){t[p]=v;return true}});
  const document={activeElement:$('#trophyBtn'),createElement(){return {width:0,height:0,getContext:()=>ctx,toBlob(cb){queueMicrotask(()=>cb(new Blob(['PNG'],{type:'image/png'})))}}}};
  class Image{set src(value){calls.images++;this.url=value;queueMicrotask(()=>calls.failImages?this.onerror():this.onload())}}
@@ -68,9 +68,9 @@ test('the record stays unavailable before the completed reveal and before a fina
  h.G.ended=true;h.PROGRESS.defeated=0;await h.open();assert(!h.$('#trophyModal').hidden);assert(h.$('#trophyReset').hidden);h.TROPHIES.close(false);
 });
 test('the card contains the exact count; close releases its blob and restores focus/pause',async()=>{
- const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.equal(h.calls.reads,0,'a few heads keep the eye-level scene without distance haze');assert.equal(h.calls.texts.join(''),'족친천지신명7놈','no 梟首 seal');assert.equal(h.calls.images,8,'field + one portrait per outfit + the front head (no sky eye picture)');assert(h.G.paused);
+ const h=setup();await h.open();assert(h.$('#arcadeFace').hidden,'arcade link must not cover the close control');assert.equal(h.calls.draws.length,7);assert.equal(h.calls.reads,0,'a few heads keep the eye-level scene without distance haze');assert.equal(h.calls.texts.join(''),'족친천지신명7놈','no 梟首 seal');assert.equal(h.calls.images,8,'field + one portrait per outfit + the front head (no sky eye picture)');assert(h.G.paused);
  assert.equal(h.calls.portraits.filter(s=>s.eyes==='stare'&&s.tongue).length,1,'only the newest head stares out with its tongue hanging');assert(!h.$('#trophySave').hidden);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'족친천지신명_7놈.png');
- h.$('#trophyClose').click();assert(!h.G.paused);assert(h.$('#trophyModal').hidden);assert.deepEqual(h.calls.revoked,['blob:1']);assert.equal(h.document.activeElement,h.$('#trophyBtn'));
+ h.$('#trophyClose').click();assert(!h.$('#arcadeFace').hidden,'closing restores the arcade link');assert(!h.G.paused);assert(h.$('#trophyModal').hidden);assert.deepEqual(h.calls.revoked,['blob:1']);assert.equal(h.document.activeElement,h.$('#trophyBtn'));
  await h.open();assert.equal(h.calls.images,8,'reuse the field and portraits');h.TROPHIES.close(false);
 });
 test('closing during creation cannot reopen the panel or attach a stale image',async()=>{
@@ -107,3 +107,4 @@ test('the card has no eye in the sky, no crows and no 梟首 seal',async()=>{
  assert.equal(h.calls.texts.join(''),'족친천지신명3놈');assert.match(h.$('#trophyImage').alt,/밤 들판/);assert.doesNotMatch(h.$('#trophyImage').alt,/눈/);
  h.TROPHIES.close(false);
 });
+

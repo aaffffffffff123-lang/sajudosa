@@ -231,6 +231,11 @@ const FIGHT_CSS = `
 #fight.close-combat #world.grabbing{cursor:grabbing}
 #fight.close-combat .btn{border-radius:5px;box-shadow:none}
 @media(max-width:480px){#fight.close-combat .ftop{padding-right:48px;gap:5px}#fight.close-combat .pill{width:35px;min-width:35px}#fight.close-combat .hint{font-size:10px}#fight.close-combat .gname{letter-spacing:1px}}
+/* 설정은 전투 색상과 분리하고, 작은 화면에서도 마지막 버튼까지 스크롤한다. */
+#fight #settingsModal{--ink:#241c3a;--muted:#686174;--line:#e5ded2;height:100%;max-height:100dvh;padding:calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b));overscroll-behavior:contain;color:var(--ink)}
+#fight #settingsModal .msheet{min-height:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#fffdf5;color:var(--ink);border:1px solid #d9d2c6;border-radius:16px;padding-bottom:22px;scroll-padding:18px}
+#fight #settingsModal .close{width:40px;min-width:40px;height:40px;background:#f3efe8;color:var(--ink);border:1px solid #d9d2c6;border-radius:8px}
+#fight #settingsModal .row{border-color:var(--line)}
 `;
 
 const FIGHT_HTML = `<section id="fight" hidden>
@@ -10985,8 +10990,13 @@ for(const k of ['music','effects','voice'])$('#vol-'+k).addEventListener('input'
 function toggle(k){PREF[k]=!PREF[k];savePrefs();syncPrefs();}
 for(const k of Object.keys(PREF)){const el=$('#sw'+k[0].toUpperCase()+k.slice(1));if(el)el.addEventListener('click',()=>{AUDIO.unlock();toggle(k);});}
 $('#soundBtn').addEventListener('click',()=>{AUDIO.unlock();toggle('sound');});
-$('#settingsBtn').addEventListener('click',()=>{G.paused=true;clearPointers();AUDIO.hold(true);$('#settingsModal').hidden=false;});
-function closeModal(){$('#settingsModal').hidden=true;G.paused=false;AUDIO.hold(false);last=performance.now();}
+function setFightModal(modal,open){
+ modal.hidden=!open;
+ const face=$('#arcadeFace');
+ if(face)face.hidden=!$('#fight').hidden&&(!$('#settingsModal').hidden||!$('#trophyModal').hidden);
+}
+$('#settingsBtn').addEventListener('click',()=>{G.paused=true;clearPointers();AUDIO.hold(true);setFightModal($('#settingsModal'),true);});
+function closeModal(){setFightModal($('#settingsModal'),false);G.paused=false;AUDIO.hold(false);last=performance.now();}
 $$('#settingsModal [data-close]').forEach(b=>b.addEventListener('click',closeModal));
 $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
 $('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
@@ -11451,10 +11461,10 @@ const TROPHIES=(()=>{
   if(opened||$('#again').hidden||!G.ended)return;
   total=PROGRESS.defeated;page=0;wasPaused=G.paused;returnFocus=document.activeElement;opened=true;G.paused=true;clearPointers();AUDIO.hold(true);
   $('#trophyResetConfirm').hidden=true;$('#trophyReset').hidden=total===0;
-  modal.hidden=false;$('#trophyClose').focus({preventScroll:true});prepare();
+  setFightModal(modal,true);$('#trophyClose').focus({preventScroll:true});prepare();
  }
  function close(focus=true){
-  if(!opened)return;opened=false;serial++;release();modal.hidden=true;G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();
+  if(!opened)return;opened=false;serial++;release();setFightModal(modal,false);G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();
   if(focus&&returnFocus&&returnFocus.isConnected)returnFocus.focus({preventScroll:true});
  }
  $('#trophyBtn').addEventListener('click',open);$('#trophyClose').addEventListener('click',()=>close());
@@ -11688,7 +11698,7 @@ Object.assign(G,{mode,walking:false,defeatCountVisible:PROGRESS.defeated>0,bar:1
  CROWD.reset();
  CAM.shake=0;CAM.jit.set(0,0,0);gunLT=0;
  clearTimeout(gaugeHitT);const gauge=$('#fight .gauge');if(gauge._hitAnim)gauge._hitAnim.cancel();gauge.classList.remove('hit');$('#gaugeFill').classList.remove('flash');$('#flash').style.opacity=0;
-$('#settingsModal').hidden=true;
+setFightModal($('#settingsModal'),false);
 hideAgain();
  resetOfferScene();BEYOND.reset();COMBAT.storyAnchor=null;CROWD.root.position.set(0,0,0);
  $('#fight .gauge').style.visibility='';$('#flash').style.background='#fff';
@@ -11822,7 +11832,7 @@ function leave(home){
  pause();
  INTRO.stage='off';crumpleReset();$('#fight').classList.remove('behind');$('#crumpleHint').classList.add('off');
  SUBMISSION.reset();CROWD.reset();
- clearTalk();hideAgain();G.retorting=false;$('#settingsModal').hidden=true;$('#fight').hidden=true;
+ clearTalk();hideAgain();G.retorting=false;setFightModal($('#settingsModal'),false);$('#fight').hidden=true;
  const face=$('#arcadeFace');if(face){face.target='_top';face.removeAttribute('rel');}
  if(home&&window.__paljaRestart)window.__paljaRestart();else if(window.__paljaLeave)window.__paljaLeave();
 }
