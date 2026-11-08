@@ -119,7 +119,7 @@
       add('help-and-debt',9,[ref('work'),ref('gwiin',leaving?'G4':undefined),ref('office')],[start,
         leaving?'더 나은 일터로 가려는 날에도 도와준 사람은 그동안의 은혜부터 셉니다.':'무리한 부탁도 받은 은혜와 함께 들으면 당신 사정부터 내세우기 어렵습니다.',
         o==='hidden'?'그 부탁을 맡아도 정할 권한은 없고 허락을 기다린 경과까지 당신이 설명합니다.':o==='challenge'?'사정을 설명하려고 꺼낸 말도 도움을 받은 사람이 대드는 말로 들립니다.':o==='mixed'?'한 사람의 은혜를 갚으려고 따른 지시도 다른 사람 앞에서는 당신이 설명할 일이 됩니다.':o==='pressure'?'받아들인 부탁에는 기한과 책임이 붙고 무리한 사정은 맡은 당신이 감당합니다.':o==='regular'?'부탁을 받아들일수록 믿을 만한 사람이 되지만 한 번 거절할 때는 그동안의 성실함까지 다시 평가받습니다.':'사정을 알아줄 사람을 찾아도 마지막에는 정해진 조건에 당신을 맞춥니다.',
-        '일한 몫은 약속한 보수로 치렀고 도와준 일은 따로 남으니 그만큼 일했다고 은혜까지 다 갚은 셈은 되지 않습니다.']);
+        '일한 값은 받았으니, 도와준 은혜는 따로 갚아야 합니다.']);
     }
     const moving=['palace_clash','month_day_clash'].includes(w)||has('work','W4');
     if(moving&&d.money.relocationCost)add('moving-cost',9,[ref('work',has('work','W4')?'W4':undefined),ref('money'),ref('family')],[
@@ -128,7 +128,7 @@
       ...family]);
     if(moving&&(h==='생활을 다시 짜는'||h==='생활 시간이 먼저'||has('home','L4')))add('moving-relationships',8,[ref('work',has('work','W4')?'W4':undefined),ref('home',has('home','L4')?'L4':undefined),ref('body')],[
       start+' 일터를 옮기면 그렇게 해낸 일도 새로 증명해야 합니다.',
-      '그 시간에 맞춰 잠과 약속을 밀어 놓으면 가까운 사람과 만날 틈부터 줄어듭니다.',
+      d.body.ruleKey==='checking'?'끝낸 일을 다시 살피는 시간까지 내고 나면 가까운 사람과 약속할 틈도 줄어듭니다.':d.body.ruleKey==='night'?'늦게 끝낸 일에 맞춰 잠을 미루면 가까운 사람이 쉬는 때와 당신이 쉬는 때도 어긋납니다.':d.body.ruleKey==='self'?'빈 시간에도 남은 일을 꺼내면 쉬는 날에 만나자던 약속까지 다시 미룹니다.':d.body.ruleKey==='weak'?'몸을 돌볼 날과 그동안 쓸 생활비까지 마련하느라 가까운 사람과 만날 시간도 따로 내야 합니다.':'그 시간에 맞춰 잠과 약속을 밀어 놓으면 가까운 사람과 만날 틈부터 줄어듭니다.',
       has('home','L4')?'일을 지키려고 미룬 만남도 상대에게는 마음이 식은 일로 남습니다.':'일터에 맞춰 낸 시간만큼 가까운 사람은 당신을 더 기다립니다.',
       '일터에서 제때 한 몫과 인연 앞에서 비운 시간은 따로 세는 법이니 한쪽을 지킨 것으로 다른 쪽까지 다한 셈은 되지 않습니다.']);
     if((h==='생활을 합치는 날짜'||has('home','L3'))&&f==='young')add('house-and-start',8,[ref('home',has('home','L3')?'L3':undefined),ref('money'),ref('family')],[

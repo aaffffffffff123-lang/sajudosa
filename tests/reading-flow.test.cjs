@@ -340,7 +340,8 @@ test('productive expression keeps both responsibilities while career loss requir
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
  for(const {v} of ALL){
   for(const f of fatesOf(v))assert.match(f,/^당신은 [^,]+팔자입니다\.$/,f);
-  assert.match(v.verdict,/^(당신은|\S+ 님은) [^,]+\.$/);assert(v.verdictEvidence);assert(v.verdict.length<=320);
+  // 전체 풀이는 여러 문장을 잇는 문단이다. 한 줄 판정의 쉼표 제한을 적용하지 않는다.
+  assert.match(v.verdict,/^(당신은|\S+ 님은) .+\.$/);assert(v.verdictEvidence);assert(v.verdict.length<=320);
   for(const t of textsOf(v)){assert.equal(typeof t,'string');assert(t.length);assert(!/이지,|가 아니라|이 아니라|이지 [^.]*아닙니다/.test(t),t);}
   assert(!/undefined|NaN/.test(JSON.stringify(v)));
  }
@@ -494,3 +495,4 @@ test('role and job lines name what changes instead of a vague 자리',()=>{
  for(const vague of ['그 자리를 벗어나지','돌아갈 자리는','담당이나 자리가'])assert(!V5_SRC.includes(vague),vague);
  for(const plain of ['남들이 피하는 역할을 한 번 맡고 나면 다음에도 그 역할로 불리는 팔자입니다.','돌아갈 일자리는 남아 있지 않은','담당이나 부서가 바뀔 때마다'])assert(V5_SRC.includes(plain),plain);
 });
+

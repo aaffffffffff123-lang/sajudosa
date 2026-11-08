@@ -86,10 +86,29 @@
   if(d.id==='office')return d.cause==='supported'?'authority':'pressure';
   return d.id==='money'?'burden':'help';
  }
- // 하나의 분야는 한 제목·한 판정으로 읽는다. 추가 근거는 본문의 장면에 남긴다.
+ // 귀인의 유무는 그대로 두고, 다른 칸의 주된 처지와 맞물리는 도움의 값을 짚는다.
+ // 실제 본문에 선택된 문단만 사용한다. 이름·생일 해시나 무작위 문장으로 갈라놓지 않는다.
+ function helperClosing(d,out){
+  const has=id=>(d.poolIds||[]).includes(id);
+  const cause=id=>(out.domains.find(x=>x.id===id)||{}).cause;
+  const present=d.cause==='present';
+  if(present&&has('G4')&&(['palace_clash','month_day_clash'].includes(cause('work'))||out.core&&out.core.cause==='change'))
+   return ['G4','당신은 귀인의 도움으로 들어선 곳을 떠나려는 날, 그동안 받은 도움의 값을 다시 요구받는 운명입니다.'];
+  if(present&&has('G6')&&cause('office')==='supported')
+   return ['G6','당신은 끌어 준 사람 덕에 얻은 기회를 지켜도 그 사람이 밀려나는 날에는 함께 밀려나는 운명입니다.'];
+  if(has('G7')&&['poor','comfort'].includes(cause('money')))
+   return ['G7',present?'당신은 귀인을 만나도 받은 도움을 갚을 몫부터 헤아리느라 필요한 만큼 기대지 못하는 운명입니다.':'당신은 어렵게 도움을 구하고도 갚을 부담 때문에 기대는 몫을 줄여, 혼자 치를 시간을 더 내는 운명입니다.'];
+  if(has('G2')&&['challenge','mixed'].includes(cause('office')))
+   return ['G2',present?'당신은 도움받은 은혜를 지키려고 도와준 사람 앞에서 반대할 말부터 삼키는 운명입니다.':'당신은 어렵게 한 번 받은 도움 때문에 그 뒤로 도와준 사람 앞에서 하고 싶은 말까지 고르는 운명입니다.'];
+  if(present&&has('G1'))
+   return ['G1','당신은 소개받은 곳에서 자기 몫을 해내고도 소개한 사람의 체면까지 지키느라 떠날 때를 늦추는 운명입니다.'];
+  if(!present&&has('G5'))
+   return ['G5','당신은 소개받은 사람에게 먼저 돌아간 기회를 뒤늦게 공고에서 만나고도 같은 출발선에서 겨룬 것으로 평가받는 운명입니다.'];
+  return null;
+ }
+ // 하나의 분야는 한 제목·한 판정으로 읽는다. 일의 보조 장면이 원래 원인을 덮지 않는다.
  function closingFor(d,key){
   const original=d.closing[0]||d.fates[0]||'';
-  if(d.id==='work'&&key==='W4')return '당신은 해낸 일을 인정받으려고 쓴 시간을 일터를 옮긴 뒤에도 처음부터 다시 내야 하는 운명입니다.';
   if(d.id==='body'&&key==='wear'&&d.ruleKey==='checking')return '당신은 끝낸 일의 걱정으로 쉴 시간을 내주고, 그동안 닳은 몸을 돌볼 시간과 돈도 따로 마련하는 운명입니다.';
   if(d.id==='home'&&key==='housing'){
    if(d.ruleKey==='silence')return '당신은 서운한 마음도 꺼내지 못한 채 함께 살 비용과 시간을 맞춰야 해서, 관계를 풀 이야기를 자꾸 뒤로 미루는 운명입니다.';
@@ -120,7 +139,8 @@
     const i=d.poolIds.indexOf('M6');
     if(i<0)d.paragraphs.splice(Math.max(0,d.paragraphs.length-1),0,text);
    }
-   const closing=closingFor(d,key);
+   const help=d.id==='gwiin'?helperClosing(d,out):null;
+   const closing=help?help[1]:closingFor(d,key);
    d.closing=closing?[closing]:[];
    if(t){
     // 여러 이름표를 추가하지 않고 실제로 선택된 부담을 한 목록에 묶는다.
@@ -137,7 +157,7 @@
     }
    }
    if(d.id==='money'&&d.relocationCost&&d.note&&!d.note.value.includes('이사비'))d.note.value+=' · 이사비와 주거비';
-   d.integration={key,sourceIds:d.poolIds.slice(),astrologyIds:(d.westernAddedIds||[]).slice(),originalHead:originals.head,originalClosing:originals.closing,originalNote:originals.note,summary:closing};
+   d.integration={key,sourceIds:d.poolIds.slice(),astrologyIds:(d.westernAddedIds||[]).slice(),originalHead:originals.head,originalClosing:originals.closing,originalNote:originals.note,summary:closing,closingSourceId:help?help[0]:null};
    out.integration.sources.push({domain:d.id,key,poolIds:d.poolIds.slice()});
   }
   // ClosingReading이 이미 선택된 사주·별자리 문단을 한 생활 흐름으로 엮었다.

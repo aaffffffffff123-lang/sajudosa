@@ -135,7 +135,8 @@ test('taste and refusal have twelve distinct grounded branches and stay in their
   assert.deepEqual(taste.evidence,[{kind:'sign',planet:'Venus',sign:v}]);
   assert.deepEqual(reaction.evidence,[{kind:'sign',planet:'Mars',sign:m}]);
   for(const entry of [taste,reaction]){
-   assert.equal(entry.text.match(/\./g).length,3,'three connected sentences');
+   // 이 갈래는 상대와 자신의 생각을 두 문장으로 나누어 주어를 분명히 한다.
+   assert.equal(entry.text.match(/\./g).length,entry.id==='mars-3'?4:3,'connected sentences with clear subjects');
    assert.doesNotMatch(entry.text,/undefined|NaN|금성|화성|하우스|운명|팔자|행운의|질병|해야 합니다/);
   }
   tastes.add(taste.text);reactions.add(reaction.text);
@@ -201,3 +202,4 @@ test('actual renderer preserves the explanation chain and places added evidence 
   assert.equal(Object.values(blocks).flatMap(b=>b.children).filter(p=>p.dataset.readingId).length,entries(v.opening).length);
  }
 });
+

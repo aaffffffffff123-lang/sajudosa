@@ -42,11 +42,14 @@ test('mental checking and physical recovery are connected in the body final',()=
 test('starting support is preserved while housing and career guidance are distinguished',()=>{
  const v=rows[2].view,d=v.domains.find(x=>x.id==='family');assert.equal(v.origin.key,'shown');assert(d.paragraphs.some(x=>x.includes('생활과 배움을 받쳐 준 도움과')));assert(d.paragraphs.some(x=>x.includes('배울 돈을 받았다는 사실과')));
 });
-test('moving work requires fresh proof in the title and ending, without removing the old work scene',()=>{
- const d=rows[3].view.domains.find(x=>x.id==='work');assert(d.westernAddedIds.includes('W4'));assert.equal(d.head,d.integration.originalHead);assert.match(d.closing[0],/일터를 옮긴 뒤/);assert(!d.paragraphs.includes(d.head));assert(d.paragraphs.some(x=>x.includes('이력서')));
+test('a secondary move retains its scene without replacing the primary work judgment',()=>{
+ const d=rows[3].view.domains.find(x=>x.id==='work');assert(d.westernAddedIds.includes('W4'));assert.equal(d.head,d.integration.originalHead);assert.equal(d.closing[0],d.integration.originalClosing[0]);assert(!d.paragraphs.includes(d.head));assert(d.paragraphs.some(x=>x.includes('이력서')));
+ const cases=rows.flatMap(({view})=>view.domains.filter(d=>d.id==='work'&&d.poolIds.includes('W4')));
+ assert(cases.length>5);assert(new Set(cases.map(d=>d.closing[0])).size>3);
+ for(const d of cases)assert.equal(d.closing[0],d.fates[0]);
 });
-test('already coherent money, helper and authority endings stay last',()=>{
- for(const {result,view} of rows){const b=old.v5Reading(result,NOW);for(const id of ['money','gwiin','office']){const d=view.domains.find(x=>x.id===id),before=b.domains.find(x=>x.id===id);if(!d.selectionDecision)assert.equal(d.closing.at(-1),before.closing.at(-1));}}
+test('already coherent money and authority endings stay last',()=>{
+ for(const {result,view} of rows){const b=old.v5Reading(result,NOW);for(const id of ['money','office']){const d=view.domains.find(x=>x.id===id),before=b.domains.find(x=>x.id===id);if(!d.selectionDecision)assert.equal(d.closing.at(-1),before.closing.at(-1));}}
  const d=rows[4].view.domains.find(x=>x.id==='money');assert.match(d.closing.at(-1),/오늘을 덜 힘들게/);
 });
 test('conflict policy chooses either system when adverse, but only for identical subject, axis and period',()=>{
@@ -68,11 +71,23 @@ test('natal help conflict uses the adverse grounded branch and retains the previ
  I.choose(v,{input:{unknown:false},western:{available:true,unknown:false,planets:[{id:'Jupiter',house:8}],aspects:[{a:'Jupiter',b:'Saturn',angle:90,orb:1}]}},api.V5);
  assert.equal(g.cause,'absent');assert.equal(g.originalSelection.cause,'present');assert(g.selectionDecision.chosen.some(x=>x.source==='western'));assert.equal(g.detail,api.V5.gwiin.absent.detail);
 });
-test('missing help keeps its grounded final judgment rather than a second hypothetical fate',()=>{
- for(const {view} of rows){const g=view.domains.find(x=>x.id==='gwiin');if(g.cause==='absent')assert.match(g.closing[0],/아무도 알려 주지 않은/);}
+test('helper endings keep presence or absence and refine only a displayed condition',()=>{
+ const reached=new Set();
+ for(const {view} of rows){
+  const g=view.domains.find(x=>x.id==='gwiin'),id=g.integration.closingSourceId;
+  if(!id){assert.equal(g.closing[0],g.integration.originalClosing[0]);continue;}
+  reached.add(id);assert(g.poolIds.includes(id));assert.equal(g.closing.length,1);
+  assert.equal(g.head,g.integration.originalHead);assert.equal(g.fates[0],g.integration.originalClosing[0]);
+  if(g.cause==='absent')assert(!['G1','G4','G6'].includes(id));
+  const v=plain(view),copy=v.domains.find(x=>x.id==='gwiin');
+  delete v.integration;copy.poolIds=[];copy.closing=g.integration.originalClosing.slice();
+  I.finish(v,{});assert.equal(copy.closing[0],g.integration.originalClosing[0]);assert.equal(copy.integration.closingSourceId,null);
+ }
+ assert(reached.size>=4,[...reached].join(','));
 });
 
 test('a provincial move retains its costs in the money body and has just one fate',()=>{
  let found=0;for(let i=0;i<30;i++){const {view}=api.read({y:1980+i,m:1+i%12,d:1+i%28},{h:2,mi:0},false,'busan');const d=view.domains.find(d=>d.id==='money');if(!d.relocationCost)continue;found++;assert.equal(d.closing.length,1);assert.match(d.paragraphs.join(' '),/이사비|주거비/);assert.match(d.note.value,/이사비와 주거비/);}
  assert(found>0);
 });
+
