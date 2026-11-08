@@ -180,7 +180,7 @@ class Block{
  get lastElementChild(){return this.children.at(-1);}
  querySelector(){return this.children.find(n=>n.className==='fate');}
 }
-test('actual renderer preserves the original explanation chain and adds the boundary connection after it',()=>{
+test('actual renderer preserves the explanation chain and places added evidence before the final judgment',()=>{
  for(const {view:v} of ALL){
   const blocks={
    'portrait-text':new Block(v.portrait.map(t=>new Paragraph(t))),
@@ -196,8 +196,8 @@ test('actual renderer preserves the original explanation chain and adds the boun
   for(const [k,b] of Object.entries(blocks))assert.deepEqual(b.children.filter(p=>!p.dataset.readingId),before[k]);
   assert.equal(blocks.origin.lastElementChild.innerHTML,v.origin.fate);
   assert.equal(blocks['core-body'].lastElementChild.innerHTML,v.core.fate);
-  assert.deepEqual(blocks['boss-line'].children.slice(0,before['boss-line'].length),before['boss-line']);
-  assert.equal(blocks['boss-line'].lastElementChild.dataset.readingId,v.opening.boss.at(-1).id);
+  assert.equal(blocks['boss-line'].lastElementChild,before['boss-line'].at(-1));
+  assert.equal(blocks['boss-line'].lastElementChild.previousElementSibling.dataset.readingId,v.opening.boss.at(-1).id);
   assert.equal(Object.values(blocks).flatMap(b=>b.children).filter(p=>p.dataset.readingId).length,entries(v.opening).length);
  }
 });

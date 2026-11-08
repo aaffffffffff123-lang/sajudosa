@@ -10,33 +10,40 @@ const inputs=[
 ];
 for(let i=0;i<120;i++)inputs.push([{y:1955+i%60,m:1+i*7%12,d:1+i*11%28},{h:i*13%24,mi:i*17%60},i%5===0,['seoul','newyork','sydney'][i%3],i%2===0]);
 const rows=inputs.map(args=>api.read(...args));
-test('original manuscript remains displayed in 125 varied readings; only explained conflict selection may change branch',()=>{
- const reached=new Set();let changed=0;
+test('125 readings retain selected scenes and evidence with one heading, one verdict and one note',()=>{
+ const reached=new Set();
  for(const {result,view} of rows){
   const snapshot=JSON.stringify(result),baseline=old.v5Reading(result,NOW);
   assert.deepEqual(plain(view.portrait),plain(baseline.portrait));assert.deepEqual(plain(view.origin),plain(baseline.origin));assert.deepEqual(plain(view.core),plain(baseline.core));
   for(const d of view.domains){const b=baseline.domains.find(x=>x.id===d.id);reached.add(d.id);
-   if(d.selectionDecision){changed++;assert(d.selectionDecision.discarded.some(x=>x.source==='saju'));assert(d.originalSelection);continue;}
-   const text=[d.head,...d.paragraphs,...d.closing].join('\n');for(const t of [b.head,...b.paragraphs,...b.closing])assert(text.includes(t),d.id+' lost '+t);
-   assert(!b.note||d.note.value.includes(b.note.value));
+   assert.equal(d.closing.length,1,d.id+' restarted its verdict');
+   assert(!d.note||!d.note.addition,d.id+' has a second note');
+   assert(!d.paragraphs.includes(d.head),d.id+' repeats its heading as a paragraph');
+   if(d.selectionDecision){assert(d.selectionDecision.discarded.some(x=>x.source==='saju'));assert(d.originalSelection);continue;}
+   assert.equal(d.head,b.head);
+   assert.deepEqual(plain(d.poolIds),plain(b.poolIds));assert.deepEqual(plain(d.westernAddedIds),plain(b.westernAddedIds));
+   const text=d.paragraphs.join(' ');for(const t of b.paragraphs)assert(text.includes(t),d.id+' lost selected scene '+t);
+   if(b.note)for(const item of b.note.value.split(/\s*·\s*/))assert(d.note.value.includes(item));
   }
   const end=baseline.verdict.match(/[^.!?]+[.!?]+$/)[0].trim();assert(view.verdict.endsWith(end));
-  for(const s of baseline.verdict.match(/[^.!?]+[.!?]+/g)||[])assert(view.verdict.includes(s.trim()));
+  assert(!view.verdict.includes('그 사이에서도 당신은'));
+  assert.equal((view.verdict.match(/당신은|검토 님은/g)||[]).length,1);
   assert.equal(JSON.stringify(result),snapshot);assert(!/[\u3040-\u30ff]|undefined|NaN/.test(JSON.stringify(view)));
+  const finished=JSON.stringify(view);I.finish(view,result);assert.equal(JSON.stringify(view),finished);
  }
  assert.equal(reached.size,7);
 });
 test('relationship costs reach the final judgment only with the selected housing or wedding conditions',()=>{
- const d=rows[0].view.domains.find(x=>x.id==='home');assert(d.westernAddedIds.includes('L3'));assert.match(d.closing.at(-1),/함께 살 비용/);assert.match(d.head,/말하지 못한/);assert.match(d.note.addition.value,/집을 마련할 몫/);
+ const d=rows[0].view.domains.find(x=>x.id==='home');assert(d.westernAddedIds.includes('L3'));assert.match(d.closing[0],/서운한 마음.*함께 살 비용/);assert.match(d.head,/연락은 끊깁니다/);assert.match(d.note.value,/집을 마련할 몫/);
 });
 test('mental checking and physical recovery are connected in the body final',()=>{
- const d=rows[1].view.domains.find(x=>x.id==='body');assert.equal(d.ruleKey,'checking');assert.match(d.closing.at(-1),/걱정과 몸/);assert(d.paragraphs.some(x=>x.includes('마음과 몸에서 따로')));
+ const d=rows[1].view.domains.find(x=>x.id==='body');assert.equal(d.ruleKey,'checking');assert.match(d.closing[0],/걱정.*닳은 몸/);assert.equal(d.closing.length,1);assert(d.paragraphs.some(x=>x.includes('손목이나 무릎')));
 });
 test('starting support is preserved while housing and career guidance are distinguished',()=>{
  const v=rows[2].view,d=v.domains.find(x=>x.id==='family');assert.equal(v.origin.key,'shown');assert(d.paragraphs.some(x=>x.includes('생활과 배움을 받쳐 준 도움과')));assert(d.paragraphs.some(x=>x.includes('배울 돈을 받았다는 사실과')));
 });
 test('moving work requires fresh proof in the title and ending, without removing the old work scene',()=>{
- const d=rows[3].view.domains.find(x=>x.id==='work');assert(d.westernAddedIds.includes('W4'));assert.match(d.head,/옮겨서/);assert.match(d.closing.at(-1),/떠난 뒤/);assert(d.paragraphs.includes(d.integration.originalHead));assert(d.integration.originalClosing.every(x=>d.closing.includes(x)));
+ const d=rows[3].view.domains.find(x=>x.id==='work');assert(d.westernAddedIds.includes('W4'));assert.equal(d.head,d.integration.originalHead);assert.match(d.closing[0],/일터를 옮긴 뒤/);assert(!d.paragraphs.includes(d.head));assert(d.paragraphs.some(x=>x.includes('이력서')));
 });
 test('already coherent money, helper and authority endings stay last',()=>{
  for(const {result,view} of rows){const b=old.v5Reading(result,NOW);for(const id of ['money','gwiin','office']){const d=view.domains.find(x=>x.id===id),before=b.domains.find(x=>x.id===id);if(!d.selectionDecision)assert.equal(d.closing.at(-1),before.closing.at(-1));}}
@@ -54,13 +61,18 @@ test('mixed-result wording changes without relabeling actual saju evidence',()=>
  assert.equal(I.normalize('돈을 마련하는 팔자입니다. 반복하는 사주입니다.'),'돈을 마련하는 운명입니다. 반복하는 운명입니다.');assert.equal(I.normalize('당신의 사주에서 재성은'),'당신의 사주에서 재성은');
 });
 test('shared saju and astrology paragraphs also reach the final body judgment',()=>{
- const d=rows[4].view.domains.find(x=>x.id==='body');assert(d.poolIds.includes('B6'));assert.match(d.closing.at(-1),/걱정과 몸/);assert.match(d.note.addition.label,/일이 끝나도/);
+ const d=rows[4].view.domains.find(x=>x.id==='body');assert(d.poolIds.includes('B6'));assert.match(d.closing[0],/걱정.*닳은 몸/);assert.match(d.note.value,/회복에 드는 날과 돈/);
 });
 test('natal help conflict uses the adverse grounded branch and retains the previous selection for audit',()=>{
  const v=plain(old.v5Reading(rows[4].result,NOW)),g=v.domains.find(x=>x.id==='gwiin');g.cause='present';
  I.choose(v,{input:{unknown:false},western:{available:true,unknown:false,planets:[{id:'Jupiter',house:8}],aspects:[{a:'Jupiter',b:'Saturn',angle:90,orb:1}]}},api.V5);
  assert.equal(g.cause,'absent');assert.equal(g.originalSelection.cause,'present');assert(g.selectionDecision.chosen.some(x=>x.source==='western'));assert.equal(g.detail,api.V5.gwiin.absent.detail);
 });
-test('missing help is not turned into help already received by the connection text',()=>{
- for(const {view} of rows){const g=view.domains.find(x=>x.id==='gwiin');if(g.cause==='absent'&&g.integration)assert.match(g.integration.summary,/받게 된 뒤/);}
+test('missing help keeps its grounded final judgment rather than a second hypothetical fate',()=>{
+ for(const {view} of rows){const g=view.domains.find(x=>x.id==='gwiin');if(g.cause==='absent')assert.match(g.closing[0],/아무도 알려 주지 않은/);}
+});
+
+test('a provincial move retains its costs in the money body and has just one fate',()=>{
+ let found=0;for(let i=0;i<30;i++){const {view}=api.read({y:1980+i,m:1+i%12,d:1+i%28},{h:2,mi:0},false,'busan');const d=view.domains.find(d=>d.id==='money');if(!d.relocationCost)continue;found++;assert.equal(d.closing.length,1);assert.match(d.paragraphs.join(' '),/이사비|주거비/);assert.match(d.note.value,/이사비와 주거비/);}
+ assert(found>0);
 });

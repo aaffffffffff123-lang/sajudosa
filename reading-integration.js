@@ -1,4 +1,4 @@
-/* 통합 풀이: 원고는 보존하고 선택된 조건 사이의 연결을 추가한다. */
+/* 통합 풀이: 선택된 조건과 생활 장면을 보존하며 제목·판정·요약을 한 흐름으로 엮는다. */
 (function(root,factory){
  if(typeof module==='object'&&module.exports)module.exports=factory();else root.ReadingIntegration=factory();
 })(typeof globalThis!=='undefined'?globalThis:this,function(){
@@ -86,68 +86,62 @@
   if(d.id==='office')return d.cause==='supported'?'authority':'pressure';
   return d.id==='money'?'burden':'help';
  }
+ // 하나의 분야는 한 제목·한 판정으로 읽는다. 추가 근거는 본문의 장면에 남긴다.
+ function closingFor(d,key){
+  const original=d.closing[0]||d.fates[0]||'';
+  if(d.id==='work'&&key==='W4')return '당신은 해낸 일을 인정받으려고 쓴 시간을 일터를 옮긴 뒤에도 처음부터 다시 내야 하는 운명입니다.';
+  if(d.id==='body'&&key==='wear'&&d.ruleKey==='checking')return '당신은 끝낸 일의 걱정으로 쉴 시간을 내주고, 그동안 닳은 몸을 돌볼 시간과 돈도 따로 마련하는 운명입니다.';
+  if(d.id==='home'&&key==='housing'){
+   if(d.ruleKey==='silence')return '당신은 서운한 마음도 꺼내지 못한 채 함께 살 비용과 시간을 맞춰야 해서, 관계를 풀 이야기를 자꾸 뒤로 미루는 운명입니다.';
+   if(d.ruleKey==='money')return '당신은 돈 때문에 벌어진 다툼을 화해로 끝내고도 함께 살 비용 앞에서 같은 말을 다시 꺼내는 운명입니다.';
+  }
+  return original;
+ }
  function finish(out,R){
   if(out.integration)return out;
-  out.integration={sources:[],version:1};
+  out.integration={sources:[],version:2};
   for(const d of out.domains){
-   const key=thread(d,out),base=key&&THREADS[d.id][key];if(!base)continue;
-   const t=base.slice(),ids=d.poolIds;
-   if(d.id==='home'&&key==='housing'){
-    t[4]=[ids.includes('L3')?'집을 마련할 몫':'',ids.includes('L2')?'결혼 비용':'',ids.includes('L8')?'함께 살 시간과 거리':''].filter(Boolean).join(' · ');
-    if(!['연락은 끊깁니다','대화가 빨리 줄어듭니다','애매하게'].includes(d.cause)){t[0]='관계의 사정에 함께 살 비용까지 얹힙니다.';t[1]='관계에서 맞춰 온 사정은 함께 사는 조건을 정할 때에도 따라옵니다. 마음을 정한 뒤에는 집과 돈과 시간을 누가 얼마나 낼지 다시 정해야 합니다.';t[2]='당신은 마음을 맞춘 뒤에도 함께 살 조건을 자기 생활에서 더 마련해야 하는 운명입니다.';}
-   }
-   if(d.id==='body'&&key==='wear'&&d.ruleKey!=='checking'){t[0]='끝난 일의 값이 몸과 남은 시간에 붙습니다.';t[2]='당신은 일을 마친 뒤에도 몸에 남은 값을 자기 시간과 돈으로 치르는 운명입니다.';t[4]='회복에 드는 날과 돈';}
-   if(d.id==='family'&&key==='received'&&['old','young'].includes(d.cause)){t[1]='앞에서 받은 지원은 출발할 때의 몫입니다. 그 뒤의 주거비와 가족의 부탁까지 모두 마련되었다는 뜻은 아닙니다. 받은 만큼 뒤의 생활도 잘 이어 가리라는 기대가 먼저 붙습니다.';t[2]='당신은 받은 것을 지켰다는 증명과 자기 생활을 마련할 몫을 함께 요구받는 운명입니다.';t[4]='자기 생활의 유지 · 가족의 기대';}
-   if(d.id==='money')t[4]=ids.map(id=>({learning:'다음 준비에 드는 값',debt:'약속한 상환',effort:'돈으로 돌아오지 않은 수고',M2:'돈을 벌기 위해 내는 품',M6:'이동 전에 마련할 돈'}[id])).filter(Boolean).join(' · ');
-   if(d.id==='body'&&key==='duty'&&ids.every(id=>id==='B7')){t[0]='몸을 챙길 시간도 일하고 남은 데서 냅니다.';t[1]='일을 위해 쓴 시간 뒤에서 자기 몸을 챙길 시간을 다시 찾아야 합니다. 생활을 이어 갈 힘을 마련하는 일도 쉬는 몫 안에 넣어 셉니다.';t[2]='당신은 일할 힘을 되찾는 일까지 일하고 남은 시간 안에서 해내야 하는 운명입니다.';t[4]='몸을 돌볼 시간 · 생활을 유지할 비용';}
-   if(d.id==='gwiin'&&d.cause==='absent'){t[1]='어렵게 도움을 한 번 받게 되더라도 그 뒤에 누구에게 무엇을 돌려줄지 따지는 시간은 남습니다. 도움을 얻기 전의 증명과 얻은 뒤의 기대를 따로 치릅니다.';t[2]='당신은 도움을 구할 때에는 받을 조건을, 받게 된 뒤에는 갚을 몫을 먼저 세는 운명입니다.';}
-   if(d.id==='body'&&key==='duty'&&ids.includes('B3')&&!ids.includes('B4'))t[4]='쉬고 돌아온 뒤 메울 일 · 쉰 만큼 뒤처졌다는 평가';
-   d.integration={key,sourceIds:d.poolIds.slice(),astrologyIds:(d.westernAddedIds||[]).slice(),originalHead:d.head,originalClosing:d.closing.slice(),originalNote:d.note,summary:t[2]};
-   const n=2;
-   let bridge=t[1];
-   // 한국어 원고만 표시한다. 검사·수면 이외의 몸 갈래에도 같은 부담의 원인을 연결한다.
-   if(d.id==='body'&&key==='wear'&&d.ruleKey!=='checking')bridge='쉬는 간격을 뒤로 미루며 이어 온 일은 끝나도 몸에 남습니다. 일한 시간에서 빠진 회복은 나중의 자기 시간과 돈으로 채웁니다.';
-   d.paragraphs.splice(n,0,bridge);
+   const key=thread(d,out),t=key&&THREADS[d.id][key];
+   const originals={head:d.head,closing:d.closing.slice(),note:d.note};
+   // 출발 지원과 주거·진로 지원의 차이는 해당 장면에서 설명한다.
    if(d.id==='family'&&out.origin.key==='shown'){
-    // 원래 문단을 남기면서 주거 지원과 진로 지원이 출발 지원과 동일한 뜻은 아님을 먼저 밝힌다.
-    if(ids.includes('F5')){
-     const i=d.paragraphs.findIndex(x=>x.startsWith('같은 해에 일을 시작한 친구'));
-     if(i>=0)d.paragraphs.splice(i,0,'생활과 배움을 받쳐 준 도움과 따로 살 집까지 마련해 주는 도움은 크기가 다릅니다. 다른 집이 더 보태는 몫을 비교하는 때에는 앞에서 받은 지원도 충분한 몫으로 느껴지지 않습니다.');
-    }
-    if(ids.includes('F6')){
-     const i=d.paragraphs.findIndex(x=>x.startsWith('부모가 하던 일은'));
-     if(i>=0)d.paragraphs.splice(i,0,'배울 돈을 받았다는 사실과 내가 택할 분야의 길을 먼저 가 본 사람이 곁에 있다는 사실은 따로 셉니다. 받은 준비를 어디에 쓸지 정하는 일까지 대신해 주는 것은 아닙니다.');
+    const contexts=[
+     ['F5','같은 해에 일을 시작한 친구','생활과 배움을 받쳐 준 도움과 따로 살 집까지 마련해 주는 도움은 크기가 다릅니다.'],
+     ['F6','부모가 하던 일은','배울 돈을 받았다는 사실과 내가 택할 분야의 길을 먼저 가 본 사람이 곁에 있다는 사실은 따로 셉니다.']
+    ];
+    for(const [id,start,context] of contexts)if(d.poolIds.includes(id)){
+     const i=d.paragraphs.findIndex(x=>x.startsWith(start));
+     if(i>=0)d.paragraphs[i]=context+' '+d.paragraphs[i];
     }
    }
-   // 기존 머리말과 판정은 원고 그대로 남기고, 두 조건을 잇는 문장을 추가한다.
-   const keepEnding=['money','gwiin','office'].includes(d.id);
-   if(!keepEnding){d.head=t[0];d.paragraphs.unshift(d.integration.originalHead);}
-   const closing=t[2];if(!d.closing.includes(closing))d.closing.splice(keepEnding?0:d.closing.length,0,closing);
-   if(t[4]){if(d.note)d.note={...d.note,addition:{label:t[3],value:t[4]}};else d.note={label:t[3],value:t[4]};}
+   // 이사 비용을 두 번째 운명 판정으로 붙이지 않고 실제 지출 문단에 포함한다.
+   if(d.id==='money'&&d.relocationCost&&d.closing.length>1){
+    const text='일을 따라 옮길 때마다 이사비와 주거비가 먼저 나갑니다. 옮겨서 더 벌 돈도 벌기 전에 쓸 곳부터 정해집니다.';
+    const i=d.poolIds.indexOf('M6');
+    if(i<0)d.paragraphs.splice(Math.max(0,d.paragraphs.length-1),0,text);
+   }
+   const closing=closingFor(d,key);
+   d.closing=closing?[closing]:[];
+   if(t){
+    // 여러 이름표를 추가하지 않고 실제로 선택된 부담을 한 목록에 묶는다.
+    let extra=t[4];
+    if(d.id==='money')extra=d.poolIds.map(id=>({learning:'다음 준비에 드는 값',debt:'약속한 상환',effort:'돈으로 돌아오지 않은 수고',M2:'돈을 벌기 위해 내는 품',M6:'이동 전에 마련할 돈'}[id])).filter(Boolean).join(' · ');
+    if(d.id==='home'&&key==='housing')extra=[d.poolIds.includes('L3')?'집을 마련할 몫':'',d.poolIds.includes('L2')?'결혼 비용':'',d.poolIds.includes('L8')?'함께 살 시간과 거리':''].filter(Boolean).join(' · ');
+    if(d.id==='body'&&key==='wear'&&d.ruleKey!=='checking')extra='회복에 드는 날과 돈';
+    if(d.id==='body'&&key==='duty')extra=d.poolIds.includes('B4')?'빠진 몫의 부담 · 동료에게 남는 미안함':d.poolIds.includes('B3')?'쉬고 돌아온 뒤 메울 일 · 쉰 만큼 뒤처졌다는 평가':'몸을 돌볼 시간 · 생활을 유지할 비용';
+    if(d.id==='family'&&key==='received'&&['old','young'].includes(d.cause))extra='자기 생활의 유지 · 가족의 기대';
+    const values=[...new Set([d.note&&d.note.value,extra].filter(Boolean).flatMap(x=>x.split(/\s*·\s*/)).filter(Boolean))];
+    if(values.length){
+     const labels={work:'일을 마치고도 남는 부담',body:'쉬는 시간에 남는 부담',home:'관계에서 계속 맞춰야 하는 것',family:'가족과 내 생활에서 감당할 몫',gwiin:'도움을 구하고 받는 데 드는 품',office:'권한과 함께 돌아오는 책임'};
+     d.note={label:labels[d.id]||(d.note&&d.note.label)||t[3],value:values.join(' · ')};
+    }
+   }
+   if(d.id==='money'&&d.relocationCost&&d.note&&!d.note.value.includes('이사비'))d.note.value+=' · 이사비와 주거비';
+   d.integration={key,sourceIds:d.poolIds.slice(),astrologyIds:(d.westernAddedIds||[]).slice(),originalHead:originals.head,originalClosing:originals.closing,originalNote:originals.note,summary:closing};
    out.integration.sources.push({domain:d.id,key,poolIds:d.poolIds.slice()});
   }
-  if(out.opening){
-   const o=out.opening;
-   if(o.origin.length){const text={shown:'살림을 받쳐 준 몫과 그 집에서 배운 기준을 함께 지키려 하면, 받은 것을 잃지 않는 일이 다음 선택의 조건이 됩니다.',hidden:'집에서 익힌 기준대로 살고 싶어도 그 기준을 지탱할 돈을 꺼낼 수 없다면, 익숙한 생활의 값부터 자기 힘으로 마련해야 합니다.',absent:'자라며 익힌 방식은 남아 있어도 그 방식을 지탱할 살림은 직접 마련해야 합니다. 배운 순서대로 사는 데 드는 값도 당신 몫입니다.'}[out.origin.key];o.origin.push({id:'origin-connection-'+out.origin.key,text,evidence:[{kind:'origin',cause:out.origin.key},...o.origin[0].evidence]});}
-   if(o.boss.length)o.boss.push({id:'boundary-connection',text:out.keys.boss==='low'||out.keys.boss==='absent'?'남이 직접 시키는 힘이 약해도 지켜 온 이름과 생활의 기준까지 사라지는 것은 아닙니다. 지시가 없는 날에도 스스로 끝낼 기준을 높이는 이유가 거기에 남습니다.':'밖에서 정한 기준을 맞추는 동안에는 그 기준에 맞게 익힌 생활도 함께 굳어집니다. 맡은 몫을 마친 뒤에도 제자리로 돌아가는 데에는 자기 시간이 듭니다.',evidence:o.boss[0].evidence});
-   if(o.core.length){const domains=out.core.cause||'';let text;
-    if(/change|clash|palace_hit/.test(domains))text='바뀐 조건에 익숙해지는 일과 그 변화에 익숙해지는 마음은 한 번에 끝나지 않습니다. 다음 변화가 오면 겨우 맞춘 생활과 그 마음을 함께 다시 옮깁니다.';
-    else if(/speech|officer|checking|owl|resource_blocks/.test(domains))text='일을 마치는 것과 마음속에서 그 일을 끝내는 일이 갈라지면, 남에게 설명할 몫을 끝낸 뒤에도 스스로 확인할 몫이 남습니다.';
-    else if(/wealth|reckoning|income/.test(domains))text='생활의 몫을 먼저 계산하는 반응이 익숙해질수록 내가 쓸 몫을 나중으로 미루는 일도 자연스러운 순서가 됩니다.';
-    else if(/relation/.test(domains))text='가까운 사이에서 되풀이되는 반응은 다음에도 같은 말을 삼키거나 같은 기대를 품게 합니다. 지난번에 넘긴 사정이 다음 관계의 기준으로 남습니다.';
-    else text='익숙한 반응으로 당장의 일을 넘기면 다음에도 그 방식부터 꺼내게 됩니다. 버티는 데 쓴 방식이 같은 몫을 다시 맡는 이유로 남습니다.';
-    o.core.push({id:'core-connection-'+domains,text,evidence:[{kind:'core',cause:domains},...o.core[0].evidence]});
-   }
-  }
-  // 원래 전체풀이의 마지막 판정은 그대로 두고, 실제 표시된 추가 원인 하나를 앞에서 받아 준다.
-  const priority=['home','body','family','work','gwiin','office','money'];
-  const d=priority.map(id=>out.domains.find(x=>x.id===id&&x.integration)).find(Boolean);
-  const pieces=[];
-  if(out.opening&&out.opening.origin.length)pieces.push(out.origin.key==='shown'?'집에서 받은 지원과 익힌 기준을 지키는 일도 당신이 앞으로 감당할 몫에 들어갑니다.':out.origin.key==='hidden'?'집에서 익힌 기준을 지킬 생활비는 손에 쥐지 못한 집안의 복과 별도로 마련해야 합니다.':'자라며 익힌 생활을 이어 가는 데 드는 값도 물려받을 몫 없이 직접 마련해야 합니다.');
-  if(d)pieces.push(d.integration.summary.replace(/^당신은 /,'그 사이에서도 당신은 '));
-  const parts=out.verdict.match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[out.verdict];
-  parts.splice(Math.max(1,parts.length-1),0,...pieces);out.verdict=parts.map(x=>x.trim()).join(' ');
-  out.verdictIntegration={opening:out.opening&&out.opening.origin.map(x=>x.id)||[],domain:d?{id:d.id,poolIds:d.integration.sourceIds}:null};
+  // ClosingReading이 이미 선택된 사주·별자리 문단을 한 생활 흐름으로 엮었다.
+  // 여기에 별도 분야의 판정이나 같은 뜻의 연결 문장을 다시 삽입하지 않는다.
   return out;
  }
  return {resolve,choose,finish,normalize,THREADS};

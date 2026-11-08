@@ -12,7 +12,7 @@ test('each decade uses individual contacts from its early, middle and late porti
 });
 test('monthly contacts use fast planets when grounded; actual solar-term boundaries stay unchanged',()=>{
  const months=req.periods.filter(x=>x.kind==='month');assert(months.some(p=>data.periods[p.id].some(x=>['Mercury','Venus','Mars'].includes(x.evidence[0].body))));
- const input=plain(known.view),oldYears=plain(input.years),v=P.apply(input,data);assert.equal(v.years.length,2);v.years.forEach((y,i)=>{assert.equal(y.periodStart,oldYears[i].periodStart);assert.equal(y.periodEnd,oldYears[i].periodEnd);y.months.forEach((m,j)=>{assert.equal(m.start,oldYears[i].months[j].start);assert.equal(m.end,oldYears[i].months[j].end);});});assert(v.periodVerdictEvidence.length);
+ const input=plain(known.view),oldYears=plain(input.years),v=P.apply(input,data);assert.equal(v.years.length,2);v.years.forEach((y,i)=>{assert.equal(y.periodStart,oldYears[i].periodStart);assert.equal(y.periodEnd,oldYears[i].periodEnd);y.months.forEach((m,j)=>{assert.equal(m.start,oldYears[i].months[j].start);assert.equal(m.end,oldYears[i].months[j].end);});});if(v.periodVerdictEvidence)assert(v.periodVerdictEvidence.length);assert.equal(v.verdict,known.view.verdict);
  assert(v.verdict.endsWith(known.view.verdict.match(/[^.!?]+[.!?]+$/)[0].trim()));
 });
 test('retrograde repeated windows retain individual actual contact evidence and dates',()=>{
@@ -45,4 +45,30 @@ test('support-only contacts remain supportive and gain no invented adverse conta
 });
 test('a continuing exact contact is not recited as a new event in the next year',()=>{
  const v=P.apply(plain(known.view),data);for(const e of v.years[1].starPeriods.filter(e=>v.years[0].starPeriods.some(x=>x.id===e.id)))assert.match(e.text,/앞의 해에서 짚은/);
+});
+
+
+test('periods read as one narrative with chronological windows and no repeated introductions',()=>{
+ const v=P.apply(plain(known.view),data,undefined,NOW);
+ const periods=[...v.past,...v.years,...v.years.flatMap(y=>y.months),...v.luck.cycles.map(x=>x.c)];
+ for(const p of periods){
+  assert(p.narrative);const text=p.narrative.paragraphs.join(' ');
+  assert(!/이 10년 중에|같은 조건이 다시 겹치는 때가 있어|그때는 .*때였습니다/.test(text),text);
+  const sentences=text.match(/[^.!?]+[.!?]+/g)||[];assert.equal(new Set(sentences.map(x=>x.trim())).size,sentences.length);
+  for(const d of p.narrative.dates){assert(d.sourceIds.length);assert(d.evidence.length);assert(d.ranges.every((r,i)=>r.end>r.start&&(!i||r.start>=d.ranges[i-1].end)));}
+  const ids=p.narrative.dates.flatMap(x=>x.sourceIds);assert.deepEqual(ids.slice().sort(),p.starPeriods.map(x=>x.id).sort());
+ }
+ const original=known.view.luck.cycles;
+ v.luck.cycles.forEach((x,i)=>assert.equal(x.stage,original[i].stage,'a deduplicated decade must not restore its original text'));
+});
+
+test('a repeated subject is continued once, while all exact contact windows and evidence stay available',()=>{
+ const e={id:'one',copyKey:'work:adverse:1',domain:'work',valence:'adverse',label:'일과 평가',range:{start:Date.UTC(2026,0,1),end:Date.UTC(2026,1,1)},text:P.COPY.work.bad[1],evidence:[{kind:'transit'}],recurrences:[{start:Date.UTC(2026,5,1),end:Date.UTC(2026,6,1)}]};
+ const seen=new Set(),opts={kind:'year',start:Date.UTC(2026,0,1),end:Date.UTC(2027,0,1),seen};
+ const first=P.narrative({text:'맡은 일을 마칩니다.',starPeriods:[e]},opts);
+ const second=P.narrative({text:'',starPeriods:[e,{...e,id:'two'}]},opts);
+ assert(first.paragraphs[0].startsWith('맡은 일을 마칩니다. 2026년'));
+ assert(!second.paragraphs.join(' ').includes(P.COPY.work.bad[1]));
+ assert.match(second.paragraphs.join(' '),/다시 시간이 듭니다/);
+ assert.equal(second.dates.length,1);assert.equal(second.dates[0].ranges.length,2);assert.equal(second.dates[0].sourceIds.length,2);
 });
