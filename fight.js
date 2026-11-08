@@ -2426,74 +2426,6 @@ const _cv=V3(),_cf=V3();
 
 /* ===== 4-1. 궁전 너머의 존재: 그림자 → 고개 들기 → 3D 안구의 시선 → 동공 확대 ===== */
 /* 실제 곡면 안구·홍채·동공. 고정된 눈꺼풀 안에서 안구 전체가 회전한다. */
-/* 끝 장면 눈의 그림 판 두 장(족친 기록 카드와 같은 색):
- * lid  — 원본 그림을 카드처럼 차가운 잿빛으로 곱해 누르고, 아래 구름을 어둡게, 눈 둘레만 누런 빛을 더한 판(눈꺼풀·구름에 쓴다)
- * iris — 그림 속 홍채를 극좌표로 다시 떠서(눈꺼풀에 가린 위아래는 옆쪽 무늬를 접어 채우고, 그려진 동공 자리는 피한다) 금빛으로 물들인 판 */
-function* beyondArtSteps(img){
- const W=img.width||1024,H=img.height||1536,k=W/1024;
- const CX=512*k,CY=452*k,RS=174*k;// 그림 속 홍채 중심·반지름
- const lidCanvas=document.createElement('canvas');lidCanvas.width=W;lidCanvas.height=H;
- const lg=lidCanvas.getContext('2d',TEX_CTX);
- // 판 하나를 통째로 덮는 그리기는 한 걸음에 하나씩(폰에서도 한 프레임을 오래 붙잡지 않게)
- const lidOps=[
-  ()=>{lg.globalCompositeOperation='source-over';lg.clearRect(0,0,W,H);lg.drawImage(img,0,0,W,H);},
-  ()=>{lg.globalCompositeOperation='multiply';
-   const tint=lg.createLinearGradient(0,126*k,0,832*k);tint.addColorStop(0,'#3b4441');tint.addColorStop(.5,'#717a72');tint.addColorStop(1,'#46504c');
-   lg.fillStyle=tint;lg.fillRect(0,0,W,H);},
-  ()=>{lg.globalCompositeOperation='screen';
-   const glow=lg.createRadialGradient(CX,CY,29*k,CX,CY,294*k);glow.addColorStop(0,'rgba(110,86,34,.32)');glow.addColorStop(1,'rgba(0,0,0,0)');
-   lg.fillStyle=glow;lg.fillRect(CX-300*k,CY-300*k,600*k,600*k);},
-  ()=>{lg.globalCompositeOperation='source-over';
-   const low=lg.createLinearGradient(0,479*k,0,754*k);low.addColorStop(0,'rgba(18,22,21,0)');low.addColorStop(.55,'rgba(18,22,21,.35)');low.addColorStop(1,'rgba(26,31,30,.2)');
-   lg.fillStyle=low;lg.fillRect(0,479*k,W,H-479*k);}
- ];
- const paintLid=()=>{for(const op of lidOps)op();};
- for(const op of lidOps){op();yield;}
- // 홍채 둘레만 읽는다
- const pad=Math.ceil(RS*1.1)+2,x0=Math.round(CX)-pad,y0=Math.round(CY)-pad,SW=pad*2,SH=pad*2;
- const src=document.createElement('canvas');src.width=SW;src.height=SH;const sg=src.getContext('2d',TEX_CTX);
- sg.drawImage(img,x0/k,y0/k,SW/k,SH/k,0,0,SW,SH);yield;
- const sd=sg.getImageData(0,0,SW,SH).data;yield;
- const S=512,irisCanvas=document.createElement('canvas');irisCanvas.width=irisCanvas.height=S;
- const ig=irisCanvas.getContext('2d',TEX_CTX),out=ig.createImageData(S,S),d=out.data;
- const acc=[0,0,0];
- const sample=(sx,sy,w)=>{// 쌍선형
-  const fx=clamp(sx-x0,0,SW-1.001),fy=clamp(sy-y0,0,SH-1.001),ix=fx|0,iy=fy|0,tx=fx-ix,ty=fy-iy;
-  const a=(iy*SW+ix)*4,b=a+4,c=a+SW*4,e=c+4;
-  for(let ch=0;ch<3;ch++)acc[ch]+=w*((sd[a+ch]*(1-tx)+sd[b+ch]*tx)*(1-ty)+(sd[c+ch]*(1-tx)+sd[e+ch]*tx)*ty);
- };
- const HALF=PI/2;
- for(let y=0;y<S;y++){
-  for(let x=0;x<S;x++){
-   const dx=(x+.5)/S*2-1,dy=1-(y+.5)/S*2,r=Math.hypot(dx,dy),th=Math.atan2(dy,dx);
-   // 그려진 동공(가운데 세로 틈)을 피해 안쪽은 바깥 고리에서 뜨고, 가운데에 가까울수록 옆으로만 뜬다
-   const rs=clamp(r,.22,1.04)*RS,squeeze=lerp(.24,.5,smooth((rs-40*k)/(70*k)));
-   const right=Math.abs(th)<=HALF,e=right?th:(th>0?PI-th:-PI-th);
-   const eo=Math.sign(e)*Math.min(HALF,PI-Math.abs(e));// 반대쪽에서 본 같은 방향(위아래 이음매)
-   const wo=.5*smooth((Math.abs(e)-PI/3)/(PI/6));
-   acc[0]=acc[1]=acc[2]=0;
-   const put=(side,elev,w)=>{const bt=elev*(elev>0?squeeze:squeeze*.84);sample(CX+side*Math.cos(bt)*rs,CY-Math.sin(bt)*rs,w);};
-   put(right?1:-1,e,1-wo);if(wo>0)put(right?-1:1,eo,wo);
-   const kk=(y*S+x)*4;d[kk]=acc[0];d[kk+1]=acc[1];d[kk+2]=acc[2];d[kk+3]=255;
-  }
-  if((y&7)===7)yield;
- }
- const paintIris=()=>{
-  ig.globalCompositeOperation='source-over';ig.putImageData(out,0,0);
-  // 카드와 같은 순서: 차가운 잿빛으로 한 번 누르고, 밝기는 그대로 두고 빛깔만 호박색으로, 가운데를 누렇게 띄운다
-  ig.globalCompositeOperation='multiply';ig.fillStyle='#7a837b';ig.fillRect(0,0,S,S);
-  ig.globalCompositeOperation='color';
-  const amber=ig.createRadialGradient(S/2,S/2,0,S/2,S/2,S/2);amber.addColorStop(0,'rgba(206,160,62,.95)');amber.addColorStop(.78,'rgba(178,128,44,.9)');amber.addColorStop(1,'rgba(150,104,34,.85)');
-  ig.fillStyle=amber;ig.fillRect(0,0,S,S);
-  ig.globalCompositeOperation='screen';
-  const glow=ig.createRadialGradient(S/2,S/2,S*.06,S/2,S/2,S*.62);glow.addColorStop(0,'rgba(110,86,34,.34)');glow.addColorStop(1,'rgba(0,0,0,0)');
-  ig.fillStyle=glow;ig.fillRect(0,0,S,S);
-  ig.globalCompositeOperation='source-over';
- };
- paintIris();yield;
- const tex=(canvas,paint)=>{const t=new THREE.CanvasTexture(canvas);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;canvas.addEventListener('contextrestored',()=>{paint();t.needsUpdate=true;});return t;};
- return {lid:tex(lidCanvas,paintLid),iris:tex(irisCanvas,paintIris)};
-}
 function createBeyondEye(){
  const job=createBeyondEyeSteps();let step;do{step=job.next();}while(!step.done);return step.value;
 }
@@ -2506,8 +2438,7 @@ function* eyeCanvasTex(w,h,draw){
 }
 function* createBeyondEyeSteps(){
  const root=new THREE.Group(),ball=new THREE.Group();root.name='beyond-eye-3d';ball.name='rotating-eyeball';root.add(ball);
- // 홍채는 그림 속 눈처럼 눈구멍을 거의 채운다(위아래는 눈꺼풀에 걸려 잘린다). 족친 기록 카드와 같은 눈
- const R=4.9,IR=2.6;
+ const R=4.9,IR=2.03;
  let seed=73913;
  const irisSeed=seed;
  const irisTex=yield* eyeCanvasTex(1024,1024,function*(g,w,h){
@@ -2517,7 +2448,7 @@ function* createBeyondEyeSteps(){
    const f=.5+.22*Math.sin(a*183+Math.sin(r*29+a*7)*2.2)+.16*Math.sin(a*331-r*19)+.12*Math.sin(a*79+r*41);
    const fibers=(.28+.72*f)*(.6+.4*Math.sin(r*9+.4)),edge=1-smooth((r-.79)/.21),inner=.72+.28*smooth(r/.25);
    const n=(random()-.5)*17,k=(y*w+x)*4;
-   d[k]=Math.max(0,(70+150*fibers)*edge*inner+n);d[k+1]=Math.max(0,(48+108*fibers)*edge*inner+n);d[k+2]=Math.max(0,(14+36*fibers)*edge*inner+n);d[k+3]=255;
+   d[k]=Math.max(0,(74+126*fibers)*edge*inner+n);d[k+1]=Math.max(0,(66+108*fibers)*edge*inner+n);d[k+2]=Math.max(0,(40+62*fibers)*edge*inner+n);d[k+3]=255;
   }if((y&1)===1)yield;}g.putImageData(image,0,0);yield;
   // Lacunae between irregular bundles. One lip catches light while the recessed side stays dark.
   for(let i=0;i<230;i++){
@@ -2551,21 +2482,29 @@ function* createBeyondEyeSteps(){
  skinTex.wrapS=skinTex.wrapT=THREE.RepeatWrapping;skinTex.repeat.set(5,3);
  const scleraSeed=seed;
  const scleraTex=yield* eyeCanvasTex(1024,512,function*(g,w,h){
-  let texSeed=scleraSeed;const random=()=>{texSeed=(Math.imul(texSeed,1664525)+1013904223)>>>0;return texSeed/4294967296;};g.fillStyle='#8e8f87';g.fillRect(0,0,w,h);
-  // 그림 속 흰자: 핏줄 없이 젖은 돌처럼 매끈한 잿빛, 얼룩만 옅게
-  for(let i=0;i<420;i++){
-   const x=random()*w,y=random()*h,r=4+random()*36,patch=g.createRadialGradient(x,y,0,x,y,r);
-   patch.addColorStop(0,i%3?'rgba(44,46,40,.16)':'rgba(196,198,186,.14)');patch.addColorStop(1,'transparent');g.fillStyle=patch;g.fillRect(x-r,y-r,2*r,2*r);if((i&15)===15)yield;
+  let texSeed=scleraSeed;const random=()=>{texSeed=(Math.imul(texSeed,1664525)+1013904223)>>>0;return texSeed/4294967296;};g.fillStyle='#ad9e87';g.fillRect(0,0,w,h);
+  for(let i=0;i<350;i++){
+   const x=random()*w,y=random()*h,r=3+random()*28,patch=g.createRadialGradient(x,y,0,x,y,r);
+   patch.addColorStop(0,i%3?'rgba(90,69,62,.18)':'rgba(209,197,166,.26)');patch.addColorStop(1,'transparent');g.fillStyle=patch;g.fillRect(x-r,y-r,2*r,2*r);if((i&15)===15)yield;
   }
-  // 홍채 둘레로 번진 누런 기운(그림의 홍채 빛이 흰자에 비친 것)
-  for(const cx of [w*.25,w*1.25,-w*.75]){const glow=g.createRadialGradient(cx,h*.5,h*.1,cx,h*.5,h*.62);glow.addColorStop(0,'rgba(150,112,40,.2)');glow.addColorStop(1,'rgba(150,112,40,0)');g.fillStyle=glow;g.fillRect(0,0,w,h);}
-  yield;
+  function vein(x,y,angle,len,width,depth){
+   for(let j=0;j<5;j++){
+    angle+=(random()-.5)*.63;const dx=Math.cos(angle)*len/5,dy=Math.sin(angle)*len/5;
+    g.strokeStyle=depth?'rgba(86,40,42,.50)':'rgba(115,55,53,.44)';g.lineWidth=width*(1-j*.11);
+    g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+dx*.7,y+dy*.25,x+dx,y+dy);g.stroke();
+    x+=dx;y+=dy;if(depth&&j%2===1)vein(x,y,angle+(random()<.5?-1:1)*.58,len*.45,width*.52,depth-1);
+   }
+  }
+  for(const side of [-1,1])for(let i=0;i<32;i++){
+   const x=w*.25+side*(110+random()*65),y=h*(.32+random()*.36);
+   vein(x,y,(side<0?0:PI)+(random()-.5)*.9,37+random()*65,1.1+random()*1.7,2);yield;
+  }
   seed=texSeed;
  });
  const skin=new THREE.MeshStandardMaterial({map:skinTex,bumpMap:skinTex,bumpScale:.06,roughness:.81,color:col('#8c9695')});skin.name='beyond-skin';
  const wet=new THREE.MeshStandardMaterial({color:col('#6b5044'),roughness:.29,metalness:.02});wet.name='beyond-lid-rim';
- const white=new THREE.MeshStandardMaterial({map:scleraTex,color:col('#686b65'),roughness:.24});white.name='beyond-sclera';
- const irisMat=new THREE.MeshStandardMaterial({map:irisTex,bumpMap:irisTex,bumpScale:.03,color:col('#ffffff'),emissive:col('#ffffff'),emissiveMap:irisTex,emissiveIntensity:.3,roughness:.5});irisMat.name='beyond-iris';
+ const white=new THREE.MeshStandardMaterial({map:scleraTex,color:col('#c5b6a5'),roughness:.41});white.name='beyond-sclera';
+ const irisMat=new THREE.MeshStandardMaterial({map:irisTex,bumpMap:irisTex,bumpScale:.034,color:col('#f2debb'),roughness:.53});irisMat.name='beyond-iris';
  const pupilMat=new THREE.MeshStandardMaterial({color:col('#030606'),roughness:.19});pupilMat.name='beyond-pupil';
  const add=(g,m,parent=root)=>{const mesh=new THREE.Mesh(g,m);parent.add(mesh);return mesh;};
  add(new THREE.SphereGeometry(R,96,64),white,ball);yield;
@@ -2580,13 +2519,12 @@ function* createBeyondEyeSteps(){
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();return geo;
  }
  add(cap(IR,IR,.012),irisMat,ball);yield;
- // 그림 속 동공처럼 위아래 끝이 뾰족한 방추형 세로 동공, 홍채 끝까지 길게
- const PRY=2.3,pupil=add(cap(1,PRY,.027),pupilMat,ball);pupil.name='slit-pupil';yield;
+ const pupil=add(cap(1,1.72,.027),pupilMat,ball);pupil.name='slit-pupil';yield;
  const pp=pupil.geometry.attributes.position,base=pp.array.slice();
  let pupilWidth=-1,contactPitch=0;
  function setPupil(width){
   if(width===pupilWidth)return;pupilWidth=width;
-  for(let i=0;i<pp.count;i++){const y=base[i*3+1],x=base[i*3]*width*Math.sqrt(Math.max(0,1-(y/PRY)**2));pp.setXYZ(i,x,y,Math.sqrt(R*R-x*x-y*y)+.027);}
+  for(let i=0;i<pp.count;i++){const x=base[i*3]*width,y=base[i*3+1];pp.setXYZ(i,x,y,Math.sqrt(R*R-x*x-y*y)+.027);}
   pp.needsUpdate=true;pupil.geometry.computeVertexNormals();pupil.geometry.computeBoundingSphere();
  }
  // Skin begins at the almond aperture and continues beyond the screen, hiding the sphere silhouette.
@@ -2616,19 +2554,6 @@ function* createBeyondEyeSteps(){
   lidGeo.setAttribute('uv',new THREE.Float32BufferAttribute(skinUV,2));
   skin.map=skin.bumpMap=skin.emissiveMap=tex;skin.color.setHex(0xcbc8bc);skin.bumpScale=.10;
   skin.emissive.setHex(0xffffff);skin.emissiveIntensity=.38;skin.roughness=.72;skin.needsUpdate=true;
-  // 족친 기록 카드와 같은 눈: 그림을 차갑고 어둡게 누르고 눈 둘레만 누렇게 띄운 판을 눈꺼풀에, 그림 속 홍채를 금빛으로 물들여 안구에 입힌다.
-  // 놀이 중 프레임을 막지 않게 4ms씩 나눠 굽는다
-  const job=beyondArtSteps(tex.image);
-  const run=()=>{
-   if(document.hidden){setTimeout(run,250);return;}
-   const until=performance.now()+4;let step;
-   do{step=job.next();}while(!step.done&&performance.now()<until);
-   if(!step.done){setTimeout(run,16);return;}
-   const {lid,iris}=step.value;
-   skin.map=skin.bumpMap=skin.emissiveMap=lid;skin.color.setHex(0xffffff);skin.emissiveIntensity=1.05;skin.needsUpdate=true;
-   irisTex.dispose();irisMat.map=irisMat.bumpMap=irisMat.emissiveMap=iris;irisMat.needsUpdate=true;tex.dispose();
-  };
-  setTimeout(run,0);
  });
  const rimPoints=[];for(let i=0;i<192;i++)rimPoints.push(edge(i/192*TAU));
  add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(rimPoints,true),192,.024,8,true),wet);
@@ -2704,7 +2629,7 @@ const BEYOND=(()=>{
  const TILT=6.4,DUR=10.4;
  // 아래를 보다가 한 번 고개를 맞추고 정지. 그 다음 동공이 넓어진다.
  const T_SEE=TILT+.8,T_SHIFT=.65,T_DILATE=T_SEE+T_SHIFT+.3;
- const PUPIL_REST=.17,PUPIL_CONTACT=.44;// 홍채가 커진 만큼(그림 속 동공 굵기에 맞춰)
+ const PUPIL_REST=.13,PUPIL_CONTACT=.34;
  const eye={gaze:new THREE.Vector2(),pupil:PUPIL_REST,glow:0,seen:false,lock:0};
  // radians: 안구가 아래를 보는 각도에서 카메라를 정면으로 보는 각도까지 회전한다.
  const GAZE0=new THREE.Vector2(0,-.16);
@@ -2845,9 +2770,6 @@ const LINES={
   {aside:'저런 것까지 가르쳐야 돼?',say:'가난하고 못 배운 애들은 저런 데서 티가 확 난다니까',avoid:'poverty',who:1},
   {aside:'딱 봐도 회사에서도 폐급이네.',say:'평생 말단일 팔자잖아.',mark:'noOfficer',avoid:'career',who:1}
  ],
- // 한 번 걸어갈 때 나오는 수군거림 쌍 수. 천지신명의 꾸짖음이 끝난 뒤에 시작하므로 세 쌍이면 걸어가는 데 10.5~12초쯤 걸린다
- // (두 쌍이면 7.5~8.5초쯤으로, 꾸짖음과 겹치던 예전 세 쌍(8.5~9초)과 비슷하다)
- whisperPairs:2,
 };
 // 되살림 컷씬: 천지신명이 완전히 쓰러지는 데 2.4초. 추종자들은 그 뒤에야 움직이고 말한다(이만큼 뒤로 민다)
 const REV_SHIFT=2.7;
@@ -3771,6 +3693,8 @@ const CROWD=(()=>{
  // 세 사람만 실제 관절을 움직인다. 나머지 무리는 합쳐 둔 메시를 쓴다.
  function witness(v){
   const p=people[v.pi];
+  // 한 사람은 한 자리에만 선다(앞 자리에 남은 표시를 지운다). 남아 있으면 족치기 무대의 그 사람이 회중 자리로 끌려갔다
+  if(p.witness&&p.witness!==v)p.witness.actor=null;
   p.witness=v;v.actor=p;congregation.add(p.root);p.root.visible=true;p.paper.visible=true;
   stance(p,'stand');mood(p,'scorn');
   p.body.position.set(0,.015+LEG_LIFT,0);p.body.rotation.set(0,0,0);
@@ -4000,7 +3924,7 @@ const SUBMISSION=(()=>{
  function resetCrowd(){
   CROWD.releaseWitnesses();
   PART.on=false;stareReset();if(!crowd||!crowd.userData.place)return;
-  for(const list of crowd.userData.place)for(const v of list){v.cx=v.x;v.cy=0;v.tx=v.x;v.look=0;v.yaw=v.turn;v.goal=null;v.noticeAt=null;v.politeAt=null;}
+  for(const list of crowd.userData.place)for(const v of list){v.actor=null;v.cx=v.x;v.cy=0;v.tx=v.x;v.look=0;v.yaw=v.turn;v.goal=null;v.noticeAt=null;v.politeAt=null;}
   writeCrowd();
  }
  function part(endZ,endFov){
@@ -4014,6 +3938,8 @@ const SUBMISSION=(()=>{
   PART.on=true;PART.t0=G.time;planWhispers();AUDIO.crowdShuffle();
  }
  function updatePart(){
+  // 회중이 치워진 뒤(족치기 무대)에는 아무도 회중 자리로 옮기지 않는다
+  if(!crowd||!crowd.visible)return;
   const turning=updateStare();
   if(!PART.on||!crowd||!crowd.userData.place){
    forPlaces(v=>{if(v.actor)CROWD.poseWitness(v);});
@@ -4031,7 +3957,7 @@ const SUBMISSION=(()=>{
  /* ---- 설교를 끊으면 돌아보는 군중 ----
   * 종이를 구기기 시작하면 내 옆사람부터 앞줄까지 물결처럼 몸을 돌려 나를 본다(얼굴은 흘겨보는 얼굴로 구워 두었다).
   * 걸어가는 동안에도 얼굴이 나를 따라 돌아가고, 손을 놓고 물러서면 천지신명이 「이제야 네 운명을 아는구나」 할 때 다시 돌아선다.
-  * 구긴 종이를 놓으면 옆줄이 말을 꺼내고, 걸음을 옮기면 앞줄이 이어 받는다. */
+  * 다 구긴 뒤 천지신명의 꾸짖음이 끝나고 걸음을 떼면 옆줄이 말을 꺼내고, 앞줄이 이어 받는다. */
  const STARE={on:false,t0:0,talk:[],used:new Set(),anchors:[],exchange:null};
  const HEAD_Y=.763; // 사람 기준 단위로 발에서 머리 가운데까지(몸 .215 + 목 위 .548)
  function stareReset(){STARE.on=false;STARE.talk.length=0;STARE.exchange=null;}
@@ -4054,7 +3980,7 @@ const SUBMISSION=(()=>{
  }
  // Choose the replying face for where the reader will be at the END of the line.
  // The speaker stays until the reply is read; everyone else parts when we start walking.
- function walkSpeaker(side,until,replyTo,person,taken){
+ function walkSpeaker(side,until,replyTo,person){
   const e=walkProgress(until/WALK.dur),cx=lerp(WALK.p0.x,WALK.p1.x,e),cz=lerp(WALK.p0.z,WALK.p1.z,e);
   const aimX=lerp(WALK.l0.x,WALK.l1.x,e),aimZ=lerp(WALK.l0.z,WALK.l1.z,e);
   const tanH=Math.tan(lerp(WALK.f0,WALK.f1,e)*PI/360)*camera.aspect;
@@ -4064,7 +3990,7 @@ const SUBMISSION=(()=>{
   let best=null,bestScore=Infinity;
   forPlaces(v=>{
    const depth=cz-v.z;
-   if(v.pi!==person||(taken&&taken.has(v))||depth<=.15||side*v.x<=0||(replyTo&&v.z<=replyTo.z+.3))return;
+   if(v.pi!==person||v===STARE.exchange?.aside||depth<=.15||side*v.x<=0||(replyTo&&v.z<=replyTo.z+.3))return;
    head.set(v.x,HEAD_Y*v.scale,v.z).project(view);
    if(head.z<=-1||head.z>=1||Math.abs(head.x)>.9||Math.abs(head.y)>.85)return;
    const axis=cx+(aimX-cx)*depth/(cz-aimZ),screenX=side*(v.x-axis)/(depth*tanH);
@@ -4081,7 +4007,7 @@ const SUBMISSION=(()=>{
   const avoid=new Set(lastResult?.paper?.crowdAvoid||[]);
   const eligible=LINES.whisper.filter(w=>!avoid.has(w.avoid)),batch=[];
   if(!eligible.length)return;
-  for(let i=0;i<Math.min(LINES.whisperPairs||3,eligible.length);i++){
+  for(let i=0;i<Math.min(3,eligible.length);i++){
    let pool=eligible.filter(w=>!STARE.used.has(w)&&!batch.includes(w));
    if(!pool.length){STARE.used.clear();pool=eligible.filter(w=>!batch.includes(w));}
    batch.push(pick(pool.concat(pool.filter(w=>w.mark&&marks[w.mark]))));
@@ -4103,46 +4029,35 @@ const SUBMISSION=(()=>{
  function whisperSpokenTime(text,person){
   return typeTime(text.replace(/[\s.,!?…~]+$/,''),VOICE.crowd[person].speed*1.08);
  }
- // 구긴 종이를 놓는 순간에는 누가 무슨 말을 할지만 정한다. 첫 수군거림도 걸어가는 동안 나온다(planWhispers)
+ // 종이를 다 구기면 누가 무슨 말을 할지만 정해 둔다. 천지신명의 꾸짖음이 끝날 때까지 그 자리에 서 있다가 걸음을 떼고(updateCrumple),
+ // 수군거림은 첫마디부터 모두 걸어가는 동안 나온다(planWhispers)
  function startWhispers(){prepareWhispers();}
  function planWhispers(){
   const exchange=STARE.exchange;if(!exchange)return;
-  const {batch,side}=exchange;
+  const {batch,side,aside}=exchange,events=[];
   STARE.talk=[];WALK.dur=4.35;
   if(!batch.length)return;
   const span=(text,person)=>Math.max(1.5,typeTime(text,VOICE.crowd[person].speed*1.08)+.68);
-  const gap=.12,pairGap=.34,start=Math.max(.28,bossTalkLeft()+.4);
-  // 천지신명의 꾸짖음(「윗사람을 거스르는 자에게는…」)이 다 끝나고 한 박자 쉰 뒤에(start) 군중이 입을 연다. 말이 겹치지 않게.
-  // 말할 사람: 정해 둔 얼굴이 그 말이 끝날 때 화면 안에 있으면 그 사람, 없으면(좁은 세로 화면에서 걸어가다 보면 생긴다)
-  // 이번에 말하지 않는 얼굴 → 다른 얼굴 순서로 찾는다. 한 사람이 두 번 말하지 않고, 바로 앞 말과 같은 얼굴(같은 목소리)이 받아치지 않는다.
-  // 시각은 실제로 말하는 사람의 목소리 빠르기로 잰다(받아치는 말이 앞 목소리 끝에 바로 붙게)
-  const designated=new Set(batch.flatMap((_,i)=>[i*2+1,i*2]));
-  const run=()=>{
-   const taken=new Set(),out=[];let at=start,last=-1;
-   for(let i=0;i<batch.length;i++){
-    const pair=batch[i];
-    for(const [text,person,opening,slot] of [[pair.aside,i*2+1,true,i*2],[pair.say,i*2,false,i*2+1]]){
-     const order=[person,...[0,1,2,3,4,5].filter(pi=>!designated.has(pi)),...[...designated].filter(pi=>pi!==person)].filter(pi=>pi!==last);
-     let who=null,pi=person,end=at+span(text,person);
-     for(const p of order){const e=at+span(text,p),v=walkSpeaker(side,e,null,p,taken)||walkSpeaker(-side,e,null,p,taken);if(v){who=v;pi=p;end=e;break;}}
-     if(who)taken.add(who);last=who?pi:-1;
-     out.push({at,end,person:pi,text,slot,pair,opening,who});
-     at=opening?at+whisperSpokenTime(text,pi)+gap:end+pairGap;
-    }
-   }
-   return out;
-  };
-  // 문장을 모두 읽고 난 뒤 옥좌에 도착한다(말이 빠르다고 걷기를 먼저 끝내지 않는다).
-  // 마지막 화자를 지나치지 않게, 모두 화면 안에서 읽히는 속도까지만 걷기를 늦춘다
-  let events=run();
-  for(let n=0;n<16;n++){
-   const need=(events[events.length-1].end+.4)/.96;
-   if(need>WALK.dur+1e-9)WALK.dur=need;else if(events.some(e=>!e.who)&&n<15)WALK.dur+=.25;else break;
-   events=run();
+  const gap=.12,pairGap=.34;
+  let at=.28;
+  for(let i=0;i<batch.length;i++){
+   const pair=batch[i],second=i*2;
+   // 묻는 말은 1·3·5번, 받는 말은 0·2·4번 얼굴이 한다(여섯 문장, 여섯 사람). 첫 물음은 종이를 구길 때 나를 돌아본 옆사람(aside)이 걸음을 떼자마자 한다
+   const who=i===0?aside:null,first=who?who.pi:i*2+1;
+   events.push({at,end:at+span(pair.aside,first),person:first,text:pair.aside,slot:i*2,pair,opening:true,who});
+   at+=whisperSpokenTime(pair.aside,first)+gap;
+   const end=at+span(pair.say,second);
+   events.push({at,end,person:second,text:pair.say,slot:i*2+1,pair,opening:false,who:null});
+   at=end+pairGap;
   }
+  const find=event=>event.who||walkSpeaker(side,event.end,null,event.person)||walkSpeaker(-side,event.end,null,event.person);
+  // 여섯 문장을 모두 읽고 난 뒤 옥좌에 도착한다. 말이 빠르다고 걷기를 먼저 끝내지 않는다.
+  WALK.dur=Math.max(WALK.dur,(events[events.length-1].end+.4)/.96);
+  // 대화가 빨라져도 말할 사람을 지나치지 않는다. 모두 화면 안에서 읽히는 속도까지만 걷기를 늦춘다.
+  for(let n=0;n<12&&events.some(event=>!find(event));n++)WALK.dur+=.25;
   for(const event of events){
-   const speaker=event.who;if(!speaker)continue;
-   CROWD.witness(speaker);
+   const speaker=find(event);if(!speaker)continue;
+   if(!speaker.actor)CROWD.witness(speaker);
    speaker.from=speaker.look||0;speaker.goal=1;speaker.ld=G.time-STARE.t0;speaker.ldur=.45;speaker.noticeAt=G.time;
    speaker.delay=event.end+.12;
    STARE.talk.push({at:event.at,who:speaker,text:event.text,slot:event.slot,pair:event.pair,opening:event.opening});
@@ -5457,8 +5372,9 @@ const BANKNOTE_TEX=canvasTex(512,224,(g,w,h)=>{
  g.fillStyle='#785521';g.font='13px monospace';g.fillText('SJ  0517284',28,203);g.textAlign='left';
 });
 // 쥔 쪽 끝(밑동)은 주먹 속에 들어가게 폭이 30%까지 모인다(부채살처럼). 예전에는 끝까지 같은 폭이라 주먹 밖으로 지폐 밑동이 비어져 나왔다
+// 부채는 지폐가 주먹 위로 빠져나오는 자리(PIVOT)를 축으로 벌어진다. 밑동을 축으로 벌리면 기울어진 지폐 아랫단이 주먹 옆으로 비어져 나왔다
 function banknoteStack(){
- const vertices=[],uv=[],indices=[],count=32,sections=8,base=-.012,pinch=.3,reach=.32;
+ const vertices=[],uv=[],indices=[],count=32,sections=8,base=-.012,pinch=.3,reach=.32,PIVOT=.06;
  for(let i=0;i<count;i++){
   const layer=i/(count-1);
   // 아래쪽 여러 장은 거의 평행한 묶음이고, 엄지에서 먼 모서리들만 불규칙하게 벌어진다.
@@ -5467,8 +5383,8 @@ function banknoteStack(){
   for(let j=0;j<=sections;j++){
    const along=j/sections,y=along*(.27+.009*Math.sin(i*.8))+base,narrow=lerp(pinch,1,smooth(along/reach));
    for(const edge of [-1,1]){
-    const x=(edge*.059+.002*Math.sin(i*.8))*narrow;
-    vertices.push(x*c-y*s,y*c+x*s,(layer-.5)*.020+along*along*(.014*layer+.006*edge));
+    const x=(edge*.059+.002*Math.sin(i*.8))*narrow,yp=y-PIVOT;
+    vertices.push(x*c-yp*s,yp*c+x*s+PIVOT,(layer-.5)*.020+along*along*(.014*layer+.006*edge));
     uv.push(along,edge===1?0:1);
    }
    if(j<sections){const k=start+j*2;indices.push(k,k+1,k+3,k,k+3,k+2);}
@@ -6489,11 +6405,12 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   this.belly.scale.copy(bs);this.belly.position.set(BELLY_C.x*(1-bs.x),BELLY_C.y*(1-bs.y),BELLY_C.z*(1-bs.z));
  },
  setCurl(a,c){if(a.wr.userData.detached)return;const s=a.s,h=a.hand,cc=clamp(c,-.1,1.2);
-  // 돈다발: 네 손가락을 꽉 말아 쥐어 지폐 밑동을 주먹 속에 감추고, 엄지는 말아 쥔 손가락 앞을 가로질러 덮는다.
+  // 돈다발: 부채 자루를 쥐듯 네 손가락을 꽉 말아 쥐어 지폐 밑동을 주먹 속에 감춘다(엄지가 위, 새끼손가락이 아래).
   // 예전처럼 반쯤 편 손가락 끝을 지폐 앞면에 얹으면 손가락 끝 네 개가 지폐 위에 구슬처럼 붙어 보였다
   if(this.tabletHeld&&a.nm==='R'){
    for(let i=0;i<4;i++){const f=h.fingers[i];f.f.rotation.set(0,0,-s*(1.38+i*.03));f.f2.rotation.set(0,0,-s*1.5);}
-   h.thumb.t.rotation.set(.9,0,-s*1.05);h.thumb.t2.rotation.set(0,0,-s*.7);return;
+   // 엄지는 위로 세워 지폐 뒷면을 눌러 받친다(앞에서 보면 지폐 뒤에 가린다)
+   h.thumb.t.rotation.set(-.93,0,-s*.1);h.thumb.t2.rotation.set(0,0,-s*.15);return;
   }
   for(let i=0;i<4;i++){const f=h.fingers[i];const k=cc*(1+i*.04);f.f.rotation.set(0,0,-s*k*1.45);f.f2.rotation.set(0,0,-s*k*1.55);}
   h.thumb.t.rotation.set(-.5-cc*.5,0,-s*(.5+cc*.55));h.thumb.t2.rotation.set(0,0,-s*cc*.9);
@@ -6543,11 +6460,12 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   if(!this.tabletHeld)return;
   const hand=this.arms[1].wr,t=this.tablet;
   hand.updateWorldMatrix(true,false);
-  // 지폐 밑동은 쥔 주먹 속(손바닥과 말아 쥔 손가락 사이)에 있고, 지폐는 새끼손가락 쪽으로 빠져나와 부채꼴로 벌어진다.
-  // 실물(오만원권)의 1.4배쯤: 손에 비해 너무 크면 손이 돈다발에 붙은 장난감처럼 보였다
-  t.position.copy(hand.localToWorld(_av1.set(-.028,-.085,0)));
+  // 지폐 밑동은 쥔 주먹 속(손바닥과 말아 쥔 손가락 사이)에 있고, 지폐는 엄지·검지 쪽(위)으로 빠져나와 부채꼴로 벌어진다. 앞면은 손가락이 뻗는 쪽(앞)을 본다.
+  // 예전에는 새끼손가락 쪽으로 빠져나오게 해서, 지폐를 위로 세우려니 주먹이 거꾸로(엄지가 아래로) 뒤집혀 있었다.
+  // 부채 축(banknoteStack의 PIVOT, .06)이 주먹 윗단(손 좌표 z=.045)에 온다. 실물(오만원권)의 1.4배쯤
+  t.position.copy(hand.localToWorld(_av1.set(-.028,-.085,.045-.06*.8)));
   t.quaternion.copy(hand.getWorldQuaternion(_aq1));
-  t.rotateY(-PI/2);t.rotateZ(PI/2);t.scale.setScalar(.8);
+  t.rotateX(PI/2);t.scale.setScalar(.8);
  },
  dropTablet(force){
   if(!this.tabletHeld)return;this.tabletHeld=false;
@@ -6841,7 +6759,8 @@ doAct(name,o={}){
  updateActions(out,dt,time){
   if(this.tabletHeld){
    const beat=Math.sin(G.time*2.5);
-   this.setIK('R',{target:_bv1.set(.28+.012*beat,1.01+.014*beat,.39),fd:_bv2.set(-.8,.1+.10*beat,.35),pd:_bv3.set(.05,.12+.15*beat,1),curl:.48,rate:10,pole:_bv4.set(.38,-.12,.24)});
+   // 부채 자루를 쥔 손: 손바닥은 몸 가운데 쪽, 손가락은 앞, 엄지가 위(돈다발이 주먹 위로 서서 앞을 보고 벌어진다)
+   this.setIK('R',{target:_bv1.set(.28+.012*beat,1.01+.014*beat,.39),fd:_bv2.set(-.15,.05+.06*beat,1),pd:_bv3.set(-1,.06*beat,-.1),curl:.48,rate:10,pole:_bv4.set(.38,-.12,.24)});
    if(G.mode==='submit'){
     this.setIK('L',{target:_bv1.set(-.36,1.1-.04*Math.sin(time*.9),.3),fd:_bv2.set(-.4,.6,.3),pd:_bv3.set(0,1,.4),curl:.3,rate:4});
     return;
@@ -11484,13 +11403,13 @@ $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAnd
  * 앞사람들이 비켜선 길로 옥좌 앞까지 곧장 걸어가 지금과 같은 「넌 뭐야?」로 족치기가 시작된다.
  * INTRO.stage: off(쓰지 않음) · behind(풀이 화면 밑에 깔려 있음) · arrived(종이를 들고 서 있음) */
 const INTRO={stage:'off',pull:0,hintAt:0,sermonHeard:false,previewDirty:true};
-const CRUMPLE={c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0};
+const CRUMPLE={c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0,quietAt:0};
 const CRUMPLE_SECONDS=.8;// 끝까지 구기는 데 꾹 누르고 있어야 하는 시간
 // 설교를 끊음(spoke: 꾸짖음까지 나옴) · 물러섬(back: 「이제야 네 운명을 아는구나」가 나오면 군중이 돌아선다)
 const INTERRUPT={spoke:false,back:false};
 const WALK={on:false,t:0,dur:4.35,p0:V3(),p1:V3(),l0:V3(),l1:V3(),f0:52,f1:44,step:0,met:false};
 const FIGHT_LABEL='천지신명. 터치하면 주먹 또는 밟기, 밀면 훅, 몸을 꾹 잡아 끌거나 던집니다.';
-function crumpleReset(){INTRO.sermonHeard=false;Object.assign(CRUMPLE,{c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0});WALK.on=false;WALK.met=false;G.walking=false;INTERRUPT.spoke=INTERRUPT.back=false;}
+function crumpleReset(){INTRO.sermonHeard=false;Object.assign(CRUMPLE,{c:0,holding:false,finish:false,started:false,done:false,pointer:null,budget:0,tick:0,doneAt:0,quietAt:0});WALK.on=false;WALK.met=false;G.walking=false;INTERRUPT.spoke=INTERRUPT.back=false;}
 function crumpleReady(){return G.mode==='submit'&&INTRO.stage==='arrived'&&INTRO.sermonHeard&&!CRUMPLE.done&&!G.paused&&!$('#fight').hidden;}
 function crumplePress(){
  if(!crumpleReady())return false;
@@ -11534,7 +11453,13 @@ function updateInterrupt(){
 function updateCrumple(dt){
  if(G.mode!=='submit'||INTRO.stage!=='arrived')return;
  if(INTRO.hintAt&&G.time>=INTRO.hintAt&&!CRUMPLE.holding){INTRO.hintAt=0;$('#crumpleHint').classList.remove('off');}
- if(CRUMPLE.done){if(!WALK.on&&G.time-CRUMPLE.doneAt>=.32)walkStart();return;}
+ // 다 구겼으면 천지신명의 꾸짖음(「윗사람을 거스르는 자에게는…」)이 끝나고 한 박자 쉰 뒤에 걸음을 뗀다. 수군거림은 걸어가면서 시작한다
+ if(CRUMPLE.done){
+  if(WALK.on)return;
+  const left=bossTalkLeft();if(left>0)CRUMPLE.quietAt=G.time+left;
+  if(G.time-CRUMPLE.doneAt>=.32&&(G.time>=CRUMPLE.quietAt+.5||G.time-CRUMPLE.doneAt>8))walkStart();
+  return;
+ }
  updateInterrupt();
  const before=CRUMPLE.c;
  if(CRUMPLE.holding||CRUMPLE.finish)CRUMPLE.c=Math.min(1,CRUMPLE.c+dt/CRUMPLE_SECONDS);
@@ -11562,8 +11487,9 @@ function walkGoal(){
 function walkStart(){
  const E=G.E;
  G.mode='fight';G.walking=true;G.inputLocked=true;G.opening=false;clearPointers();
- // 설교를 끊은 데 대한 천지신명의 한마디는 걸어가는 동안에도 마저 하고, 다 와 갈 때 「넌 뭐야?」로 바뀐다
- if(TALK.cur&&TALK.cur.text===LINES.interrupt)TALK.q.length=0;else clearTalk();
+ // 설교를 끊은 데 대한 천지신명의 꾸짖음은 다 끝난 뒤에 걸음을 뗀다(updateCrumple). 아직 떠 있는 그 말풍선은 걸음을 떼면서 거둬서
+ // 첫 수군거림(.28초 뒤) 말풍선과 겹치지 않게 한다. 다 와 갈 때 「넌 뭐야?」가 나온다
+ if(TALK.cur&&TALK.cur.text===LINES.interrupt){TALK.q.length=0;TALK.cur.b.until=Math.min(TALK.cur.b.until,G.time+.04);}else clearTalk();
  $('#crumpleHint').classList.add('off');
  // 설교하던 차림으로 돈다발을 쥔 채 옥좌에 앉는다.
  if(E){E.endAct();combatInit(E,true);}
