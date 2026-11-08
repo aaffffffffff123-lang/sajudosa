@@ -31,7 +31,7 @@ test('every displayed addition has actual chart evidence, with no duplicate sent
  for(const {result,view} of ALL){
   const W=result.western,e=entries(view.opening);assert(e.length>0);
   assert.equal(e.length,new Set(e.map(x=>x.id)).size);
-  if(!W.unknown)assert.equal(e.length,7);
+  if(!W.unknown)assert.equal(e.length,9);
   const sentences=new Set();
   for(const x of e){
    assert(x.text.length>=65,x.id);assert(!/undefined|NaN|제\d+하우스|서양 차트|서양 점성술/.test(x.text));
@@ -66,7 +66,8 @@ test('a real date with both Sun and Moon on sign boundaries does not invent thei
  const {result,view}=read(2002,4,20,{unknown:true,pk:'newyork'});
  assert.equal(result.western.planets.find(p=>p.id==='Sun').sign,null);
  assert.equal(result.western.planets.find(p=>p.id==='Moon').sign,null);
- assert.equal(view.opening.portrait.opening.length,0);
+ assert(!view.opening.portrait.opening.some(x=>x.id.startsWith('sun-')));
+ assert(view.opening.portrait.opening.every(x=>x.id.startsWith('venus-')));
  assert.equal(view.opening.portrait.relationships.length,0);
  assert.equal(view.opening.origin.length,0);assert.equal(view.opening.core.length,0);
  assert(view.opening.portrait.daily.length&&view.opening.boss.length);
@@ -78,9 +79,9 @@ test('unavailable or empty charts simply leave every original paragraph alone',(
 test('all twelve sign branches, three origin states and all house branches return complete text',()=>{
  const {result,view}=ALL[0];
  for(let n=0;n<12;n++)for(const key of ['shown','hidden','absent']){
-  const planets=['Sun','Moon','Mercury','Saturn'].map(id=>({id,sign:n,candidates:[n],house:id==='Saturn'?n+1:1}));
+  const planets=['Sun','Moon','Mercury','Saturn','Venus','Mars'].map(id=>({id,sign:n,candidates:[n],house:id==='Saturn'?n+1:1}));
   const x=OpeningReading.compose({...view,origin:{...view.origin,key}}, {...result,input:{...result.input,unknown:false},western:{available:true,unknown:false,asc:{sign:n},planets,aspects:[]}});
-  assert.equal(entries(x).length,7);assert(entries(x).every(p=>typeof p.text==='string'&&!/undefined/.test(p.text)));
+  assert.equal(entries(x).length,9);assert(entries(x).every(p=>typeof p.text==='string'&&!/undefined/.test(p.text)));
  }
 });
 
@@ -121,6 +122,50 @@ test('the nearest first-house planet supplies one visible gesture, and unknown t
  assert.equal(get({...western,unknown:true}).portrait.relationships.length,0);
  const withoutDegrees=get({...western,asc:{sign:0}}).portrait.relationships[0];
  assert(!withoutDegrees.text.includes('머리카락과 옷깃'));assert(withoutDegrees.text.includes('상체가 먼저'));
+});
+
+test('taste and refusal have twelve distinct grounded branches and stay in their intended portrait sections',()=>{
+ const {result,view}=ALL[1],tastes=new Set(),reactions=new Set();
+ for(let v=0;v<12;v++)for(let m=0;m<12;m++){
+  const western={available:true,unknown:false,asc:null,planets:[{id:'Venus',sign:v},{id:'Mars',sign:m}],aspects:[]};
+  const x=OpeningReading.compose(view,{...result,input:{unknown:false},western});
+  assert.equal(x.portrait.opening.length,1);assert.equal(x.portrait.daily.length,1);assert.equal(x.portrait.relationships.length,0);
+  const taste=x.portrait.opening[0],reaction=x.portrait.daily[0];
+  assert.equal(taste.id,'venus-'+v);assert.equal(reaction.id,'mars-'+m);
+  assert.deepEqual(taste.evidence,[{kind:'sign',planet:'Venus',sign:v}]);
+  assert.deepEqual(reaction.evidence,[{kind:'sign',planet:'Mars',sign:m}]);
+  for(const entry of [taste,reaction]){
+   assert.equal(entry.text.match(/\./g).length,3,'three connected sentences');
+   assert.doesNotMatch(entry.text,/undefined|NaN|금성|화성|하우스|운명|팔자|행운의|질병|해야 합니다/);
+  }
+  tastes.add(taste.text);reactions.add(reaction.text);
+ }
+ assert.equal(tastes.size,12);assert.equal(reactions.size,12);
+});
+test('unknown-time taste and refusal use only independently confirmed whole-day signs',()=>{
+ const {result,view}=ALL[1];
+ const run=(venus,mars,unknown=true)=>OpeningReading.compose(view,{...result,input:{unknown},western:{available:true,unknown,planets:[{id:'Venus',...venus},{id:'Mars',...mars}],aspects:[]}}).portrait;
+ const confirmed={sign:1,candidates:[1]},boundary={sign:1,candidates:[1,2]};
+ assert.equal(run(confirmed,confirmed).opening[0].id,'venus-1');assert.equal(run(confirmed,confirmed).daily[0].id,'mars-1');
+ assert.equal(run(boundary,confirmed).opening.length,0);assert.equal(run(boundary,confirmed).daily.length,1);
+ assert.equal(run(confirmed,boundary).opening.length,1);assert.equal(run(confirmed,boundary).daily.length,0);
+ for(const invalid of [{sign:null,candidates:[1,2]},{sign:1},{sign:1,candidates:[]},{sign:1,candidates:[2]},{sign:12,candidates:[12]}]){
+  assert.equal(run(invalid,invalid).opening.length,0);assert.equal(run(invalid,invalid).daily.length,0);
+ }
+ assert.equal(run({sign:1},{sign:2},false).opening.length,1,'known birth times use the calculated sign');
+});
+test('changing taste or refusal changes only that topic, without rewriting existing personality or judgments',()=>{
+ const {result,view}=ALL[1],western={...result.western,asc:null,planets:result.western.planets.map(p=>({...p,house:null}))};
+ const compose=W=>plain(OpeningReading.compose(view,{...result,input:{...result.input,unknown:false},western:W}));
+ const before=compose(western),snapshot=JSON.stringify([view,result]);
+ for(const [id,section] of [['Venus','opening'],['Mars','daily']]){
+  const changed=compose({...western,planets:western.planets.map(p=>p.id===id?{...p,sign:(p.sign+1)%12}:p)});
+  const prefix=id.toLowerCase()+'-';
+  assert.notEqual(changed.portrait[section].find(x=>x.id.startsWith(prefix)).text,before.portrait[section].find(x=>x.id.startsWith(prefix)).text);
+  const strip=x=>{const y=plain(x);y.portrait[section]=y.portrait[section].filter(p=>!p.id.startsWith(prefix));return y;};
+  assert.deepEqual(strip(changed),strip(before));
+ }
+ assert.equal(JSON.stringify([view,result]),snapshot);
 });
 
 // 간단한 DOM 대역에서 실제 삽입 함수를 실행해 원문 문단의 순서와 텍스트를 검사한다.
