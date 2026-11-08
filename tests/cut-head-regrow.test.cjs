@@ -10,7 +10,7 @@ const api=vm.runInNewContext(
  slice('const HEADGEO=','const BELLY_C=')+slice('function eyeCapGeo(','\n}')+'\n}\n'+
  slice('const REP_TOOTH=','Object.assign(Emperor.prototype,')+
  slice('function deityHasReptileVoice(E){','const COMBAT_VOICE=')+
- 'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice(' updateRepFace(dt,time){','\n});\n/* ===== 6-4-4.')+slice(' voiceHit(tool,part,P,cut){',' // 날아간 살점의 겉 색:')+slice('makeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
+ 'const methods={'+slice(' buildHeadRegrowth(r){',' // 파충류 얼굴:')+slice(' updateRepFace(dt,time){','\n});\n/* ===== 6-4-4.')+slice(' voiceHit(tool,part,P,cut){',' // 날아간 살점의 겉 색:')+slice('\nmakeCutCap(parent,','limbCorners(root){')+slice('releaseGeometry(g){','// 바닥에 누운 팔다리')+'};\n({methods,CUT_DETAIL,HEADGEO,headGrowthMaterial,GEO,grp});',ctx);
 function makeRig(){
  const root=new THREE.Group(),neck=new THREE.Group();root.add(neck);const E={...api.methods,root,bones:{neck},goreMeshes:[],disposables:[],parts:[],flow:{},headGone:true,headDestroyed:true,headKind:'human',
   bone(name,parent,pos){const g=api.grp(parent,pos);g.userData.bone=name;this.bones[name]=g;return g},
@@ -24,7 +24,7 @@ test('cut cavity has depth and no rounded old mesh hides it on either side',()=>
   const next=api.grp(parent,[0,0,0]);next.userData.bone='next';const protectedMesh=new THREE.Mesh(new THREE.SphereGeometry(.03),E.M.liz);next.add(protectedMesh);const old=protectedMesh.geometry;
   const cap=E.makeCutCap(parent,V3(),new THREE.Quaternion(),.1,distal,E.M.liz,true),sign=distal?1:-1;
   const P=body.geometry.attributes.position;let furthest=-Infinity;for(let i=0;i<P.count;i++)furthest=Math.max(furthest,sign*P.getY(i));
-  assert(furthest<=-.025+1e-6,'old sealed end is actually cut away');assert.equal(protectedMesh.geometry,old,'next articulated segment is not trimmed');
+  assert(Math.abs(furthest)<1e-6,'shell ends at the cap plane without an open band');assert.equal(protectedMesh.geometry,old,'next articulated segment is not trimmed');
   const detail=cap.children.find(o=>o.userData.gore);cap.updateWorldMatrix(true,true);
   const ray=new THREE.Raycaster(V3(.0022,sign*.4,sign*.0032),V3(0,-sign,0));const hits=ray.intersectObject(detail,true);
   assert(hits.length,'visible bone canal has a backing surface');assert(hits[0].point.y*sign<-.015,'the canal is recessed, not a flat disk');

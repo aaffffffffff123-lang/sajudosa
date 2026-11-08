@@ -91,3 +91,25 @@ for(const portrait of [true,false]){
  }
 }
 console.log('Both fists have inward thumbs in portrait and landscape.');
+
+// The money grip must remain readable from the player's camera throughout a fan cycle.
+const gripTools=vm.runInNewContext(section('function mk(geo,','/* 여러 메시')+section('function banknoteStack(){','/* ===== 6-0.')+';({banknoteStack,methods:{'+section(' _hand(wr,',' _legs(){')+','+section(' setCurl(a,',' /* ---- 팔 IK:')+section(' placeTablet(){',' dropTablet(force){')+'}})',{...ctx,BODYGEO:api.BODYGEO,FLESH:{clone:g=>g.clone()},isFleshMat:()=>false,ensureDmg:()=>{},_av1:V3(),_aq1:new THREE.Quaternion()});
+{
+ const E=rig();Object.assign(E,gripTools.methods);E.tabletHeld=true;E.M=new Proxy({}, {get(t,k){return t[k]||(t[k]=new THREE.MeshStandardMaterial({color:0xb19d82}));}});
+ E.addFlesh=(g,m,p)=>{const mesh=new THREE.Mesh(g,m);p.add(mesh);return mesh};
+ for(const a of E.arms){a.hand=E._hand(a.wr,a.s,'hand'+a.nm);for(const [joint,key] of [[a.sh,'shoulder'],[a.um,'uarm'],[a.el,'elbow'],[a.fm,'farm']])joint.add(new THREE.Mesh(geometry[key],E.M.robe));}
+ E.tablet=new THREE.Group();E.tablet.add(new THREE.Mesh(gripTools.banknoteStack(),new THREE.MeshStandardMaterial({side:THREE.DoubleSide})));const scene=new THREE.Scene();scene.add(E.root,E.tablet);ctx.G.mode='fight';api.resetSeatedEncounter(E);
+ let worstVisible=4,mostVisible=0;
+ for(let frame=0;frame<180;frame++){
+  const dt=1/60;ctx.G.time=frame*dt;api.combatPose(E,E.pose,dt,ctx.G.time);E.applyPose(E.pose);E.root.updateMatrixWorld(true);
+  for(const a of E.arms){const ik=E.ik[a.nm];ik.w=ctx.damp(ik.w,ik.goal,ik.rate,dt);E.solveArm(a,ik,dt);E.setCurl(a,.5);}
+  E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E,dt);E.root.updateMatrixWorld(true);E.placeTablet();scene.updateMatrixWorld(true);
+  if(frame%6)continue;
+  const a=E.arms[1],eye=V3(0,1.15,2.8);let visible=0;
+  for(const F of a.hand.fingers){let seen=false;for(const y of [-.008,-.02]){const target=F.f2.localToWorld(V3(0,y,0)),ray=new THREE.Raycaster(eye,target.sub(eye).normalize());const hits=ray.intersectObject(scene,true);if(hits.length&&F.f.getObjectById(hits[0].object.id))seen=true;}if(seen)visible++;}
+  worstVisible=Math.min(worstVisible,visible);mostVisible=Math.max(mostVisible,visible);
+  const local=E.arms[1].wr.worldToLocal(E.tablet.getWorldPosition(V3()));assert(local.distanceTo(V3(-.033,-.103,.015))<1e-7,'note stack stays fixed between fingers');
+ }
+ assert(worstVisible>=3,'at least three fingers remain visible through fanning, got '+worstVisible);assert.equal(mostVisible,4,'all four fingers are distinguishable');
+ console.log('Money grip visible fingers through fan cycle:',{worstVisible,mostVisible});
+}

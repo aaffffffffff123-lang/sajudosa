@@ -5032,15 +5032,8 @@ const REP_IRIS_TEX=canvasTex(256,256,(g,w,h)=>{
  for(let i=0;i<240;i++){const a=i/240*TAU,j=.5+.5*Math.sin(i*87.43),r0=22+j*24,r1=100+j*22;g.strokeStyle=i%3?'rgba(229,194,95,.36)':'rgba(42,29,8,.65)';g.lineWidth=.6+j;g.beginPath();g.moveTo(128+Math.cos(a)*r0,128+Math.sin(a)*r0);g.quadraticCurveTo(128+Math.cos(a+.015)*72,128+Math.sin(a+.015)*72,128+Math.cos(a)*r1,128+Math.sin(a)*r1);g.stroke();}
  g.fillStyle='#080b09';g.beginPath();g.moveTo(128,10);g.bezierCurveTo(148,85,148,176,128,246);g.bezierCurveTo(108,176,108,85,128,10);g.fill();
 });
-// Regrown eyes are pale and opaque, with no bright, expressive cartoon iris.
-const REP_HEAD_IRIS_TEX=canvasTex(256,256,(g,w,h)=>{
- const r=g.createRadialGradient(128,128,8,128,128,126);
- r.addColorStop(0,'#575e42');r.addColorStop(.28,'#b7bb8b');r.addColorStop(.63,'#959d75');r.addColorStop(.88,'#727d5f');r.addColorStop(1,'#2d392b');g.fillStyle=r;g.fillRect(0,0,w,h);
- for(let i=0;i<300;i++){const a=i/300*TAU,j=.5+.5*Math.sin(i*73.47),r0=17+j*26,r1=105+j*20;
-  g.strokeStyle=i%3?'rgba(215,213,157,.27)':'rgba(30,46,29,.42)';g.lineWidth=.6+j;
-  g.beginPath();g.moveTo(128+Math.cos(a)*r0,128+Math.sin(a)*r0);g.quadraticCurveTo(128+Math.cos(a+.02)*70,128+Math.sin(a+.02)*70,128+Math.cos(a)*r1,128+Math.sin(a)*r1);g.stroke();}
- g.fillStyle='#080d09';g.beginPath();g.moveTo(128,5);g.bezierCurveTo(144,82,143,180,128,251);g.bezierCurveTo(113,178,112,83,128,5);g.fill();
-});
+// The rebuilt face keeps the original gold iris and vertical pupil.
+const REP_HEAD_IRIS_TEX=REP_IRIS_TEX;
 /* 도마뱀 살갗(이어 붙는 비늘). 쓰는 곳마다 비늘 크기가 맞게 반복 횟수만 다른 복사본을 쓴다 */
 const REPTILE_MAPS=(()=>{
  const maps={},size=512,cols=12,rows=16,cw=size/cols,ch=size/rows;
@@ -6326,6 +6319,12 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   this.belly.scale.copy(bs);this.belly.position.set(BELLY_C.x*(1-bs.x),BELLY_C.y*(1-bs.y),BELLY_C.z*(1-bs.z));
  },
  setCurl(a,c){if(a.wr.userData.detached)return;const s=a.s,h=a.hand,cc=clamp(c,-.1,1.2);
+  // Pinch the note stack between a separate thumb and four curved fingers.
+  // A closed fist buried the fingers in the palm and exposed only a round mitt.
+  if(this.tabletHeld&&a.nm==='R'){
+   for(let i=0;i<4;i++){const f=h.fingers[i];f.f.rotation.set(0,0,-s*(.65+i*.025));f.f2.rotation.set(0,0,-s*(1.1-i*.035));}
+   h.thumb.t.rotation.set(.85,0,-s*.6);h.thumb.t2.rotation.set(0,0,-s*.65);return;
+  }
   for(let i=0;i<4;i++){const f=h.fingers[i];const k=cc*(1+i*.04);f.f.rotation.set(0,0,-s*k*1.45);f.f2.rotation.set(0,0,-s*k*1.55);}
   h.thumb.t.rotation.set(-.5-cc*.5,0,-s*(.5+cc*.55));h.thumb.t2.rotation.set(0,0,-s*cc*.9);
  },
@@ -6372,10 +6371,11 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
  /* 한 손에 쥔 돈다발. 접히는 축은 손안에 두고 드러난 지폐 끝만 부친다. */
  placeTablet(){
   if(!this.tabletHeld)return;
-  const hand=this.arms[1].wr,t=this.tablet,beat=Math.sin(G.time*2.5);
-  t.position.copy(hand.localToWorld(_av1.set(0,-.072,.014)));
-  t.quaternion.copy(this.root.quaternion);
-  t.rotateZ(.52+.13*beat);t.rotateY(-.22);t.rotateX(.26+.24*beat);
+  const hand=this.arms[1].wr,t=this.tablet;
+  hand.updateWorldMatrix(true,false);
+  t.position.copy(hand.localToWorld(_av1.set(-.033,-.103,.015)));
+  t.quaternion.copy(hand.getWorldQuaternion(_aq1));
+  t.rotateY(-PI/2);t.rotateZ(PI/2);
  },
  dropTablet(force){
   if(!this.tabletHeld)return;this.tabletHeld=false;
@@ -6661,7 +6661,7 @@ doAct(name,o={}){
  updateActions(out,dt,time){
   if(this.tabletHeld){
    const beat=Math.sin(G.time*2.5);
-   this.setIK('R',{target:_bv1.set(.28+.012*beat,1.01+.014*beat,.39),fd:_bv2.set(-.8,.1,.35),pd:_bv3.set(-.4,.05,-1),curl:.84,rate:10,pole:_bv4.set(.38,-.12,.24)});
+   this.setIK('R',{target:_bv1.set(.28+.012*beat,1.01+.014*beat,.39),fd:_bv2.set(-.8,.1+.10*beat,.35),pd:_bv3.set(.05,.12+.15*beat,1),curl:.48,rate:10,pole:_bv4.set(.38,-.12,.24)});
    if(G.mode==='submit'){
     this.setIK('L',{target:_bv1.set(-.36,1.1-.04*Math.sin(time*.9),.3),fd:_bv2.set(-.4,.6,.3),pd:_bv3.set(0,1,.4),curl:.3,rate:4});
     return;
@@ -8189,6 +8189,14 @@ cutJointAt(seg,pW){
  for(const c of cand){const b=this.bones[c+side];if(!b||b.userData.detached)continue;b.updateWorldMatrix(true,false);const d=b.getWorldPosition(_bv1).distanceToSquared(pW);if(d<bd){bd=d;best=c+side;}}
  return best;
 },
+// Recutting a narrow regrown limb must keep the wider original sleeve opening.
+replaceLimbCap(joint,parent,pos,q,r,outer,lizard,offset,trim){
+ this.limbCaps=this.limbCaps||{};
+ const old=this.limbCaps[joint],c=old&&old.parent===parent&&old.userData.cap;
+ if(c){pos=old.position.clone();q=old.quaternion.clone();r=c.r;outer=c.outer;offset=0;}
+ if(old){old.removeFromParent();this.releaseLoose(old);}
+ return this.limbCaps[joint]=this.makeCutCap(parent,pos,q,r,false,outer,lizard,offset,trim);
+},
 // 잘린 면: 바깥은 옷(살), 안은 비늘, 가운데는 파란 속
 makeCutCap(parent,pos,q,r,distal,outer,lizard,offset=0,trim=true){
  const g=grp(parent);g.position.copy(pos);g.quaternion.copy(q);g.translateY((distal?1:-1)*offset);
@@ -8199,10 +8207,11 @@ makeCutCap(parent,pos,q,r,distal,outer,lizard,offset=0,trim=true){
  return g;
 },
 // Remove the original closed/rounded mesh end. Otherwise it occludes the
-// recessed tissue, leaving exactly the old balloon-like surface over the detail.
+// recessed tissue. Cut exactly at the rim: recessing the shell left an open
+// band when the cavity was replaced by the narrower regrown limb.
 trimCutEnd(root,cap,r,sign){
  root.updateWorldMatrix(true,true);cap.updateWorldMatrix(true,false);
- const q=cap.getWorldQuaternion(new THREE.Quaternion()),nW=V3(0,sign,0).applyQuaternion(q),pW=cap.getWorldPosition(V3()).addScaledVector(nW,-r*.25);
+ const q=cap.getWorldQuaternion(new THREE.Quaternion()),nW=V3(0,sign,0).applyQuaternion(q),pW=cap.getWorldPosition(V3());
  const visit=o=>{
   if(o===cap||o!==root&&o.userData.bone)return;
   if(o.isMesh&&!o.userData.noHit&&!o.userData.gore&&o.geometry&&o.geometry.attributes.position){
@@ -8221,7 +8230,7 @@ trimCutEnd(root,cap,r,sign){
 },
 detailCutCap(g,r,outer,rx,s){
  const v=Math.round(r*100)%3;
- const rim=mk(CUT_DETAIL.geometry('rim',v),outer,g,{r:[rx,0,0],s:r,cast:false});rim.userData.noHit=true;
+ const rim=mk(CUT_DETAIL.geometry('rim',v),outer,g,{r:[rx,0,0],s:r,cast:false});rim.userData.noHit=true;rim.userData.cutRim=true;
  const detail=grp(g);detail.rotation.x=rx;detail.scale.setScalar(r);detail.userData.gore=true;detail.visible=PREF.blood;this.goreMeshes.push(detail);
  mk(CUT_DETAIL.geometry('inside',v),this.M.cutDepth,detail,{cast:false});
  mk(CUT_DETAIL.muscle(v),this.M.cutTissue,detail,{cast:false});
@@ -8260,9 +8269,7 @@ detachLimb(joint,hitN,dir){
  this.limbCaps=this.limbCaps||{};
  // 더 아래 마디의 옛 흉터가 이번에 떨어질 subtree 안에 있으면 조각에 남기되 live-cap 색인에서는 뺀다.
  for(const k in this.limbCaps){let inside=false;for(let n=this.limbCaps[k];n;n=n.parent)if(n===bone){inside=true;break;}if(inside)delete this.limbCaps[k];}
- const oldCap=this.limbCaps[joint];
- if(oldCap){oldCap.removeFromParent();this.releaseLoose(oldCap);}
- const capBody=this.makeCutCap(parent,pLocal,qLocal,r,false,outer,lizard,offB,base!=='wrist');this.limbCaps[joint]=capBody;
+ const capBody=this.replaceLimbCap(joint,parent,pLocal,qLocal,r,outer,lizard,offB,base!=='wrist');
  this.makeCutCap(bone,V3(),new THREE.Quaternion(),r,true,outer,lizard,offP);
  if(arm){if(this.act&&(this.act.side===side||this.act.both||this.act.name==='beg'))this.endAct();this.releaseIK(side,20);}
  if(this.tabletHeld)this.dropTablet();
@@ -8352,7 +8359,7 @@ updateRegrow(dt){
    const nxt=j+1<n?r.segs[j+1].b:r.tip;nxt.position.copy(r.rest[j+1]).multiplyScalar(gB);
    // 2) 살: 날살 소매가 뼈를 타고 내려오며 굵어지고, 꿀렁인다
    const uL=sat((t-T.raw[j])/RG.rawLen),uT=sat((t-T.raw[j])/RG.rawThick);
-   if(uL>0&&!S.rawOut){S.rawOut=true;AUDIO.squelch(j===0?.65:.4);if(j===0)this.openCutCap(r);}
+   if(uL>0&&!S.rawOut){S.rawOut=true;AUDIO.squelch(j===0?.65:.4);}
    const L=smooth(uL),throb=.07*Math.pow(Math.max(0,Math.sin((t-T.raw[j])*11+j*1.3)),5)*(1-uT*.5),thick=(.5+.5*smooth(uT))*(1+throb);
    S.fg.scale.set(.9*thick,Math.max(.001,L),.9*thick);
    if(S.rb){const q=Math.max(.001,.9*thick*sat(uL*4));S.rb.scale.set(S.rbDim[0]*q,S.rbDim[1]*q,S.rbDim[2]*q);}
@@ -8371,7 +8378,7 @@ updateRegrow(dt){
   H.hb.scale.set(1,Math.max(.001,gH),1);
   for(const m of H.mirror)m.b.rotation.copy(m.a.rotation);
   const uM=sat((t-T.rawHand)/RG.rawHandDur);
-  if(uM>0&&!H.rawOut){H.rawOut=true;AUDIO.squelch(.45);if(!n)this.openCutCap(r);}
+  if(uM>0&&!H.rawOut){H.rawOut=true;AUDIO.squelch(.45);}
   const mT=(.55+.45*smooth(uM))*(1+.08*Math.pow(Math.max(0,Math.sin((t-T.rawHand)*10)),5)*(1-uM*.5));
   const uH=sat((t-T.scHand)/RG.scHandDur),gh=smooth(uH);
   if(uH>0&&!H.scOut){H.scOut=true;AUDIO.scaleSet(.5);}
@@ -8466,12 +8473,18 @@ buildLizardLimb(r){
  this._flowAll=null;
  if(this.state==='stand'&&!r.arm)this.doFlinch('shock',.8);
 },
-// 날살이 덮기 시작할 때: 잘린 면 마개는 옷(살) 테만 남겨 새 팔다리가 그 속에서 나오게 한다
+// Keep the recessed backing throughout growth; the thin first bone/flesh cannot
+// seal the opening. Replace it with a collar only after the new skin is complete.
 openCutCap(r){
  const cap=r.cap;if(!cap||!cap.userData.cap||cap.userData.opened)return;cap.userData.opened=true;
  const c=cap.userData.cap,inner=(CUT_R_LIZ[r.base]||.05)*.98;
- for(const ch of [...cap.children]){ch.removeFromParent();this.releaseLoose(ch);}this.goreMeshes=this.goreMeshes.filter(m=>m.parent);
- if(inner<c.r*.95){const m=mk(new THREE.RingGeometry(inner,c.r,28),c.outer,cap,{p:[0,c.s*.001,0],r:[c.rx,0,0],cast:false});m.userData.noHit=true;this.disposables.push(m.geometry);}
+ for(const ch of [...cap.children]){if(ch.userData.cutRim)continue;ch.removeFromParent();this.releaseLoose(ch);}this.goreMeshes=this.goreMeshes.filter(m=>m.parent);
+ // Keep the shaped lip, then seal the annulus between clothing and new skin.
+ // Both faces are visible while an arm twists or the body falls.
+ if(inner<c.r*.99){const mats=this.cutCollarMats||(this.cutCollarMats=new Map());let mat=mats.get(c.outer);
+  if(!mat){mat=c.outer.clone();mat.onBeforeCompile=c.outer.onBeforeCompile;mat.customProgramCacheKey=c.outer.customProgramCacheKey;mat.side=THREE.DoubleSide;mats.set(c.outer,mat);this.disposables.push(mat);}
+  const m=mk(new THREE.RingGeometry(inner,c.r,48),mat,cap,{p:[0,c.s*.001,0],r:[c.rx,0,0],cast:false});m.userData.noHit=true;this.disposables.push(m.geometry);}
+
 },
 onRegrown(r){
  // 다 자람: 연출용 메시를 걷어내고 변형을 전부 제자리로 돌린다
@@ -10754,6 +10767,17 @@ $('#fightBack').addEventListener('click',()=>leave(false));
 /* ---- 전리품 기록: 들판의 낮은 장대와 까마귀. ---- */
 // Render the same head/crown builders used in play, on an isolated still-life.
 // No second WebGL context, screenshot of the ending, or stale illustrated face.
+function closeTrophyEye(eye,M,owned){
+ eye.eg.visible=false;eye.mem.visible=false;
+ // Hide the empty socket only for intact closed eyes; the damaged variant keeps it.
+ for(const mesh of eye.socket.children)mesh.visible=false;
+ const lid=new THREE.SphereGeometry(1,32,20);owned.add(lid);
+ const colors=new Float32Array(lid.attributes.position.count*3);colors.fill(1);lid.setAttribute('color',new THREE.BufferAttribute(colors,3));
+ const cover=mk(lid,M.lizHead,eye.socket,{p:[0,-.0005,.014],s:[.039,.026,.025],cast:false});
+ const points=[];for(let i=0;i<=16;i++){const x=-.035+i*.07/16,y=-.003-.0015*(1-(x/.035)**2),z=.014+.025*Math.sqrt(Math.max(0,1-(x/.039)**2-((y+.0005)/.026)**2))+.0007;points.push([x,y,z]);}
+ const seam=taperTube(points,.00065,.00065,24,5);owned.add(seam);
+ mk(seam,M.mouth,eye.socket,{cast:false});return cover;
+}
 function trophyPortrait(outfit=0,damage=''){
  const source=G.E;if(!source)throw new Error('No trophy model');
  const model=Object.create(Emperor.prototype),stage=new THREE.Scene(),root=new THREE.Group();stage.add(root);
@@ -10771,10 +10795,7 @@ function trophyPortrait(outfit=0,damage=''){
  for(const eye of model.repEyes){
   eye.eg.visible=false;eye.mem.visible=false;
   if(damage==='eye'&&eye.s<0)continue;
-  const lid=new THREE.SphereGeometry(1,24,16);owned.add(lid);
-  mk(lid,M.lizHead,eye.socket,{p:[0,0,.004],s:[.036,.015,.029],cast:false});
-  const seam=taperTube([[-.031,-.001,.016],[-.015,-.003,.030],[0,-.0035,.033],[.015,-.003,.030],[.031,-.001,.016]],.0012,.0012,20,5);owned.add(seam);
-  mk(seam,M.mouth,eye.socket,{cast:false});
+  closeTrophyEye(eye,M,owned);
  }
  if(damage==='jaw')model.repJawBone.visible=false;
  // New crown geometry belongs to this short-lived render; cache meshes stay live.
