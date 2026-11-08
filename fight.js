@@ -11007,54 +11007,89 @@ function trophyPortrait(spec=0,damage=''){
   target.dispose();for(const geometry of owned)geometry.dispose();for(const mat of new Set([...materials,...model.disposables]))if(mat&&mat.dispose)mat.dispose();
  }
 }
+/* 족친 기록 배치: 들판(미터)에 머리를 꽂고 카메라 하나로 찍는다.
+ * 8놈까지는 머리 높이에서 본다(예전 장면 그대로: 맨 앞 장대가 화면을 채우고 빈 장대가 뒤에서 기다린다).
+ * 그보다 많으면 카메라가 높이 올라가며 뒤로 물러나 내려다봐서 줄줄이 꽂힌 머리가 멀리까지 보인다(2000놈에서 가장 높다).
+ * 예전에는 늘 머리 높이에서 봐서 뒷줄이 지평선에 납작하게 겹쳐 몇십 놈을 넘으면 그림이 거의 같았다. 한 장에 2000놈, 그 너머는 다음 장.
+ * 줄은 앞에서부터 1, 2, 3…자리. 자리 사이는 머리 1.55개 폭이고 화면 폭(양 끝 35px 안, 많아지면 화면 끝까지)에 안 들어가면 좁힌다.
+ * 카메라가 높아 화면이 넓으면 넓은 만큼 자리를 늘린다(자리 수의 홀짝이 줄마다 바뀌어 한 줄 걸러 반 칸 어긋난다: 바로 앞 머리 뒤에 숨지 않게).
+ * 40놈쯤 넘어 카메라가 충분히 높으면 들판에 같은 간격으로만 꽂는다. */
+const TROPHY_FIELD={F:1080,CX:540,CY:640,HEAD:.5,NECK_Y:.519,ROW:.46,GAP:.775,PER_PAGE:2000};
+// 카메라는 구도로 정한다: 지평선 높이, 맨 앞(가장 최근) 머리의 화면 크기·높이. 거기서 카메라 높이(h)·물러난 거리(b)·내려다보는 각(th)을 푼다.
+// 머리 높이(e=0): 지평선 640, 맨 앞 머리 540px·770(예전 구도) → 가장 높이(e=1): 지평선 300, 맨 앞 머리 130px·1000(아래 숫자 위)
+function trophyCamera(n){
+ const T=TROPHY_FIELD,e=n<=8?0:Math.min(1,Math.log(n/8)/Math.log(T.PER_PAGE/8));
+ const horizon=640-340*e,th=Math.atan((T.CY-horizon)/T.F);
+ const z=Math.pow(540/130,Math.pow(e,.85)),y=770+230*Math.pow(e,.7),v=-(y-T.CY)*z/T.F;
+ const a=z*Math.sin(th)-v*Math.cos(th),dz=z*Math.cos(th)+v*Math.sin(th);
+ return {e,h:T.NECK_Y+a,b:dz-1,th};
+}
+function trophyProject(cam,X,Y,Z){
+ const T=TROPHY_FIELD,s=Math.sin(cam.th),c=Math.cos(cam.th),ry=Y-cam.h,rz=Z+cam.b;
+ const z=-ry*s+rz*c,v=ry*c+rz*s;
+ return {x:T.CX+T.F*X/z,y:T.CY-T.F*v/z,z};
+}
 function trophyLayout(total, page=0) {
- const C=TROPHY_CARD;
+ const T=TROPHY_FIELD;
  const count = Number.isSafeInteger(total) ? clamp(total, 0, 999999) : 0;
- const perPage = 120;
- const pages = Math.max(1, Math.ceil(count / perPage));
+ const pages = Math.max(1, Math.ceil(count / T.PER_PAGE));
  const index = clamp(Math.floor(page) || 0, 0, pages - 1);
- const start = index * perPage;
- const n = Math.min(perPage, count - start);
- const heads = [];
- // 원근: 장대 발은 지평선으로 올라가고, 눈높이보다 조금 낮은 머리들은 지평선으로 내려앉는다.
- const rowAt=row=>{const d=1+.46*row,size=C.HERO/d,cap=row+1;return {d,size,cap,pitch:cap>1?Math.min(size*1.55,1010/(cap-1)):0};};
- const slotX=(R,slot,r)=>clamp(540+(slot-(R.cap-1)/2)*R.pitch+(r()-.5)*.22*R.pitch,24,1056);
- const footAt=(d,r)=>C.HORIZON+(C.FOOT_NEAR-C.HORIZON)/d+(r()-.5)*12/d;
+ const start = index * T.PER_PAGE;
+ const n = Math.min(T.PER_PAGE, count - start);
+ const cam=trophyCamera(n),heads=[],near=trophyProject(cam,0,T.NECK_Y,1).z,wide=clamp(cam.e/.3,0,1);
+ const rowAt=row=>{
+  const Z=1+T.ROW*row;if(row===0)return {Z,cap:1,pitch:0};
+  const half=(505+35*wide)*trophyProject(cam,0,T.NECK_Y,Z).z/T.F;
+  let fit=Math.floor(2*half/T.GAP)+1;if((fit+row+1)%2)fit--;
+  // 머리 높이 장면(예전 배치)은 줄마다 r+1자리를 화면 폭에 좁혀 넣는다. 카메라가 충분히 높으면 들판 간격 그대로만 채운다
+  // (뒷줄까지 r+1자리를 억지로 좁혀 넣으면 자리들이 화면 폭의 k/r 자리에 몰려 먼 들판에 부챗살 같은 줄무늬가 졌다)
+  const cap=wide<1?Math.max(row+1,fit):Math.max(1,fit);
+  return {Z,cap,pitch:Math.min(T.GAP,2*half/(cap-1))};
+ };
  // 줄마다 자리 수를 다 채우지 못하면 고르게 띄운 자리에 선다(바로 앞 머리에 가리지 않게)
  const pick=(cap,k,j)=>k===cap?j:Math.round((j+.5)*cap/k-.5);
- let placed=0,row=0;
+ // 머리(빈 장대) 하나: 들판 자리(Z, X)와 높이(Y)를 찍는다. 흔들림은 예전과 같은 차례로 뽑는다(머리 높이 장면이 예전 그대로 나오게)
+ const shoot=(R,X,Y,Z,fj,scale)=>{
+  const head=trophyProject(cam,X,Y,Z),foot=trophyProject(cam,X,0,Z);
+  // depth: 맨 앞 머리를 1로 잰 거리(멀수록 작게 굽고 안개에 묻힌다)
+  return {z:head.z,depth:Math.max(1,head.z/near),x:clamp(head.x,24,1056),y:head.y,footY:foot.y+fj*12*near/head.z,size:T.F*T.HEAD/head.z*scale};
+ };
+ let placed=0,row=0;const filled=[];
  while(placed<n){
   const R=rowAt(row),k=Math.min(R.cap,n-placed);
   for(let j=0;j<k;j++){
    const ordinal=start+n-1-(placed+j),r=trophyRng(ordinal*7919+13);
-   const x=slotX(R,pick(R.cap,k,j),r),footY=footAt(R.d,r),size=R.size*(.93+r()*.12);
-   heads.push({ordinal,row,depth:R.d,x,footY,size,y:C.HORIZON+(C.HEAD_NEAR-C.HORIZON)/R.d+(r()-.5)*40/R.d,
-    lean:(r()-.5)*.12,tilt:(r()-.5)*.36,flip:r()<.5,tip:row>0&&r()<.3,hero:ordinal===count-1});
+   const X=(pick(R.cap,k,j)-(R.cap-1)/2)*R.pitch+(r()-.5)*.22*R.pitch,fj=r()-.5,scale=.93+r()*.12,yj=r()-.5;
+   const h={ordinal,row,lean:(r()-.5)*.12,tilt:(r()-.5)*.36,flip:r()<.5,tip:row>0&&r()<.3,hero:ordinal===count-1};
+   // 높이 올라간 카메라에서는 줄이 자로 잰 듯 보이지 않게 앞뒤로도 조금 흩는다
+   const Z=R.Z+(row?(r()-.5)*.14*wide:0);
+   heads.push(Object.assign(h,shoot(R,X,T.NECK_Y-yj*40/T.F,Z,fj,scale)));
   }
-  placed+=k;row++;
+  filled[row]=k;placed+=k;row++;
  }
- // 아직 몇 놈 안 됐으면 빈 장대가 뒤에서 후임들을 기다린다
+ // 아직 몇 놈 안 됐으면 빈 장대가 뒤에서 후임들을 기다린다(머리가 없으니 끝이 목 높이보다 조금 낮다)
  if(n<10){
-  let want=10-n;const lastFill=row>0?n-(row-1)*row/2:0;
+  let want=10-n;
   for(let rr=Math.max(1,row-1);want>0&&rr<5;rr++){
-   const R=rowAt(rr),taken=rr<row-1?R.cap:rr===row-1?lastFill:0;if(taken>=R.cap)continue;
+   const R=rowAt(rr),taken=filled[rr]||0;if(taken>=R.cap)continue;
    const used=new Set();for(let j=0;j<taken;j++)used.add(pick(R.cap,taken,j));
    for(let slot=0;slot<R.cap&&want>0;slot++){
     if(used.has(slot))continue;const r=trophyRng(rr*131+slot*17+3);if(r()<.25)continue;
-    const x=slotX(R,slot,r),footY=footAt(R.d,r);
-    heads.push({ordinal:-1,row:rr,depth:R.d,x,footY,size:R.size*.95,y:C.HORIZON+(C.HEAD_NEAR+R.size*.2-C.HORIZON)/R.d,lean:(r()-.5)*.12,tilt:0,empty:true});want--;
+    const X=(slot-(R.cap-1)/2)*R.pitch+(r()-.5)*.22*R.pitch,fj=r()-.5;
+    heads.push(Object.assign({ordinal:-1,row:rr,lean:(r()-.5)*.12,tilt:0,empty:true},shoot(R,X,T.NECK_Y-.1/R.Z,R.Z,fj,.95)));want--;
    }
   }
  }
  heads.sort((a,b)=>b.depth-a.depth||a.x-b.x);
- return {count, page:index, pages, start, n, heads, rows:row};
+ const horizon=T.CY-T.F*Math.tan(cam.th);
+ return {count, page:index, pages, start, n, heads, rows:row, camera:cam, horizon};
 }
 /* 족친 기록 카드(1080×1350): 구름 낀 밤 들판에 줄지어 꽂힌 머리들.
  * 가장 최근에 족친 놈이 맨 앞 장대에서 눈을 뜬 채 나를 보고, 예전 놈들은 뒤로 갈수록 안개에 묻힌다.
  * 아직 몇 놈 안 됐을 땐 빈 장대가 뒤에 서서 후임들을 기다린다. 글씨는 웹글꼴을 기다리지 않게 윤곽선을 구워 둔다.
  * 하늘의 눈·까마귀·梟首 낙관은 뺐다(하늘은 들판 그림의 구름 하늘을 밤빛으로 누른 것).
  * 글꼴 윤곽: 한글·숫자 Song Myung — SIL Open Font License 1.1 (assets/SongMyung-OFL.txt) */
-const TROPHY_CARD={W:1080,H:1350,HORIZON:640,FOOT_NEAR:1330,HEAD_NEAR:770,HERO:540};
+const TROPHY_CARD={W:1080,H:1350};
 function trophyRng(seed){let s=(seed>>>0)||1;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
 const TROPHY_FACES=[
  // 0 가장 최근에 족친 놈(맨 앞): 눈을 뜬 채 막이 반쯤 덮여 흐리멍덩, 턱이 빠지고 혀가 늘어짐
@@ -11135,21 +11170,54 @@ const TROPHIES=(()=>{
  }
  /* ---- 그림 ---- */
  const canvasOf=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c;};
- function drawField(g,field){
-  // 연필 들판 그림 한 장(구름 낀 하늘·먼 산·들판)을 밤으로 누른다. 하늘은 위로 갈수록 어둡다
-  const off=canvasOf(W,H),o=off.getContext('2d'),s=1.7,iw=field.width*s,ih=field.height*s;
-  o.drawImage(field,(W-iw)/2,C.HORIZON-505*s,iw,ih);
+ function drawField(g,field,hz){
+  // 연필 들판 그림 한 장(구름 낀 하늘·먼 산·들판)을 밤으로 누른다. 하늘은 위로 갈수록 어둡다.
+  // 그림의 지평선(원본 505px)을 이 장의 지평선(hz)에 맞추고, 카메라가 높아 지평선이 올라가면 땅이 화면 아래까지 덮이게 키운다
+  const off=canvasOf(W,H),o=off.getContext('2d'),s=Math.max(1.7,(H+10-hz)/(field.height-505)),iw=field.width*s,ih=field.height*s;
+  o.drawImage(field,(W-iw)/2,hz-505*s,iw,ih);
   o.globalCompositeOperation='multiply';
-  const sky=o.createLinearGradient(0,0,0,C.HORIZON-60);sky.addColorStop(0,'#3a433f');sky.addColorStop(.55,'#59635e');sky.addColorStop(1,'#6f7974');
-  o.fillStyle=sky;o.fillRect(0,0,W,C.HORIZON-60);
-  const night=o.createLinearGradient(0,C.HORIZON-60,0,H);night.addColorStop(0,'#6f7974');night.addColorStop(.3,'#46504b');night.addColorStop(1,'#1b201e');
-  o.fillStyle=night;o.fillRect(0,C.HORIZON-60,W,H-C.HORIZON+60);
+  const sky=o.createLinearGradient(0,0,0,hz-60);sky.addColorStop(0,'#3a433f');sky.addColorStop(.55,'#59635e');sky.addColorStop(1,'#6f7974');
+  o.fillStyle=sky;o.fillRect(0,0,W,Math.max(1,hz-60));
+  const night=o.createLinearGradient(0,hz-60,0,H);night.addColorStop(0,'#6f7974');night.addColorStop(.3,'#46504b');night.addColorStop(1,'#1b201e');
+  o.fillStyle=night;o.fillRect(0,hz-60,W,H-hz+60);
   g.drawImage(off,0,0);
   // 지평선 바로 위는 더 눌러서 뒷줄 머리들이 하늘에 묻히지 않게 한다
-  const low=g.createLinearGradient(0,360,0,C.HORIZON);low.addColorStop(0,'rgba(18,22,21,0)');low.addColorStop(.6,'rgba(18,22,21,.38)');low.addColorStop(1,'rgba(26,31,30,.15)');
-  g.fillStyle=low;g.fillRect(0,360,W,C.HORIZON-360);
-  const mist=g.createLinearGradient(0,C.HORIZON-80,0,C.HORIZON+140);mist.addColorStop(0,'rgba(150,160,152,0)');mist.addColorStop(.45,'rgba(150,160,152,.2)');mist.addColorStop(1,'rgba(150,160,152,0)');
-  g.fillStyle=mist;g.fillRect(0,C.HORIZON-80,W,220);
+  const top=Math.max(0,hz-280),low=g.createLinearGradient(0,top,0,hz);low.addColorStop(0,'rgba(18,22,21,0)');low.addColorStop(.6,'rgba(18,22,21,.38)');low.addColorStop(1,'rgba(26,31,30,.15)');
+  g.fillStyle=low;g.fillRect(0,top,W,hz-top);
+  const mist=g.createLinearGradient(0,hz-80,0,hz+140);mist.addColorStop(0,'rgba(150,160,152,0)');mist.addColorStop(.45,'rgba(150,160,152,.2)');mist.addColorStop(1,'rgba(150,160,152,0)');
+  g.fillStyle=mist;g.fillRect(0,hz-80,W,220);
+ }
+ /* 먼 공기: 머리 없는 들판(바탕)의 줄마다 평균 빛깔을, 먼 줄부터 그려 나가며 그때까지 그린 것 위에 얇게 한 겹씩 덮는다.
+  * 멀리 있는 것일수록 여러 겹을 받아 그 자리 바탕 빛에 녹는다(맨 끝 줄이 지평선 앞에서 칼로 자른 듯 끝나지 않고 어둠 속으로 사라진다).
+  * 5m 안(8놈까지의 머리 높이 장면 전부)은 받지 않는다. 바탕 위에 바탕 빛을 덮는 셈이라 땅은 그대로다. */
+ const AIR={NEAR:5,SIGMA:.035,EDGE:.22,FADE:.9,STEP:.6};
+ // 남은 빛(1=또렷, 0=바탕에 녹음): 거리만큼 옅어지고, 들판 맨 뒤 22%는 끝으로 갈수록 바탕에 녹는다(끝 줄이 선으로 보이지 않게)
+ function airLeft(air,z){
+  const t=clamp((z-air.edge)/Math.max(1e-6,air.far-air.edge),0,1);
+  return Math.exp(-AIR.SIGMA*Math.max(0,z-AIR.NEAR))*(1-air.fade*t*t*(3-2*t));
+ }
+ function airOf(g,layout){
+  const heads=layout.heads;if(!heads.length||heads[0].z<AIR.NEAR+AIR.STEP)return null;
+  const far=heads[0].z,near=heads[heads.length-1].z,e=layout.camera?layout.camera.e:0,ramp=clamp((e-.25)/.35,0,1);
+  let top=H;for(const h of heads)if(h.z>AIR.NEAR)top=Math.min(top,h.y-h.size*.75);
+  top=clamp(Math.floor(top)-24,0,H-1);
+  // 바탕을 못 읽는 브라우저(그림 읽기 막힘 등)에서는 먼 공기 없이 그린다
+  let data;const rows=H-top;try{data=g.getImageData(0,top,W,rows).data;}catch(_){return null;}if(!data||data.length<rows*W*4)return null;
+  const fill=g.createLinearGradient(0,top,0,H);
+  for(let y=0;y<rows;y+=6){
+   let R=0,Gr=0,B=0,k=0;const o=y*W*4;
+   for(let x=0;x<W;x+=3){const i=o+x*4;R+=data[i];Gr+=data[i+1];B+=data[i+2];k++;}
+   fill.addColorStop(y/rows,'rgb('+Math.round(R/k)+','+Math.round(Gr/k)+','+Math.round(B/k)+')');
+  }
+  return {fill,top,z:far,far,edge:far-AIR.EDGE*(far-near),fade:AIR.FADE*ramp*ramp*(3-2*ramp)};
+ }
+ function airPass(g,air,z,bottom){
+  const a=1-airLeft(air,air.z)/airLeft(air,z),y=air.top,feather=24;air.z=z;if(!(a>.002))return;
+  g.save();g.fillStyle=air.fill;
+  // 위 가장자리는 몇 겹으로 나눠 흐리게(바탕 결이 평균 빛으로 눌린 경계가 줄로 보이지 않게)
+  for(let i=0;i<4;i++){g.globalAlpha=a*(i+1)/5;g.fillRect(0,y+i*feather/4,W,feather/4);}
+  g.globalAlpha=a;g.fillRect(0,y+feather,W,Math.max(0,bottom-y-feather));
+  g.restore();
  }
  function fogBand(g,y,h,a,r){
   const band=g.createLinearGradient(0,y-h,0,y+h*.35);band.addColorStop(0,'rgba(146,156,149,0)');band.addColorStop(.62,'rgba(146,156,149,'+a+')');band.addColorStop(1,'rgba(146,156,149,0)');
@@ -11212,7 +11280,7 @@ const TROPHIES=(()=>{
  // 멀리 있는 머리일수록 밤·안개에 묻힌다(거리 단계마다 한 번만 만들어 둔다)
  const graded=new Map();
  function gradedHead(name,pic,depth){
-  const step=Math.min(5,Math.floor((depth-1)/.9)),key=name+':'+step;
+  const step=clamp(Math.floor((depth-1)/.9),0,5),key=name+':'+step;
   if(graded.has(key))return graded.get(key);
   const res=[512,512,256,256,128,128][step],c=canvasOf(res,res),o=c.getContext('2d');
   o.drawImage(pic,0,0,res,res);
@@ -11220,7 +11288,9 @@ const TROPHIES=(()=>{
   if(step<3){o.globalCompositeOperation='overlay';o.globalAlpha=[.85,.6,.35][step];o.drawImage(pic,0,0,res,res);o.globalAlpha=1;}
   o.globalCompositeOperation='multiply';o.fillStyle='#98a39a';o.fillRect(0,0,res,res);
   o.globalCompositeOperation='destination-in';o.drawImage(pic,0,0,res,res);
-  o.globalCompositeOperation='source-atop';o.fillStyle='rgba(118,128,121,'+[0,.16,.3,.42,.52,.6][step]+')';o.fillRect(0,0,res,res);
+  // 먼 단계일수록 덮는 빛을 들판 먼 곳의 밤빛으로 낮춘다(밝은 안개빛을 덮으면 먼 머리 떼가 바탕보다 허옇게 떠서 띠처럼 보였다)
+  const tint=['118,128,121','118,128,121','118,128,121','100,108,103','88,95,90','80,87,82'][step];
+  o.globalCompositeOperation='source-atop';o.fillStyle='rgba('+tint+','+[0,.16,.3,.42,.52,.6][step]+')';o.fillRect(0,0,res,res);
   c.anchors=pic.anchors;c.trophyHead=name;graded.set(key,c);return c;
  }
  function finish(g){
@@ -11234,11 +11304,14 @@ const TROPHIES=(()=>{
  function drawCard(layout,text,art){
   const canvas=canvasOf(W,H),g=canvas.getContext('2d'),blood=PREF.blood!==false;
   g.fillStyle='#090a0a';g.fillRect(0,0,W,H);
-  drawField(g,art.field);
-  const r=trophyRng(99);
-  let lastRow=-1;
+  drawField(g,art.field,layout.horizon);
+  const r=trophyRng(99),haze=1-.55*(layout.camera?layout.camera.e:0),air=airOf(g,layout);
+  // 안개 띠: 줄마다가 아니라 땅이 45px 이상 바뀔 때마다 하나(멀리 촘촘한 줄마다 깔면 겹쳐서 들판이 허옇게 바랬다)
+  let lastRow=-1,lastFog=-Infinity,drawnFoot=-Infinity;
   for(const h of layout.heads){
-   if(h.row!==lastRow){fogBand(g,h.footY,30+220/h.depth,Math.min(.16,.03+.028*h.depth),r);lastRow=h.row;}
+   if(air&&h.z<air.z-AIR.STEP&&drawnFoot>air.top)airPass(g,air,h.z,drawnFoot);
+   drawnFoot=Math.max(drawnFoot,h.footY+6);
+   if(h.row!==lastRow){lastRow=h.row;if(h.footY-lastFog>=45){fogBand(g,h.footY,30+220/h.depth,Math.min(.16,.03+.028*h.depth)*haze,r);lastFog=h.footY;}}
    if(h.empty){drawStake(g,h,null,blood);continue;}
    const pic=gradedHead(h.art,art.heads.get(h.art),h.depth);
    drawStake(g,h,pic,blood);
