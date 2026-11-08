@@ -177,7 +177,7 @@ select.input:invalid,select.input.empty{color:#a39a80}
   /* 풀이 화면은 족치기 3D 화면(z-index 10) 위에 놓인 한 장의 종이다. 끝 아래로는 그 밑이 비친다 */
   position:relative;z-index:11;background:inherit;box-shadow:0 16px 34px rgba(14,10,24,.42);
   color:var(--ink);--muted:#726a87;--line-2:#b3a16c;
-  --soft:#fff1c4;--inset:#fff8e1;--empty:#fffaf0;--empty-ink:#b9ad8c;--dot-off:#efe6cb;
+  --soft:#ffefbd;--inset:#fff8e1;--empty:#fffaf0;--empty-ink:#b9ad8c;--dot-off:#efe6cb;
   --current-surface:#f7f3ff;--warning-surface:#fff4f1;
   --section-late:#9a2312;--caption:#554e69;--accent-edge:#ff8f7a;--focus:#8f7ce8;
 }
@@ -3339,17 +3339,20 @@ const doomSS=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3
 const doomMix=(a,b,e)=>'#'+a.map((v,i)=>{const x=Math.round(v+(b[i]-v)*e);return (x<16?'0':'')+x.toString(16);}).join('');
 // Background, dividers, type, cards and status colors share the same progress curve.
 // Scope variables to the result so returning home restores the original input palette.
+// 바탕과 함께 물드는 색의 규칙: 처음 색과 끝 색이 그 밑 바탕보다 같은 쪽(둘 다 더 진하거나 둘 다 더 연하게)에 있어야 한다.
+// 처음엔 바탕보다 진하고 끝엔 바탕보다 연하면 내려가는 도중 바탕과 같은 색이 되어 칸이 사라진다(예전 칸 끝 「~ 부담」 상자).
+// 글씨는 바탕이 어두워지는 만큼 같이 진해져 처음과 비슷한 대비를 지킨다. tests/doom-palette.test.cjs가 이 규칙을 검사한다.
 const DOOM_COLORS=Object.entries({
  'paper-2':['fffdf5','e7e6c7'],'card':['ffffff','f0efd8'],
- 'ink':['261f3d','252b20'],'ink-2':['463e5e','404735'],'muted':['726a87','4e553c'],
+ 'ink':['261f3d','1f241a'],'ink-2':['463e5e','323828'],'muted':['726a87','474e35'],
  'line':['eadcb4','999b6e'],'line-2':['b3a16c','6c7047'],
- 'red':['e0402a','a64031'],'red-d':['b52a17','7d2f25'],
- 'gold':['ffc531','d2b55e'],'gold-d':['d99a00','796123'],
+ 'red':['e0402a','a64031'],'red-d':['b52a17','6c261e'],
+ 'gold':['ffc531','b8932a'],'gold-d':['d99a00','796123'],
  'indigo':['3e2f8f','5b4357'],'indigo-d':['2b1f6e','473246'],'lav':['ece3ff','e3dcca'],
- 'mark':['ffe27a','eddb94'],'soft':['fff1c4','e3dfb4'],'inset':['fff8e1','e8e5c1'],
+ 'mark':['ffe27a','d6c85a'],'soft':['ffefbd','bdb86e'],'inset':['fff8e1','e1ddb2'],
  'empty':['fffaf0','e7e6cb'],'empty-ink':['b9ad8c','777b56'],'dot-off':['efe6cb','d3d2b0'],
  'current-surface':['f7f3ff','e6dfd5'],'warning-surface':['fff4f1','eddfc6'],
- 'section-late':['9a2312','7d2f25'],'caption':['554e69','4e553c'],
+ 'section-late':['9a2312','6a251d'],'caption':['554e69','3a402b'],
  'accent-edge':['ff8f7a','d28a68'],'focus':['8f7ce8','71566b']
 }).map(([name,ends])=>({name:'--'+name,ends:ends.map(hex=>[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)))}));
 function doomBuild(){
@@ -3422,7 +3425,8 @@ function doomProg(){
  const first=document.querySelector('#result-screen .core'),last=document.querySelector('#result-screen .verdict'),H=window.innerHeight;
  if(!first||!last||!H)return 0;
  const start=first.getBoundingClientRect().top+window.scrollY-H*.55;
- const end=last.getBoundingClientRect().top+window.scrollY-H*.35;
+ // 화면이 길어(태블릿 세로 등) 전체 풀이 칸을 그 높이까지 올릴 수 없으면 맨 아래가 끝이다
+ const end=Math.min(last.getBoundingClientRect().top+window.scrollY-H*.35,document.documentElement.scrollHeight-H);
  return end>start?Math.max(0,Math.min(1,(window.scrollY-start)/(end-start))):0;
 }
 function doomApply(){
