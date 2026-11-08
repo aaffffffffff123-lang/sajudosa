@@ -101,3 +101,17 @@ test('completed regrowth restores impact cries while the severed human face stay
  ctx.G.time+=1;E.voiceHit('hand','chest',1,false);assert.equal(played.length,4);
  assert.equal(played.at(-1).name,'reptile');
 });
+
+test('regrown throat seals the cut neck through forward, sideways and twisted head poses',()=>{
+ const E=makeRig();E.buildRepHead();E.repHead.scale.setScalar(1);
+ let rays=0;
+ for(const pose of [[0,0,0],[.45,.5,.25],[-.45,-.5,-.25],[.2,.7,-.4]]){
+  E.bones.head.rotation.set(...pose);E.root.updateMatrixWorld(true);
+  for(const y of [.075,.095,.113,.125,.145])for(let i=0;i<24;i++){
+   const a=(i+.25)*Math.PI*2/24,origin=V3(Math.cos(a)*.4,y,Math.sin(a)*.4+.02),dir=V3(-Math.cos(a),0,-Math.sin(a));
+   const hits=new THREE.Raycaster(origin,dir,0,.8).intersectObject(E.repSkull);
+   assert(hits.length,`open throat at y=${y}, angle=${i}, pose=${pose}`);rays++;
+  }
+ }
+ console.log('Regrown throat seal rays:',rays);
+});

@@ -2879,7 +2879,7 @@ const BUB=(()=>{
   const wv=Math.abs(Math.sin(dir))>Math.abs(Math.cos(dir)),dw=clamp(Math.pow(px*.42/(wv?rx:ry),SQ/2),.03,.22);
   const a1=dir-dw,a2=dir+dw,[x1,y1]=sePoint(cx,cy,rx,ry,a1),[x2,y2]=sePoint(cx,cy,rx,ry,a2);
   const bx=(x1+x2)/2,by=(y1+y2)/2;let vx=b.tx-bx,vy=b.ty-by;const d=Math.hypot(vx,vy)||1;vx/=d;vy/=d;
-  const L=b.anchor.toMouth?Math.max(0,d-px*.3):clamp(d-px*.6,px*.45,px*1.15),tx=bx+vx*L,ty=by+vy*L;
+  const L=b.anchor.toMouth?clamp(d-px*.3,0,px*1.65):clamp(d-px*.6,px*.45,px*1.15),tx=bx+vx*L,ty=by+vy*L;
   g.save();g.globalAlpha=A;
   g.translate(cx,cy);g.scale(sc,sc);g.translate(-cx,-cy);
   // 타원(꼬리 자리만 비우고 한 바퀴) → 꼬리 끝 → 제자리: 한 붓으로 그려 칠하고 테두리를 한 번만 긋는다
@@ -2917,7 +2917,7 @@ const BUB=(()=>{
    const px=px0*b.size,maxW=Math.min(cw*.6,px*15),gap=px*.5,key=px+'|'+maxW+'|'+fontGen;
    const an=b.anchor,o=an.obj;
    // 말한 사람이 사라지면 말풍선은 마지막 자리에서 흐려진다
-   if(!an.player&&(!o||!o.parent||!visibleChain(o))){if(b.until>G.time)cut(b);if(b.m&&b.x!=null)drawOne(b,1-(G.time-b.until)/FADE);continue;}
+   if(!an.player&&(!o||!o.parent||o.userData.detached||(an.speaker&&an.speaker.headGone)||!visibleChain(o))){if(b.until>G.time)cut(b);if(b.m&&b.x!=null)drawOne(b,1-(G.time-b.until)/FADE);continue;}
    let tx,ty,hy,hr=0;
    if(an.player){
     // 내 목소리는 화면 아래에서 올라온다. 설계자의 입이나 휘두르는 손에는 붙이지 않는다.
@@ -2930,7 +2930,7 @@ const BUB=(()=>{
     v.copy(an.off||ZERO3).applyMatrix4(o.matrixWorld).project(cam);
     if(v.z>1||v.z<-1){if(b.stable){if(b.until>G.time)cut(b);if(b.m&&b.x!=null)drawOne(b,1-(G.time-b.until)/FADE);}continue;}
     // 수군대던 사람이 화면 밖으로 지나가면(옥좌로 걸어가는 동안) 그 말풍선은 화면 가장자리에 매달리지 않고 흐려진다
-    if(b.stable&&(Math.abs(v.x)>1.08||Math.abs(v.y)>1.08)){if(b.until>G.time)cut(b);if(b.m&&b.x!=null)drawOne(b,1-(G.time-b.until)/FADE);continue;}
+    if((b.stable||an.toMouth)&&(Math.abs(v.x)>1.08||Math.abs(v.y)>1.08)){if(b.until>G.time)cut(b);if(b.m&&b.x!=null)drawOne(b,1-(G.time-b.until)/FADE);continue;}
     tx=(v.x*.5+.5)*cw;ty=(-v.y*.5+.5)*ch;hy=ty;
     if(an.top){v2.copy(an.off||ZERO3);v2.y+=an.top;v2.applyMatrix4(o.matrixWorld).project(cam);hy=Math.min(ty,(-v2.y*.5+.5)*ch);}
     if(an.r){v2.copy(an.off||ZERO3);v2.x+=an.r;v2.applyMatrix4(o.matrixWorld).project(cam);hr=Math.abs((v2.x*.5+.5)*cw-tx);}
@@ -2943,7 +2943,8 @@ const BUB=(()=>{
    if(y-m.ry<B.t&&hr){const rgt=B.r-(tx+hr),lft=(tx-hr)-B.l;if(Math.max(rgt,lft)>=2*m.rx+gap*.5){x=rgt>=lft?tx+hr+gap*.5+m.rx:tx-hr-gap*.5-m.rx;y=Math.max(B.t+m.ry,ty-m.ry*.7);}}
    // 추임새는 입 옆에 붙인다. 좁은 화면에서는 대각선 위로 비켜 꼬리가 내 쪽으로 내려오지 않게 한다.
    if(an.toMouth){
-    const side=(B.r-tx>=tx-B.l)?1:-1;
+    // Keep the chosen side for this utterance; head recoil must not flip it each frame.
+    const side=b.mouthSide||(b.mouthSide=(B.r-tx>=tx-B.l)?1:-1);
     x=clamp(tx+side*(hr+gap+m.rx),B.l+m.rx,B.r-m.rx);
     const beside=Math.abs(x-tx)>=m.rx+hr+gap*.5;
     y=beside?ty:ty-m.ry-gap-Math.max(hr,px*.35);
@@ -2970,7 +2971,7 @@ const BUB=(()=>{
     const up=hit.y-hit.ry-6-m.ry;y=up-m.ry>=B.t?up:Math.min(B.b-m.ry,hit.y+hit.ry+6+m.ry);
    }
    }
-   if(b.x==null||b.stable||an.toMouth){b.x=x;b.y=y;}else{const k=1-Math.exp(-dt*16);b.x+=(x-b.x)*k;b.y+=(y-b.y)*k;}
+   if(b.x==null||b.stable||b.layoutKey!==layoutKey){b.x=x;b.y=y;}else{const k=1-Math.exp(-dt*16);b.x+=(x-b.x)*k;b.y+=(y-b.y)*k;}
    b.layoutKey=layoutKey;
    placed.push({x:b.x,y:b.y,rx:m.rx,ry:m.ry,w:b.whisper});
    b.tx=tx;b.ty=ty;b.a=Math.min(1,b.a+dt/.16);
@@ -4126,29 +4127,59 @@ const BLOOD=(()=>{
    if(kind==='dust'){v1.multiplyScalar(.3);emit('dust',p,v1,rnd(.008,.018),rnd(.3,.55));}else emit(kind,p,v1,kind==='spit'?rnd(.002,o.smax||.0045):rnd(o.smin||.0026,Math.min(.0064,o.smax||.0064)),rnd(.6,1.4));}
  }
  /* ---- 바닥·옥좌 등받이에 그리기 ---- */
- const FL={x0:-1.6,z0:-1.45,w:3.2,h:3.2,res:1024};
- const flTex=canvasTex(FL.res,FL.res,()=>{});const flCtx=flTex.userData.ctx;
- const flMat=STD('#ffffff',{map:flTex,transparent:true,roughness:.1,metalness:0,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
- const flMesh=mk(new THREE.PlaneGeometry(FL.w,FL.h),flMat,scene,{p:[FL.x0+FL.w/2,.004,FL.z0+FL.h/2],r:[-PI/2,0,0],cast:false});flMesh.renderOrder=1;
- const pool=new Float32Array(64*64);let flDirty=false,flUploadAcc=0;
- function floorUV(x,z){return [(x-FL.x0)/FL.w*FL.res,(z-FL.z0)/FL.h*FL.res];}
- function blob(g,x,y,r,col_,a){g.globalAlpha=a;g.fillStyle=col_;g.beginPath();g.ellipse(x,y,r,r*rnd(.75,1),rnd(0,PI),0,TAU);g.fill();g.globalAlpha=1;}
- /* 떨어진 방울은 방울 크기만큼만 묻고, 같은 자리에 계속 떨어질 때만 웅덩이로 번진다.
-  * (예전에는 방울 하나가 손바닥만 한 자국을 남겨 바닥 전체가 파란 페인트처럼 덮였다) */
- function paintFloor(x,z,vol,impact){
-  if(!PREF.blood)return;const [u,v]=floorUV(x,z);if(u<0||v<0||u>FL.res||v>FL.res)return;
-  const ci=clamp(Math.floor(u/16),0,63)+clamp(Math.floor(v/16),0,63)*64;pool[ci]+=vol;
-  const s=clamp(Math.sqrt(vol)*230,2,8),pr=Math.sqrt(pool[ci]);
-  blob(flCtx,u+rnd(-2,2),v+rnd(-2,2),s*rnd(.8,1.1),'#173da8',.82);
-  if(pr>.06){const r=clamp(pr*62,5,42);blob(flCtx,u+rnd(-5,5),v+rnd(-5,5),r*rnd(.7,1),'#11308a',.13);}
-  if(impact>3.2){const n=2+(Math.random()*3|0);for(let i=0;i<n;i++){const a=rnd(0,TAU),d=rnd(6,18);blob(flCtx,u+Math.cos(a)*d,v+Math.sin(a)*d,rnd(1.2,2.6),'#173da8',.75);}}
-  flDirty=true;
+ // Sparse floor tiles cover the same 14 m floor as WORLD. Only stained tiles
+ // allocate canvases. Each ellipse is stamped across all touched tiles with
+ // identical shape and a two-pixel gutter, so neither paint nor filtering cuts
+ // a straight edge through a puddle. Brush sizes remain in the old 320 px/m units.
+ const FL={min:-7,max:7,size:1.75,res:512,pad:2,ppm:320};
+ const floorTiles=new Map(),pool=new Map();let flUploadAcc=0;
+ const floorRoot=grp(scene,null,'floor-blood');
+ const floorGeo=new THREE.PlaneGeometry(FL.size,FL.size),uv=floorGeo.attributes.uv;
+ for(let i=0;i<uv.count;i++)uv.setXY(i,(FL.pad+uv.getX(i)*FL.res)/(FL.res+2*FL.pad),(FL.pad+uv.getY(i)*FL.res)/(FL.res+2*FL.pad));
+ function floorTile(ix,iz){
+  const key=ix+','+iz;let t=floorTiles.get(key);if(t)return t;
+  const tex=canvasTex(FL.res+2*FL.pad,FL.res+2*FL.pad,()=>{});
+  tex.generateMipmaps=false;tex.minFilter=tex.magFilter=THREE.LinearFilter;
+  const mat=STD('#ffffff',{map:tex,transparent:true,roughness:.1,metalness:0,depthWrite:false,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
+  const x=FL.min+ix*FL.size,z=FL.min+iz*FL.size;
+  const mesh=mk(floorGeo,mat,floorRoot,{p:[x+FL.size/2,.004,z+FL.size/2],r:[-PI/2,0,0],cast:false});mesh.renderOrder=1;
+  t={tex,ctx:tex.userData.ctx,mesh,x,z,dirty:false};floorTiles.set(key,t);return t;
  }
- // 쓰러진 몸 밑 웅덩이: 몇 프레임마다 한 번씩, 가장자리가 울퉁불퉁하게 넓어진다
+ function floorInside(x,z){return Number.isFinite(x)&&Number.isFinite(z)&&x>=FL.min&&x<FL.max&&z>=FL.min&&z<FL.max;}
+ function floorAmount(x,z,amount){const key=Math.floor(x/.05)+','+Math.floor(z/.05),v=(pool.get(key)||0)+amount;pool.set(key,v);return v;}
+ function floorBlob(x,z,r,color,alpha){
+  const radius=r/FL.ppm,aspect=rnd(.75,1),angle=rnd(0,PI),scale=FL.res/FL.size,gutter=FL.pad/scale;
+  const first=v=>Math.max(0,Math.floor((v-radius-gutter-FL.min)/FL.size)),last=v=>Math.min(7,Math.floor((v+radius+gutter-FL.min)/FL.size));
+  for(let iz=first(z);iz<=last(z);iz++)for(let ix=first(x);ix<=last(x);ix++){
+   const t=floorTile(ix,iz),g=t.ctx;g.globalAlpha=alpha;g.fillStyle=color;g.beginPath();
+   g.ellipse((x-t.x)*scale+FL.pad,(z-t.z)*scale+FL.pad,radius*scale,radius*scale*aspect,angle,0,TAU);g.fill();g.globalAlpha=1;t.dirty=true;
+  }
+ }
+ function blob(g,x,y,r,col_,a){g.globalAlpha=a;g.fillStyle=col_;g.beginPath();g.ellipse(x,y,r,r*rnd(.75,1),rnd(0,PI),0,TAU);g.fill();g.globalAlpha=1;}
+ /* Droplets keep their physical size; repeated impacts alone form pools. */
+ function paintFloor(x,z,vol,impact){
+  if(!PREF.blood||!floorInside(x,z))return;
+  const pr=Math.sqrt(floorAmount(x,z,vol)),s=clamp(Math.sqrt(vol)*230,2,8),j=n=>rnd(-n,n)/FL.ppm;
+  floorBlob(x+j(2),z+j(2),s*rnd(.8,1.1),'#173da8',.82);
+  if(pr>.06){const r=clamp(pr*62,5,42);floorBlob(x+j(5),z+j(5),r*rnd(.7,1),'#11308a',.13);}
+  if(impact>3.2){const n=2+(Math.random()*3|0);for(let i=0;i<n;i++){const a=rnd(0,TAU),d=rnd(6,18)/FL.ppm;floorBlob(x+Math.cos(a)*d,z+Math.sin(a)*d,rnd(1.2,2.6),'#173da8',.75);}}
+ }
  let underT=0;
- function poolUnder(x,z,amount){if(!PREF.blood||amount<=0)return;const [u,v]=floorUV(x,z);const ci=clamp(Math.floor(u/16),0,63)+clamp(Math.floor(v/16),0,63)*64;pool[ci]+=amount;
-  underT-=1;if(underT>0)return;underT=6;
-  const r=clamp(Math.sqrt(pool[ci])*48,6,88);for(let i=0;i<3;i++){const a=rnd(0,TAU),d=rnd(0,r*.45);blob(flCtx,u+Math.cos(a)*d,v+Math.sin(a)*d*.7,r*rnd(.45,.8),'#11308a',.1);}flDirty=true;}
+ function poolUnder(x,z,amount){
+  if(!PREF.blood||amount<=0||!floorInside(x,z))return;
+  const sum=floorAmount(x,z,amount);underT-=1;if(underT>0)return;underT=6;
+  const r=clamp(Math.sqrt(sum)*48,6,88);for(let i=0;i<3;i++){const a=rnd(0,TAU),d=rnd(0,r*.45)/FL.ppm;floorBlob(x+Math.cos(a)*d,z+Math.sin(a)*d*.7,r*rnd(.45,.8),'#11308a',.1);}
+ }
+ function updateFloor(dt){
+  flUploadAcc=Math.min(1/15,flUploadAcc+dt);floorRoot.visible=PREF.blood;
+  if(flUploadAcc<1/15)return;
+  for(const t of floorTiles.values())if(t.dirty){t.tex.needsUpdate=true;t.dirty=false;}
+  flUploadAcc=0;
+ }
+ function clearFloor(){
+  for(const t of floorTiles.values()){t.mesh.removeFromParent();t.tex.dispose();t.mesh.material.dispose();}
+  floorTiles.clear();pool.clear();flUploadAcc=0;underT=0;
+ }
  // 등받이 판
  let pnCanvas=null,pnCtx=null,pnSaved=null;
  function panelInit(){if(pnCtx)return;pnCanvas=WORLD.panelTex.userData.canvas;pnCtx=WORLD.panelTex.userData.ctx;pnSaved=document.createElement('canvas');pnSaved.width=pnCanvas.width;pnSaved.height=pnCanvas.height;pnSaved.getContext('2d',TEX_CTX).drawImage(pnCanvas,0,0);}
@@ -4583,18 +4614,13 @@ const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);po
   // 자국이 자라기
   for(const m of decals){const g=m.userData.grow;if(g){g.t+=dt;const s=lerp(.01,1,easeOut(g.t/g.dur));m.scale.setScalar(s);m.position.copy(g.center).multiplyScalar(1-s);if(g.t>=g.dur)m.userData.grow=null;}}
   for(const l of lumps){l.t+=dt;const s=damp(l.mesh.scale.x,l.target,6,dt);l.mesh.scale.set(s,s*.85,s*.42);}
-  flUploadAcc=Math.min(1/15,flUploadAcc+dt);
-if(flDirty&&flUploadAcc>=1/15){
- flTex.needsUpdate=true;
- flDirty=false;
- flUploadAcc=0;
-}
+  updateFloor(dt);
   for(let i=fading.length-1;i>=0;i--){const b=fading[i];b.fade-=dt/1.35;b.mesh.material.opacity=Math.max(0,b.fade)*(b.op0==null?1:b.op0);
    if(b.fade<=0){b.mesh.removeFromParent();b.g.dispose();b.mesh.material.dispose();const k=bankList.indexOf(b);if(k>=0)bankList.splice(k,1);fading.splice(i,1);}}
   const gv=PREF.blood;for(const b of bankList){b.mesh.visible=b.kind==='tear'||gv;}
   for(const m of decals)if(m.userData.gore)m.visible=gv;
 for(const m of rims)m.visible=gv;
-flMesh.visible=gv;
+floorRoot.visible=gv;
  }
 
  function clearSegment(seg){
@@ -4672,11 +4698,7 @@ flMesh.visible=gv;
 for(const m of rims)m.removeFromParent();
 rims.length=0;
   for(const l of lumps)l.mesh.removeFromParent();lumps.length=0;
-  flCtx.clearRect(0,0,FL.res,FL.res);
-flTex.needsUpdate=true;
-flDirty=false;
-flUploadAcc=0;
-pool.fill(0);
+  clearFloor();
   if(pnCtx&&pnSaved){pnCtx.clearRect(0,0,pnCanvas.width,pnCanvas.height);pnCtx.drawImage(pnSaved,0,0);WORLD.panelTex.needsUpdate=true;}
   SB.clear();lostRaw=0;heart=0;
  }
@@ -5420,6 +5442,9 @@ const HEADGEO=(()=>{
   d=smax(d,-ell(x,y,z,0,-.113,.164,.102,.004,.044),.003);
   // Back of the mandible connects continuously to the existing neck.
   d=smin(d,ell(x,y,z,0,-.114,-.034,.098,.069,.097),.022);
+  // Regrow the throat as part of the skull: overlap the trimmed stump deeply
+  // enough to stay joined when the head turns independently of the neck.
+  d=smin(d,cap(x,y,z,0,-.15,-.03,0,-.235,-.025,.079,.09),.018);
   return d;
  }
  // The lower jaw has a human chin, with the same level mouth seam as the skull.
@@ -7087,10 +7112,10 @@ Object.assign(Emperor.prototype,{
    this.buildRepHead();this.buildHeadRegrowth(r);r.built=true;r.t=0;AUDIO.boneOut(.9);
    if(this.onHeadRegrow)this.onHeadRegrow();
   }
-  const u=sat(r.t/r.dur),reveal=(list,k)=>{for(const o of list)o.material.userData.headGrowth.value=lerp(-.24,.25,smooth(k));};
+  const u=sat(r.t/r.dur),reveal=(list,k)=>{for(const o of list)o.material.userData.headGrowth.value=lerp(-.35,.25,smooth(k));};
   // 0–42%: skull and jaw; 24–69%: muscle; 50–88%: scales; 80–97%: eyes open.
   reveal(r.boneMeshes,sat(u/.42));reveal(r.rawMeshes,sat((u-.24)/.45));
-  for(const layer of r.skin)layer.m.userData.headGrowth.value=lerp(-.24,.25,smooth(sat((u-.50)/.38)));
+  for(const layer of r.skin)layer.m.userData.headGrowth.value=lerp(-.35,.25,smooth(sat((u-.50)/.38)));
   // Retire covered tissue behind the advancing edge; no overlapping shells flicker.
   for(const m of r.boneMeshes)m.material.userData.headCovered.value=r.rawMeshes[0].material.userData.headGrowth.value-.012;
   for(const m of r.rawMeshes)m.material.userData.headCovered.value=r.skin[0].m.userData.headGrowth.value-.012;
@@ -10055,7 +10080,7 @@ function queueTalk(lines,replace=false){
 }
 function talkBusy(){return !!(TALK.cur||TALK.q.length||TALK.gap>0);}
 // 설계자 말풍선 자리: 꼬리는 입을 가리키고, 아랫변은 면류관 위에. 위에 자리가 없으면 머리 옆에 띄운다
-function bossAnchor(E){return {obj:E.face,off:V3(0,-.06,.16),top:.46,r:.2,cam:'main'};}
+function bossAnchor(E){const rep=E.headKind==='rep';return {obj:rep?E.repFaceG:E.face,off:rep?V3(0,-.118,.17):V3(0,-.1,.2),top:rep?.38:.50,r:rep?.16:.2,cam:'main',speaker:E};}
 function updateTalk(dt){
  if(G.mode==='fight'&&!G.opening&&!G.walking&&!(G.revival&&G.revival.spoken)){
   // 족치는 중에는 첫 타격의 내 외침과 설계자의 추임새만 추가로 허용한다.
