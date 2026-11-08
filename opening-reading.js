@@ -1,6 +1,6 @@
 /* 사주도사: 도입·타고난 운명에 더하는 별자리 문단.
  * 기존 사주 판정/문장/분기에는 쓰지 않는다. compose는 입력을 바꾸지 않는 추가 전용 함수다.
- * 태양=지향, 달=감정 반응, 수성=생각/말, 상승궁=첫 대면, 4하우스=가정/뿌리,
+ * 태양=지향, 달=감정 반응, 수성=생각/말, 상승궁=외형/첫 대면, 4하우스=가정/뿌리,
  * 토성=제한/책임의 상징을 생활 장면으로 옮긴 작중 해석이다. 가정의 재산은 재판정하지 않는다.
  * 의미 범위 참고: https://www.astro.com/astrology/in_house2_e.htm
  * 생시 미상: 확정된 별자리만 사용. 상승궁/하우스/각도와 경계의 달은 제외한다.
@@ -67,6 +67,48 @@
     '처음 만난 자리에서도 남들과 조금 다른 관심사가 드러납니다. 모두가 하던 이야기의 옆길로 질문 하나를 꺼냈다가, 뜻밖에 말이 잘 통하는 사람을 찾기도 합니다.',
     '낯선 사람을 대할 때는 그 자리의 분위기에 따라 말투가 조금 달라집니다. 누군가는 조용한 사람으로, 다른 누군가는 잘 웃는 사람으로 기억해도 당신에게는 둘 다 자연스러웠을 수 있습니다.'
   ];
+  // 외형의 전통적 상징만 짧게 옮긴 작중 문장. 건강·질병·외모의 우열은 판정하지 않는다.
+  // 참고: https://www.astro.com/astrowiki/en/First_house
+  // https://www.astrotheme.com/files/ascendant_appearance_and_health.php
+  const ASC_BODY=[
+    ['눈썹과 턱의 윤곽이 또렷한 편입니다.','마음이 급해지면 말보다 상체가 먼저 앞으로 나갑니다.'],
+    ['목과 어깨선이 단단해 보이는 편입니다.','대답하기 전에 고개를 조금 끄덕이는 버릇이 인상에 남습니다.'],
+    ['팔다리의 선이 길고 가늘게 뻗는 편입니다.','이야기에 흥미가 붙으면 손짓과 눈동자의 움직임도 함께 많아집니다.'],
+    ['볼과 턱선에 둥근 느낌이 있는 편입니다.','마음이 놓이면 입가와 눈 주변의 긴장이 함께 풀립니다.'],
+    ['이마와 이목구비가 시원하게 드러나는 편입니다.','누군가 자신을 부르면 고개를 들고 몸까지 그쪽으로 돌립니다.'],
+    ['몸선이 가늘고 단정해 보이는 편입니다.','앉은 자리에서 옷매무새나 손의 위치를 작게 고쳐 잡습니다.'],
+    ['얼굴의 윤곽과 이목구비가 고르게 어우러지는 편입니다.','상대의 인사를 받을 때 입가에 먼저 작은 웃음이 걸립니다.'],
+    ['눈매와 얼굴 윤곽이 선명한 편입니다.','상대의 말을 듣는 동안 시선이 한곳에 오래 머뭅니다.'],
+    ['체격과 얼굴선이 시원스럽게 보이는 편입니다.','재미있는 이야기를 만나면 웃음과 몸짓의 폭이 함께 커집니다.'],
+    ['살집보다 뼈대의 윤곽이 도드라지는 편입니다.','모르는 사람 앞에서는 턱과 어깨를 바로 잡아 자세를 갖춥니다.'],
+    ['팔다리가 길고 몸선이 곧게 뻗는 편입니다.','낯선 것이 눈에 들어오면 듣던 중에도 시선이 잠깐 그쪽으로 갑니다.'],
+    ['눈이 도드라지고 얼굴선이 부드러운 편입니다.','말을 듣다가 그 장면을 떠올릴 때 시선이 잠시 멀어집니다.']
+  ];
+  // 체격에 관한 기존 사주 문장을 두 번째 체격 판정으로 덮거나 모순시키지 않는다.
+  // 이미 외형 묘사가 있으면 상승궁에서는 몸짓만 보탠다. 목소리/다리 떨기는 외형과 별개다.
+  const hasPhysicalPortrait=out=>(out.portrait||[]).some(t=>/팔다리|손가락|눈썹|눈매|얼굴.{0,8}(살|각|윤곽)|턱선|체구|몸선|호리호리|키순/.test(t));
+  // 1하우스 행성은 체격을 다시 판정하지 않고, 특정 상황에서 보이는 표정/몸짓만 더한다.
+  // 여러 개면 상승점에 가장 가까운 고전 행성 하나만 사용한다. 도수가 없으면 추가하지 않는다.
+  const FIRST_HOUSE_BODY={
+    Sun:'여럿이 자신을 바라보는 순간에는 등을 펴고 얼굴을 들어 시선을 받습니다.',
+    Moon:'뜻밖의 말을 들으면 대답을 고르기 전에 눈과 입가에서 기분이 먼저 드러납니다.',
+    Mercury:'설명하다가 단어가 막히면 손으로 먼저 모양을 그려 보입니다.',
+    Venus:'사진을 찍거나 사람을 맞기 직전에는 머리카락과 옷깃을 한 번 만져 봅니다.',
+    Mars:'뜻대로 풀리지 않는 순간에는 턱이나 쥔 손에 힘이 먼저 들어갑니다.',
+    Jupiter:'반가운 사람을 발견하면 인사말보다 웃음과 손짓이 먼저 커집니다.',
+    Saturn:'격식을 갖춰야 하는 자리에서는 손을 모으고 움직임의 폭부터 줄입니다.'
+  };
+  function physicalPortrait(out,W){
+    const n=W.asc.sign,body=ASC_BODY[n],evidence=[{kind:'asc',sign:n}];
+    const words=hasPhysicalPortrait(out)?[]:[body[0]];
+    const separation=p=>Math.abs(((p.longitude-W.asc.longitude+540)%360)-180);
+    const near=Number.isFinite(W.asc.longitude)?W.planets.filter(p=>p.house===1&&FIRST_HOUSE_BODY[p.id]&&Number.isFinite(p.longitude))
+      .sort((a,b)=>separation(a)-separation(b)||a.id.localeCompare(b.id))[0]:null;
+    if(near){words.push(FIRST_HOUSE_BODY[near.id]);evidence.push({kind:'house',planet:near.id,house:1});}
+    else words.push(body[1]);
+    words.push(ASC[n]);
+    return {text:words.join(' '),evidence};
+  }
   const HOME_PLANET={
     Saturn:'집에서는 하고 싶은 일보다 먼저 지켜야 할 순서가 눈에 들어옵니다. 누가 다시 말하지 않아도 돌아올 시간이나 맡은 일을 스스로 셉니다. 따로 살림을 꾸려도 이제 그만해도 된다는 허락까지 혼자 내려야 합니다.',
     Moon:'함께 지내는 사람의 표정이 집 안의 분위기를 바꿉니다. 내 일은 무사히 끝났어도 한 사람이 마음이 상해 있으면 편히 쉬기가 어렵습니다. 가까이 사는 값에는 내가 만들지 않은 기분을 살피는 시간도 들어갑니다.',
@@ -184,7 +226,10 @@
     const signLine=(target,id,copy,prefix='')=>{const n=sign(id);if(n!==null)emit(target,prefix+id.toLowerCase()+'-'+n,copy[n],[{kind:'sign',planet:id,sign:n}]);};
     signLine(added.portrait.opening,'Sun',SUN);
     signLine(added.portrait.relationships,'Moon',MOON);
-    if(!unknown&&W.asc&&validSign(W.asc.sign))emit(added.portrait.relationships,'asc-'+W.asc.sign,ASC[W.asc.sign],[{kind:'asc',sign:W.asc.sign}]);
+    if(!unknown&&W.asc&&validSign(W.asc.sign)){
+      const physical=physicalPortrait(out,W);
+      emit(added.portrait.relationships,'asc-'+W.asc.sign,physical.text,physical.evidence);
+    }
     signLine(added.portrait.daily,'Mercury',MERCURY);
 
     // 출발 조건은 기존 재물 판정 그대로. 추가 문단은 살림의 방식과 가족 안의 역할만 다룬다.

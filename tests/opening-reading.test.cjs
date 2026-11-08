@@ -84,6 +84,45 @@ test('all twelve sign branches, three origin states and all house branches retur
  }
 });
 
+test('all twelve rising signs add physical detail and preserve their original first-impression passage',()=>{
+ const {result,view}=ALL[1],seen=new Set();
+ for(let sign=0;sign<12;sign++){
+  const western={available:true,unknown:false,asc:{sign,longitude:sign*30+12},planets:[],aspects:[]};
+  const x=OpeningReading.compose({...view,portrait:[]},{...result,input:{unknown:false},western}).portrait.relationships[0];
+  assert.equal(x.id,'asc-'+sign);assert(x.text.split('.').length>=5);
+  const first=x.text.split('.')[0];assert.match(first,/눈|턱|목|어깨|팔다리|볼|이마|몸선|얼굴|체격|뼈대/);seen.add(first);
+  assert.deepEqual(x.evidence,[{kind:'asc',sign}]);
+  const missing=OpeningReading.compose(view,{...result,input:{unknown:false},western:{...western,asc:null}});
+  assert.equal(missing.portrait.relationships.length,0);
+ }
+ assert.equal(seen.size,12);
+});
+test('existing saju body descriptions are kept without a second anatomy claim from astrology',()=>{
+ const {result,view}=ALL[1];
+ const anatomical=[...Object.values(api.V5.portraitFeature.flourishing),...Object.values(api.V5.portraitFeature.weak)].filter(t=>!/소리/.test(t));
+ const western={available:true,unknown:false,asc:{sign:3,longitude:95},planets:[],aspects:[]};
+ for(const feature of anatomical){
+  const out={...view,portrait:[view.portrait[0],feature+' '+view.portrait[1],view.portrait[2]]},snapshot=JSON.stringify(out);
+  const x=OpeningReading.compose(out,{...result,input:{unknown:false},western}).portrait.relationships[0];
+  assert(!x.text.includes('볼과 턱선에 둥근 느낌'));assert(x.text.includes('입가와 눈 주변의 긴장'));
+  assert.equal(JSON.stringify(out),snapshot,'retain the original feature and prose');
+ }
+});
+test('the nearest first-house planet supplies one visible gesture, and unknown time removes it',()=>{
+ const {result,view}=ALL[1],western={available:true,unknown:false,asc:{sign:0,longitude:15},planets:[
+  {id:'Venus',sign:0,longitude:16,house:1},{id:'Mars',sign:0,longitude:9,house:1},
+  {id:'Saturn',sign:11,longitude:14.8,house:12}
+ ],aspects:[]};
+ const get=W=>OpeningReading.compose({...view,portrait:[]},{...result,input:{unknown:W.unknown},western:W});
+ const x=get(western).portrait.relationships[0];
+ assert(x.text.includes('머리카락과 옷깃'));assert(!x.text.includes('쥔 손'));assert(!x.text.includes('손을 모으고'));
+ assert.deepEqual(x.evidence,[{kind:'asc',sign:0},{kind:'house',planet:'Venus',house:1}]);
+ assert.deepEqual(get({...western,planets:[...western.planets].reverse()}),get(western),'input order never chooses the planet');
+ assert.equal(get({...western,unknown:true}).portrait.relationships.length,0);
+ const withoutDegrees=get({...western,asc:{sign:0}}).portrait.relationships[0];
+ assert(!withoutDegrees.text.includes('머리카락과 옷깃'));assert(withoutDegrees.text.includes('상체가 먼저'));
+});
+
 // 간단한 DOM 대역에서 실제 삽입 함수를 실행해 원문 문단의 순서와 텍스트를 검사한다.
 class Paragraph{
  constructor(text,cls=''){this.innerHTML=text;this.className=cls;this.dataset={};}
