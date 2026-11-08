@@ -8298,7 +8298,7 @@ updateBelly(dt){
 },
 
  /* ===== 팔다리 자르기 =====
-  * 팔(위팔·아래팔·손)·다리(허벅지·정강이·발)를 가로질러 그으면 한 번 그을 때마다 한 번으로 친다.
+  * 팔(위팔·아래팔·손)·다리(허벅지·정강이·발)를 가로지를 때마다 한 번으로 친다(손을 떼지 않고 휘둘러도 지나갈 때마다).
   * 1번째 베임 → 2번째 깊게 베여 축 늘어짐 → 3번째에 그은 자리에서 가장 가까운 마디가 잘려 떨어진다.
   * 다시 자란 도마뱀 팔다리는 한 번에 잘린다. */
 limbOf(part){const m=/^(arm|hand|thigh|shin|foot)(L|R)$/.exec(part||'');return m?(m[1]==='arm'||m[1]==='hand'?'arm':'leg')+m[2]:null;},
@@ -10769,7 +10769,7 @@ function gunLight(){gunLT=.035;}
 
 /* ---- 칼로 긋기 ----
  * 손가락이 지나간 사이를 7px 간격으로 촘촘히 검사한다(빠르게 그어도 팔다리를 건너뛰지 않게).
- * 팔다리: 그 팔다리를 가로질러 지나가면(들어간 자리 → 나온 자리) 한 번 벤 것으로 친다. 자국·칼집·피는 칼이 지나간 겉면 점들을 따라 낸다.
+ * 팔다리: 그 팔다리를 가로질러 지나가면(들어간 자리 → 나온 자리) 한 번 벤 것으로 친다. 누른 채 다시 지나가도 또 센다. 자국·칼집·피는 칼이 지나간 겉면 점들을 따라 낸다.
  * 몸통·얼굴: 같은 부위 위를 10cm 넘게 그을 때마다 베인 자국이 이어진다. */
 let slashSerial=0;
 const MAX_SLASH_SAMPLES=64;
@@ -10824,8 +10824,8 @@ function slashSample(p,x,y,list){
  if(lk){
   // 팔다리 위에서 칼이 지나간 겉면 점(화면에서 보이는 쪽)을 차례로 모아 둔다. 벗어날 때 이 점들을 따라 벤다
   slashKeep(info);
-  if(!p.limb)p.limb={key:lk,a:info.point.clone(),b:info,pts:[info]};
-  else{p.limb.b=info;const q=p.limb.pts;if(q.length<48&&q[q.length-1].point.distanceToSquared(info.point)>1e-6)q.push(info);}
+  if(!p.limb)p.limb={key:lk,a:info.point.clone(),b:info,pts:[info],x0:x,y0:y,x1:x,y1:y};
+  else{p.limb.b=info;p.limb.x1=x;p.limb.y1=y;const q=p.limb.pts;if(q.length<48&&q[q.length-1].point.distanceToSquared(info.point)>1e-6)q.push(info);}
   p.lastCut=null;return true;
  }
  // 한 화면 좌표에서는 가장 앞 물체만 고르므로, 팔을 벗어난 뒤 실제로 드러난 몸은 계속 벨 수 있다.
@@ -10864,23 +10864,36 @@ function slashRefresh(info){
  _slN.getNormalMatrix(o.matrixWorld);info.normal.copy(info.ln).applyMatrix3(_slN).normalize();
  return info;
 }
+// 손을 떼지 않고 휘두를 때: 같은 팔다리를 다시 가로지르면 또 벤다(몸통이 지나갈 때마다 베이는 것과 같게).
+// 되돌아오며 다시 지나가면 바로 센다. 같은 방향으로 잇달아 지나간 건(한 번 휘두르는 동안 위팔·아래팔을 차례로 지나는 것) LIMB_RECUT초 안이면 한 번으로,
+// 테두리만 스친 건(팔다리 위를 LIMB_RECUT_MIN m도 안 지나감) 다시 세지 않는다
+const LIMB_RECUT=.12,LIMB_RECUT_MIN=.03;
 function finishLimb(p){
  const L=p.limb;p.limb=null;if(!L)return;
- p.limbDone=p.limbDone||new Set();if(p.limbDone.has(L.key))return;p.limbDone.add(L.key);
+ const pts=L.pts||[];
+ for(const q of pts)slashRefresh(q);
+ let total=0;const acc=[0];for(let i=1;i<pts.length;i++){total+=pts[i].point.distanceTo(pts[i-1].point);acc.push(total);}
+ const dx=(L.x1??0)-(L.x0??0),dy=(L.y1??0)-(L.y0??0),dl=Math.hypot(dx,dy);
+ p.limbAt=p.limbAt||{};
+ const prev=p.limbAt[L.key];
+ if(prev){
+  if(total<LIMB_RECUT_MIN)return;
+  const back=dl>6&&prev.dl>6&&dx*prev.dx+dy*prev.dy<0;
+  if(!back&&G.time-prev.t<LIMB_RECUT)return;
+ }
+ p.limbAt[L.key]={t:G.time,dx,dy,dl};
+ // 가로지를 때마다 따로 센다(같은 손가락 안에서도). 예전에는 손을 뗄 때까지 팔다리 하나를 한 번만 세서, 누른 채 휘두르면 몸통만 베였다
+ const sid=p.slashId+':'+L.key+':'+(p.limbN=(p.limbN||0)+1);
  // 들어간 점(L.a)과 나온 점(L.b)은 팔다리 윤곽의 양 끝이다. 둘을 이은 직선은 팔다리 속을 지나서
  // 거기에 자국·칼집을 내면 겉에서는 하나도 안 보인다 → 지나간 겉면 점들로 베고, 맞은 자리는 그 가운데 점으로 한다
- const pts=L.pts||[];
  if(pts.length>=2){
-  for(const q of pts)slashRefresh(q);
-  let total=0;const acc=[0];for(let i=1;i<pts.length;i++){total+=pts[i].point.distanceTo(pts[i-1].point);acc.push(total);}
   let mi=0;for(let i=1;i<pts.length;i++)if(Math.abs(acc[i]-total/2)<Math.abs(acc[mi]-total/2))mi=i;
-  resolveHit(G.tool,'slash',pts[mi],'R',{slashFrom:pts[0].point.clone(),slashPath:pts,strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
+  resolveHit(G.tool,'slash',pts[mi],'R',{slashFrom:pts[0].point.clone(),slashPath:pts,strokeId:sid,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
   return;
  }
- const info=L.b;let from=L.a;
  // 한 점만 스쳤으면 긋는 방향으로 짧은 선을 만든다
- if(from.distanceToSquared(info.point)<1e-6)from=info.point.clone().addScaledVector(V3().crossVectors(info.normal,UP).normalize(),.02);
- resolveHit(G.tool,'slash',info,'R',{slashFrom:from,strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
+ const info=L.b,from=info.point.clone().addScaledVector(V3().crossVectors(info.normal,UP).normalize(),.02);
+ resolveHit(G.tool,'slash',info,'R',{slashFrom:from,strokeId:sid,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
 }
 /* ---- 입력 ---- */
 const ptrs=new Map();let bladePointer=null;
