@@ -2,16 +2,16 @@ const test=require('node:test'),assert=require('node:assert/strict'),fs=require(
 const source=fs.readFileSync(path.join(__dirname,'../fight.js'),'utf8');
 const code=source.slice(source.indexOf('function trophyLayout('),source.indexOf('// 끝: 누적 처치 수'));
 function setup(count=7){
- const elements=new Map(),calls={draws:[],texts:[],images:0,revoked:[],download:0,holds:[]};
+ const elements=new Map(),calls={draws:[],texts:[],images:0,revoked:[],download:0,holds:[],resets:0};
  class Element{constructor(id){this.id=id;this.hidden=false;this.disabled=false;this.listeners={};this.isConnected=true;this.textContent='';this.attrs={};}addEventListener(k,f){this.listeners[k]=f}click(){if(this.id==='#trophySave')calls.download++;return this.listeners.click?.({target:this})}focus(){document.activeElement=this}removeAttribute(k){delete this[k]}getClientRects(){return this.hidden?[]:[{}]}querySelectorAll(){return [...elements.values()]}}
  const $=id=>{if(!elements.has(id))elements.set(id,new Element(id));return elements.get(id)};
  $('#trophyModal').hidden=true;$('#again').hidden=false;
  const ctx=new Proxy({fillText(text){calls.texts.push(text)},drawImage(...args){if(/trophy-(?:head-\d+|eye|jaw)\.webp/.test(args[0].url)) calls.draws.push(args)},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}}},{get(t,p){return p in t?t[p]:()=>{}},set(t,p,v){t[p]=v;return true}});
  const document={activeElement:$('#trophyBtn'),createElement(){return {width:0,height:0,getContext:()=>ctx,toBlob(cb){queueMicrotask(()=>cb(new Blob(['PNG'],{type:'image/png'})))}}}};
  class Image{set src(value){calls.images++;this.url=value;queueMicrotask(()=>calls.failImages?this.onerror():this.onload())}}
- const G={paused:false,ended:true},PROGRESS={defeated:count};let urlId=0;
+ const G={paused:false,ended:true},PROGRESS={defeated:count,reset(){calls.resets++;if(calls.failReset)return false;this.defeated=0;return true}};let urlId=0;
  const navigator={};const URL={createObjectURL:()=>`blob:${++urlId}`,revokeObjectURL:u=>calls.revoked.push(u)};
- const api=vm.runInNewContext(code+';({trophyLayout,TROPHIES})',{$,G,PROGRESS,PREF:{deform:true},document,navigator,Image,URL,Blob,File,requestAnimationFrame:f=>queueMicrotask(f),setTimeout,clearTimeout,console,performance,TAU:Math.PI*2,clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),clearPointers(){},AUDIO:{hold:x=>calls.holds.push(x)},last:0});
+ const api=vm.runInNewContext(code+';({trophyLayout,TROPHIES})',{$,G,PROGRESS,PREF:{deform:true},document,navigator,Image,URL,Blob,File,requestAnimationFrame:f=>queueMicrotask(f),setTimeout,clearTimeout,console,performance,TAU:Math.PI*2,trophyPortrait:(o,d)=>{calls.images++;return {url:'trophy-'+(d||('head-'+(o+1)))+'.webp'}},updateDefeatCount(){},clamp:(x,a,b)=>Math.max(a,Math.min(b,x)),clearPointers(){},AUDIO:{hold:x=>calls.holds.push(x)},last:0});
  const flush=()=>new Promise(r=>setImmediate(r));
  return {$,calls,G,PROGRESS,navigator,document,...api,flush,async open(){ $('#trophyBtn').click();await flush()}};
 }
@@ -26,7 +26,7 @@ test('every defeated boss has one trophy, including paginated totals',()=>{
 test('the record stays unavailable before the completed reveal and before a final kill',async()=>{
  const h=setup();h.$('#again').hidden=true;await h.open();assert(h.$('#trophyModal').hidden);assert.equal(h.calls.images,0);
  h.$('#again').hidden=false;h.G.ended=false;await h.open();assert(h.$('#trophyModal').hidden);
- h.G.ended=true;h.PROGRESS.defeated=0;await h.open();assert(h.$('#trophyModal').hidden);
+ h.G.ended=true;h.PROGRESS.defeated=0;await h.open();assert(!h.$('#trophyModal').hidden);assert(h.$('#trophyReset').hidden);h.TROPHIES.close(false);
 });
 test('the card contains the exact count; close releases its blob and restores focus/pause',async()=>{
  const h=setup();await h.open();assert.equal(h.calls.draws.length,7);assert.deepEqual(h.calls.texts,['족친 천지신명','7놈']);assert.equal(h.calls.images,7);assert(h.G.paused);assert(!h.$('#trophySave').hidden);assert.match(h.$('#trophyImage').alt,/머리 7개/);assert.equal(h.$('#trophySave').download,'족친천지신명_7놈.png');
@@ -49,4 +49,12 @@ test('the record offers a PNG download without any native sharing action',async(
 test('paging preserves the total, shows the remaining head, and revokes the previous image',async()=>{
  const h=setup(121);await h.open();assert.equal(h.calls.draws.length,120);assert(!h.$('#trophyPages').hidden);assert(h.$('#trophyPrev').disabled);
  h.$('#trophyNext').click();await h.flush();assert.equal(h.calls.draws.length,121);assert.equal(h.$('#trophyPageLabel').textContent,'2 / 2');assert(h.$('#trophyNext').disabled);assert.match(h.$('#trophyImage').alt,/121놈.*머리 1개/);assert.deepEqual(h.calls.revoked,['blob:1']);h.TROPHIES.close(false);
+});
+
+test('reset cancel preserves totals; confirmation clears only the count and redraws an empty field',async()=>{
+ const h=setup(7);await h.open();h.$('#trophyReset').click();assert(!h.$('#trophyResetConfirm').hidden);h.$('#trophyResetNo').click();assert.equal(h.PROGRESS.defeated,7);assert.equal(h.calls.resets,0);
+ h.$('#trophyReset').click();h.$('#trophyResetYes').click();await h.flush();assert.equal(h.PROGRESS.defeated,0);assert.equal(h.calls.resets,1);assert(h.$('#trophyReset').hidden);assert.match(h.$('#trophyImage').alt,/머리 0개/);assert.equal(h.$('#trophySave').download,'족친천지신명_0놈.png');h.TROPHIES.close(false);
+});
+test('a failed persistent reset leaves the prior record intact',async()=>{
+ const h=setup(47);await h.open();h.calls.failReset=true;h.$('#trophyReset').click();h.$('#trophyResetYes').click();assert.equal(h.PROGRESS.defeated,47);assert.match(h.$('#trophyStatus').textContent,/지우지 못했어요/);h.TROPHIES.close(false);
 });

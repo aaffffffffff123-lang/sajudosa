@@ -1201,6 +1201,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <script src="closing-reading.js?v=20261108-whole-reading"></script>
 <script src="reading-pool.js?v=20261108-whole-reading"></script>
 <script src="western.js?v=20261107-pool"></script>
+<script src="reading-export.js?v=20261108-ending-save"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -4618,6 +4619,8 @@ function renderResult(R){
  // 족치기 장면에서 손에 든 종이에 같은 판정을 적는다(풀이 화면이 이 종이로 줄어든다)
  R.paper={verdict:v.verdict,fixed:v.fixedNote,marks:v.marks,crowdAvoid:v.crowdAvoid};
  $('caution').innerHTML='<b>탈 없이 지나가려면</b>'+v.cautions.map(t=>'<p>'+esc(t)+'</p>').join('');
+ // Keep the exact displayed reading in memory; exporting never recalculates it.
+ if(window.PaljaReadingExport)R.savedReading=window.PaljaReadingExport.capture($('result-screen'),inp.name);
  if(typeof runheadReset==='function')runheadReset();
 }
 function cycleAgeLabel(cy,unknown){
@@ -4718,7 +4721,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261108-neutral-reptilian';
+  const v='?v=20261108-ending-save';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))

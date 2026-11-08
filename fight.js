@@ -130,7 +130,8 @@ const FIGHT_CSS = `
 #fight .defeat-total{margin:0;color:#e6dcc5;font-size:12px;line-height:1.4;font-variant-numeric:tabular-nums;text-shadow:0 1px 5px #000}
 #fight #defeatCount{color:#bcae8e;font-size:10px;line-height:1.2}
 #fight #again .btn:active{box-shadow:0 1px 0 var(--ink),0 6px 16px rgba(25,18,45,.3)}
-#fight #again #trophyBtn{min-height:40px;min-width:0;padding:6px 20px;font-size:13px;color:#e6dcc5;background:#25201ce8;border:1px solid #8b795b;box-shadow:none}
+#fight #again .ending-tools{display:flex;gap:8px;max-width:calc(100vw - 32px)}
+#fight #again #trophyBtn,#fight #again #readingSaveBtn{min-height:42px;min-width:0;padding:6px 16px;font-size:13px;color:#e6dcc5;background:#25201ce8;border:1px solid #8b795b;box-shadow:none}
 #fight #trophyModal{z-index:35;background:rgba(12,10,9,.94);padding:12px;overscroll-behavior:contain}
 #fight .trophy-sheet{width:min(100%,430px);max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px);display:flex;flex-direction:column;color:#f3e8cf;background:#211c18;border:1px solid #65513b;border-radius:16px;overflow:hidden;box-shadow:0 15px 70px #000}
 #fight .trophy-top{display:flex;align-items:center;justify-content:space-between;flex:none;padding:8px 12px 8px 18px}
@@ -146,6 +147,11 @@ const FIGHT_CSS = `
 #fight #trophyPages{display:flex;align-items:center;justify-content:center;gap:12px;padding-top:10px;font-size:12px;color:#cbbba1}
 #fight #trophyPages button{padding:5px 12px;border:1px solid #65513b;border-radius:6px;background:#30271f;color:#f3e8cf}
 #fight #trophyPages button:disabled{opacity:.3}
+#fight .trophy-reset{margin:0 14px 12px;padding-top:10px;border-top:1px solid #4b4034;text-align:center}
+#fight #trophyReset{border:0;background:none;color:#b9aa94;text-decoration:underline;text-underline-offset:3px;padding:8px 18px;min-height:40px;font:inherit;font-size:11px}
+#fight #trophyResetConfirm p{margin:0 0 10px;font-size:13px;line-height:1.6}
+#fight #trophyResetConfirm button{min-height:42px;padding:8px 20px;margin:0 4px;border:1px solid #77614c;border-radius:7px;background:#30271f;color:#f3e8cf;font:inherit;font-size:13px}
+#fight #trophyResetConfirm #trophyResetYes{border-color:#aa5946;color:#ffc0aa}
 
 #fight.accepting-fate .ftop{padding-right:10px}
 #fight.accepting-fate .gauge{visibility:hidden}
@@ -285,7 +291,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><div class="ending-tools"><button type="button" class="btn" id="trophyBtn">족친 기록</button><button type="button" class="btn" id="readingSaveBtn" hidden>운세풀이 저장</button></div></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
@@ -293,6 +299,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <nav id="trophyPages" aria-label="전리품 이미지 페이지" hidden><button type="button" id="trophyPrev" aria-label="이전 이미지">←</button><span id="trophyPageLabel"></span><button type="button" id="trophyNext" aria-label="다음 이미지">→</button></nav>
    <div class="trophy-actions"><a class="btn danger" id="trophySave" hidden>이미지 저장</a></div>
    <p id="trophyStatus" role="status" aria-live="polite"></p>
+   <div class="trophy-reset"><button type="button" id="trophyReset">기록 초기화</button><div id="trophyResetConfirm" hidden><p id="trophyResetQuestion"></p><button type="button" id="trophyResetNo">취소</button><button type="button" id="trophyResetYes">초기화</button></div></div>
   </section>
  </div>
  <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">들어가는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
@@ -9491,7 +9498,11 @@ try{const p=JSON.parse(localStorage.getItem('palja.prefs')||'{}');for(const k of
 const PROGRESS=(()=>{
  let defeated=0;
  try{const n=Number(localStorage.getItem('palja.defeated'));if(Number.isSafeInteger(n)&&n>=0)defeated=Math.min(n,999999);}catch(_){}
- return {get defeated(){return defeated;},add(){defeated=Math.min(999999,defeated+1);try{localStorage.setItem('palja.defeated',String(defeated));}catch(_){}return defeated;}};
+ return {get defeated(){return defeated;},add(){defeated=Math.min(999999,defeated+1);try{localStorage.setItem('palja.defeated',String(defeated));}catch(_){}return defeated;},reset(){
+  // Do not claim a persistent reset if browser storage rejected the write.
+  try{localStorage.setItem('palja.defeated','0');}catch(_){return false;}
+  defeated=0;return true;
+ }};
 })();
 function updateDefeatCount(){
  // 첫 전투에서는 최종 처치 직후에도 카운트를 숨겨 뒤의 존재를 미리 암시하지 않는다.
@@ -10576,6 +10587,53 @@ $('#settingsModal').addEventListener('click',e=>{if(e.target===e.currentTarget)c
 $('#resetFight').addEventListener('click',()=>{const mode=G.mode;closeModal();startRound(mode);});
 $('#fightBack').addEventListener('click',()=>leave(false));
 /* ---- 전리품 기록: 들판의 낮은 장대와 까마귀. ---- */
+// Render the same head/crown builders used in play, on an isolated still-life.
+// No second WebGL context, screenshot of the ending, or stale illustrated face.
+function trophyPortrait(outfit=0,damage=''){
+ const source=G.E;if(!source)throw new Error('No trophy model');
+ const model=Object.create(Emperor.prototype),stage=new THREE.Scene(),root=new THREE.Group();stage.add(root);
+ const materials=[];model.M={};
+ for(const [key,mat] of Object.entries(source.M)){if(!mat||!mat.isMaterial)continue;const copy=mat.clone();copy.userData={};model.M[key]=copy;materials.push(copy);}
+ const M=model.M,palette=OUTFITS[outfit%OUTFITS.length];
+ M.gold.color.set(palette.gold);M.goldD.color.set(palette.goldD);M.lacRed.color.set(palette.cloth[1]);M.amethyst.color.set(palette.gem);
+ M.lizHead.color.set('#c0c9b4');reptileProjection(M.lizHead,3.6);M.lizHead.bumpScale=.0032;
+ const owned=new Set();model.disposables=[];model.root=root;model.bones={neck:root};model.parts=[];model.flow={};model.neckMesh=null;
+ model.resetHeadDamage=()=>{};
+ model.addFlesh=(geo,mat,parent,o)=>{owned.add(geo);return mk(geo,mat,parent,{part:o.part,cast:false,receive:false});};
+ model.buildRepHead();model.repHead.scale.setScalar(1);model.face=model.repFaceG;model._crown();
+ model.repJawBone.rotation.x=.075;model.repFork.g.visible=false;
+ model.repHead.rotation.set(.11,[-.10,.07,-.05,.12,-.13,.03][outfit%6],0);
+ for(const eye of model.repEyes){
+  eye.eg.visible=false;eye.mem.visible=false;
+  if(damage==='eye'&&eye.s<0)continue;
+  const lid=new THREE.SphereGeometry(1,24,16);owned.add(lid);
+  mk(lid,M.lizHead,eye.socket,{p:[0,0,.004],s:[.036,.015,.029],cast:false});
+  const seam=taperTube([[-.031,-.001,.016],[-.015,-.003,.030],[0,-.0035,.033],[.015,-.003,.030],[.031,-.001,.016]],.0012,.0012,20,5);owned.add(seam);
+  mk(seam,M.mouth,eye.socket,{cast:false});
+ }
+ if(damage==='jaw')model.repJawBone.visible=false;
+ // New crown geometry belongs to this short-lived render; cache meshes stay live.
+ const cached=new Set(Object.values(GEO).filter(o=>o&&o.isBufferGeometry));
+ root.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;if(!cached.has(o.geometry))owned.add(o.geometry);}});
+ const ambient=new THREE.HemisphereLight('#eef1df','#3c3832',1.05);stage.add(ambient);
+ const key=new THREE.DirectionalLight('#fff2d6',2.1);key.position.set(-1,2,3);stage.add(key);
+ const fill=new THREE.DirectionalLight('#a3acaa',.65);fill.position.set(2,.4,-1);stage.add(fill);
+ root.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(root),center=bounds.getCenter(V3()),size=bounds.getSize(V3()),half=Math.max(size.x,size.y)*.57;
+ const view=new THREE.OrthographicCamera(-half,half,half,-half,.01,10);view.position.copy(center).add(V3(0,.015,2));view.lookAt(center);
+ const target=new THREE.WebGLRenderTarget(512,512,{depthBuffer:true,stencilBuffer:false});target.texture.encoding=THREE.sRGBEncoding;
+ const previous={target:renderer.getRenderTarget(),clear:renderer.getClearColor(new THREE.Color()),alpha:renderer.getClearAlpha(),exposure:renderer.toneMappingExposure,auto:renderer.autoClear,viewport:renderer.getViewport(new THREE.Vector4()),scissor:renderer.getScissor(new THREE.Vector4()),scissorTest:renderer.getScissorTest()};
+ const pixels=new Uint8Array(512*512*4);
+ try{
+  renderer.setRenderTarget(target);renderer.setViewport(0,0,512,512);renderer.setScissorTest(false);renderer.setClearColor(0x000000,0);renderer.autoClear=true;renderer.toneMappingExposure=1.1;
+  renderer.clear();renderer.render(stage,view);renderer.readRenderTargetPixels(target,0,0,512,512,pixels);
+  const canvas=document.createElement('canvas');canvas.width=canvas.height=512;const context=canvas.getContext('2d'),data=context.createImageData(512,512);
+  for(let y=0;y<512;y++)data.data.set(pixels.subarray((511-y)*2048,(512-y)*2048),y*2048);
+  context.putImageData(data,0,0);return canvas;
+ }finally{
+  renderer.setRenderTarget(previous.target);renderer.setViewport(previous.viewport);renderer.setScissor(previous.scissor);renderer.setScissorTest(previous.scissorTest);renderer.setClearColor(previous.clear,previous.alpha);renderer.toneMappingExposure=previous.exposure;renderer.autoClear=previous.auto;
+  target.dispose();for(const geometry of owned)geometry.dispose();for(const mat of new Set([...materials,...model.disposables]))if(mat&&mat.dispose)mat.dispose();
+ }
+}
 function trophyLayout(total, page=0) {
  const count = Number.isSafeInteger(total) ? clamp(total, 0, 999999) : 0;
  const perPage = 120;
@@ -10620,6 +10678,10 @@ const TROPHIES=(()=>{
  const artCache = new Map();
  function loadArt(name) {
   if (artCache.has(name)) return artCache.get(name);
+  if(name!=='trophy-field'){
+   const loading=Promise.resolve().then(()=>{const outfit=name==='trophy-eye'?2:name==='trophy-jaw'?3:Number(name.replace('trophy-head-',''))-1;return trophyPortrait(outfit,name==='trophy-eye'?'eye':name==='trophy-jaw'?'jaw':'');}).catch(error=>{artCache.delete(name);throw error;});
+   artCache.set(name,loading);return loading;
+  }
   const loading = new Promise((resolve, reject) => {
    const image = new Image();
    const timer = setTimeout(() => reject(new Error('Trophy image timeout: ' + name)), 15000);
@@ -10851,8 +10913,9 @@ const TROPHIES=(()=>{
   }catch(error){if(opened&&ticket===serial){status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Trophy image failed',error);}}
  }
  function open(){
-  if(opened||$('#again').hidden||!G.ended||PROGRESS.defeated<1)return;
+  if(opened||$('#again').hidden||!G.ended)return;
   total=PROGRESS.defeated;page=0;wasPaused=G.paused;returnFocus=document.activeElement;opened=true;G.paused=true;clearPointers();AUDIO.hold(true);
+  $('#trophyResetConfirm').hidden=true;$('#trophyReset').hidden=total===0;
   modal.hidden=false;$('#trophyClose').focus({preventScroll:true});prepare();
  }
  function close(focus=true){
@@ -10861,6 +10924,17 @@ const TROPHIES=(()=>{
  }
  $('#trophyBtn').addEventListener('click',open);$('#trophyClose').addEventListener('click',()=>close());
  $('#trophyPrev').addEventListener('click',()=>{page--;prepare();});$('#trophyNext').addEventListener('click',()=>{page++;prepare();});
+ $('#trophyReset').addEventListener('click',()=>{
+  if(!opened||!PROGRESS.defeated)return;
+  $('#trophyResetQuestion').textContent='족친 기록 '+PROGRESS.defeated.toLocaleString('ko-KR')+'명을 지울까요?';
+  $('#trophyReset').hidden=true;$('#trophyResetConfirm').hidden=false;$('#trophyResetNo').focus({preventScroll:true});
+ });
+ $('#trophyResetNo').addEventListener('click',()=>{$('#trophyResetConfirm').hidden=true;$('#trophyReset').hidden=false;$('#trophyReset').focus({preventScroll:true});});
+ $('#trophyResetYes').addEventListener('click',()=>{
+  if(!opened||$('#trophyResetConfirm').hidden)return;
+  if(!PROGRESS.reset()){status.textContent='기록을 지우지 못했어요. 브라우저 저장 공간을 확인해 주세요.';return;}
+  total=0;page=0;$('#trophyResetConfirm').hidden=true;$('#trophyReset').hidden=true;updateDefeatCount();$('#trophyClose').focus({preventScroll:true});prepare();
+ });
  modal.addEventListener('click',e=>{if(e.target===modal)close();});
  modal.addEventListener('keydown',e=>{
   if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}
@@ -10871,8 +10945,15 @@ const TROPHIES=(()=>{
 
 
 // 끝: 누적 처치 수와 후임 천지신명으로 넘어가는 버튼.
-function showAgain(){const w=$('#again');w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));}
+function showAgain(){const w=$('#again');$('#readingSaveBtn').hidden=!(G.result&&G.result.savedReading&&window.PaljaReadingExport);w.hidden=false;requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('on')));}
 function hideAgain(){const w=$('#again');w.classList.remove('on');w.hidden=true;}
+$('#readingSaveBtn').addEventListener('click',()=>{
+ if($('#again').hidden||!G.ended||!G.result||!G.result.savedReading||!window.PaljaReadingExport)return;
+ const wasPaused=G.paused;
+ if(window.PaljaReadingExport.open(G.result.savedReading,()=>{G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();})){
+  G.paused=true;clearPointers();AUDIO.hold(true);
+ }
+});
 // 후임 족치러 가기: 버튼이 사라지고, 나를 내려다보는 그 눈에 대고 한마디 뱉는다(말풍선 + 녹음한 목소리). 다 뱉고 나면 updateStory()가 다음 판을 연다
 function retortAndRestart(){
  if(G.retorting||!G.ended)return;
@@ -11050,6 +11131,7 @@ $('#offerPaper').addEventListener('click',e=>{
 });
 /* ---- 라운드 ---- */
 function startRound(mode){
+ if(window.PaljaReadingExport)window.PaljaReadingExport.close(false);
  TROPHIES.close(false);
  G.round++;
  SUBMISSION.reset();
@@ -11202,6 +11284,7 @@ function arrive(){
  focusCanvas();return true;
 }
 function leave(home){
+ if(window.PaljaReadingExport)window.PaljaReadingExport.close(false);
  TROPHIES.close(false);
  pause();
  INTRO.stage='off';crumpleReset();$('#fight').classList.remove('behind');$('#crumpleHint').classList.add('off');
