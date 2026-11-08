@@ -66,15 +66,17 @@ test('eye moves once, settles before dilation, and holds 3D eye contact without 
  const lerp=(a,b,t)=>a+(b-a)*t,smoother=t=>{t=clamp(t,0,1);return t*t*t*(t*(t*6-15)+10)};
  for(const fps of [30,60,120]){
   let calls=0;const mat={uniforms:{uGaze:{value:new THREE.Vector2()},uPupil:{value:0},uGlow:{value:0}}};
-  const api=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT})',{THREE,clamp,lerp,smoother,mat,AUDIO:{gaze(){calls++}},model:{setGaze(){}},caster:{visible:false},applyLights(){}});
-  let y=-.16,p=.13;
+  const api=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT,PUPIL_REST,PUPIL_CONTACT})',{THREE,clamp,lerp,smoother,mat,AUDIO:{gaze(){calls++}},model:{setGaze(){}},caster:{visible:false},applyLights(){}});
+  let y=-.16,p=api.PUPIL_REST;
+  // 홍채를 그림 속 눈 크기로 키운 뒤 동공도 그만큼 굵어졌다(쉴 때 가늘고, 마주친 뒤 그림 속 굵기)
+  assert(api.PUPIL_REST<api.PUPIL_CONTACT);assert.equal(api.PUPIL_REST,.17);assert.equal(api.PUPIL_CONTACT,.44);
   for(let frame=0;frame<20*fps;frame++){
    const t=frame/fps;api.updateEye(t,1/fps);const eye=api.eye;
    assert(eye.gaze.y>=y-1e-12&&eye.gaze.y<=0);assert.equal(eye.gaze.x,0);assert(eye.pupil>=p-1e-12);
    if(t<api.T_SEE+api.T_SHIFT)assert.equal(calls,0);
-   if(t<api.T_DILATE)assert.equal(eye.pupil,.13);
+   if(t<api.T_DILATE)assert.equal(eye.pupil,api.PUPIL_REST);
    if(t>=api.T_SEE+api.T_SHIFT)assert.equal(eye.gaze.length(),0);
-   if(t>10){assert.equal(eye.pupil,.34);assert.equal(eye.lock,1)}
+   if(t>10){assert(Math.abs(eye.pupil-api.PUPIL_CONTACT)<1e-12);assert.equal(eye.lock,1)}
    assert.equal(mat.uniforms.uGlow.value,0);y=eye.gaze.y;p=eye.pupil;
   }
   assert.equal(calls,1);

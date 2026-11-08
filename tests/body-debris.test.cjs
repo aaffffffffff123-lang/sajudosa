@@ -88,13 +88,13 @@ test('repeated creation and expiration leave no live fragments or owned fade mat
  }
 });
 test('the actual revival swap preserves stage blood and money while replacing the body',()=>{
- const E=rig(),fragment=bit(E),money=new THREE.Group();E.scene.add(money);E.lookIndex=2;E.combat={x:.7,z:.9};
+ const E=rig(),fragment=bit(E),halo=bit(E,{body:false}),money=new THREE.Group();E.scene.add(money);E.lookIndex=2;E.combat={x:.7,z:.9};
  E.endAct=()=>{};E.updateMaterials=()=>{};let cleared=0,rebound=0;const G={E,result:{},retired:[]};
  const ctx={G,CHUNKS:{clear(){cleared++}},BLOOD:{rawLost:2.3,rebindKeepStage(){rebound++}},
   Emperor:class{constructor(r,index){this.lookIndex=index;this.root=new THREE.Group();this.tabletHeld=false}setPhase(){}},
   wireEmperor(){},combatInit(e){e.combat={}},CROWD:{rev:{}},lite:2};
  vm.runInNewContext(slice('function replaceEmperorForRevival(){','function finishRevival(){')+'replaceEmperorForRevival();',ctx);
- assert(!fragment.obj.parent);assert(money.parent,'loose stage objects are untouched');assert(!E.root.parent);
+ assert(!fragment.obj.parent);assert(!halo.obj.parent,'the old halo and other worn props leave with the old body');assert.equal(E.bits.length,0);assert(money.parent,'loose stage objects are untouched');assert(!E.root.parent);
  assert.equal(cleared,1);assert.equal(rebound,1);assert.equal(G.E.bloodRawBase,2.3);assert.equal(G.E.combat.x,.7);assert.equal(G.E.combat.z,.9);
  assert.equal(G.E.lookIndex,2);assert.equal(G.E.reviveGlow,1.7);assert.equal(G.retired[0],E);
 });
