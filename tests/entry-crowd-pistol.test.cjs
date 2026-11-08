@@ -71,7 +71,7 @@ test('only a dominant, strongly opposite reading excludes a crowd topic',()=>{
  assert(html.includes('crowdAvoid:v.crowdAvoid'),'the scene receives the reading exclusions');
 });
 
-test('two distinct approved pairs are selected even when no absence mark is set',()=>{
+test('three distinct approved pairs are selected even when no absence mark is set',()=>{
  const STARE={used:new Set(),exchange:null},crowd={visible:true},lastResult={paper:{marks:{}}},G={time:0};
  const scope={STARE,crowd,lastResult,G,V3,innerWidth:390,innerHeight:844,pick:a=>a[0],CAM:{pos:V3()},forPlaces(){},CROWD:{witness(){}},HEAD_Y:.763,camera:new THREE.PerspectiveCamera()};
  const api=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut(' function prepareWhispers(){',' function startWhispers(){')+';({prepareWhispers,LINES})',scope);
@@ -89,14 +89,14 @@ test('two distinct approved pairs are selected even when no absence mark is set'
   assert(eligible.length>=3);
   for(let visit=0;visit<5;visit++){
    STARE.exchange=null;api.prepareWhispers();const e=STARE.exchange;
-   assert.equal(e.batch.length,2);assert.equal(new Set(e.batch).size,2);
+   assert.equal(e.batch.length,3);assert.equal(new Set(e.batch).size,3);
    for(const pair of e.batch){assert(eligible.includes(pair));assert(pair.aside&&pair.say);STARE.used.add(pair);}
    assert.equal(e.pair,e.batch[0]);assert.equal(e.say,e.pair.say);
   }
  }
 });
 
-test('two pairs wait for the deity, reply immediately after speech and retain readable bubbles across real crowd layouts',()=>{
+test('three pairs start with the first step, six different people speak, replies follow at once and bubbles stay readable across real crowd layouts',()=>{
  const {LINES,VOICE,typeTime,typeSteps}=vm.runInNewContext(cut('const LINES={','// 되살림 컷씬:')+cut('const VOICE={','/* 말풍선:')+cut('const TYPE=','/* 스프링:')+';({LINES,VOICE,typeTime,typeSteps})');
  const placementCode=cut('  const placements=Array.from({length:6},()=>[]),dummy=new THREE.Object3D();','  const plain=new THREE.MeshStandardMaterial');
  const span=(text,pi)=>Math.max(1.5,typeTime(text,VOICE.crowd[pi].speed*1.08)+.68);
@@ -106,8 +106,8 @@ test('two pairs wait for the deity, reply immediately after speech and retain re
   return .02+last.t+.095/speed*(coda?.7:.84);
  };
  const lerp=(a,b,t)=>a+(b-a)*t,batches=[];
- assert.equal(LINES.whisperPairs,2);
- for(const a of LINES.whisper)for(const b of LINES.whisper)if(a!==b)batches.push([a,b]);
+ assert(!('whisperPairs' in LINES));
+ for(const a of LINES.whisper)for(const b of LINES.whisper)for(const c of LINES.whisper)if(new Set([a,b,c]).size===3)batches.push([a,b,c]);
  let min=Infinity,max=0,runs=0;
  for(const [width,height] of [[360,640],[390,844],[1280,800],[844,390]])for(const side of [-1,1])for(const batch of batches)for(const fps of [20,60,120]){
   const places=vm.runInNewContext(placementCode+';placements',{THREE,PI:Math.PI}).flat();
@@ -115,18 +115,18 @@ test('two pairs wait for the deity, reply immediately after speech and retain re
   const aspect=width/height,portrait=width<height,CAM={pos:V3(.12,1.55,6.8),look:V3(0,1.45,-.2)};
   const WALK={dur:4.35,on:true,t:0,p0:CAM.pos.clone(),l0:CAM.look.clone(),p1:V3(.12,1.58,-.62+(portrait?Math.max(2.55,1.7/aspect):3.05)),l1:V3(0,1.08,-.62),f0:portrait?52:46,f1:portrait?44:39};
   const camera=new THREE.PerspectiveCamera(WALK.f0,aspect,.01,100);camera.position.copy(CAM.pos);camera.lookAt(CAM.look);camera.updateMatrixWorld();
-  const STARE={on:true,t0:0,talk:[],used:new Set(),exchange:null},G={time:0},said=[],witnessed=[],BOSS_LEFT=1.86;let choice=0;
+  const STARE={on:true,t0:0,talk:[],used:new Set(),exchange:null},G={time:0},said=[],witnessed=[];let choice=0;
   const scope={LINES,VOICE,STARE,G,WALK,CAM,camera,typeTime,clamp,lerp,V3,PI:Math.PI,HEAD_Y:.763,sat:x=>clamp(x,0,1),innerWidth:width,innerHeight:height,crowd:{visible:true},lastResult:{paper:{marks:{}}},
-   Math:Object.assign(Object.create(Math),{random:()=>side===1?.75:.25}),pick:a=>{const wanted=batch[choice++];return a.find(w=>w===wanted);},forPlaces:fn=>places.forEach(fn),CROWD:{witness:v=>witnessed.push(v)},
-   sayWhisper:(who,text)=>{const until=G.time+span(text,who.pi);said.push({text,at:G.time,until,person:who.pi});return {until};},bossTalkLeft:()=>BOSS_LEFT};
+   Math:Object.assign(Object.create(Math),{random:()=>side===1?.75:.25}),pick:a=>{const wanted=batch[choice++];return a.find(w=>w===wanted);},forPlaces:fn=>places.forEach(fn),CROWD:{witness:v=>{witnessed.push(v);v.actor={i:v.pi};}},
+   sayWhisper:(who,text)=>{const until=G.time+span(text,who.pi);said.push({text,at:G.time,until,person:who.pi});return {until};}};
   const api=vm.runInNewContext(cut('function walkProgress(k){','function introCamera(dt){')+cut(' function walkSpeaker(',' function anchorOf(')+cut(' function updateWhispers(){',' // 매 프레임:')+cut(' function stareReset(){',' function forPlaces(')+';({startWhispers,planWhispers,updateWhispers,stareReset,walkProgress})',scope);
-  api.startWhispers();assert(STARE.exchange.aside,'the neighbour still turns to stare');
-  assert.equal(said.length,0,'nobody whispers over the deity while he is still scolding');
-  G.time=.32;api.planWhispers();
-  assert.equal(STARE.talk.length,4,JSON.stringify({width,height,side,batch:batch.map(p=>p.aside),speakers:STARE.talk.map(t=>[t.who.pi,t.text,t.at]),duration:WALK.dur}));
-  assert(STARE.talk[0].at>=BOSS_LEFT+.4-1e-9,'the first whisper starts only after the scolding has been spoken');
-  assert.equal(witnessed.length,5);assert.equal(new Set(witnessed.slice(1)).size,4,'four different people whisper');
-  for(let i=1;i<STARE.talk.length;i++)assert.notEqual(STARE.talk[i].who.pi,STARE.talk[i-1].who.pi,'a reply never comes in the same voice');
+  const aside=(api.startWhispers(),STARE.exchange.aside);assert(aside,'opening speaker must be visible');
+  assert.equal(said.length,0,'nobody whispers while the deity is still scolding (the walk starts after him)');
+  G.time=2.4;api.planWhispers();
+  assert.equal(STARE.talk.length,6,JSON.stringify({width,height,side,batch:batch.map(p=>p.aside),speakers:STARE.talk.map(t=>[t.who.pi,t.text,t.at]),duration:WALK.dur}));
+  assert.equal(STARE.talk[0].who,aside,'the neighbour who turned to stare opens');assert(Math.abs(STARE.talk[0].at-.28)<1e-9,'right after the first step');
+  assert.equal(JSON.stringify(STARE.talk.map(t=>t.who.pi)),'[1,0,3,2,5,4]','six lines, six faces');
+  assert.equal(witnessed.length,6,'each person takes one place only');assert.equal(new Set(witnessed).size,6);assert.equal(new Set(witnessed.map(v=>v.pi)).size,6);
   min=Math.min(min,WALK.dur);max=Math.max(max,WALK.dur);runs++;
   let previous=null;
   for(const line of STARE.talk){
@@ -153,9 +153,9 @@ test('two pairs wait for the deity, reply immediately after speech and retain re
    const gap=said[i].at+.02-said[i-1].at-voicedSpan(said[i-1].text,said[i-1].person);
    assert(gap>=.1-1/fps&&gap<=.15+1/fps,'frame rounding must not restore a long reply pause');
   }
-  assert.equal(STARE.used.size,2);
+  assert.equal(STARE.used.size,3);
   api.planWhispers();api.stareReset();api.updateWhispers();
-  assert.equal(said.length,4);assert.equal(STARE.exchange,null);
+  assert.equal(said.length,6);assert.equal(STARE.exchange,null);
  }
  console.log('crowd batches:',runs,'cases; walk',min.toFixed(2)+'–'+max.toFixed(2),'seconds');
 });

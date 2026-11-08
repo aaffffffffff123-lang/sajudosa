@@ -68,8 +68,8 @@ test('eye moves once, settles before dilation, and holds 3D eye contact without 
   let calls=0;const mat={uniforms:{uGaze:{value:new THREE.Vector2()},uPupil:{value:0},uGlow:{value:0}}};
   const api=vm.runInNewContext('const TILT=6.4;'+slice(' const T_SEE=TILT',' // 끝 구도:')+slice(' function updateEye(k,dt){',' function update(dt){')+';({eye,updateEye,T_SEE,T_DILATE,T_SHIFT,PUPIL_REST,PUPIL_CONTACT})',{THREE,clamp,lerp,smoother,mat,AUDIO:{gaze(){calls++}},model:{setGaze(){}},caster:{visible:false},applyLights(){}});
   let y=-.16,p=api.PUPIL_REST;
-  // 홍채를 그림 속 눈 크기로 키운 뒤 동공도 그만큼 굵어졌다(쉴 때 가늘고, 마주친 뒤 그림 속 굵기)
-  assert(api.PUPIL_REST<api.PUPIL_CONTACT);assert.equal(api.PUPIL_REST,.17);assert.equal(api.PUPIL_CONTACT,.44);
+  // 쉴 때는 가는 세로 동공, 나와 눈이 마주친 뒤에는 조금 굵어진다
+  assert(api.PUPIL_REST<api.PUPIL_CONTACT);assert.equal(api.PUPIL_REST,.13);assert.equal(api.PUPIL_CONTACT,.34);
   for(let frame=0;frame<20*fps;frame++){
    const t=frame/fps;api.updateEye(t,1/fps);const eye=api.eye;
    assert(eye.gaze.y>=y-1e-12&&eye.gaze.y<=0);assert.equal(eye.gaze.x,0);assert(eye.pupil>=p-1e-12);

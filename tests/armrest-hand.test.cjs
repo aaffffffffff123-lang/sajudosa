@@ -108,9 +108,19 @@ const gripTools=vm.runInNewContext(section('function mk(geo,','/* 여러 메시'
   const a=E.arms[1],eye=V3(0,1.15,2.8);let visible=0;
   for(const F of a.hand.fingers){let seen=false;for(const y of [-.008,-.02]){const target=F.f2.localToWorld(V3(0,y,0)),ray=new THREE.Raycaster(eye,target.sub(eye).normalize());const hits=ray.intersectObject(scene,true);if(hits.length&&F.f.getObjectById(hits[0].object.id))seen=true;}if(seen)visible++;}
   worstVisible=Math.min(worstVisible,visible);mostVisible=Math.max(mostVisible,visible);
-  const local=E.arms[1].wr.worldToLocal(E.tablet.getWorldPosition(V3()));assert(local.distanceTo(V3(-.028,-.085,0))<1e-7,'note stack stays fixed inside the fist');
+  const local=E.arms[1].wr.worldToLocal(E.tablet.getWorldPosition(V3()));assert(local.distanceTo(V3(-.028,-.085,.045-.06*.8))<1e-7,'note stack stays fixed inside the fist');
  }
  assert(worstVisible>=3,'at least three fingers remain visible through fanning, got '+worstVisible);assert.equal(mostVisible,4,'all four fingers are distinguishable');
+ // 부채 자루를 쥔 주먹: 엄지가 위, 새끼손가락이 아래. 지폐는 엄지 쪽으로 빠져나와 위로 서고 앞면이 나를 본다
+ // (예전에는 새끼손가락 쪽으로 빠져나와서 지폐를 세우려니 주먹이 거꾸로 뒤집혀 있었다)
+ {
+  const a=E.arms[1],q=E.tablet.getWorldQuaternion(new THREE.Quaternion());
+  const thumb=a.hand.thumb.t.getWorldPosition(V3()),index=a.hand.fingers[0].f.getWorldPosition(V3()),pinky=a.hand.fingers[3].f.getWorldPosition(V3());
+  assert(thumb.y>pinky.y+.03&&index.y>pinky.y+.03,'thumb and index on top, little finger at the bottom');
+  const up=V3(0,1,0).applyQuaternion(q),thumbSide=V3(0,0,1).transformDirection(a.wr.matrixWorld),face=V3(0,0,1).applyQuaternion(q);
+  assert(up.y>.7,'the bills stand up out of the fist: '+up.toArray());assert(up.dot(thumbSide)>.99,'the bills leave the fist past the thumb');
+  assert(face.z>.6,'the bill faces look toward the player: '+face.toArray());
+ }
  console.log('Money grip visible fingers through fan cycle:',{worstVisible,mostVisible});
 }
 
