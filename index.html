@@ -1193,6 +1193,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 <script src="closing-reading.js?v=20261108-whole-reading"></script>
 <script src="reading-pool.js?v=20261108-whole-reading"></script>
 <script src="western.js?v=20261107-pool"></script>
+<script src="opening-reading.js?v=20261108-opening-stars"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -4417,6 +4418,8 @@ function v5Reading(R,now){
  out.cautions=[c1,office.caution||V5.cmd.boss];
  // 칸마다 조건이 맞는 문단을 모두 고른 뒤 그 실제 본문으로 전체 풀이를 종합한다.
  if(typeof ReadingPool!=='undefined')ReadingPool.weave(out,R);
+ // 별자리는 추가 문단만 만든다. 기존 사주 문장과 분기, 뒤의 영역별 풀이는 바꾸지 않는다.
+ if(typeof OpeningReading!=='undefined')out.opening=OpeningReading.compose(out,R);
  v5PeriodCopy(out,r,now);
  return out;
 }
@@ -4508,6 +4511,21 @@ function sajuDetailsHtml(R,v){
  h+='<p class="natal-method">절기 기준 · 진태양시 보정<br>지장간은 여기·중기·정기 순서입니다. 지지의 십성은 정기로 셉니다. 12운성은 태어난 날의 천간 기준입니다.</p></details>';
  return h;
 }
+function renderOpeningAdditions(v){
+ const extra=v.opening;if(!extra)return;
+ const paragraphs=(items,cls)=>items.map(x=>{const p=el('p',cls+' opening-extra',esc(x.text));p.dataset.readingId=x.id;return p;});
+ const portrait=$('portrait-text'),original=Array.from(portrait.children);
+ // 원래 세 문단을 남겨 두고 사이에 추가한다. 선택된 원문 배열도 바꾸지 않는다.
+ if(original[0])original[0].after(...paragraphs(extra.portrait.opening,''));
+ if(original[1])original[1].after(...paragraphs(extra.portrait.relationships,''));
+ if(original[2])original[2].after(...paragraphs(extra.portrait.daily,''));
+ const origin=$('origin');
+ origin.querySelector('.fate').before(...paragraphs(extra.origin,'origin-text'));
+ const boss=$('boss-line');
+ boss.lastElementChild.before(...paragraphs(extra.boss,''));
+ const core=$('core-body'),rule=core.lastElementChild.previousElementSibling;
+ rule.before(...paragraphs(extra.core,''));
+}
 function renderResult(R){
  const inp=R.input,r=R.reading,c=R.chart,now=Date.now(),v=v5Reading(R,now);
  $('r-title').textContent=inp.name?inp.name+'님의 운세':'나의 운세';
@@ -4547,6 +4565,7 @@ function renderResult(R){
  // 타고난 성향
  $('core-title').textContent=v.core.title;
  $('core-body').innerHTML=v.core.body.map(b=>'<p>'+plainMd(b)+'</p>').join('')+'<p>'+esc(v.core.rule)+'</p><p class="fate">'+esc(v.core.fate)+'</p>';
+ renderOpeningAdditions(v);
  // 일곱 칸: 칸 그림 → (이름표 표시) 칸 이름 → 머리줄 → 장면 → 한 방 → 조건이 맞는 문단 → 팔자 줄과 도장
  // 이름표 표시(네모 → 세모 → 눈 달린 세모)는 그대로 두고 칸 그림을 그 앞에 붙인다. 근거는 맨 위 접힌 표로 보낸다.
  const S=$('sections');S.replaceChildren();
