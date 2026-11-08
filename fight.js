@@ -8023,8 +8023,22 @@ Object.assign(Emperor.prototype,{
    if(PREF.blood)CHUNKS.burst(pt.clone().addScaledVector(n,.008),2+(Math.random()*3|0),n,headF?.02:.028,this.chunkKind(h),{speed:1.2,back:into});
    this._gunLine(seg,pt,n,into,h,target);
   }else if(tool==='knife'){
-   if(kind==='slash'&&h.slashFrom)this.deform('groove',pt,into,headF?.0085:.0075,.013,{bW:h.slashFrom,soak:.4,only});
+   if(kind==='slash'&&h.slashPath&&h.slashPath.length>=2&&this.limbOf(part))this.limbGroove(h.slashPath,into);
+   else if(kind==='slash'&&h.slashFrom)this.deform('groove',pt,into,headF?.0085:.0075,.013,{bW:h.slashFrom,soak:.4,only});
    else this.deform('crater',pt,into,.012,.045,{soak:.45,jag:.2,only});
+  }
+ },
+ // 팔다리를 가로지른 칼집: 칼이 지나간 겉면 점들을 2.5cm 남짓씩 이어 그 살에 홈을 판다(몸통이 10cm마다 끊어 긋는 것과 같은 방식).
+ // 들어간 점→나온 점 한 줄로 파면 그 줄이 팔다리 속을 지나 겉면에는 아무 홈도 안 생긴다
+ limbGroove(P,into){
+  let s=P[0];
+  for(let i=1;i<P.length;i++){
+   const q=P[i];
+   if(q.obj!==s.obj){s=q;continue;}
+   if(i<P.length-1&&s.point.distanceTo(q.point)<.025)continue;
+   const f=q.obj&&q.obj.userData.flesh;
+   if(f&&s.point.distanceToSquared(q.point)>1e-8)this.deform('groove',q.point,into,.0075,.013,{bW:s.point,soak:.4,only:[f]});
+   s=q;
   }
  },
  // 총을 선을 긋듯 여러 발 쏘면 구멍 사이가 칼로 썬 듯 뜯겨 나간다
@@ -8288,7 +8302,15 @@ updateBelly(dt){
   * 1번째 베임 → 2번째 깊게 베여 축 늘어짐 → 3번째에 그은 자리에서 가장 가까운 마디가 잘려 떨어진다.
   * 다시 자란 도마뱀 팔다리는 한 번에 잘린다. */
 limbOf(part){const m=/^(arm|hand|thigh|shin|foot)(L|R)$/.exec(part||'');return m?(m[1]==='arm'||m[1]==='hand'?'arm':'leg')+m[2]:null;},
-progressLimbCut(seg,part,pW,nW,angle,strokeId,len,dir,skin){
+// 그 팔(또는 다리)에 붙은 겉면 메시: 맞힘 판정 메시 + 피가 흐르는 메시(소매 자락 포함)
+limbMeshes(key){
+ const side=key.slice(-1),bases=key[0]==='a'?['shoulder','uarmMid','elbow','farmMid','wrist']:['hip','thighMid','knee','shinMid','ankle'],out=new Set();
+ for(const o of this.parts)if(o.parent&&!o.userData.detached&&this.limbOf(o.userData.part)===key)out.add(o);
+ for(const b of bases)for(const o of (this.flow[b+side]||[]))if(o.parent&&!o.userData.detached)out.add(o);
+ return [...out];
+},
+// half: 팔다리를 가로지른 칼 — 자국 반 길이(화면에 보이는 팔다리 폭의 반). 이때 자국은 그 팔다리 겉면 안에만 들어가게 만든다
+progressLimbCut(seg,part,pW,nW,angle,strokeId,len,dir,skin,half){
  const key=this.limbOf(part);if(!key)return 0;
  const L=this.limbCut[key],bone=this.bones[seg];if(!L||!bone||bone.userData.detached)return 0;
  const sid=strokeId==null?'limb-'+(++this.cutStrokeFallback):strokeId;
@@ -8297,12 +8319,19 @@ progressLimbCut(seg,part,pW,nW,angle,strokeId,len,dir,skin){
  if(L.last===sid)return L.hits;L.last=sid;L.hits++;
  const side=key.slice(-1),i=side==='L'?0:1,arm=key[0]==='a';
  if(bone.userData.lizard||L.hits>=3){if(this.detachLimb(j,nW,dir))return 99;}
- const w=arm?.016:.02,cl=clamp(len||.05,.03,.1);
+ // 자국은 이 팔다리 겉면에만 붙인다(뒤에 있는 배·옷자락으로 번져 팔과 같이 떠다니지 않게)
+ const meshes=this.limbMeshes(key),fit=half!=null;
+ let w=arm?.016:.02,cl=clamp(len||.05,.03,.1);
+ if(fit){cl=clamp(half,.01,.1);w=Math.min(w,cl/2.4);}
+ // fit이면 자국 길이를 정확히 보이는 폭에 맞춘다(윤곽 밖으로 나간 자국 끝은 붙을 데가 없어 허공에 뜬다)
+ const asp=(size,lo,hi)=>fit?cl/size:clamp(cl/w,lo,hi);
  if(L.hits===1){
-  BLOOD.decal(skin?'cutSkin':'cut',seg,pW,nW,skin?w*1.2:w,{aspect:clamp(cl/w,2.4,5),angle,grid:8});
+  const s1=skin?w*1.2:w;
+  BLOOD.decal(skin?'cutSkin':'cut',seg,pW,nW,s1,{aspect:asp(s1,2.4,5),angle,grid:8,meshes});
   BLOOD.addWound(seg,pW,nW,{rate:.016,tau:34,kind:'cut'});BLOOD.spray(pW,nW,8,{max:2.6});
  }else{
-  if(!skin)BLOOD.decal('soak',seg,pW,nW,arm?.07:.09,{grow:1.2});BLOOD.decal(skin?'cutSkin':'cut',seg,pW,nW,w*(skin?1.5:1.35),{aspect:clamp(cl/w,2.4,4.6),angle,grid:9});
+  const s2=w*(skin?1.5:1.35);
+  if(!skin)BLOOD.decal('soak',seg,pW,nW,fit?Math.min(arm?.07:.09,cl*1.15):arm?.07:.09,{grow:1.2,meshes});BLOOD.decal(skin?'cutSkin':'cut',seg,pW,nW,s2,{aspect:asp(s2,2.4,4.6),angle,grid:9,meshes});
   BLOOD.addWound(seg,pW,nW,{rate:.03,tau:50,kind:'cut'});BLOOD.spray(pW,nW,16,{max:3.4});AUDIO.spurt(.7);
   // 깊게 베이면 팔은 축 늘어지고 다리는 절뚝인다
   if(arm){this.armLimp[i]=1;this.armHurt[i]=1;if(this.act&&(this.act.side===side||this.act.both))this.endAct();this.releaseIK(side,8);this.sp[side].kick(-6,0,(i?1:-1)*5);}
@@ -8840,6 +8869,8 @@ unmaskHead(pt,n,dir){
    // 맞은 자리에서 앞으로 왈칵
    BLOOD.spray(pt,n.clone().lerp(V3(0,.2,1),.35).normalize(),22,{min:1,max:3.6,smax:.009});
    if((isHead||h.part==='neck')&&Math.random()<.55)this.screenSplat(pt,isHead?.9:.6);
+  }else if(kind==='slash'&&h.slashPath&&h.slashPath.length>=2&&this.limbOf(h.part)){
+   this.limbSlashWound(seg,h,pt,n,dir,skin);
   }else if(kind==='slash'&&h.slashFrom){
    const a=h.slashFrom,b=pt,mid=V3().addVectors(a,b).multiplyScalar(.5),len=a.distanceTo(b),ang=this.angleOnSurface(a,b,n);
    const half=Math.max(.014,len*.78),cw=isHead?.011:.014,limb=this.limbOf(h.part);
@@ -8863,6 +8894,21 @@ unmaskHead(pt,n,dir){
    const i=h.part==='eyeL'?0:1;this.eyes[i].ruined=true;this.swellU[i]=Math.max(this.swellU[i],.7);
    if(tool==='knife'&&kind==='stab')this.ejectEye(i,n,dir);
   }
+ },
+ /* 팔다리를 가로지른 칼(h.slashPath: 칼이 지나간 팔다리 겉면 점들, 화면에서 보이는 쪽).
+  * 들어간 점과 나온 점은 팔다리 윤곽의 양 끝이라 둘을 이은 직선은 팔다리 속을 지난다 → 자국·피는 겉면 점들을 따라 낸다.
+  * pt·n은 그 가운데 점과 그 자리 겉면 방향(나를 향한다). */
+ limbSlashWound(seg,h,pt,n,dir,skin){
+  const P=h.slashPath,a=P[0].point,b=P[P.length-1].point,chord=a.distanceTo(b);
+  let arc=0;const acc=[0];for(let i=1;i<P.length;i++){arc+=P[i].point.distanceTo(P[i-1].point);acc.push(arc);}
+  const at=f=>{const t=arc*f;for(let i=1;i<P.length;i++)if(acc[i]>=t){const d=acc[i]-acc[i-1];return P[i-1].point.clone().lerp(P[i].point,d>1e-9?(t-acc[i-1])/d:0);}return b.clone();};
+  const ang=this.angleOnSurface(a,b,n),bone=this.bones[seg];bone.updateWorldMatrix(true,false);
+  // 피가 새는 줄: 겉면 위 20%~80%(양 끝은 윤곽이라 옆을 향한다)
+  BLOOD.addWound(seg,pt,n,{rate:clamp(chord*.3,.006,.02),tau:22,kind:'cut',line:[bone.worldToLocal(at(.2)),bone.worldToLocal(at(.8))]});
+  const mid=P.slice(Math.floor(P.length*.2),Math.ceil(P.length*.8)+1);
+  for(let i=0;i<Math.min(2,Math.ceil(chord*32));i++){const q=mid[Math.random()*mid.length|0]||P[P.length>>1];const qs=q.obj&&q.obj.userData.seg;BLOOD.startRiv(qs&&this.bones[qs]?qs:seg,q.point,q.normal,{w:rnd(.003,.0048),maxLen:rnd(.08,.3)});}
+  BLOOD.spray(pt,n,clamp(Math.round(chord*90),3,10),{max:2.2});
+  this.progressLimbCut(seg,h.part,pt,n,ang,h.strokeId,chord,dir,skin,chord*.47);
  },
  angleOnSurface(a,b,n){const d=V3().subVectors(b,a).normalize();const u=V3().crossVectors(n,Math.abs(n.y)>.9?V3(1,0,0):V3(0,1,0)).normalize(),v=V3().crossVectors(n,u);return Math.atan2(d.dot(v),d.dot(u));},
  // 화면(렌즈)에 튄 피: 맞은 자리 가까이에 몇 방울
@@ -10396,7 +10442,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  G.lastHit=G.time;
  if(G.revived&&!G.musicStarted)G.musicStarted=true; // 되살아난 뒤 첫 타격: 꺼 두었던 음악이 함께 다시 시작한다
  if(accent&&!extra.through&&!extra.quiet)AUDIO.duck();
- const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,strokeId:extra.strokeId,through:extra.through});
+ const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,slashPath:extra.slashPath,strokeId:extra.strokeId,through:extra.through});
  if(stroke){r.dmg=Math.min(r.dmg,stroke.damage);stroke.damage-=r.dmg;}
  if(firstStrike)firstStrikeLine();
  // 되살림이 미뤄져 있는 동안(5%에서 누워 있을 때)은 맞아도 균형이 안 깎인다: 일어나는 길에 다시 쓰러지지 않고 서자마자 컷씬으로 간다
@@ -10723,7 +10769,7 @@ function gunLight(){gunLT=.035;}
 
 /* ---- 칼로 긋기 ----
  * 손가락이 지나간 사이를 7px 간격으로 촘촘히 검사한다(빠르게 그어도 팔다리를 건너뛰지 않게).
- * 팔다리: 그 팔다리를 가로질러 지나가면(들어간 자리 → 나온 자리) 한 번 벤 것으로 친다.
+ * 팔다리: 그 팔다리를 가로질러 지나가면(들어간 자리 → 나온 자리) 한 번 벤 것으로 친다. 자국·칼집·피는 칼이 지나간 겉면 점들을 따라 낸다.
  * 몸통·얼굴: 같은 부위 위를 10cm 넘게 그을 때마다 베인 자국이 이어진다. */
 let slashSerial=0;
 const MAX_SLASH_SAMPLES=64;
@@ -10776,7 +10822,10 @@ function slashSample(p,x,y,list){
  if(p.ear&&p.ear.obj!==ear)finishEar(p);
  if(ear){if(!p.ear)p.ear={obj:ear,a:info.point.clone(),b:info};else p.ear.b=info;}
  if(lk){
-  if(!p.limb)p.limb={key:lk,a:info.point.clone(),b:info};else p.limb.b=info;
+  // 팔다리 위에서 칼이 지나간 겉면 점(화면에서 보이는 쪽)을 차례로 모아 둔다. 벗어날 때 이 점들을 따라 벤다
+  slashKeep(info);
+  if(!p.limb)p.limb={key:lk,a:info.point.clone(),b:info,pts:[info]};
+  else{p.limb.b=info;const q=p.limb.pts;if(q.length<48&&q[q.length-1].point.distanceToSquared(info.point)>1e-6)q.push(info);}
   p.lastCut=null;return true;
  }
  // 한 화면 좌표에서는 가장 앞 물체만 고르므로, 팔을 벗어난 뒤 실제로 드러난 몸은 계속 벨 수 있다.
@@ -10801,9 +10850,33 @@ function finishEar(p){
  const info=E.b;if(!info||!info.obj||!info.obj.parent||info.obj.userData.detached||E.a.distanceTo(info.point)<(info.part==='beard'?.006:.012))return;
  resolveHit(G.tool,'slash',info,'R',{slashFrom:E.a,strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord,quiet:true});p.cutWord=true;
 }
+// 팔다리 위에서 맞은 점은 그 살 메시 좌표로도 적어 둔다: 지나가는 동안 팔다리가 움직여도 벨 때 같은 살 자리를 가리킨다
+const _slM=new THREE.Matrix4(),_slN=new THREE.Matrix3();
+function slashKeep(info){
+ const o=info.obj;if(!o)return info;
+ info.lp=o.worldToLocal(info.point.clone());
+ _slN.getNormalMatrix(_slM.copy(o.matrixWorld).invert());info.ln=info.normal.clone().applyMatrix3(_slN).normalize();
+ return info;
+}
+function slashRefresh(info){
+ const o=info.obj;if(!o||!info.lp||!o.parent)return info;
+ o.updateWorldMatrix(true,false);info.point.copy(info.lp).applyMatrix4(o.matrixWorld);
+ _slN.getNormalMatrix(o.matrixWorld);info.normal.copy(info.ln).applyMatrix3(_slN).normalize();
+ return info;
+}
 function finishLimb(p){
  const L=p.limb;p.limb=null;if(!L)return;
  p.limbDone=p.limbDone||new Set();if(p.limbDone.has(L.key))return;p.limbDone.add(L.key);
+ // 들어간 점(L.a)과 나온 점(L.b)은 팔다리 윤곽의 양 끝이다. 둘을 이은 직선은 팔다리 속을 지나서
+ // 거기에 자국·칼집을 내면 겉에서는 하나도 안 보인다 → 지나간 겉면 점들로 베고, 맞은 자리는 그 가운데 점으로 한다
+ const pts=L.pts||[];
+ if(pts.length>=2){
+  for(const q of pts)slashRefresh(q);
+  let total=0;const acc=[0];for(let i=1;i<pts.length;i++){total+=pts[i].point.distanceTo(pts[i-1].point);acc.push(total);}
+  let mi=0;for(let i=1;i<pts.length;i++)if(Math.abs(acc[i]-total/2)<Math.abs(acc[mi]-total/2))mi=i;
+  resolveHit(G.tool,'slash',pts[mi],'R',{slashFrom:pts[0].point.clone(),slashPath:pts,strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
+  return;
+ }
  const info=L.b;let from=L.a;
  // 한 점만 스쳤으면 긋는 방향으로 짧은 선을 만든다
  if(from.distanceToSquared(info.point)<1e-6)from=info.point.clone().addScaledVector(V3().crossVectors(info.normal,UP).normalize(),.02);
