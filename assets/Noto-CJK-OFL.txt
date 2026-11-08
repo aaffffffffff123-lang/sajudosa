@@ -1,6 +1,6 @@
 © 2017-2024 Adobe (http://www.adobe.com/).
 Source: https://github.com/notofonts/noto-cjk/blob/main/Serif/OTF/Korean/NotoSerifCJKkr-Bold.otf
-Used for four glyph outlines in throne-plaque.js.
+Used for four glyph outlines in throne-plaque.js and for the 梟首 seal outlines in fight.js (TROPHY_TYPE.noto).
 
 This Font Software is licensed under the SIL Open Font License,
 Version 1.1.
