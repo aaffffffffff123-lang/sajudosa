@@ -108,8 +108,27 @@ const gripTools=vm.runInNewContext(section('function mk(geo,','/* 여러 메시'
   const a=E.arms[1],eye=V3(0,1.15,2.8);let visible=0;
   for(const F of a.hand.fingers){let seen=false;for(const y of [-.008,-.02]){const target=F.f2.localToWorld(V3(0,y,0)),ray=new THREE.Raycaster(eye,target.sub(eye).normalize());const hits=ray.intersectObject(scene,true);if(hits.length&&F.f.getObjectById(hits[0].object.id))seen=true;}if(seen)visible++;}
   worstVisible=Math.min(worstVisible,visible);mostVisible=Math.max(mostVisible,visible);
-  const local=E.arms[1].wr.worldToLocal(E.tablet.getWorldPosition(V3()));assert(local.distanceTo(V3(-.033,-.103,.015))<1e-7,'note stack stays fixed between fingers');
+  const local=E.arms[1].wr.worldToLocal(E.tablet.getWorldPosition(V3()));assert(local.distanceTo(V3(-.028,-.085,0))<1e-7,'note stack stays fixed inside the fist');
  }
  assert(worstVisible>=3,'at least three fingers remain visible through fanning, got '+worstVisible);assert.equal(mostVisible,4,'all four fingers are distinguishable');
  console.log('Money grip visible fingers through fan cycle:',{worstVisible,mostVisible});
+}
+
+// The hand turns to the orientation the IK asks for. ARM_CLEARANCE once passed the same quaternion as both the
+// target and the result of slerpQuaternions, which froze every hand in its first pose: after the money dropped the
+// wrist kept the money grip, and only the 49° unbend nudged it toward the forearm.
+{
+ const E=rig(),a=E.arms[1],ik=E.ik.R,dt=1/60,q=new THREE.Quaternion();
+ const step=(fd,pd)=>{ik.goal=1;ik.w=1;ik.target.set(.28,1.0,.4);ik.fd.copy(fd);ik.pd.copy(pd);ik.space='root';ik.rate=30;
+  E.root.updateMatrixWorld(true);E.solveArm(a,ik,dt);E.root.updateMatrixWorld(true);api.ARM_CLEARANCE.apply(E,dt);E.root.updateMatrixWorld(true);};
+ const grip=[V3(-.8,.1,.35).normalize(),V3(.05,.12,1).normalize()],rest=[V3(-.75,-.45,.5).normalize(),V3(-.35,-.35,-.87).normalize()];
+ for(let f=0;f<90;f++)step(...grip);
+ for(let f=0;f<90;f++)step(...rest);
+ a.wr.getWorldQuaternion(q);
+ const fingers=V3(0,-1,0).applyQuaternion(q),palm=V3(-a.s,0,0).applyQuaternion(q);
+ const forearm=a.wr.getWorldPosition(V3()).sub(a.el.getWorldPosition(V3())).normalize();
+ const bend=Math.acos(clamp(fingers.dot(forearm),-1,1));
+ assert(palm.angleTo(rest[1])<.35,'the palm turns to the resting direction, got '+palm.toArray().map(v=>v.toFixed(2)));
+ assert(bend<.86,'the wrist never folds past the unbend limit');
+ console.log('Hand follows the IK after the grip:',{palmError:+palm.angleTo(rest[1]).toFixed(3),fingerError:+fingers.angleTo(rest[0]).toFixed(3),wristBend:+bend.toFixed(3)});
 }

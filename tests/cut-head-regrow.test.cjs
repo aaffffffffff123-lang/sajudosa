@@ -32,15 +32,17 @@ test('cut cavity has depth and no rounded old mesh hides it on either side',()=>
 });
 test('head layers retain final proportions, advance in order, then release temporary meshes/materials',()=>{
  for(const blood of [true,false]){
-  ctx.PREF.blood=blood;const E=makeRig();E.regrowHead={t:0,dur:2.4,built:false,goo:0};E.updateHeadRegrow(0);const r=E.regrowHead,base=E.repSkull.geometry;
+  ctx.PREF.blood=blood;const E=makeRig();let healed=0;E.healNeck=()=>{healed++;};E.regrowHead={t:0,dur:2.4,built:false,goo:0};E.updateHeadRegrow(0);const r=E.regrowHead,base=E.repSkull.geometry;
   assert(E.repHead.scale.equals(V3(1,1,1)),'head never inflates from a miniature');
   E.updateHeadRegrow(.5);assert(r.boneMeshes[0].material.userData.headGrowth.value>r.rawMeshes[0].material.userData.headGrowth.value);
   assert(!E.repEyes[0].root.visible);assert.equal(r.boneMeshes[0].visible,blood);
   E.updateHeadRegrow(.65);assert(r.rawMeshes[0].material.userData.headGrowth.value>r.skin[0].m.userData.headGrowth.value);
+  assert.equal(healed,0,'the cut stump stays until new scales cover its rim');
   E.updateHeadRegrow(.95);assert(E.repEyes.every(e=>e.root.visible));
   assert(r.lids[0].position.y>0&&r.lids[1].position.y<0,'lids separate from the centre instead of shrinking into a band');
   assert(r.rawMeshes.every(m=>m.material.userData.headCovered.value>-.24),'covered flesh is clipped out rather than flickering through skin');
   E.updateHeadRegrow(.31);assert.equal(E.regrowHead,null);assert.equal(E.headGone,false);assert.equal(E.repSkull.geometry,base);
+  assert.equal(healed,1,'the neck regrows once with the head');
   assert.equal(E.repSkull.material,E.M.lizHead);assert.equal(E.disposables.filter(m=>m.userData&&m.userData.headGrowth).length,0);
   assert.equal(r.frame.parent,null);assert.equal(r.raw.parent,null);assert(r.lids.every(l=>!l.parent));assert.equal(E.goreMeshes.length,0);
  }
@@ -114,4 +116,13 @@ test('regrown throat seals the cut neck through forward, sideways and twisted he
   }
  }
  console.log('Regrown throat seal rays:',rays);
+});
+
+test('the regrown neck keeps the collar width and narrows to the reptile head instead of ending in a flat stump',()=>{
+ const g=vm.runInNewContext(slice('const SCULPT=','/* ===== 3. 소리')+slice('const BELLY_C=','/* 신발(흑화)')+';BODYGEO',{THREE,V3,PI:Math.PI,TAU:Math.PI*2,lerp:ctx.lerp,clamp:ctx.clamp,smooth:ctx.smooth,sat:ctx.sat});
+ const neck=g.build().neck,thin=g.repNeck();
+ assert.equal(thin.attributes.position.count,neck.attributes.position.count);
+ const radius=(geo,y)=>{const P=geo.attributes.position;let r=0;for(let i=0;i<P.count;i++)if(Math.abs(P.getY(i)-y)<.004)r=Math.max(r,Math.hypot(P.getX(i),P.getZ(i)-.02-.008*(y+.04)/.165));return r;};
+ assert(Math.abs(radius(thin,-.04)-radius(neck,-.04))<.002,'same width where the shirt collar sits');
+ assert(radius(thin,.12)<.102&&radius(neck,.12)>.115,'top narrows from '+radius(neck,.12).toFixed(3)+' to '+radius(thin,.12).toFixed(3));
 });
