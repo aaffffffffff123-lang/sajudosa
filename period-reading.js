@@ -199,10 +199,11 @@
  function apply(out,data,pastify,now=Date.now()){
   if(!data||!data.available)return out;
   const get=id=>data.periods[id]||[],seen=new Map();
+  const leadPast=out.past.slice().sort((a,b)=>(b.score||0)-(a.score||0)||b.year-a.year)[0];
   out.past=out.past.map(p=>{
    const range=data.ranges['past:'+p.year],x=reconcile(p,get('past:'+p.year),range.start,range.end);
    if(typeof pastify==='function')x.starPeriods=x.starPeriods.map(e=>({...e,text:pastify(e.text)}));
-   x.narrative=narrative(x,{kind:'past',...range,seen,pastify});return x;
+   x.narrative=narrative(x,{kind:'past',...range,seen:p===leadPast?seen:new Map(),pastify});return x;
   });
   out.years=out.years.map(y=>({...reconcile(y,get('year:'+y.year),y.periodStart,y.periodEnd),months:y.months.map(m=>reconcile(m,get('month:'+m.start),m.start,m.end))}));
   const current=out.years[0],next=out.years[1];
@@ -213,14 +214,13 @@
   for(const y of out.years){
    const base=/다시 겹치는 해$/.test(y.title||'')&&/^\d+년에 짚은 문제가 이 시기에도 이어집니다\.$/.test(y.text||'')?'':y.text;
    y.narrative=narrative(y,{kind:'year',base,start:y.periodStart,end:y.periodEnd,seen});
-   // 화면에는 현재 월운만 나오므로 보이지 않는 달이 다음 본문을 지우지 않는다.
-   const shown=y.months.find(m=>m.start<=now&&now<m.end);
-   for(const m of y.months)m.narrative=narrative(m,{kind:'month',start:m.start,end:m.end,seen:m===shown?seen:new Map()});
+   // 접힌 월운이 본문의 다음 해 설명을 먼저 소비하지 않도록 따로 구성한다.
+   for(const m of y.months)m.narrative=narrative(m,{kind:'month',start:m.start,end:m.end,seen:new Map()});
   }
   out.luck.cycles=out.luck.cycles.map(x=>{
    // 다음 대운의 stage는 앞에서 이미 중복을 제거한 본문이다. c.text로 되돌리지 않는다.
    const c=reconcile({...x.c,text:x.now?x.c.text:x.stage},get('decade:'+x.c.i),x.c.start,x.c.end);
-   c.narrative=narrative(c,{kind:'decade',start:c.start,end:c.end,seen});
+   c.narrative=narrative(c,{kind:'decade',start:c.start,end:c.end,seen:x.now?seen:new Map()});
    return {...x,c};
   });
   // 전체 풀이는 이미 선택된 분야들을 연결해 썼다. 별도 운명 판정을 다시 끼워 넣지 않는다.
@@ -233,7 +233,7 @@
  function prepare(req){
   if(typeof Worker==='undefined')return Promise.reject(new Error('별자리 시기 계산을 이 환경에서 시작하지 못했습니다.'));
   let cancel;const promise=new Promise((resolve,reject)=>{
-   const worker=new Worker('period-worker.js?v=20261109-focused-reading');let done=false;
+   const worker=new Worker('period-worker.js?v=20261109-life-context');let done=false;
    const finish=(fn,value)=>{if(done)return;done=true;clearTimeout(timer);worker.terminate();fn(value);};
    cancel=()=>finish(reject,new Error('풀이 계산이 취소되었습니다.'));
    const timer=setTimeout(()=>finish(reject,new Error('별자리 시기 계산 시간이 초과되었습니다.')),30000);

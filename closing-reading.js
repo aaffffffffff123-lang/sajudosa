@@ -75,10 +75,14 @@
     const w=key('work'),m=key('money'),f=key('family'),o=key('office'),h=key('home');
     const has=(id,poolId)=>!!d[id]&&(d[id].poolIds||[]).includes(poolId);
     const ref=(domain,poolId)=>poolId?{domain,poolId}:{domain,cause:key(domain)};
-    const work=WORK[w],family=FAMILY[f],body=BODY[d.body&&d.body.ruleKey];
+    const work=d.work.summary||WORK[w],family=d.family.summary||FAMILY[f],body=BODY[d.body&&d.body.ruleKey];
     // Every production cause has copy. Partial fixtures and a missing external script
     // retain the existing complete verdict rather than producing undefined fragments.
     if(!work||!MONEY[m]||!family||!body)return out;
+    if(out.life&&out.life.stage==='youth'){
+      out.verdict=[out.verdictFrame.subject+' '+work,d.money.summary,family[0],family[1]].join(' ');
+      out.verdictEvidence={thread:'learning-and-choice',domains:['work','money','family'],sources:[ref('work'),ref('money'),ref('family')]};return out;
+    }
     const candidates=[];
     function add(id,priority,refs,sentences){
       // Presence in the displayed pool is the only way an extra paragraph enters the conclusion.

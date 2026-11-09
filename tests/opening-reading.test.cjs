@@ -85,13 +85,13 @@ test('all twelve sign branches, three origin states and all house branches retur
  }
 });
 
-test('all twelve rising signs add physical detail and preserve their original first-impression passage',()=>{
+test('all twelve rising signs keep distinct gestures without requiring anatomical claims',()=>{
  const {result,view}=ALL[1],seen=new Set();
  for(let sign=0;sign<12;sign++){
   const western={available:true,unknown:false,asc:{sign,longitude:sign*30+12},planets:[],aspects:[]};
   const x=OpeningReading.compose({...view,portrait:[]},{...result,input:{unknown:false},western}).portrait.relationships[0];
-  assert.equal(x.id,'asc-'+sign);assert(x.text.split('.').length>=5);
-  const first=x.text.split('.')[0];assert.match(first,/눈|턱|목|어깨|팔다리|볼|이마|몸선|얼굴|체격|뼈대/);seen.add(first);
+  assert.equal(x.id,'asc-'+sign);assert(x.text.split('.').length>=4);
+  const first=x.text.split('.')[0];assert.match(first,/눈|턱|목|어깨|팔다리|볼|이마|몸선|얼굴|체격|뼈대|손|상체|자세|몸|표정|고개|말끝/);assert(!/호리호리|키에 비해|체격이 크/.test(x.text));seen.add(first);
   assert.deepEqual(x.evidence,[{kind:'asc',sign}]);
   const missing=OpeningReading.compose(view,{...result,input:{unknown:false},western:{...western,asc:null}});
   assert.equal(missing.portrait.relationships.length,0);

@@ -10,9 +10,9 @@
  *   일은 맡기는 쪽의 셈, 몸은 괜찮아 보이는 이유, 짝은 흔히 하는 말, 가족은 자기 다짐, 귀인은 남에게 듣는 조언, 관운은 품기 쉬운 기대.
  */
 (function(root,factory){
-  if(typeof module==='object'&&module.exports)module.exports=factory(require('./closing-reading.js'));
-  else root.ReadingPool=factory(root.ClosingReading);
-})(typeof globalThis!=='undefined'?globalThis:this,function(Closing){
+  if(typeof module==='object'&&module.exports)module.exports=factory(require('./closing-reading.js'),require('./life-reading.js'));
+  else root.ReadingPool=factory(root.ClosingReading,root.LifeReading);
+})(typeof globalThis!=='undefined'?globalThis:this,function(Closing,Life){
   'use strict';
   const H=[90,180],HC=[0,90,180];
   // 확정 원고
@@ -540,17 +540,19 @@
   }
   // 먼저 조건이 맞는 후보를 모은다. focus에서 연결된 후속 장면만 남긴 뒤 운명 한 줄로 닫는다.
   function weave(out,R){
+    if(Life)Life.prepare(out,R);
     const c=context(R,out);
     const withoutWestern=context(Object.assign({},R,{western:null}),out);
     out.domains.forEach(d=>{
-      const pool=(POOL[d.id]||[]).filter(x=>hit(x,c,d.cause));
+      const pool=d.followupDisabled?[]:(POOL[d.id]||[]).filter(x=>hit(x,c,d.cause)&&!(d.omitFollowups||[]).includes(x.id));
       d.poolIds=pool.map(x=>x.id);
       // 같은 사주에서 별자리만 뺐을 때 사라지는 문단. 생시 미상·계산 실패는 원래 조건 그대로 걸러진다.
       d.westernAddedIds=pool.filter(x=>!hit(x,withoutWestern,d.cause)).map(x=>x.id);
       // 선택된 장면 안에서만 앞의 지원·도움·생활 형편에 맞춰 문장을 잇는다.
       const paragraphs=pool.map(x=>(x.textFor&&x.textFor(c))||(x.originText&&x.originText[c.origin])||x.text);
       d.candidateText=Object.fromEntries(pool.map((x,i)=>[x.id,paragraphs[i]]));
-      if(d.id==='money'){
+      if(d.lead){d.paragraphs=d.lead.concat(paragraphs);}
+      else if(d.id==='money'){
         const lead=d.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[d.cause]||[d.detail,d.rule];
         d.paragraphs=lead.concat(paragraphs).filter(Boolean);
       }else if(OPENING[d.id]){
@@ -564,6 +566,6 @@
     focus(out,R,c);
     return out;
   }
-  return {COPY,LEAD,OPENING,POOL,context,weave,followups,HELP};
+  return {COPY,LEAD,OPENING,POOL,context,weave,followups,HELP,finalize:out=>Life?Life.finish(out):out};
 });
 

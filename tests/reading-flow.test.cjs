@@ -36,11 +36,11 @@ function bossOf(r){
 test('a personal portrait opens the reading before the family verdict and wider judgments',()=>{
  const view=slice('<main id="result-screen"','</main>');
  // 2026-11-07 구성: 태어난 때(사주·막대·별자리) → 당신을 보니 → 타고난 팔자(집안 → 부리는 기운 → 성향) → 일곱 칸 → 지나온 해와 앞날 → 전체 풀이
- const order=['id="runhead"','id="pillars"','id="share-leg"','id="saju-details"','id="western-chart"','id="reading-portrait"','id="portrait-symbol"','id="fate-card"','id="origin"','id="boss-line"','id="core-body"','id="sections"',
-  'id="time-block"','id="past-hits"','id="years"','id="month-reading"','id="year-next"','id="luck-graph"','id="luck-list"','id="verdict"','id="caution"','id="fate-go"'];
+ const order=['id="runhead"','id="pillars"','id="share-leg"','id="saju-details"','id="western-chart"','id="reading-portrait"','id="portrait-symbol"','id="past-block"','id="past-hits"','id="fate-card"','id="origin"','id="boss-line"','id="core-body"','id="sections"',
+  'id="time-block"','id="years"','id="year-next"','id="luck-current"','id="month-reading"','id="luck-graph"','id="luck-list"','id="past-more"','id="verdict"','id="caution"','id="fate-go"'];
  order.forEach((id,i)=>{assert(view.includes(id),id);if(i)assert(view.indexOf(order[i-1])<view.indexOf(id),id);});
- for(const gone of ['id="me-card"','id="elements"','id="elem-lines"','id="past-block"','나를 나타내는 상징','타고난 다섯 가지 비율','올해와 내년','10년 단위 흐름'])assert(!view.includes(gone),gone);
- for(const label of ['>당신이 태어난 때<','>타고난 운명<','>지나온 해와 앞날<','>전체 풀이<'])assert(view.includes(label),label);
+ for(const gone of ['id="me-card"','id="elements"','id="elem-lines"','나를 나타내는 상징','타고난 다섯 가지 비율','올해와 내년','10년 단위 흐름'])assert(!view.includes(gone),gone);
+ for(const label of ['>당신이 태어난 때<','>타고난 운명<','>다가오는 흐름<','>전체 풀이<'])assert(view.includes(label),label);
  // 숨은 상징은 자리를 옮겨도 남는다: 오행 별 문양은 다섯 기운 막대 옆, 뱀 문양은 연표 이름표 옆
  assert(/class="elem-strip"/.test(view)&&/\.elem-strip::after\{background-image:/.test(html.replace(/\.sym-pent>\.sec-label::after,/,'')));
  assert(/class="block timeline sym-oro"/.test(view));
@@ -163,7 +163,7 @@ test('every life domain has a concrete note that stays tied to its selected caus
  const seen=new Map();
  for(const {v} of ALL)for(const d of v.domains){
   assert(d.note&&d.note.label&&d.note.value,d.id+':'+d.cause);
-  const key=d.id+':'+d.cause+':'+(d.primaryPoolId||''),note=JSON.stringify(d.note);
+  const key=d.id+':'+d.cause+':'+(d.primaryPoolId||'')+':'+(d.sceneRole||'')+':'+(v.life&&v.life.stage||'')+':'+v.origin.key,note=JSON.stringify(d.note);
   if(seen.has(key))assert.equal(note,seen.get(key),'same cause keeps the same concrete examples');
   seen.set(key,note);
   if(d.id!=='money'){
@@ -216,7 +216,7 @@ test('an actual money conflict takes priority over a generic consumption habit',
  const cases={wealth_weak_self:['burden',/고정비·관리/],weak_wealth:['burden',/고정비·관리/],peer_robs_wealth:['share',/정산/],wealth_breaks_resource:['interrupted',/준비/],peer_unchecked:['holding',/정리/],strong_peer:['holding',/정리/]};
  let checked=0;
  for(const {r,v} of ALL){const f=r.ziping.findings.find(x=>(x.domains||[]).includes('money'));if(!f||!cases[f.key])continue;
-  const m=dom(v,'money'),[key,note]=cases[f.key];assert.equal(m.cause,key);assert.match(m.note.value,note);checked++;
+  const m=dom(v,'money'),[key,note]=cases[f.key];assert.equal(m.cause,key);assert.match(m.note.label+' '+m.note.value,note);checked++;
  }
  assert(checked>20);
 });
@@ -224,7 +224,7 @@ test('an actual money conflict takes priority over a generic consumption habit',
 test('self-driven overwork stays self-driven in the displayed fate',()=>{
  const expected={'내일 확인해도':/마음 편히 쉬려고/,'빈 시간이 생기면':/누가 시키지 않아도/,'쉬는 간격 없이':/흐름이 끊기는 게 아까워/,'집에 와서도':/끝낸 일의 걱정/,'불편을 넘기며':/아직 할 만하다고/};
  let n=0;for(const {r,v} of ALL){const o=r.observations.find(x=>x.id==='body'),d=dom(v,'body');
-  for(const [prefix,want] of Object.entries(expected))if(o.body[0].includes(prefix)){assert.match(d.fates[0],want);assert(!/요구를 받아|눈치를 보며|쉬겠다는 말을 꺼내지/.test(d.fates[0]));n++;}
+  for(const [prefix,want] of Object.entries(expected))if(o.body[0].includes(prefix)){assert.match((d.originalPresentation||d).fates[0],want);if(d.sceneRole==='cost')assert.match(d.fates[0],/잠|끼니|스스로/);assert(!/요구를 받아|눈치를 보며|쉬겠다는 말을 꺼내지/.test(d.fates[0]));n++;}
  }
  assert(n>30);
 });
@@ -286,16 +286,18 @@ test('resolved officer combinations are not narrated as unresolved mixed demands
  assert(supported>0&&weak>0);
 });
 
-test('life-stage lines appear only when the chart and the person allow them',()=>{
- for(const {r,v,y,male,unknown} of ALL){
-  const home=dom(v,'family').fates.join(' '),office=dom(v,'office').fates.join(' ');
-  const parentWork=!male&&hi(r,'식상'),workConflict=r.a.structure.failure.some(x=>x.id==='hurt_officer');
-  assert.equal(/경력이 끊기/.test(home),parentWork&&workConflict);
-  assert.equal(/일하는 몫에 돌보는 몫까지/.test(home),parentWork&&!workConflict);
+test('life-stage lines require specific chart evidence rather than sex alone',()=>{
+ for(const {r,v,male,unknown} of ALL){
+  const d=dom(v,'family'),text=d.fates.join(' '),ev=d.familySelection;
+  assert(ev);assert.equal(ev.age,v.age);assert.equal(ev.knownHour,!unknown);
+  if(d.cause==='cut'){
+   assert(!male&&!unknown&&v.age>=26&&v.age<50);assert(hi(r,'식상'));
+   assert(r.a.structure.failure.some(x=>x.id==='hurt_officer'));assert(v.familySignals.hourOutput);
+  }
+  if(d.cause==='care'){assert(!unknown&&v.age>=26&&v.age<50);assert(v.familySignals.hourOutput);assert(hi(r,'식상'));}
+  if(unknown||v.age<26||v.age>=55)assert(!['care','cut','shown','absent','absentPoor'].includes(d.cause));
+  if(!['cut','care','shown','absent','absentPoor'].includes(d.cause))assert(!/아이|자식|교육비/.test(text));
   assert.equal(dom(v,'office').fates.length,1);
-  assert(!/나라에 내준 시간|관재수/.test(office));
-  if(unknown)assert(!/아이의 교육비와 독립할 돈|아이에게 물려줄 돈|자식에게 그대로/.test(home));
-  assert(!/집값이 다 오른 뒤에 태어나/.test(dom(v,'home').fates.join(' ')));
  }
 });
 
@@ -321,25 +323,27 @@ test('unknown time omits hour-pillar claims while retaining family copy supporte
  }
  const example=make(2001,6,21,{unknown:true,male:false});
  assert(hi(example.r,'식상'));
- assert.match(dom(example.v,'family').fates.join(' '),/아이를 낳으면 일하는 몫에 돌보는 몫까지/);
- assert.match(dom(example.v,'family').rule,/아이를 키우는 몫은 일하는 몫에서 빼 주지 않습니다/);
+ assert.equal(dom(example.v,'family').cause,'young');
+ assert(!/아이|출산/.test(dom(example.v,'family').paragraphs.join(' ')));
 });
 
-test('productive expression keeps both responsibilities while career loss requires an unresolved work conflict',()=>{
+test('productive expression alone does not assign childcare or career loss',()=>{
  const supported=make(1985,9,14,{h:14,male:false}),home=dom(supported.v,'family');
  assert(supported.r.a.structure.success.includes('식상생재'));
  assert.equal(supported.r.a.structure.failure.length,0);
- assert.match(home.fates.join(' '),/일하는 몫에 돌보는 몫까지/);
+ assert(!['care','cut'].includes(home.cause));
  assert(!/경력이 끊기|돌아갈 일자리/.test(home.fates.join(' ')));
- assert.match(home.rule,/둘 다 감당해야/);
  const conflicts=ALL.filter(x=>!x.male&&hi(x.r,'식상')&&x.r.a.structure.failure.some(f=>f.id==='hurt_officer'));
  assert(conflicts.length>0);
- for(const {v} of conflicts){assert.match(dom(v,'family').fates.join(' '),/경력이 끊기/);assert.match(dom(v,'family').rule,/비운 쪽은 처음부터/);}
+ for(const {v} of conflicts)if(dom(v,'family').cause==='cut'){
+  assert(v.familySignals.hourOutput&&v.age>=26&&v.age<50);
+  assert.match(dom(v,'family').fates.join(' '),/아이를 낳으면/);
+ }
 });
 
 test('every fate line is one sentence in the agreed form and no line uses the banned contrast',()=>{
  for(const {v} of ALL){
-  for(const f of fatesOf(v))assert.match(f,/^당신은 [^,]+팔자입니다\.$/,f);
+  for(const f of fatesOf(v))assert.match(f,/^당신은 [^,]+(?:팔자|운명)입니다\.$/,f);
   // 전체 풀이는 여러 문장을 잇는 문단이다. 한 줄 판정의 쉼표 제한을 적용하지 않는다.
   assert.match(v.verdict,/^(당신은|\S+ 님은) .+\.$/);assert(v.verdictEvidence);assert(v.verdict.length<=320);
   for(const t of textsOf(v)){assert.equal(typeof t,'string');assert(t.length);assert(!/이지,|가 아니라|이 아니라|이지 [^.]*아닙니다/.test(t),t);}

@@ -118,7 +118,8 @@ test('each card follows its own order of paragraphs and closes on every fate lin
   const pool=d.poolIds.map(id=>{const x=POOL[d.id].find(x=>x.id===id);return (x.textFor&&x.textFor(c))||(x.originText&&x.originText[view.origin.key])||x.text;});
   assert.deepEqual(d.poolIds,ids[d.id].filter(id=>d.poolIds.includes(id)),d.id);
   assert(d.closing.length>=1,d.id);if(d.id!=='family')assert.deepEqual(d.closing,d.fates,d.id);
-  if(d.id==='money'){
+  if(d.lead){assert.deepEqual(d.paragraphs,[...d.lead,...pool]);
+  }else if(d.id==='money'){
    const opening=d.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[d.cause];
    assert.deepEqual(d.paragraphs,[...opening,...pool]);
   }else if(d.primaryPoolId){
@@ -157,7 +158,7 @@ test('six cards open on a scene and a blow that carries the card rule word for w
  for(const {view} of ALL)for(const d of view.domains){
   if(!OPENING[d.id])continue;
   if(!d.primaryPoolId)assert(d.paragraphs[1].endsWith(d.rule),d.id);
-  assert.notEqual(d.paragraphs[0],d.detail,d.id+':'+d.cause);
+  if(d.lead)assert.equal(d.paragraphs[0],d.detail);else assert.notEqual(d.paragraphs[0],d.detail,d.id+':'+d.cause);
   (seen[d.id]=seen[d.id]||new Set).add(d.ruleKey||d.cause);
  }
  for(const id of Object.keys(OPENING))assert(seen[id].size>=2,id);
@@ -348,7 +349,9 @@ test('family obligations acknowledge earlier support without adding or suppressi
  assert(!fake({origin:'shown'}).family.poolIds.includes('F3'));
  const example=readCandidates(1975,8,1,{h:0,mi:36,pk:'daejeon',male:true}).view;
  assert.equal(example.origin.key,'shown');
- assert(example.domains.find(d=>d.id==='family').paragraphs.includes(item.originText.shown));
+ const selected=example.domains.find(d=>d.id==='family');
+ assert(selected.lifeSelected);assert.equal(selected.paragraphs.length,2);assert.equal(selected.poolIds.length,0);
+ assert(!selected.paragraphs.includes(item.originText.shown));
 });
 
 test('each refined office scene keeps an independent Western route tied to the relevant life area',()=>{
@@ -494,9 +497,9 @@ test('the body names no star placement or saju term and never repeats a sentence
  assert(hits/ALL.length<5,String(hits/ALL.length));
 });
 
-test('every candidate remains reachable and no conditional candidate goes to everyone',()=>{
+test('active supplemental candidates remain reachable without reviving retired family follow-ups',()=>{
  const count={};for(const {view} of ALL)for(const d of view.domains)for(const {id} of d.candidates)count[id]=(count[id]||0)+1;
- for(const [k,list] of Object.entries(ids))for(const id of list){assert(count[id]>0,k+':'+id);if(id!=='G3')assert(count[id]<ALL.length,k+':'+id);}
+ for(const [k,list] of Object.entries(ids).filter(([k])=>k!=='family'))for(const id of list){assert(count[id]>0,k+':'+id);if(id!=='G3')assert(count[id]<ALL.length,k+':'+id);}
 });
 
 test('readings without a birth time or without the star chart still get their paragraphs',()=>{
@@ -513,25 +516,19 @@ test('readings without a birth time or without the star chart still get their pa
 
 
 
-test('child conditions survive the first child reference in every overall conclusion',()=>{
- const young=read(2006,1,1,{male:false}),cut=structuredClone(young);
- // 경력 단절 갈래는 다른 총평이 우선될 수 있으므로 조건을 잇는 후보 자체도 검사한다.
- cut.view.domains.find(d=>d.id==='family').cause='cut';
- require('../closing-reading.js').compose(cut.view,cut.result);
- const rows=ALL.concat([cut,young]),reached=new Set();
- for(const {view} of rows){
+test('child conditions survive every displayed family summary and cannot enter unrelated cases',()=>{
+ const child=new Set(['cut','care','shown','absent','absentPoor']);let checked=0;
+ for(const {view} of ALL){
   const family=view.domains.find(d=>d.id==='family');
-  if(!view.verdictEvidence.domains.includes('family')||['old','young'].includes(family.cause))continue;
+  if(!child.has(family.cause)){assert(!/아이|자식|교육비/.test(view.verdict));continue;}
+  if(!view.verdictEvidence.domains.includes('family'))continue;
   const first=core.sentenceListV2(view.verdict).find(t=>/아이|자식|교육비/.test(t));
-  assert(first,view.verdict);
-  assert.match(first,/(?:아이|자식).{0,40}면/,view.verdict);
-  reached.add(family.cause);
+  assert(first,view.verdict);assert.match(first,/(?:아이|자식).{0,40}면/,view.verdict);checked++;
  }
- assert.deepEqual([...reached].sort(),['absent','absentPoor','care','cut','shown']);
- const {view}=rows.at(-1);assert.equal(view.verdictEvidence.thread,'care-and-work');
- assert.match(view.verdict,/경력을 쌓아도 일터가 바뀌면/);
- assert.match(view.verdict,/아이를 낳고 일을 이어 가면/);
- assert.match(view.domains.find(d=>d.id==='work').paragraphs[0],/^한 일터에서 오 년을 일해도/);
+ assert(checked>0);
+ const young=read(2006,1,1,{male:false}).view;
+ assert(!/아이|자식|교육비/.test(young.verdict));
+ assert.notEqual(young.verdictEvidence.thread,'care-and-work');
 });
 
 test('authority continues an already shown work scene without changing its cause or judgment',()=>{

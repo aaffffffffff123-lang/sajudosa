@@ -87,7 +87,7 @@ test('a fixed input produces fixed prose and keeps each money cause on its own o
   for(let m=1;m<=12;m++){
     const first=read(1980,m,15),again=read(1980,m,15),a=money(first.view),b=money(again.view);
     assert.deepEqual(first.result.western,again.result.western);assert.deepEqual(a,b);kinds.add(a.cause);
-    const opening=a.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[a.cause];
+    const opening=a.lead||(a.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[a.cause]);
     assert.deepEqual(a.paragraphs.slice(0,2),opening,a.cause);
     assert(!a.paragraphs.includes(COPY.stability));assert(a.paragraphs.length<=3);assert.deepEqual(a.closing,a.fates);
     if(a.cause!=='comfort')assert(!a.paragraphs.includes(COPY.spending)&&!a.paragraphs.includes(COPY.living));

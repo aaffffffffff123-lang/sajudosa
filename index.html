@@ -638,6 +638,10 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 .period-dates dl>div+div{margin-top:10px}
 .period-dates dt{font-weight:700}
 .period-dates dd{margin:2px 0 0}
+.timeline-more{margin-top:22px;border-top:1px solid var(--line-2);padding-top:10px}
+.timeline-more>summary{cursor:pointer;padding:10px 0;font-weight:700;color:var(--caption);font-size:14px}
+.timeline-more[open]>summary{margin-bottom:14px}
+.past-opening{padding-top:8px;padding-bottom:22px}
 @media(max-width:450px){.portrait-group + .portrait-group{margin-top:22px}.fate-part-title{font-size:16px}}
 </style>
 <link rel="stylesheet" href="assets/celestial-ui.css?v=20261107-fate">
@@ -958,6 +962,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
       <span class="portrait-seal" aria-hidden="true">사주<br>도사</span>
     </article></section>
 
+  <section class="block timeline past-opening" id="past-block" hidden><h2 class="sec-label">지나온 한때</h2><div class="tl" id="past-hits"></div></section>
   <!-- 판정 카드: 집안 → 당신을 부리는 기운 → 타고난 성향. 마지막 「전체 풀이」 카드와 같은 모양 -->
   <section class="block core" id="fate-card"><h2 class="sec-label">타고난 운명</h2>
     <div class="origin" id="origin"></div>
@@ -966,15 +971,18 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
   </section>
   <div id="sections"></div>
 
-  <!-- 때: 지나온 해 → 올해(이번 달) → 내년 → 10년 → 해의 이치. 한 줄기 연표 -->
-  <section class="block timeline sym-oro" id="time-block"><h2 class="sec-label">지나온 해와 앞날</h2>
+  <!-- 끝부분은 올해·내년·지금의 흐름만 읽고 전체 풀이로 잇는다. -->
+  <section class="block timeline sym-oro" id="time-block"><h2 class="sec-label">다가오는 흐름</h2>
     <p class="pnote" id="period-status" hidden></p>
-    <div class="tl" id="past-hits"></div>
     <div class="tl" id="years"></div>
-    <div class="tl"><article class="tl-item month" id="month-reading" aria-label="이번 달" hidden></article></div>
     <div class="tl" id="year-next"></div>
+    <ol class="tl" id="luck-current"></ol>
+    <details class="timeline-more"><summary>이번 달과 이후 흐름</summary>
+    <div class="tl"><article class="tl-item month" id="month-reading" aria-label="이번 달" hidden></article></div>
     <div class="tl-luck"><p class="luck-start" id="luck-start"></p><div class="graph" id="luck-graph"></div></div>
     <ol class="tl" id="luck-list"></ol>
+    <div class="tl" id="past-more"></div>
+    </details>
   </section>
 
   <section class="block verdict"><h2 class="sec-label">전체 풀이</h2><p class="vq" id="verdict"></p><svg class="seal" viewBox="0 0 64 64" aria-hidden="true"><rect x="3" y="3" width="58" height="58" rx="10" fill="#e0402a" stroke="#261f3d" stroke-width="2.6"/><rect x="8.5" y="8.5" width="47" height="47" rx="6" fill="none" stroke="#fff" stroke-width="1.8"/><g font-family="Black Han Sans,sans-serif" font-size="19" fill="#fff" text-anchor="middle"><text x="22" y="30">운</text><text x="42" y="30">명</text><text x="22" y="51">확</text><text x="42" y="51">정</text></g></svg><div class="caution" id="caution"></div></section>
@@ -1209,12 +1217,13 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="closing-reading.js?v=20261109-focused-reading"></script>
-<script src="reading-pool.js?v=20261109-focused-reading"></script>
+<script src="closing-reading.js?v=20261109-life-context"></script>
+<script src="life-reading.js?v=20261109-life-context"></script>
+<script src="reading-pool.js?v=20261109-life-context"></script>
 <script src="western.js?v=20261107-pool"></script>
-<script src="opening-reading.js?v=20261109-grounded-copy"></script>
-<script src="reading-integration.js?v=20261109-focused-reading"></script>
-<script src="period-reading.js?v=20261109-focused-reading"></script>
+<script src="opening-reading.js?v=20261109-life-context"></script>
+<script src="reading-integration.js?v=20261109-life-context"></script>
+<script src="period-reading.js?v=20261109-life-context"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -3342,7 +3351,7 @@ function stopLoading(){
  * 도사 그림은 계산 중 화면의 도사(#ldDosa)를 처음 그대로 복사해 두었다가 쓴다.
  */
 const DOOM={p:0,cur:null,parts:null,full:false,live:false,on:false,bg:'',req:0,tm:0,raf:0,T:null,src:null,
- bg0:[255,246,214],bg1:[203,201,140],eye:'',meta:document.querySelector('meta[name="theme-color"]'),tc0:''};
+ bg0:[255,246,214],bg1:[187,175,197],eye:'',meta:document.querySelector('meta[name="theme-color"]'),tc0:''};
 try{DOOM.src=$('ldDosa').cloneNode(true);DOOM.tc0=DOOM.meta?DOOM.meta.content:'';}catch(_){}
 const doomSS=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
 const doomMix=(a,b,e)=>'#'+a.map((v,i)=>{const x=Math.round(v+(b[i]-v)*e);return (x<16?'0':'')+x.toString(16);}).join('');
@@ -3352,16 +3361,16 @@ const doomMix=(a,b,e)=>'#'+a.map((v,i)=>{const x=Math.round(v+(b[i]-v)*e);return
 // 처음엔 바탕보다 진하고 끝엔 바탕보다 연하면 내려가는 도중 바탕과 같은 색이 되어 칸이 사라진다(예전 칸 끝 「~ 부담」 상자).
 // 글씨는 바탕이 어두워지는 만큼 같이 진해져 처음과 비슷한 대비를 지킨다. tests/doom-palette.test.cjs가 이 규칙을 검사한다.
 const DOOM_COLORS=Object.entries({
- 'paper-2':['fffdf5','e7e6c7'],'card':['ffffff','f0efd8'],
- 'ink':['261f3d','1f241a'],'ink-2':['463e5e','323828'],'muted':['726a87','474e35'],
- 'line':['eadcb4','999b6e'],'line-2':['b3a16c','6c7047'],
- 'red':['e0402a','a64031'],'red-d':['b52a17','6c261e'],
+ 'paper-2':['fffdf5','e1d8e8'],'card':['ffffff','eee8f1'],
+ 'ink':['261f3d','191022'],'ink-2':['463e5e','3a2c43'],'muted':['726a87','493b50'],
+ 'line':['eadcb4','95849e'],'line-2':['b3a16c','706078'],
+ 'red':['e0402a','a64031'],'red-d':['b52a17','48151e'],
  'gold':['ffc531','b8932a'],'gold-d':['d99a00','796123'],
  'indigo':['3e2f8f','5b4357'],'indigo-d':['2b1f6e','473246'],'lav':['ece3ff','e3dcca'],
- 'mark':['ffe27a','d6c85a'],'soft':['ffefbd','bdb86e'],'inset':['fff8e1','e1ddb2'],
- 'empty':['fffaf0','e7e6cb'],'empty-ink':['b9ad8c','777b56'],'dot-off':['efe6cb','d3d2b0'],
- 'current-surface':['f7f3ff','e6dfd5'],'warning-surface':['fff4f1','eddfc6'],
- 'section-late':['9a2312','6a251d'],'caption':['554e69','3a402b'],
+ 'mark':['ffe27a','b69a56'],'soft':['ffefbd','a694b0'],'inset':['fff8e1','d1c3d9'],
+ 'empty':['fffaf0','e0d6e8'],'empty-ink':['b9ad8c','76677f'],'dot-off':['efe6cb','c8b7d1'],
+ 'current-surface':['f7f3ff','ddc9f6'],'warning-surface':['fff4f1','edddd6'],
+ 'section-late':['9a2312','5a1a24'],'caption':['554e69','3b2b44'],
  'accent-edge':['ff8f7a','d28a68'],'focus':['8f7ce8','71566b']
 }).map(([name,ends])=>({name:'--'+name,ends:ends.map(hex=>[0,2,4].map(i=>parseInt(hex.slice(i,i+2),16)))}));
 function doomBuild(){
@@ -3707,7 +3716,7 @@ const V5={
  // 『삼명통회』 권칠 「논성정상모」의 묘사를 현대어로 옮긴 선택 문장.
  portraitFeature:{
   flourishing:{목:'팔다리가 길쭉하고 손가락이 가는 편입니다.',화:'눈썹이 짙어 눈매가 또렷합니다.',토:'얼굴에 살집이 있고 인상이 푸근한 편입니다.',금:'턱선이 반듯하고 얼굴에 각이 있는 편입니다.',수:'말소리가 맑고 말끝이 부드럽습니다.'},
-  weak:{목:'키에 비해 몸이 호리호리한 편입니다.',화:'얼굴에 살이 적어 윤곽이 도드라지는 편입니다.',토:'목소리가 낮고 조금 잠긴 듯합니다.',금:'체구가 작고 몸선이 가는 편입니다.',수:'또래와 키순으로 서면 대개 앞쪽입니다.'},
+  weak:{목:'생각에 잠기면 어깨를 조금 모으고 듣는 편입니다.',화:'얼굴에 살이 적어 윤곽이 도드라지는 편입니다.',토:'목소리가 낮고 조금 잠긴 듯합니다.',금:'낯선 자리에서는 손과 발을 가지런히 두는 편입니다.',수:'목소리를 높이기 전에 상대 쪽으로 몸을 기울이는 편입니다.'},
   excessFire:'앉아서 이야기를 듣다 보면 저도 모르게 한쪽 다리를 떱니다.'
  },
  // 조상·부모 자리(태어난 해·달 기둥)의 재물 기운: 위 글자에 있으면 shown, 아래 글자 속에만 있으면 hidden.
@@ -4366,8 +4375,10 @@ function v5Reading(R,now){
  now=now||Date.now();
  const inp=R.input,r=R.reading,a=r.a,P=r.P,fate=r.fate||{},obs=id=>(r.observations||[]).find(s=>s.id===id)||{head:'',body:[]};
  const lv=f=>a.families[f].level,low=f=>['weak','absent'].includes(lv(f)),hi=f=>['strong','excess'].includes(lv(f));
- const st=v5Strength(a),age=new Date(now+9*HOUR).getUTCFullYear()-R.solarDate.y,male=!!inp.male,sup=fate.support||null,top=a.rank[0],born=R.solarDate.y;
- const out={};
+ const today=new Date(now+9*HOUR),birthday=R.solarDate;
+ const age=today.getUTCFullYear()-birthday.y-((today.getUTCMonth()+1<birthday.m||today.getUTCMonth()+1===birthday.m&&today.getUTCDate()<birthday.d)?1:0);
+ const st=v5Strength(a),male=!!inp.male,sup=fate.support||null,top=a.rank[0],born=R.solarDate.y;
+ const out={age};
  // 네 자리
  const workKey=v5WorkKey(r),work=V5.work[workKey];
  out.portrait=v5Portrait(r,age,work);
@@ -4396,7 +4407,7 @@ function v5Reading(R,now){
  const M=supportCore||V5.coreCause[coreKey]||V5.mind[mindKey];
  const coreText=r.core.text.replace('태어난 시간이 없어 날짜 경계에 걸린 경우 결과가 달라질 수 있습니다. 아래 풀이는 낮 12시를 기준으로 계산했습니다. ','');
  out.core={title:r.core.title,body:unique([M.body||coreText]),fate:M.fate,rule:M.rule,cause:supportCore?sup.group:coreKey};
- // 지나온 흐름: 계산에서 나온 해만, 성인이 된 뒤만
+ // 지나온 흐름: 계산에서 나온 해만 사용하고 같은 해를 중복 표시하지 않는다
  // 같은 해가 두 10년 흐름에 걸쳐 두 번 뽑히면 한 번만 둔다
  out.past=(r.pastHits||[]).filter((x,i,l)=>x.year>born&&l.findIndex(y=>y.year===x.year)===i).map(x=>{const t=String(x.title||'').replace(/다시 겹치는 해$/,'다시 겹친 해였습니다');return Object.assign({},x,{title:t,text:/다시 겹친 해였습니다$/.test(t)&&/^\d+년에 짚은 문제가 이때도 이어졌습니다\.$/.test(x.text||'')?'':x.text});});
  // 영역
@@ -4421,6 +4432,13 @@ function v5Reading(R,now){
  doms.push({id:'office',title:'권한과 책임',cause:office.key,head:office.head,detail:office.detail,fates:[office.fate],rule:office.rule,basis:office.basis,evidenceIds:office.evidenceIds});
  doms.forEach(sec=>{if(sec.id!=='money')sec.note=v5DomainNote(sec);});
  out.domains=doms;
+ out.familySignals={hourOutput:v5PillarHas(a,P[3],'식상'),hourWealth:v5PillarHas(a,P[3],'재성')};
+ out.familyCopies=Object.fromEntries(Object.entries(V5.familyScene).map(([key,x])=>{
+  const p=typeof ReadingPool!=='undefined'&&ReadingPool.OPENING.family;
+  const ns=V5_NOTES.family[key],rule=V5.pairRule[x.rule]||x.rule;
+  return [key,{head:x.head,scene:p?p.scene[key]:x.detail,rule:p?p.blow[key]:rule,
+   fate:key==='cut'?V5.careerCut:key==='care'?V5.careerBurden:V5.child[key]||V5.parents[key],note:ns}];
+ }));
  out.crowdAvoid=v5CrowdAvoid(r,ok,office.key);
  // 부족한 기운은 대사 선택의 우선순위로만 쓰고, 출현을 막는 조건으로 쓰지 않는다.
  { const P2=P.slice(0,2).filter(p=>p&&p.known);
@@ -4458,6 +4476,7 @@ function v5Reading(R,now){
  v5PeriodCopy(out,r,now);
  if(typeof ReadingIntegration!=='undefined')ReadingIntegration.finish(out,R);
  if(typeof PeriodReading!=='undefined'&&R.periods)PeriodReading.apply(out,R.periods,pastReadingText,now);
+ if(typeof ReadingPool!=='undefined'&&ReadingPool.finalize)ReadingPool.finalize(out);
  return out;
 }
 /* 각 시기는 그 기간의 근거로 스스로 읽힌다. 다른 해를 찾아가라는 참조는 본문에 남기지 않는다. */
@@ -4637,18 +4656,27 @@ function renderResult(R){
    +(closing.length?'<div class="woven-closing">'+closing.map((t,i)=>'<p class="fate">'+esc(norm(t))+(i===closing.length-1?'<span class="fate-seal" aria-hidden="true">사주<br>도사</span>':'')+'</p>').join('')+'</div>':'')+note;
   S.append(box);
  });
- // 지나온 해와 앞날: 지나온 해 → 올해(이번 달) → 내년 → 10년을 같은 연표 줄로 잇는다.
- // 계산 안내(적용 기간·전환 시각·10년 시작 시점)는 줄마다 작은 글씨 한 줄로 둔다.
+ // 지나온 한때는 도입부에 한 번, 올해·내년·현재 10년은 전체 풀이 직전에 둔다.
+ // 이번 달과 나머지 시기는 접고 각 시기의 실제 적용 날짜와 근거를 유지한다.
  const tl=(cls,when,body)=>el(cls.startsWith('li ')?'li':'article','tl-item '+cls.replace(/^li /,''),'<div class="tl-when">'+when+'</div><div class="tl-body">'+body+'</div>');
- const PH=$('past-hits');PH.replaceChildren();
- if(v.past.length)PH.append(el('p','tl-intro','지나온 해 가운데 마찰이 겹친 해입니다.'));
- v.past.forEach(x=>{const b=BRANCHES[String(x.g||'')[1]];PH.append(tl('past','<b>'+x.year+'년</b>'+(b?icon(b.icon):''),'<h3>'+plainEsc(x.title)+'</h3>'+periodHtml(x)));});
- const ys=v.years||r.years;
+ const PH=$('past-hits'),PM=$('past-more');PH.replaceChildren();PM.replaceChildren();
+ const past=v.past.slice().sort((a,b)=>(b.score||0)-(a.score||0)||b.year-a.year);
+ $('past-block').hidden=!past.length;
+ past.forEach((x,i)=>{const b=BRANCHES[String(x.g||'')[1]],target=i?PM:PH;if(i===1)PM.append(el('h3','fate-part-title','다른 지나온 해'));target.append(tl('past','<b>'+x.year+'년</b>'+(b?icon(b.icon):''),'<h3>'+plainEsc(x.title)+'</h3>'+periodHtml(x)));});
+ const ys=v.years||r.years,periodTitles=new Set();
+ const mainPeriodHeading=p=>{
+  const title=norm(p.title||'');
+  // 본문과 시기 표시는 남기고 앞 해를 가리키거나 단위만 바꾼 제목은 되풀이하지 않는다.
+  if(/^\d{4}년의 문제가|다시 겹치는 해$/.test(title))return '';
+  const key=title.replace(/ (해|달|10년)(였습니다)?$/,'');
+  if(periodTitles.has(key))return '';periodTitles.add(key);
+  return '<h3>'+plainEsc(title)+'</h3>';
+ };
  const yearItem=(y,i)=>{
   // 제목이 이미 '앞 해의 문제가 다시 겹치는 해'이면 같은 말을 본문에서 되풀이하지 않는다
   const yt=/다시 겹치는 해$/.test(y.title||'')&&/^\d+년에 짚은 문제가 이 시기에도 이어집니다\.$/.test(y.text||'')?'':y.text;
   const b=BRANCHES[y.g[1]],ps=new Date(y.periodStart+9*HOUR),pe=new Date(y.periodEnd+9*HOUR-1),period=(ps.getUTCMonth()+1)+'월 '+ps.getUTCDate()+'일~'+(pe.getUTCFullYear()===ps.getUTCFullYear()?'':pe.getUTCFullYear()+'년 ')+(pe.getUTCMonth()+1)+'월 '+pe.getUTCDate()+'일';
-  return tl('tl-year'+(i===0?' this':''),'<b>'+y.year+'년</b>'+icon(b.icon),'<span class="flag'+(i===0?'':' next')+'">'+(i===0?'올해':'내년')+'</span><h3>'+plainEsc(y.title)+'</h3>'+periodHtml(y,yt)+'<small class="tl-note">사주 흐름의 적용 '+period+'</small>');
+  return tl('tl-year'+(i===0?' this':''),'<b>'+y.year+'년</b>'+icon(b.icon),'<span class="flag'+(i===0?'':' next')+'">'+(i===0?'올해':'내년')+'</span>'+mainPeriodHeading(y)+periodHtml(y,yt)+'<small class="tl-note">사주 흐름의 적용 '+period+'</small>');
  };
  $('years').replaceChildren(...ys.slice(0,1).map(y=>yearItem(y,0)));
  $('year-next').replaceChildren(...ys.slice(1,2).map(y=>yearItem(y,1)));
@@ -4657,11 +4685,11 @@ function renderResult(R){
  const L=r.luck,currentCycle=L.cycles.find(cy=>cy.i===L.current),fd=localYmd(inp.place,L.start);
  $('luck-start').textContent='10년 흐름은 '+fd.y+'년'+(inp.unknown?' 무렵':(' '+fd.m+'월'))+'부터 시작합니다.'+(currentCycle?' 지금은 '+currentCycle.startYear+'년에 시작한 흐름을 지나고 있습니다.':'')+(inp.unknown?' 태어난 시간을 몰라 바뀌는 시점은 몇 달 어긋날 수 있습니다.':'');
  $('luck-graph').innerHTML=luckGraph(L,v.luck.cycles.map(x=>x.c),v.luck.worst);
- const LL=$('luck-list');LL.replaceChildren();
+ const LL=$('luck-list'),LC=$('luck-current');LL.replaceChildren();LC.replaceChildren();
  v.luck.cycles.forEach(x=>{
   const cy=x.c,worst=cy.i===v.luck.worst;
-  LL.append(tl('li decade'+(x.now?' now':'')+(worst?' worst':''),'<b>'+cy.startYear+'년</b>'+icon(BRANCHES[cy.g[1]].icon),
-   (x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+'<h3>'+plainEsc(norm(cy.title))+'</h3>'+periodHtml(cy,x.now?cy.text:x.stage)+'<small class="tl-note">'+cy.endYear+'년까지 · '+cycleAgeLabel(cy,inp.unknown)+'부터 10년</small>'));
+  (x.now?LC:LL).append(tl('li decade'+(x.now?' now':'')+(worst?' worst':''),'<b>'+cy.startYear+'년</b>'+icon(BRANCHES[cy.g[1]].icon),
+   (x.now?'<span class="flag">지금</span>':'')+(worst?'<span class="flag red">마찰이 겹침</span>':'')+(x.now?mainPeriodHeading(cy):'<h3>'+plainEsc(norm(cy.title))+'</h3>')+periodHtml(cy,x.now?cy.text:x.stage)+'<small class="tl-note">'+cy.endYear+'년까지 · '+cycleAgeLabel(cy,inp.unknown)+'부터 10년</small>'));
  });
  // 전체 풀이
  $('verdict').textContent=norm(v.verdict);
@@ -4683,6 +4711,7 @@ function luckGraph(L,cycles,worstIndex){
  const area=path+' L'+X(n-1)+' '+(H-pb)+' L'+X(0)+' '+(H-pb)+' Z';
  let g='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="10년 단위 삶의 흐름"><defs><linearGradient id="lgA" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--gold)" stop-opacity=".5"/><stop offset="1" stop-color="var(--gold)" stop-opacity="0"/></linearGradient></defs>';
  g+='<text x="'+pl+'" y="20" font-size="15" font-weight="700" fill="var(--muted)">사주로 보는 10년 흐름</text>';
+ g+='<text x="'+(W-pr)+'" y="20" text-anchor="end" font-size="12" fill="var(--caption)">위는 수월함 · 아래는 마찰</text>';
  g+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+(H-pb)+'" y2="'+(H-pb)+'" stroke="var(--line-2)" stroke-width="2"/>';
  g+='<path d="'+area+'" fill="url(#lgA)"/><path d="'+path+'" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/>';
  cyc.forEach((c,i)=>{const x=X(i),y=Yv(vals[i]),now=c.i===L.current,worst=c.i===worstIndex;

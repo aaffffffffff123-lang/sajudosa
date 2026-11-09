@@ -48,11 +48,12 @@ test('physical wear enters the checking judgment only when its scene is displaye
  }
 });
 
-test('starting support and only the selected family scene survive the shorter reading',()=>{
+test('family editing preserves stated support and shows a single coherent scene',()=>{
  const v=rows[2].view,d=v.domains.find(x=>x.id==='family');assert.equal(v.origin.key,'shown');
- assert(d.candidates.some(x=>x.id==='F5'));assert(d.candidates.some(x=>x.id==='F6'));
- for(const [id,fragment] of [['F5','생활과 배움을 받쳐 준 도움과'],['F6','배울 돈을 받았다는 사실과']])
-  assert.equal(d.paragraphs.some(t=>t.includes(fragment)),d.poolIds.includes(id));
+ assert(d.lifeSelected);assert.equal(d.paragraphs.length,2);assert.equal(d.poolIds.length,0);
+ assert(!/받을 것 없이|배울 돈이 없|물려받을 것 없/.test(d.paragraphs.join(' ')));
+ assert.equal(d.paragraphs[0],d.detail);assert.equal(d.paragraphs[1],d.rule);
+ assert.equal(d.closing.length,1);
 });
 
 test('a displayed secondary move keeps the primary work judgment and discarded moves stay out',()=>{

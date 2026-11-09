@@ -133,7 +133,7 @@
   };
   function physicalPortrait(out,W){
     const n=W.asc.sign,body=ASC_BODY[n],evidence=[{kind:'asc',sign:n}];
-    const words=hasPhysicalPortrait(out)?[]:[body[0]];
+    const words=!hasPhysicalPortrait(out)&&[0,3,4,6,7,11].includes(n)?[body[0]]:[];
     const separation=p=>Math.abs(((p.longitude-W.asc.longitude+540)%360)-180);
     const near=Number.isFinite(W.asc.longitude)?W.planets.filter(p=>p.house===1&&FIRST_HOUSE_BODY[p.id]&&Number.isFinite(p.longitude))
       .sort((a,b)=>separation(a)-separation(b)||a.id.localeCompare(b.id))[0]:null;

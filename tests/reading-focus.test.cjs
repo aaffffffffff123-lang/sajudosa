@@ -55,9 +55,9 @@ test('child-related judgments remain conditional after the result is shortened',
   if(['shown','absent','absentPoor'].includes(d.cause))assert.match(d.closing[0],/^당신은 아이를 낳으면/);
   if(v.verdictEvidence.thread==='care-and-work')assert.match(v.verdict,/아이를 낳/);
  }
- for(const cause of ['shown','absent','absentPoor','care','cut'])assert(familyCauses.has(cause));
+ assert(familyCauses.size>=5);assert(familyCauses.has('boundaries'));assert(familyCauses.has('later'));
  const v=api.read({y:2006,m:8,d:17},{h:12,mi:0},true,'seoul',false).view;
- assert.match(v.verdict,/아이를 낳고 일을 이어 가면/);
+ assert(!/아이|출산|교육비/.test(v.verdict));assert.equal(v.domains.find(d=>d.id==='family').cause,'young');
 });
 
 test('selection is deterministic and does not mutate the chart or erase period evidence',()=>{
