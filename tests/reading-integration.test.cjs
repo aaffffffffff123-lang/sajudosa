@@ -33,21 +33,37 @@ test('125 readings retain selected scenes and evidence with one heading, one ver
  }
  assert.equal(reached.size,7);
 });
-test('relationship costs reach the final judgment only with the selected housing or wedding conditions',()=>{
- const d=rows[0].view.domains.find(x=>x.id==='home');assert(d.westernAddedIds.includes('L3'));assert.match(d.closing[0],/서운한 마음.*함께 살 비용/);assert.match(d.head,/연락은 끊깁니다/);assert.match(d.note.value,/집을 마련할 몫/);
+test('an eligible but unselected housing scene does not change a silence judgment',()=>{
+ const d=rows[0].view.domains.find(x=>x.id==='home');
+ assert(d.candidates.some(x=>x.id==='L3'&&x.western));
+ assert(!d.poolIds.includes('L3'));assert.equal(d.closing[0],d.integration.originalClosing[0]);
+ assert(!d.note.value.includes('집을 마련할 몫'));assert.match(d.head,/연락은 끊깁니다/);
 });
-test('mental checking and physical recovery are connected in the body final',()=>{
- const d=rows[1].view.domains.find(x=>x.id==='body');assert.equal(d.ruleKey,'checking');assert.match(d.closing[0],/걱정.*닳은 몸/);assert.equal(d.closing.length,1);assert(d.paragraphs.some(x=>x.includes('손목이나 무릎')));
+
+test('physical wear enters the checking judgment only when its scene is displayed',()=>{
+ for(const {view} of rows){const d=view.domains.find(x=>x.id==='body');
+  if(d.ruleKey!=='checking')continue;
+  if(d.poolIds.some(x=>['B2','B6'].includes(x)))assert.match(d.closing[0],/걱정.*닳은 몸/);
+  else assert.equal(d.closing[0],d.integration.originalClosing[0]);
+ }
 });
-test('starting support is preserved while housing and career guidance are distinguished',()=>{
- const v=rows[2].view,d=v.domains.find(x=>x.id==='family');assert.equal(v.origin.key,'shown');assert(d.paragraphs.some(x=>x.includes('생활과 배움을 받쳐 준 도움과')));assert(d.paragraphs.some(x=>x.includes('배울 돈을 받았다는 사실과')));
+
+test('starting support and only the selected family scene survive the shorter reading',()=>{
+ const v=rows[2].view,d=v.domains.find(x=>x.id==='family');assert.equal(v.origin.key,'shown');
+ assert(d.candidates.some(x=>x.id==='F5'));assert(d.candidates.some(x=>x.id==='F6'));
+ for(const [id,fragment] of [['F5','생활과 배움을 받쳐 준 도움과'],['F6','배울 돈을 받았다는 사실과']])
+  assert.equal(d.paragraphs.some(t=>t.includes(fragment)),d.poolIds.includes(id));
 });
-test('a secondary move retains its scene without replacing the primary work judgment',()=>{
- const d=rows[3].view.domains.find(x=>x.id==='work');assert(d.westernAddedIds.includes('W4'));assert.equal(d.head,d.integration.originalHead);assert.equal(d.closing[0],d.integration.originalClosing[0]);assert(!d.paragraphs.includes(d.head));assert(d.paragraphs.some(x=>x.includes('이력서')));
- const cases=rows.flatMap(({view})=>view.domains.filter(d=>d.id==='work'&&d.poolIds.includes('W4')));
- assert(cases.length>5);assert(new Set(cases.map(d=>d.closing[0])).size>3);
- for(const d of cases)assert.equal(d.closing[0],d.fates[0]);
+
+test('a displayed secondary move keeps the primary work judgment and discarded moves stay out',()=>{
+ const candidates=rows.map(x=>x.view.domains.find(d=>d.id==='work')).filter(d=>d.candidates.some(x=>x.id==='W4'));
+ const shown=candidates.filter(d=>d.poolIds.includes('W4'));
+ assert(shown.length>0);assert(candidates.length>shown.length);
+ for(const d of candidates){assert.equal(d.closing[0],d.fates[0]);assert.equal(d.head,d.integration.originalHead);
+  assert.equal(d.paragraphs.some(t=>t.includes('이력서')),d.poolIds.includes('W4'));
+ }
 });
+
 test('already coherent money and authority endings stay last',()=>{
  for(const {result,view} of rows){const b=old.v5Reading(result,NOW);for(const id of ['money','office']){const d=view.domains.find(x=>x.id===id),before=b.domains.find(x=>x.id===id);if(!d.selectionDecision)assert.equal(d.closing.at(-1),before.closing.at(-1));}}
  const d=rows[4].view.domains.find(x=>x.id==='money');assert.match(d.closing.at(-1),/오늘을 덜 힘들게/);
@@ -63,9 +79,13 @@ test('conflict policy chooses either system when adverse, but only for identical
 test('mixed-result wording changes without relabeling actual saju evidence',()=>{
  assert.equal(I.normalize('돈을 마련하는 팔자입니다. 반복하는 사주입니다.'),'돈을 마련하는 운명입니다. 반복하는 운명입니다.');assert.equal(I.normalize('당신의 사주에서 재성은'),'당신의 사주에서 재성은');
 });
-test('shared saju and astrology paragraphs also reach the final body judgment',()=>{
- const d=rows[4].view.domains.find(x=>x.id==='body');assert(d.poolIds.includes('B6'));assert.match(d.closing[0],/걱정.*닳은 몸/);assert.match(d.note.value,/회복에 드는 날과 돈/);
+test('discarded physical-wear candidates cannot return through notes or judgments',()=>{
+ const d=rows[4].view.domains.find(x=>x.id==='body');
+ assert(d.candidates.some(x=>x.id==='B6'));assert(!d.poolIds.includes('B6'));
+ assert(!d.paragraphs.some(t=>t.includes('손목이나 무릎')));
+ assert.equal(d.closing[0],d.integration.originalClosing[0]);
 });
+
 test('natal help conflict uses the adverse grounded branch and retains the previous selection for audit',()=>{
  const v=plain(old.v5Reading(rows[4].result,NOW)),g=v.domains.find(x=>x.id==='gwiin');g.cause='present';
  I.choose(v,{input:{unknown:false},western:{available:true,unknown:false,planets:[{id:'Jupiter',house:8}],aspects:[{a:'Jupiter',b:'Saturn',angle:90,orb:1}]}},api.V5);

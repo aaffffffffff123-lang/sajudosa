@@ -92,6 +92,7 @@
   const has=id=>(d.poolIds||[]).includes(id);
   const cause=id=>(out.domains.find(x=>x.id===id)||{}).cause;
   const present=d.cause==='present';
+  const primary=has(d.primaryPoolId)?d.primaryPoolId:null;
   if(present&&has('G4')&&(['palace_clash','month_day_clash'].includes(cause('work'))||out.core&&out.core.cause==='change'))
    return ['G4','당신은 귀인의 도움으로 들어선 곳을 떠나려는 날, 그동안 받은 도움의 값을 다시 요구받는 운명입니다.'];
   if(present&&has('G6')&&cause('office')==='supported')
@@ -100,6 +101,10 @@
    return ['G7',present?'당신은 귀인을 만나도 받은 도움을 갚을 몫부터 헤아리느라 필요한 만큼 기대지 못하는 운명입니다.':'당신은 어렵게 도움을 구하고도 갚을 부담 때문에 기대는 몫을 줄여, 혼자 치를 시간을 더 내는 운명입니다.'];
   if(has('G2')&&['challenge','mixed'].includes(cause('office')))
    return ['G2',present?'당신은 도움받은 은혜를 지키려고 도와준 사람 앞에서 반대할 말부터 삼키는 운명입니다.':'당신은 어렵게 한 번 받은 도움 때문에 그 뒤로 도와준 사람 앞에서 하고 싶은 말까지 고르는 운명입니다.'];
+  if(primary==='G4')return ['G4','당신은 더 좋은 길로 떠나려는 날에도 받은 도움의 값을 베푼 사람이 정하는 대로 치르는 운명입니다.'];
+  if(primary==='G6')return ['G6','당신은 도움으로 얻은 기회를 지켜도 도와준 사람의 신임이 끝나는 날 함께 흔들리는 운명입니다.'];
+  if(primary==='G7')return ['G7',present?'당신은 귀인을 만나도 갚을 수 있는 몫에 맞춰 부탁을 줄이는 운명입니다.':'당신은 갚을 부담을 먼저 세느라 필요한 도움보다 적게 구하고 남은 일을 혼자 치르는 운명입니다.'];
+  if(primary==='G2')return ['G2','당신은 도움받은 일보다 오래 은혜를 지키느라 다른 생각을 말할 때까지 허락을 살피는 운명입니다.'];
   if(present&&has('G1'))
    return ['G1','당신은 소개받은 곳에서 자기 몫을 해내고도 소개한 사람의 체면까지 지키느라 떠날 때를 늦추는 운명입니다.'];
   if(!present&&has('G5'))
@@ -142,21 +147,13 @@
    const help=d.id==='gwiin'?helperClosing(d,out):null;
    const closing=help?help[1]:closingFor(d,key);
    d.closing=closing?[closing]:[];
-   if(t){
-    // 여러 이름표를 추가하지 않고 실제로 선택된 부담을 한 목록에 묶는다.
-    let extra=t[4];
-    if(d.id==='money')extra=d.poolIds.map(id=>({learning:'다음 준비에 드는 값',debt:'약속한 상환',effort:'돈으로 돌아오지 않은 수고',M2:'돈을 벌기 위해 내는 품',M6:'이동 전에 마련할 돈'}[id])).filter(Boolean).join(' · ');
-    if(d.id==='home'&&key==='housing')extra=[d.poolIds.includes('L3')?'집을 마련할 몫':'',d.poolIds.includes('L2')?'결혼 비용':'',d.poolIds.includes('L8')?'함께 살 시간과 거리':''].filter(Boolean).join(' · ');
-    if(d.id==='body'&&key==='wear'&&d.ruleKey!=='checking')extra='회복에 드는 날과 돈';
-    if(d.id==='body'&&key==='duty')extra=d.poolIds.includes('B4')?'빠진 몫의 부담 · 동료에게 남는 미안함':d.poolIds.includes('B3')?'쉬고 돌아온 뒤 메울 일 · 쉰 만큼 뒤처졌다는 평가':'몸을 돌볼 시간 · 생활을 유지할 비용';
-    if(d.id==='family'&&key==='received'&&['old','young'].includes(d.cause))extra='자기 생활의 유지 · 가족의 기대';
-    const values=[...new Set([d.note&&d.note.value,extra].filter(Boolean).flatMap(x=>x.split(/\s*·\s*/)).filter(Boolean))];
-    if(values.length){
-     const labels={work:'일을 마치고도 남는 부담',body:'쉬는 시간에 남는 부담',home:'관계에서 계속 맞춰야 하는 것',family:'가족과 내 생활에서 감당할 몫',gwiin:'도움을 구하고 받는 데 드는 품',office:'권한과 함께 돌아오는 책임'};
-     d.note={label:labels[d.id]||(d.note&&d.note.label)||t[3],value:values.join(' · ')};
-    }
+   // 항목 목록은 첫 장면을 짧게 짚는다. 탈락한 후보의 주제를 다시 늘어놓지 않는다.
+   if(d.note){
+    const values=[...new Set(d.note.value.split(/\s*·\s*/).filter(Boolean))];
+    d.note={label:d.note.label,value:values.slice(0,3).join(' · ')};
    }
-   if(d.id==='money'&&d.relocationCost&&d.note&&!d.note.value.includes('이사비'))d.note.value+=' · 이사비와 주거비';
+   if(d.id==='money'&&d.poolIds.includes('M6')&&d.note)
+    d.note.value=d.note.value.split(' · ').slice(0,2).concat('이사비와 주거비').join(' · ');
    d.integration={key,sourceIds:d.poolIds.slice(),astrologyIds:(d.westernAddedIds||[]).slice(),originalHead:originals.head,originalClosing:originals.closing,originalNote:originals.note,summary:closing,closingSourceId:help?help[0]:null};
    out.integration.sources.push({domain:d.id,key,poolIds:d.poolIds.slice()});
   }

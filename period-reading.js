@@ -151,49 +151,50 @@
  };
  const sentenceList=t=>(String(t||'').match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[]).map(x=>x.trim()).filter(Boolean);
  const periodName=kind=>({past:'그해',year:'이 해',month:'이달',decade:'이 10년 사이'}[kind]||'이 기간');
- function continuation(items,kind){
-  if(!items.length)return '';
-  const topics=[...new Set(items.map(x=>x.topic))].join(', '),when=periodName(kind);
-  // 읽는 순서와 실제 시간 순서는 다르다. 올해 뒤에 나오는 10년 흐름에
-  // 더 이른 접촉이 들어 있을 때는 이를 새로 되풀이되는 일로 말하지 않는다.
-  if(items.every(x=>x.continued))return '앞서 짚은 '+topics+'도 '+when+'까지 이어집니다.';
-  if(items.every(x=>x.overlap))return '앞서 짚은 '+topics+'도 '+when+'에 겹칩니다.';
-  if(items.every(x=>x.later))return '앞서 짚은 '+topics+'도 '+when+'에 다시 나타납니다.';
-  return '앞서 짚은 '+topics+'도 '+when+'에 나타나는 흐름입니다.';
+ function shortSpan(r){
+  const a=new Date(r.start+9*3600000),b=new Date(r.end-1+9*3600000);
+  const y=a.getUTCFullYear(),m=a.getUTCMonth()+1,ey=b.getUTCFullYear(),em=b.getUTCMonth()+1;
+  return y+'년 '+m+'월'+(y!==ey?'~'+ey+'년 '+em+'월':m!==em?'~'+em+'월':'');
  }
  function narrative(p,{kind,base=p.text||'',start,end,seen=new Map(),pastify}={}){
-  const groups=new Map(),native=[...new Set(sentenceList(base))];
+  const groups=new Map();
   for(const e of p.starPeriods||[]){
    const key=e.copyKey||e.domain+':'+e.valence+':'+(e.originalText||e.text);
    let g=groups.get(key);if(!g){g={key,item:e,windows:[],sourceIds:[],evidence:[]};groups.set(key,g);}
-   const windows=[e.range,...(e.recurrences||[])];
-   for(const w of windows){const range={start:Math.max(w.start,start),end:Math.min(w.end,end)};if(range.end>range.start)g.windows.push(range);}
+   for(const w of [e.range,...(e.recurrences||[])]){
+    const range={start:Math.max(w.start,start),end:Math.min(w.end,end)};
+    if(range.end>range.start)g.windows.push(range);
+   }
    g.sourceIds.push(e.id);g.evidence.push(...e.evidence,...(e.recurrences||[]));
   }
-  const pieces=[],repeated=[],dates=[];
-  for(const g of [...groups.values()].sort((a,b)=>Math.min(...a.windows.map(w=>w.start))-Math.min(...b.windows.map(w=>w.start)))){
-   const e=g.item,ranges=mergeRanges(g.windows),prior=typeof seen.get==='function'?seen.get(g.key):null;
-   const variant=Number(String(e.copyKey||'').split(':').pop()),topic=TOPICS[e.domain]&&TOPICS[e.domain][e.valence]&&TOPICS[e.domain][e.valence][variant];
-   if(seen.has(g.key)&&topic){
-    repeated.push({topic,continued:!!e.continued,
-     overlap:!!prior&&ranges.every(r=>prior.some(old=>old.start<r.end&&r.start<old.end)),
-     later:!!prior&&ranges.every(r=>r.start>=Math.max(...prior.map(old=>old.end)))});
-   }else{
-    let detail=e.originalText||e.text;
-    if(kind==='past'&&typeof pastify==='function')detail=pastify(detail);
-    const fresh=sentenceList(detail).filter(x=>!native.includes(x));
-    // 정확한 날짜는 상세에 모으고, 10년 안의 접촉을 10년 내내 계속되는 상태로 넓히지 않는다.
-    if(fresh.length)pieces.push(periodName(kind)+'에는 '+fresh.join(' '));
+  const ordered=[...groups.values()].map(g=>({...g,ranges:mergeRanges(g.windows)}))
+   .sort((a,b)=>(a.ranges[0]?.start||0)-(b.ranges[0]?.start||0));
+  const dates=ordered.map(g=>{
+   let detail=g.item.originalText||g.item.text;
+   if(kind==='past'&&typeof pastify==='function')detail=pastify(detail);
+   return {label:g.item.label,ranges:g.ranges,periods:g.ranges.map(r=>spanLabel(r.start,r.end)+(g.item.evidence.some(x=>x.unknownBirthTime)?' 무렵':'')),sourceIds:g.sourceIds,evidence:g.evidence,text:detail,continued:!!g.item.continued};
+  });
+  // 같은 뜻을 매 시기 다시 설명하지 않는다. 새 주제 한 개만 본문에, 나머지는 날짜와 함께 상세에 둔다.
+  const native=sentenceList(base)[0]||'';
+  const chosen=ordered.find(g=>g.ranges.length&&!seen.has(g.key))||(!native&&ordered.find(g=>g.ranges.length));
+  const pieces=[native].filter(Boolean);
+  if(chosen){
+   const e=chosen.item,ranges=chosen.ranges,prior=seen.has(chosen.key);
+   let detail=sentenceList(e.originalText||e.text)[0]||'';
+   if(kind==='past'&&typeof pastify==='function')detail=pastify(detail);
+   const when=shortSpan(ranges[0])+(ranges.length>1?' 등':'')+(e.evidence.some(x=>x.unknownBirthTime)?' 무렵':'');
+   if(prior){
+    const variant=Number(String(e.copyKey||'').split(':').pop()),topic=TOPICS[e.domain]?.[e.valence]?.[variant]||e.label;
+    const particle=(topic.charCodeAt(topic.length-1)-44032)%28?'이':'가';
+    const old=typeof seen.get==='function'?seen.get(chosen.key):null;
+    const later=old&&ranges.every(r=>r.start>=Math.max(...old.map(x=>x.end)));
+    const overlap=old&&ranges.every(r=>old.some(x=>x.start<r.end&&r.start<x.end));
+    detail=topic+particle+(e.continued?' 이어지는 구간입니다.':later?' 다시 나타나는 구간입니다.':overlap?' 겹치는 구간입니다.':' 나타나는 구간입니다.');
    }
-   if(typeof seen.set==='function')seen.set(g.key,mergeRanges([...(prior||[]),...ranges]));else seen.add(g.key);
-   dates.push({label:e.label,ranges,periods:ranges.map(r=>spanLabel(r.start,r.end)+(e.evidence.some(x=>x.unknownBirthTime)?' 무렵':'')),sourceIds:g.sourceIds,evidence:g.evidence});
+   if(detail)pieces.push(when+'에는 '+detail);
+   if(typeof seen.set==='function')seen.set(chosen.key,mergeRanges([...(seen.get(chosen.key)||[]),...ranges]));else seen.add(chosen.key);
   }
-  const first=pieces.shift(),paragraphs=[[native.join(' '),first].filter(Boolean).join(' ')].filter(Boolean);
-  paragraphs.push(...pieces);
-  let bridge=continuation(repeated,kind);
-  if(kind==='past'&&typeof pastify==='function')bridge=pastify(bridge);
-  if(bridge){if(paragraphs.length)paragraphs[paragraphs.length-1]+=' '+bridge;else paragraphs.push(bridge);}
-  return {paragraphs,dates};
+  return {paragraphs:pieces.length?[pieces.join(' ')]:[],dates,nativeDetail:p.nativeDetail||base,focusIds:chosen?chosen.sourceIds:[]};
  }
  function apply(out,data,pastify,now=Date.now()){
   if(!data||!data.available)return out;
@@ -232,7 +233,7 @@
  function prepare(req){
   if(typeof Worker==='undefined')return Promise.reject(new Error('별자리 시기 계산을 이 환경에서 시작하지 못했습니다.'));
   let cancel;const promise=new Promise((resolve,reject)=>{
-   const worker=new Worker('period-worker.js?v=20261109-conditional-flow');let done=false;
+   const worker=new Worker('period-worker.js?v=20261109-focused-reading');let done=false;
    const finish=(fn,value)=>{if(done)return;done=true;clearTimeout(timer);worker.terminate();fn(value);};
    cancel=()=>finish(reject,new Error('풀이 계산이 취소되었습니다.'));
    const timer=setTimeout(()=>finish(reject,new Error('별자리 시기 계산 시간이 초과되었습니다.')),30000);

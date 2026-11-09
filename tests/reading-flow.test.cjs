@@ -72,7 +72,7 @@ test('the dark-secret reveal survives the new layout: markers, running head, emb
 
 test('the direction is written where the next editor sees it, and the screen copy comes only from v5Reading',()=>{
  const head=slice('/* ---------- 자리 문서(V5)','const V5=');
- for(const k of ['집안 판정부터 꺾고','사주·별자리 조건에 묶는다','상한을 두지 않는다','이치를 문단 안에 둔다','이름표를 따로 붙이지 않는다','당신은 …팔자입니다','사람마다 다르게'])assert(head.includes(k),k);
+ for(const k of ['집안 판정부터 꺾고','사주·별자리 조건에 묶는다','중심 흐름에 연결되는 세 분야','이치를 문단 안에 둔다','이름표를 따로 붙이지 않는다','당신은 …팔자입니다','사람마다 다르게'])assert(head.includes(k),k);
  const render=slice('function renderResult(R){','function cycleAgeLabel(');
  assert(render.includes('v5Reading(R'));
  assert(!/\br\.(sections|verdict|cautions|observations)\b/.test(render));
@@ -163,7 +163,7 @@ test('every life domain has a concrete note that stays tied to its selected caus
  const seen=new Map();
  for(const {v} of ALL)for(const d of v.domains){
   assert(d.note&&d.note.label&&d.note.value,d.id+':'+d.cause);
-  const key=d.id+':'+d.cause,note=JSON.stringify(d.note);
+  const key=d.id+':'+d.cause+':'+(d.primaryPoolId||''),note=JSON.stringify(d.note);
   if(seen.has(key))assert.equal(note,seen.get(key),'same cause keeps the same concrete examples');
   seen.set(key,note);
   if(d.id!=='money'){
@@ -357,8 +357,8 @@ test('every life domain keeps a distinct rule and uses the common reading order'
  assert(!render.includes('<b>이치</b>'));assert(!/<b>근거<\/b>|western-link|expansion/.test(render));
  for(const {v} of ALL)for(const d of v.domains){
   // 돈을 뺀 여섯 칸은 둘째 문단(한 방) 끝에 이치를 품는다. 돈은 유형별 한 방이 대신한다.
-  if(d.id!=='money'){assert.equal(d.paragraphs.filter(t=>t.endsWith(d.rule)).length,1,d.id);assert(d.paragraphs[1].endsWith(d.rule),d.id);}
-  assert.deepEqual(d.closing,d.fates);
+  if(d.id!=='money'&&!d.primaryPoolId){assert.equal(d.paragraphs.filter(t=>t.endsWith(d.rule)).length,1,d.id);assert(d.paragraphs[1].endsWith(d.rule),d.id);}
+  if(d.id!=='family')assert.deepEqual(d.closing,d.fates);
   assert(d.closing.every(t=>!d.paragraphs.includes(t)),d.id);
  }
  for(const k of ['복은 집에서 내려옵니다','센 기운이 약한 기운을 부리는 것이 다섯 기운의 순리',
@@ -473,22 +473,21 @@ test('crowd officer absence includes hidden stems and never assumes an unknown b
  assert(absent>0);assert(hidden>0);
 });
 
-test('past, this year, the current month and the ten-year flow never repeat a sentence',()=>{
- let same=0;
- for(const {v} of ALL){
+test('every visible period stands alone with its own scope and a bounded explanation',()=>{
+ for(const {v,r} of ALL){
   const month=v.years.flatMap(y=>y.months||[]).find(m=>m.start<=NOW&&NOW<m.end);
-  const cur=v.luck.cycles.find(x=>x.now);
-  const texts=[...v.past.map(x=>x.text),...v.years.map(x=>x.text),month&&month.text,cur&&cur.c.text,...v.luck.cycles.filter(x=>!x.now).map(x=>x.stage)].filter(Boolean);
-  const seen=new Set;
-  for(const t of texts)for(const s of api.sentenceListV2(t)){assert(!seen.has(s),s);seen.add(s);}
-  for(const y of v.years){
-   const p=v.past.find(x=>y.text===x.year+'년과 같은 일이 다시 옵니다.');
-   if(p){same++;assert(p.text);}
-   assert(!('expansion' in y));
+  const rows=[...v.past,...v.years,month,...v.luck.cycles.map(x=>x.c)].filter(Boolean);
+  for(const p of rows){
+   assert(p.text,p.title);assert(!/앞서 짚은|년에 짚은|같은 일이 다시/.test(p.text),p.text);
+   assert(api.sentenceListV2(p.text).length<=1,p.text);
+   assert(Array.isArray(p.evidence),'the underlying computation is retained');
   }
-  assert(v.past.every(x=>!('expansion' in x)));
+  for(const y of v.years){
+   const raw=r.years.find(x=>x.year===y.year);
+   assert.deepEqual(y.evidence,raw.evidence);
+   y.months.forEach((m,i)=>assert.deepEqual(m.evidence,raw.months[i].evidence));
+  }
  }
- assert(same>0,'a year that repeats a past year points back to it');
 });
 
 test('role and job lines name what changes instead of a vague 자리',()=>{

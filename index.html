@@ -1209,12 +1209,12 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
 </defs>
 </svg>
 <script src="assets/astronomy.browser.min.js?v=fc5ab5c4"></script>
-<script src="closing-reading.js?v=20261109-conditional-flow"></script>
-<script src="reading-pool.js?v=20261109-conditional-flow"></script>
+<script src="closing-reading.js?v=20261109-focused-reading"></script>
+<script src="reading-pool.js?v=20261109-focused-reading"></script>
 <script src="western.js?v=20261107-pool"></script>
 <script src="opening-reading.js?v=20261109-grounded-copy"></script>
-<script src="reading-integration.js?v=20261109-grounded-copy"></script>
-<script src="period-reading.js?v=20261109-conditional-flow"></script>
+<script src="reading-integration.js?v=20261109-focused-reading"></script>
+<script src="period-reading.js?v=20261109-focused-reading"></script>
 <script>
 /* =====================================================================
  * 사주도사 (index.html)
@@ -3537,7 +3537,7 @@ function monthWindowsHtml(months){
 /* ---------- 자리 문서(V5) ----------
  * 풀이 화면의 방향은 사용자가 정했다 (2026-11-04). 이 부분을 고치는 사람은 아래를 지킨다.
  * 1. 첫 문단은 독자가 자기 모습을 알아보는 평이한 사주풀이다. 집안 판정부터 꺾고 내려갈수록 범위를 넓힌다: 집안 → 나 → 일·돈·몸 → 짝 → 나라 → 세상 → 판정 → 명령.
- * 2. 독한 줄은 전부 사주·별자리 조건에 묶는다(reading-pool.js). 조건이 맞을 때만 뜨고 한 사람이 받는 문단 수에 상한을 두지 않는다. 근거와 별자리 이름은 본문에 쓰지 않고 맨 위 접힌 표에 모은다. 사주와 상관없는 숫자·지난 사건은 만들지 않는다.
+ * 2. 독한 줄은 전부 사주·별자리 조건에 묶는다(reading-pool.js). 조건에 맞는 후보 중 중심 흐름에 연결되는 세 분야까지만 후속 장면을 하나씩 고른다. 근거와 별자리 이름은 본문에 쓰지 않고 맨 위 접힌 표에 모은다. 사주와 상관없는 숫자·지난 사건은 만들지 않는다.
  * 3. 칸마다 부조리를 '원래 그런 순리'처럼 말하는 이치를 문단 안에 둔다. 이름표를 따로 붙이지 않는다. 부조리 주제 하나는 한 칸에만 두고 같은 뜻을 되풀이하는 문단은 덜어낸다.
  * 4. 각 칸의 도사 대사는 "당신은 …팔자입니다." 한 문장이다. 전체 풀이는 실제 본문에서 연결되는 3~4개 원인을 짧은 문단으로 묶는다(2026-11-08). 문장 중간 쉼표, 원인을 앞에 따로 세우는 꼴, "~이지 ~아닙니다"·"~가 아니라" 대구를 쓰지 않는다.
  * 5. 생활 설명 → 팔자 → 이치는 같은 원인을 따른다. 타고난 습관도 외부 압박도 쓴다. 습관을 억지로 남의 명령으로 바꾸지 않는다.
@@ -4451,7 +4451,7 @@ function v5Reading(R,now){
  out.cautions=[c1,office.caution||V5.cmd.boss];
  // 같은 범위의 상반된 해석은 불리한 근거를 설명과 함께 선택한다. 원고 표는 보존한다.
  if(typeof ReadingIntegration!=='undefined')ReadingIntegration.choose(out,R,V5);
- // 칸마다 조건이 맞는 문단을 모두 고른 뒤 그 실제 본문으로 전체 풀이를 종합한다.
+ // 조건에 맞는 후보를 좁혀 한 사람의 중심 장면을 고른 뒤 실제 본문으로 전체 풀이를 종합한다.
  if(typeof ReadingPool!=='undefined')ReadingPool.weave(out,R);
  // 출생차트 문단을 구성한 뒤 중복 제목·판정 없이 하나의 흐름으로 엮는다.
  if(typeof OpeningReading!=='undefined')out.opening=OpeningReading.compose(out,R);
@@ -4460,23 +4460,28 @@ function v5Reading(R,now){
  if(typeof PeriodReading!=='undefined'&&R.periods)PeriodReading.apply(out,R.periods,pastReadingText,now);
  return out;
 }
-/* 지나온 해 → 올해·내년 → 월운 → 10년 순서로 읽는다. 앞에서 나온 문장은 뒤에서 다시 쓰지 않는다. */
+/* 각 시기는 그 기간의 근거로 스스로 읽힌다. 다른 해를 찾아가라는 참조는 본문에 남기지 않는다. */
 function v5PeriodCopy(out,r,now){
- const seen=new Set(),pastSentences=new Set();
- out.past.forEach(p=>sentenceListV2(p.text).forEach(t=>{seen.add(t);pastSentences.add(t);}));
- const fresh=(text,keep)=>sentenceListV2(text).filter(t=>{if(seen.has(t))return false;if(keep)seen.add(t);return true;}).join(' ');
+ const own=(p,prefix,past=false)=>{
+  const raw=p.text||'',pointer=/\d+년에? 짚은|같은 일이 다시|앞서 짚은/.test(raw);
+  const evidence=(p.evidence||[]).filter(e=>e.effect);
+  const title=String(p.title||'').replace(/ (해|달|10년)(였습니다)?$/,'');
+  const matched=evidence.filter(e=>title.startsWith(e.title)||e.title&&title.includes(e.title));
+  const ranked=(matched.length?matched:evidence.filter(e=>!/^upper-/.test(e.id||''))).slice().sort((a,b)=>(b.level||0)-(a.level||0));
+  const text=pointer||!raw?(ranked[0]&&ranked[0].effect||''):raw;
+  const first=sentenceListV2(text)[0]||'';
+  const body=past?pastReadingText(first):first;
+  return Object.assign({},p,{text:body?prefix+body:'',nativeDetail:past?pastReadingText(text):text});
+ };
+ out.past=out.past.map(p=>own(p,p.year+'년에는 ',true));
  out.years=r.years.map(y=>{
-  // 지난 해에 짚은 일이 그대로 다시 오면 같은 문장을 시제만 바꿔 되풀이하지 않는다.
-  const told=sentenceListV2(pastReadingText(y.text||'')),same=told.length?out.past.find(p=>told.every(t=>sentenceListV2(p.text).includes(t))):null;
-  const text=same?same.year+'년과 같은 일이 다시 옵니다.':fresh(y.text,true);
-  return Object.assign({},y,{text});
+  const copy=own(y,y.year+'년에는 ');
+  copy.months=(y.months||[]).map(m=>own(m,'이번 달에는 '));return copy;
  });
- // 월운은 지금 달 하나만 보이므로 달끼리는 비교하지 않고 앞의 해와만 비교한다.
- out.years.forEach((y,i)=>{y.months=(r.years[i].months||[]).map(m=>Object.assign({},m,{text:fresh(m.text,false)}));});
- const month=out.years.flatMap(y=>y.months).find(m=>m.start<=now&&now<m.end);
- if(month)sentenceListV2(month.text).forEach(t=>seen.add(t));
- // 10년 흐름은 지금 흐름의 본문과 다음 흐름의 한 줄을 화면 순서대로 정리한다.
- out.luck.cycles=out.luck.cycles.map(x=>x.now?(x.c.text?Object.assign({},x,{c:Object.assign({},x.c,{text:fresh(x.c.text,true)})}):x):(x.stage?Object.assign({},x,{stage:fresh(x.stage,true)}):x));
+ out.luck.cycles=out.luck.cycles.map(x=>{
+  const c=own(x.c,x.c.startYear+'년부터의 흐름에서는 ');
+  return Object.assign({},x,{c,stage:x.now?'':c.text});
+ });
  return out;
 }
 /* 현재 월운: 풀이와 적용 기간, 다음 절기 전환일 */
@@ -4572,7 +4577,7 @@ function integratedText(t){return typeof ReadingIntegration!=='undefined'?Readin
 function periodHtml(p,base=p.text||''){
  const n=p.narrative||{paragraphs:[base].filter(Boolean),dates:[]};
  const prose=n.paragraphs.map(t=>'<p class="period-paragraph">'+plainMd(integratedText(t))+'</p>').join('');
- const dates=n.dates.length?'<details class="period-dates"><summary>시기 자세히 보기</summary><dl>'+n.dates.map(d=>'<div><dt>'+esc(d.label)+'</dt><dd>'+d.periods.map(esc).join('<br>')+'</dd></div>').join('')+'</dl></details>':'';
+ const dates=n.dates.length?'<details class="period-dates"><summary>시기 자세히 보기</summary><dl>'+n.dates.map(d=>'<div><dt>'+esc(d.label)+'</dt><dd>'+d.periods.map(esc).join('<br>')+(d.text?'<p>'+plainMd(integratedText(d.text))+'</p>':'')+'</dd></div>').join('')+'</dl></details>':'';
  return prose+dates;
 }
 function renderResult(R){

@@ -1,7 +1,7 @@
 // 칸마다 붙는 문단 묶음(reading-pool.js) 검사. 2026-11-07 초안에서 정한 규칙을 지킨다.
 // - 확정한 재물 원고(COPY)는 글자 하나 바꾸지 않는다.
 // - 일·몸·짝과 관계·가족과 부양·귀인·관운은 원인별 [장면, 한 방]으로 시작하고, 한 방 끝에 그 칸의 원래 이치를 글자 그대로 품는다.
-// - 문단은 사주·별자리 조건이 맞을 때만 붙고 한 사람이 받는 문단 수에 상한을 두지 않는다.
+// - 문단은 사주·별자리 조건이 맞을 때만 붙고 후보와 화면 선택은 구분하고 중심 흐름에 연결되는 장면만 보여 준다.
 // - 별자리는 문단을 고르는 조건이며 총평은 실제로 선택된 여러 칸의 원인을 잇는다. 본문에 별자리·사주 용어를 쓰지 않고 같은 문장을 두 번 쓰지 않는다.
 // 이 검사가 깨지면 문장을 순하게 바꾸지 말고 조건과 제외 목록을 맞춘다.
 const test=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm'),path=require('node:path');
@@ -18,6 +18,9 @@ function read(y,m,d,{h=12,mi=0,unknown=false,pk='seoul',male=true}={}){
  const result=core.buildResult(inp,date);
  return {result,view:core.v5Reading(result,NOW)};
 }
+// 후보 조건 검사는 후보 집합을 본다. 실제 본문 선택·길이·결론은 별도 검사한다.
+function candidateView(view){return {...view,domains:view.domains.map(d=>({...d,poolIds:d.candidates.map(x=>x.id),westernAddedIds:d.candidates.filter(x=>x.western).map(x=>x.id),paragraphs:d.paragraphs.slice(0,2).concat(d.candidates.map(x=>x.text))}))};}
+function readCandidates(...args){const row=read(...args);return {...row,view:candidateView(row.view)};}
 const ALL=(()=>{let seed=20261107;const rnd=()=>{seed=(seed*1103515245+12345)>>>0;return seed/4294967296;};const out=[];
  while(out.length<120){const y=1960+Math.floor(rnd()*45),m=1+Math.floor(rnd()*12),d=1+Math.floor(rnd()*28),h=Math.floor(rnd()*24),unknown=rnd()<.2,male=rnd()<.5,pk=rnd()<.5?'seoul':'busan';
   try{out.push(read(y,m,d,{h,unknown,male,pk}));}catch(e){}}
@@ -90,7 +93,7 @@ function fake({levels={},visible={},ten={},strength='중화',interactions=[],sin
  const R={input:{male},reading:{a,sinsal},western:planets?{available:true,planets:planets.map(([id,house,sign])=>({id,house,sign:sign==null?null:sign})),aspects}:undefined};
  const out={origin:origin?{key:origin}:undefined,core:{cause:causes.core||'x',rule:coreRule},domains:['work','money','body','home','family','gwiin','office'].map(id=>({id,cause:causes[id]||(id==='gwiin'?'absent':id==='money'?'reserve':'base'),detail:id+' 장면',rule:id+' 이치',fates:['당신은 '+id+' 팔자입니다.']}))};
  ReadingPool.weave(out,R);
- return Object.fromEntries(out.domains.map(d=>[d.id,d]));
+ return Object.fromEntries(candidateView(out).domains.map(d=>[d.id,d]));
 }
 
 test('the approved money manuscript is kept word for word and every other money cause keeps its own rule',()=>{
@@ -114,10 +117,12 @@ test('each card follows its own order of paragraphs and closes on every fate lin
   const c=ReadingPool.context(result,view);
   const pool=d.poolIds.map(id=>{const x=POOL[d.id].find(x=>x.id===id);return (x.textFor&&x.textFor(c))||(x.originText&&x.originText[view.origin.key])||x.text;});
   assert.deepEqual(d.poolIds,ids[d.id].filter(id=>d.poolIds.includes(id)),d.id);
-  assert.deepEqual(d.closing,d.fates,d.id);assert(d.closing.length>=1,d.id);
+  assert(d.closing.length>=1,d.id);if(d.id!=='family')assert.deepEqual(d.closing,d.fates,d.id);
   if(d.id==='money'){
    const opening=d.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[d.cause];
-   assert.deepEqual(d.paragraphs,[...opening,...pool,COPY.stability]);
+   assert.deepEqual(d.paragraphs,[...opening,...pool]);
+  }else if(d.primaryPoolId){
+   assert.deepEqual(d.paragraphs,[pool[0],ReadingPool.HELP[d.primaryPoolId][1]]);
   }else if(OPENING[d.id]){
    const o=OPENING[d.id];
    assert.deepEqual(d.paragraphs,[(o.followWork&&o.followWork[d.cause]||{})[c.cause('work')]||o.scene[d.cause]||o.scene.fallback||d.detail,o.blow[d.ruleKey||d.cause]||d.rule,...pool].filter(Boolean),d.id);
@@ -151,7 +156,7 @@ test('six cards open on a scene and a blow that carries the card rule word for w
  const seen={};
  for(const {view} of ALL)for(const d of view.domains){
   if(!OPENING[d.id])continue;
-  assert(d.paragraphs[1].endsWith(d.rule),d.id);
+  if(!d.primaryPoolId)assert(d.paragraphs[1].endsWith(d.rule),d.id);
   assert.notEqual(d.paragraphs[0],d.detail,d.id+':'+d.cause);
   (seen[d.id]=seen[d.id]||new Set).add(d.ruleKey||d.cause);
  }
@@ -219,7 +224,7 @@ test('office pressure survives personal wealth and needs no prediction of a spec
  assert(!has({interactions:[{kind:'충',positions:[1,2]}]},'O6'));
  assert(has({levels:{관성:'strong'},interactions:[{kind:'충',positions:[1,2]}]},'O6'));
  // 실제 회귀 사례: 재성이 강하고 생시를 몰라도 예산·서명 부담을 보존한다.
- const example=read(1960,10,21,{unknown:true,pk:'busan',male:false});
+ const example=readCandidates(1960,10,21,{unknown:true,pk:'busan',male:false});
  const c=ReadingPool.context(example.result,example.view);
  assert(c.hi('재성'));assert.equal(example.view.origin.key,'shown');
  const office=example.view.domains.find(d=>d.id==='office');
@@ -227,7 +232,7 @@ test('office pressure survives personal wealth and needs no prediction of a spec
  for(const id of ['O9','O7'])assert(office.poolIds.includes(id),id);
  // 이 사례의 백호와 해·날 자리 충돌만으로 경위서·감축까지 복구하지 않는다.
  assert(!office.poolIds.includes('O5')&&!office.poolIds.includes('O6'));
- const pressured=read(2003,6,18,{h:1,mi:25,pk:'busan',male:false}).view.domains.find(d=>d.id==='office');
+ const pressured=readCandidates(2003,6,18,{h:1,mi:25,pk:'busan',male:false}).view.domains.find(d=>d.id==='office');
  for(const id of ['O9','O7','O5','O6'])assert(pressured.poolIds.includes(id),id);
 });
 
@@ -253,7 +258,7 @@ test('leaving a helper requires the same movement evidence as the resume scene',
  const separate=fake({...support,sinsal:[{key:'yeokma'}],causes:{gwiin:'present',work:'palace_clash'}});
  assert(!separate.work.poolIds.includes('W4'));assert(separate.gwiin.poolIds.includes('G4'));
  // 이동이 없는 실제 입력에서도 기존의 도움·의무 문단은 남긴다.
- const example=read(2002,5,12,{h:13,mi:32,pk:'daejeon',male:false});
+ const example=readCandidates(2002,5,12,{h:13,mi:32,pk:'daejeon',male:false});
  const d=Object.fromEntries(example.view.domains.map(x=>[x.id,x]));
  assert(!ReadingPool.context(example.result,example.view).moveSignal);
  assert(!d.work.poolIds.includes('W4'));assert(!d.gwiin.poolIds.includes('G4'));
@@ -269,7 +274,7 @@ test('repetitive work needs activity or workload evidence beyond a wealth god',(
  assert(has({levels:{식상:'strong'}}));
  for(const house of [1,6])assert(has({planets:[['Mars',house]]}));
  assert(!has({planets:[['Mars',10]]}));
- const example=read(1991,7,10,{h:23,mi:37,pk:'busan',male:true});
+ const example=readCandidates(1991,7,10,{h:23,mi:37,pk:'busan',male:true});
  const body=example.view.domains.find(x=>x.id==='body');
  assert(!body.poolIds.includes('B6'));
  for(const id of ['B3','B4','B7'])assert(body.poolIds.includes(id),id);
@@ -289,7 +294,7 @@ test('learning pressure preserves family support and the approved manuscript for
  }
  assert(!fake({origin:'shown'}).money.poolIds.includes('learning'));
  for(const money of ['paper','interrupted'])assert(!fake({...support,origin:'shown',causes:{money}}).money.poolIds.includes('learning'));
- const example=read(1956,1,4,{h:10,mi:33,pk:'gwangju',male:true}).view;
+ const example=readCandidates(1956,1,4,{h:10,mi:33,pk:'gwangju',male:true}).view;
  assert.match(example.origin.rule,/생활을 받쳐 주고 배울 길/);
  assert.equal(example.origin.key,'shown');
  assert(example.domains.find(d=>d.id==='money').paragraphs.some(t=>t.includes('집에서 생활을 받쳐 준 동안 배운 것')));
@@ -305,7 +310,7 @@ test('occasional help connects to an absent-helper opening without inventing a p
  assert(present.paragraphs.includes(POOL.gwiin.find(x=>x.id==='G2').text));
  assert(!fake({causes:{gwiin:'absent'}}).gwiin.poolIds.includes('G2'));
  assert(!fake({...support,causes:{gwiin:'absent',work:'backing'}}).gwiin.poolIds.includes('G2'));
- const example=read(1982,3,29,{h:22,mi:43,pk:'daejeon',male:true}).view.domains.find(d=>d.id==='gwiin');
+ const example=readCandidates(1982,3,29,{h:22,mi:43,pk:'daejeon',male:true}).view.domains.find(d=>d.id==='gwiin');
  assert.equal(example.cause,'absent');
  assert(example.paragraphs.some(t=>t.startsWith('어렵게 도움을 한 번 받아도')));
 });
@@ -321,7 +326,7 @@ test('personal cash constraints explain staying through cuts rather than predict
  assert(funded.poolIds.includes('W6'));assert(funded.paragraphs.includes(original));
  assert(!funded.paragraphs.some(t=>t.includes('다른 일을 구하는 동안 쓸 돈이 없어')));
  assert(!fake({levels:{재성:'weak',관성:'absent'}}).work.poolIds.includes('W6'));
- const example=read(1981,12,12,{h:17,mi:39,pk:'seoul',male:true}).view.domains.find(d=>d.id==='work');
+ const example=readCandidates(1981,12,12,{h:17,mi:39,pk:'seoul',male:true}).view.domains.find(d=>d.id==='work');
  assert(example.paragraphs.some(t=>t.includes('다른 일을 구하는 동안 쓸 돈이 없어')));
 });
 
@@ -341,7 +346,7 @@ test('family obligations acknowledge earlier support without adding or suppressi
  }
  // 지원이 있다는 이유만으로 부양 문단을 새로 넣지는 않는다.
  assert(!fake({origin:'shown'}).family.poolIds.includes('F3'));
- const example=read(1975,8,1,{h:0,mi:36,pk:'daejeon',male:true}).view;
+ const example=readCandidates(1975,8,1,{h:0,mi:36,pk:'daejeon',male:true}).view;
  assert.equal(example.origin.key,'shown');
  assert(example.domains.find(d=>d.id==='family').paragraphs.includes(item.originText.shown));
 });
@@ -368,18 +373,18 @@ test('each refined office scene keeps an independent Western route tied to the r
 });
 
 test('real Western charts can add an incident or workplace change without the old generic saju trigger',()=>{
- const incident=read(1989,5,18,{h:15,mi:8,pk:'daejeon',male:false});
+ const incident=readCandidates(1989,5,18,{h:15,mi:8,pk:'daejeon',male:false});
  const ic=ReadingPool.context(incident.result,incident.view);
  assert.equal(ic.ten('편관'),0);assert(!ic.sin('baekho'));
  assert(incident.view.domains.find(d=>d.id==='office').poolIds.includes('O5'));
- const change=read(1975,10,22,{h:6,mi:52,pk:'busan',male:true});
+ const change=readCandidates(1975,10,22,{h:6,mi:52,pk:'busan',male:true});
  const cc=ReadingPool.context(change.result,change.view);
  assert.equal(cc.ten('편관'),0);assert(!cc.inter('충'));assert(![6,8].includes(cc.house('Saturn')));
  assert(change.view.domains.find(d=>d.id==='office').poolIds.includes('O6'));
  // 별자리 근거를 뺀 같은 명식에서는 새 장면이 사라진다.
  for(const [example,id] of [[incident,'O5'],[change,'O6']]){
   const withoutStars={...example.result,western:undefined};
-  assert(!core.v5Reading(withoutStars,NOW).domains.find(d=>d.id==='office').poolIds.includes(id));
+  assert(!candidateView(core.v5Reading(withoutStars,NOW)).domains.find(d=>d.id==='office').poolIds.includes(id));
  }
 });
 
@@ -407,7 +412,7 @@ test('the helper card never mixes paragraphs for people with and without a helpe
  for(const {view} of ALL){
   const g=view.domains.find(d=>d.id==='gwiin');
   if(g.cause==='present')assert(!g.poolIds.some(id=>without.includes(id)),g.poolIds.join());
-  if(g.cause==='absent'){assert(!g.poolIds.some(id=>withHelper.includes(id)),g.poolIds.join());assert(g.poolIds.includes('G3'));}
+  if(g.cause==='absent'){assert(!g.poolIds.some(id=>withHelper.includes(id)),g.poolIds.join());assert(g.candidates.some(x=>x.id==='G3'));}
  }
  const seen=new Set(ALL.map(({view})=>view.domains.find(d=>d.id==='gwiin').cause));assert(seen.has('present')&&seen.has('absent'));
 });
@@ -428,11 +433,11 @@ test('relocation costs get a scene exactly when the existing relocation fate is 
  assert(!fake({sinsal:[{key:'yeokma'}]}).money.poolIds.includes('M6'));
 });
 
-test('relationship options progress from the present to a shared home, leaving, and another meeting',()=>{
- const long=read(1947,4,7,{h:9,mi:59,male:true}).view.domains.find(d=>d.id==='home');
+test('relationship candidates retain their conditions and life-stage order before editorial selection',()=>{
+ const long=readCandidates(1947,4,7,{h:9,mi:59,male:true}).view.domains.find(d=>d.id==='home');
  for(const id of ['L5','L10','L3','L2','L8','L7','L1','L6'])assert(long.poolIds.includes(id),id);
  const stages=[['L5','L9','L11','L4','L10'],['L3','L2','L8'],['L7'],['L1','L6']];
- for(const {view} of [...ALL,{view:{domains:[long]}}]){
+ for(const {view} of [...ALL.map(x=>({...x,view:candidateView(x.view)})),{view:{domains:[long]}}]){
   const d=view.domains.find(d=>d.id==='home'),o=OPENING.home;
   assert.equal(d.paragraphs[0],o.scene[d.cause]);
   assert.equal(d.paragraphs[1],o.blow[d.ruleKey]);
@@ -485,12 +490,12 @@ test('the body names no star placement or saju term and never repeats a sentence
   const seen=new Set;
   for(const t of lines)for(const s of core.sentenceListV2(t)){assert(!seen.has(s),s);seen.add(s);}
  }
- // 상한이 없으니 한 사람이 평균 열 개 넘는 문단을 받는다.
- assert(hits/ALL.length>10,String(hits/ALL.length));
+ // 화면에 남긴 장면은 소수이며, 후보 전체를 되살리지 않는다.
+ assert(hits/ALL.length<5,String(hits/ALL.length));
 });
 
-test('every paragraph is reachable and none goes to everyone',()=>{
- const count={};for(const {view} of ALL)for(const d of view.domains)for(const id of d.poolIds)count[id]=(count[id]||0)+1;
+test('every candidate remains reachable and no conditional candidate goes to everyone',()=>{
+ const count={};for(const {view} of ALL)for(const d of view.domains)for(const {id} of d.candidates)count[id]=(count[id]||0)+1;
  for(const [k,list] of Object.entries(ids))for(const id of list){assert(count[id]>0,k+':'+id);if(id!=='G3')assert(count[id]<ALL.length,k+':'+id);}
 });
 

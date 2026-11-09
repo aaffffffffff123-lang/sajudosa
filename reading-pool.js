@@ -1,5 +1,6 @@
 /* 사주도사 · 칸마다 붙는 문단 묶음 (2026-11-07 사용자 결정)
- * - 칸마다 후벼파는 문단을 여러 개 써 두고 문단마다 사주·별자리 조건을 붙인다. 조건이 맞는 문단만 나오고 상한은 두지 않는다.
+ * - 조건에 맞는 후보와 실제 본문을 분리한다. 중심 흐름에 연결되는 세 분야까지만 후속 장면을 하나씩 고른다.
+ * - 나머지 분야는 자기 장면과 도사의 이치로 닫는다. 생일 해시·무작위 교체로 차이를 만들지 않는다.
  * - 별자리는 본문에 이름을 쓰지 않는다. 문단을 고르는 조건으로만 쓴다. 배치 설명과 근거는 원국 접힌 표로 간다.
  * - 칸마다 짓밟는 방식이 다르고 부조리 주제 하나는 한 칸에만 둔다. 그 칸 첫머리(원래 이치)나 성향 칸과 같은 얘기를 하는 문단은 not·workNot·coreNot·skip으로 뺀다.
  * - 문단은 읽는 사람이 붙잡을 핑계를 먼저 꺼내 주고 조용히 무효로 만든다. 순서는 버틴다 → 말한다 → 선을 긋는다 → 떠난다처럼 출구를 차례로 닫는다.
@@ -126,9 +127,9 @@
         '그러다 하루를':'한번 정한 일정은 몸이 좀 무거워도 그대로 갑니다. 하루를 빼면 다른 사람 일정까지 바꿔야 하니 차라리 당신이 참는 쪽을 고릅니다. 참은 날들은 어디에도 남지 않습니다. 남는 건 결국 통째로 앓아누운 하루와 그날 못 한 일입니다.',
         '시간을 아꼈는데':'바쁜 주에는 밥을 서서 먹고 잠을 서너 시간 줄여서 일정을 맞춥니다. 그렇게 아낀 시간으로 일을 하나 더 끝냅니다. 바쁜 주가 끝나면 몸이 아낀 시간을 돌려 달라고 합니다. 앓아누운 날을 세어 보면 아낀 시간보다 깁니다.',
         '외부 일정이 늘면':'약속과 일이 한 주에 몰리면 가장 먼저 비는 건 당신 생활입니다. 남이 잡은 시간은 옮길 수 없고 옮길 수 있는 건 당신의 잠과 끼니뿐이라서입니다. 일정이 끝나도 밀린 빨래와 장보기와 못 잔 잠이 며칠 더 남습니다. 그 며칠 사이에 다음 일정이 또 잡힙니다.',
-        '집에 와서도':'퇴근하고 씻은 뒤에도 오늘 보낸 메일과 내일 일정을 한 번 더 엽니다. 빠뜨린 게 없다는 걸 확인해야 눕습니다. 확인하다 보면 내일 할 일이 하나 늘어 있습니다. 그 하나를 정리하는 동안 잠드는 시간은 또 늦어집니다.',
+        '집에 와서도':'씻고 누운 뒤에도 내일 챙길 것을 머릿속으로 다시 셉니다. 하나 빠진 것이 떠오르면 일어나 확인하고, 다시 누우면 다른 하나가 생각납니다. 아무것도 빠뜨리지 않은 아침에도 못 잔 잠은 그대로 남습니다.',
         '내일 확인해도':'누우려다가 내일 아침에 봐도 되는 일이 생각납니다. 미뤄 두면 밤새 신경이 쓰일 것 같아 다시 일어나 끝냅니다. 끝내고 나면 잠은 이미 달아나 있습니다. 다음 날 아침에는 일을 끝낸 개운함보다 못 잔 잠이 먼저 몸에 남습니다.',
-        '빈 시간이 생기면':'약속이 취소되거나 일이 일찍 끝나서 시간이 비면 그 시간에 할 일부터 찾습니다. 미뤄 둔 정리나 다음 주 준비를 꺼내면 빈 시간은 금방 찹니다. 쉬는 날을 따로 정해 두지 않았으니 일이 끊길 때까지 기다립니다. 일이 끊기기 전에 다음 일이 먼저 와 있습니다.',
+        '빈 시간이 생기면':'약속이 취소된 휴일에 잠깐 누워 있다가 밀린 설거지가 눈에 들어옵니다. 그것만 끝내려 일어나면 빨래와 정리도 이어집니다. 집은 말끔해졌는데 쉬었다고 할 시간은 남지 않습니다.',
         '쉬는 간격 없이':'한번 손에 잡은 일은 흐름이 끊기기 전에 이어서 끝냅니다. 중간에 쉬면 다시 붙잡는 데 시간이 더 든다고 생각합니다. 그래서 멈추는 때는 같은 줄을 두 번 읽고 있을 때입니다. 그 피로를 가진 채로 다음 일정에 들어갑니다.',
         '활동이 적었던':'낮에 별로 움직이지 않은 날은 밤이 되어서야 머리가 돌아갑니다. 그때 붙잡은 일은 새벽까지 이어집니다. 아침 일정은 남들과 같은 시간에 시작하니 모자란 잠은 하루 내내 따라옵니다. 주말에 몰아서 자도 다음 주 첫날이 또 늦게 시작합니다.',
         fallback:'할 일을 다 끝내고 나서 쉬겠다고 마음먹습니다. 일이 끝나는 날을 기다리는 동안 다음 일이 먼저 옵니다. 쉬는 날은 늘 다음 주에 있고 다음 주가 되면 또 그다음 주로 갑니다.'
@@ -184,7 +185,7 @@
     // 귀인: 귀인 글자가 있는지(cause)에 따라
     gwiin:{
       scene:{
-        absent:'새로 들어간 곳에는 아무도 알려 주지 않는 것들이 있습니다. 메일에 누구를 참조로 넣는지, 회식에서 어디에 앉는지, 윗사람 말에 언제 웃는지 같은 것들입니다. 물어보면 그런 것도 모르느냐는 표정이 돌아오니 다음부터는 눈치로 익힙니다. 다 익힐 때까지 몇 번은 틀리고 그 몇 번이 당신에 대한 첫인상이 됩니다.',
+        absent:'처음 해 보는 일을 앞두고 누구에게 물어야 할지부터 찾습니다. 다른 사람은 아는 사람에게 전화 한 통으로 확인한 일을 당신은 검색하고 다시 확인합니다. 잘못 알아본 한 번이 남에게는 준비가 부족한 사람이라는 첫인상으로 남습니다.',
         present:'일을 봐주고 사람도 소개해 주는 윗사람이 생깁니다. 그 사람은 도와줄 때마다 당신이 고쳐야 할 점을 같이 일러 줍니다. 말투와 옷차림에서 시작한 조언은 돈 쓰는 법과 사람 사귀는 법까지 이어집니다. 도움을 받는 동안에는 그 말을 끊을 수가 없습니다.'
       },
       blow:{
@@ -471,7 +472,73 @@
   function hit(x,c,cause){
     return !x.not.includes(cause)&&!(x.workNot||[]).includes(c.cause('work'))&&!(x.coreNot||[]).includes(c.core)&&!(x.skip&&x.skip(c))&&!!x.when(c);
   }
-  // 돈 칸: [유형 장면, 유형 한 방, 문단…, 격차]. 나머지 여섯 칸: [장면, 한 방(원래 이치를 품음), 문단…]. 모두 팔자 줄로 닫는다.
+  // 연결된 장면만 깊게 읽는다. 다른 출구·다른 생애 단계까지 한 칸에 모으지 않는다.
+  function followups(d){
+    const byCause={
+      work:{hurt_officer:['W2'],mixed_officer:['W2'],officer_overload:['W2','W5'],killer_unchecked:['W5'],owl_food:['W5'],wealth_weak_self:['W5'],peer_robs_wealth:['W2'],wealth_breaks_resource:['W6'],resource_blocks_output:['W7'],peer_unchecked:['W8'],weak_wealth:['W6'],weak_officer:['W5'],strong_peer:['W2'],month_day_clash:['W5'],palace_clash:['W7'],palace_punish:['W2'],palace_self:['W2'],climate_hot:['W5'],climate_cold:['W5'],income:['W3'],skill:['W7','W3'],speech:['W3'],backing:['W6'],self:['W8'],outlet:['W5'],order:['W2'],관성:['W5'],재성:['W9'],식상:['W3','W1'],비겁:['W8'],인성:['W7']},
+      money:{comfort:[],outflow:['effort'],burden:['M4','debt'],share:['debt'],holding:['debt'],interrupted:['M3'],paper:['M3'],reserve:['debt'],recurring:[],poor:['M4'],grow:['M5']},
+      body:{checking:['B7'],self:['B7'],night:['B7'],weak:['B1','B5'],strong:['B2','B6']},
+      home:{'연락은 끊깁니다':['L9'],'대화가 빨리 줄어듭니다':['L9'],'애매하게':['L11'],'생활 시간이 먼저':['L10'],'생활을 다시 짜는':['L10'],'생활을 합치는 날짜':['L8','L2'],'같은 얘기를':['L8'],'처리할 일도':['L5']},
+      family:{shown:['F1'],care:['F1'],cut:['F6'],absent:['F3','F1'],absentPoor:['F6'],old:['F1','F4'],young:['F2','F3']},
+      office:{hidden:['O7','O9'],pressure:['O9'],mixed:['O5'],challenge:['O4'],supported:['O3','O2'],regular:['O2'],weak:['O4']}
+    };
+    return (byCause[d.id]||{})[d.id==='body'?d.ruleKey:d.cause]||[];
+  }
+  // 귀인의 유무만으로 모두 같은 일터 장면을 받지 않도록, 확인된 도움의 조건을 첫 장면으로 쓴다.
+  const HELP={
+    G1:['소개받은 뒤에는 혼자 그만둘 수 없습니다.','소개가 끝난 뒤에도 그 사람의 이름은 당신 선택에 남습니다. 일한 값과 소개받은 은혜는 따로 셉니다. 받은 도움을 갚기 전에 제 사정부터 앞세우는 것은 도리가 아닙니다.','소개한 사람의 체면 · 떠날 때의 설명'],
+    G2:['도움받은 뒤에는 반대할 말부터 고릅니다.','부탁한 일은 하나였어도 은혜를 지킬 일에는 끝이 정해져 있지 않습니다. 도와준 사람은 좋은 뜻이었다고 하고 다른 뜻을 가진 쪽이 그 뜻을 설명합니다. 받은 뒤에도 제 말만 하려면 혼자 해냈어야 합니다.','꺼내지 못한 반대 · 은혜를 지킬 말투'],
+    G3:['혼자 증명하는 동안 소개는 다음으로 넘어갑니다.','처음 만난 사람에게 같은 신뢰를 줄 수는 없습니다. 먼저 아는 사람의 말을 믿고 기회를 주는 동안 당신은 믿을 만한 사람이라는 근거부터 갖춥니다. 그 근거를 갖추는 시간까지 기회가 기다릴 까닭은 없습니다.','처음부터 하는 설명 · 먼저 쌓아야 할 신뢰'],
+    G4:['떠나려는 날에야 도움의 값이 정해집니다.','도움을 받던 날에는 언제까지 머물겠다는 약속을 하지 않았습니다. 그러나 떠나는 날에는 그동안 받은 것을 먼저 셉니다. 더 좋은 길을 고를 자유는 있어도 은혜를 다 갚았는지는 베푼 쪽에서 정합니다.','떠날 때 매겨지는 은혜 · 새 기회 앞의 부담'],
+    G5:['공개된 기회 앞에 이미 아는 사람이 있습니다.','당신이 공고를 읽는 동안 누군가는 소개한 사람에게 준비할 것을 묻습니다. 같은 날 지원했으니 같은 기회를 받은 것으로 셉니다. 먼저 알 사람을 두지 못한 사정까지 뽑는 쪽에서 맞춰 줄 수는 없습니다.','뒤늦게 받은 정보 · 혼자 준비할 증명'],
+    G6:['끌어 준 사람이 밀려나면 함께 흔들립니다.','좋은 사람을 만난 덕에 얻은 기회는 그 사람의 신임과 함께 옵니다. 새로 결정할 사람이 생긴 뒤에는 해낸 일보다 누구의 사람이었는지부터 확인합니다. 도움으로 올라간 몫에 그 도움의 사정도 따라붙는 것이 순서입니다.','도와준 사람의 신임 · 바뀐 관계에서의 증명'],
+    G7:['부탁하기 전에 갚을 몫부터 셉니다.','부탁하려고 적은 말 끝에 다음에는 내가 무엇을 해 줄 수 있을지 붙여 봅니다. 그 말을 채우지 못하면 부탁도 짧아집니다. 도움은 공짜로 받으려는 사람이 없어야 오래 이어지는 법이니, 덜 받은 만큼 늦어진 일은 당신이 감당합니다.','갚을 수 있는 몫 · 줄여서 꺼낸 부탁']
+  };
+  function helperChoice(d,c){
+    const order=[];
+    if(c.moveSignal)order.push('G4');
+    if(c.cause('office')==='supported')order.push('G6');
+    if(['challenge','mixed'].includes(c.cause('office')))order.push('G2');
+    if(['poor','comfort'].includes(c.cause('money')))order.push('G7');
+    order.push(...d.westernAddedIds,'G1','G5','G2','G7','G6','G3');
+    return order.find(id=>d.poolIds.includes(id));
+  }
+  function focus(out,R,c){
+    // 전체 풀이의 가장 강한 연결을 먼저 찾고 그 연결에 쓴 장면을 보존한다.
+    const evidence=out.verdictEvidence||{domains:[],sources:[]};
+    const requiredDomains=(evidence.sources||[]).filter(x=>x.poolId&&x.domain!=='gwiin').map(x=>x.domain);
+    if(out.domains.some(d=>d.id==='money'&&d.relocationCost))requiredDomains.push('money');
+    const connected=evidence.domains.filter(id=>id!=='origin'&&id!=='gwiin');
+    const focal=[...new Set(requiredDomains.concat(connected.length?connected:['work','money','home']))].slice(0,3);
+    out.focus={version:1,domains:focal,thread:evidence.thread||null};
+    for(const d of out.domains){
+      const all=d.poolIds.slice(),texts=d.paragraphs.slice();
+      d.candidates=all.map(id=>({id,text:d.candidateText[id],western:d.westernAddedIds.includes(id)}));
+      const required=(evidence.sources||[]).filter(x=>x.domain===d.id&&x.poolId).map(x=>x.poolId);
+      let pick=required[0];
+      if(d.id==='money'&&d.relocationCost)pick='M6';
+      if(d.id==='gwiin')pick=required[0]||helperChoice(d,c);
+      if(!pick&&focal.includes(d.id))pick=followups(d).find(id=>all.includes(id));
+      const selected=pick&&all.includes(pick)?[pick]:[];
+      d.poolIds=selected;
+      d.westernAddedIds=d.westernAddedIds.filter(id=>selected.includes(id));
+      d.paragraphs=texts.slice(0,2).concat(selected.map(id=>d.candidateText[id]));
+      if(d.id==='gwiin'&&selected.length){
+        const id=selected[0],copy=HELP[id];
+        d.head=copy[0];d.paragraphs=[d.candidateText[id],copy[1]];
+        d.note={label:'도움을 구하고 받는 데 드는 품',value:copy[2]};
+        d.primaryPoolId=id;
+      }
+      // 자녀가 없는 사람에게도 나타날 수 있는 갈래는 끝 문장에도 조건을 유지한다.
+      if(d.id==='family'&&['shown','absent','absentPoor'].includes(d.cause))
+        d.closing=d.closing.map(t=>t.replace(/^당신은 (?!아이를 낳으면)/,'당신은 아이를 낳으면 '));
+      delete d.candidateText;
+    }
+    // 줄어든 본문만으로 다시 합성한다. 빠진 장면은 전체 풀이로 돌아올 수 없다.
+    if(Closing)Closing.compose(out,R);
+    out.focus.thread=out.verdictEvidence&&out.verdictEvidence.thread||out.focus.thread;
+  }
+  // 먼저 조건이 맞는 후보를 모은다. focus에서 연결된 후속 장면만 남긴 뒤 운명 한 줄로 닫는다.
   function weave(out,R){
     const c=context(R,out);
     const withoutWestern=context(Object.assign({},R,{western:null}),out);
@@ -482,9 +549,10 @@
       d.westernAddedIds=pool.filter(x=>!hit(x,withoutWestern,d.cause)).map(x=>x.id);
       // 선택된 장면 안에서만 앞의 지원·도움·생활 형편에 맞춰 문장을 잇는다.
       const paragraphs=pool.map(x=>(x.textFor&&x.textFor(c))||(x.originText&&x.originText[c.origin])||x.text);
+      d.candidateText=Object.fromEntries(pool.map((x,i)=>[x.id,paragraphs[i]]));
       if(d.id==='money'){
         const lead=d.cause==='comfort'?[COPY.living,COPY.spending]:LEAD[d.cause]||[d.detail,d.rule];
-        d.paragraphs=lead.concat(paragraphs,[COPY.stability]).filter(Boolean);
+        d.paragraphs=lead.concat(paragraphs).filter(Boolean);
       }else if(OPENING[d.id]){
         // 장면이 없으면 원래 장면, 한 방이 없으면 원래 이치를 그대로 쓴다.
         const o=OPENING[d.id],scene=(o.followWork&&o.followWork[d.cause]||{})[c.cause('work')]||o.scene[d.cause]||o.scene.fallback||d.detail,blow=o.blow[d.ruleKey||d.cause]||d.rule;
@@ -493,8 +561,9 @@
       d.closing=d.fates.slice();
     });
     if(Closing)Closing.compose(out,R);
+    focus(out,R,c);
     return out;
   }
-  return {COPY,LEAD,OPENING,POOL,context,weave};
+  return {COPY,LEAD,OPENING,POOL,context,weave,followups,HELP};
 });
 
