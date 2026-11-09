@@ -67,8 +67,45 @@ test('a repeated subject is continued once, while all exact contact windows and 
  const seen=new Set(),opts={kind:'year',start:Date.UTC(2026,0,1),end:Date.UTC(2027,0,1),seen};
  const first=P.narrative({text:'맡은 일을 마칩니다.',starPeriods:[e]},opts);
  const second=P.narrative({text:'',starPeriods:[e,{...e,id:'two'}]},opts);
- assert(first.paragraphs[0].startsWith('맡은 일을 마칩니다. 2026년'));
+ assert(first.paragraphs[0].startsWith('맡은 일을 마칩니다. 이 해에는'));
+ assert(!/2026년|[0-9]+월/.test(first.paragraphs.join(' ')));
  assert(!second.paragraphs.join(' ').includes(P.COPY.work.bad[1]));
- assert.match(second.paragraphs.join(' '),/다시 시간이 듭니다/);
+ assert.match(second.paragraphs.join(' '),/앞서 짚은 일을 내놓기 전의 재확인/);
  assert.equal(second.dates.length,1);assert.equal(second.dates[0].ranges.length,2);assert.equal(second.dates[0].sourceIds.length,2);
+});
+
+
+
+test('overlapping, continued and later contacts are distinct without claiming a worse outcome',()=>{
+ const day=d=>Date.UTC(2026,0,d),seen=new Map();
+ const e={id:'contact',copyKey:'work:adverse:1',domain:'work',valence:'adverse',label:'일과 평가',range:{start:day(1),end:day(20)},text:P.COPY.work.bad[1],evidence:[{kind:'transit'}],recurrences:[]};
+ const n=(event,kind='year')=>P.narrative({starPeriods:[event]},{kind,start:day(1),end:day(100),seen});
+ assert(n(e).paragraphs.join(' ').includes(P.COPY.work.bad[1]));
+ assert.match(n({...e,range:{start:day(3),end:day(6)}},'month').paragraphs.join(' '),/겹칩니다/);
+ assert.match(n({...e,continued:true,range:{start:day(20),end:day(30)}}).paragraphs.join(' '),/까지 이어집니다/);
+ const later=n({...e,id:'later',range:{start:day(50),end:day(60)}});
+ assert.match(later.paragraphs.join(' '),/다시 나타납니다/);
+ assert(!/더 커|쌓|악화/.test(later.paragraphs.join(' ')));
+});
+
+test('repeated themes share one bridge but retain distinct dates, polarity and new explanations',()=>{
+ const start=Date.UTC(2026,0,1),end=Date.UTC(2027,0,1),seen=new Map();
+ const event=(domain,valence='adverse')=>({id:domain+valence,copyKey:domain+':'+valence+':0',domain,valence,label:P.COPY[domain].label,range:{start,end},text:P.COPY[domain][valence==='adverse'?'bad':'good'][0],evidence:[{kind:'transit',domain}],recurrences:[]});
+ const old=[event('office'),event('money')],opts={kind:'year',start,end,seen};
+ P.narrative({starPeriods:old},opts);
+ const current=P.narrative({starPeriods:[...old,event('body'),event('money','support')]},opts),text=current.paragraphs.join(' ');
+ assert.equal((text.match(/앞서 짚은/g)||[]).length,1);
+ assert(text.includes(P.COPY.body.bad[0]));assert(text.includes(P.COPY.money.good[0]));
+ assert(!text.includes(P.COPY.money.bad[0]));assert(!text.includes(P.COPY.office.bad[0]));
+ assert.equal(current.dates.length,4);assert.equal(current.dates.flatMap(d=>d.evidence).length,4);
+});
+
+test('hidden months cannot consume a new explanation intended for the following year',()=>{
+ const year=known.view.years[0],next=known.view.years[1],hidden=year.months.find(m=>m.end<NOW),start=next.periodStart,end=next.periodEnd;
+ assert(hidden);
+ const event={id:'new-family-topic',copyKey:'family:adverse:0',domain:'family',valence:'adverse',label:P.COPY.family.label,range:{start:hidden.start,end},text:P.COPY.family.bad[0],evidence:[{kind:'transit'}],recurrences:[]};
+ const artificial={available:true,periods:{['month:'+hidden.start]:[event],['year:'+next.year]:[event]},ranges:data.ranges};
+ const result=P.apply(plain(known.view),artificial,undefined,NOW);
+ assert(result.years[1].narrative.paragraphs.join(' ').includes(P.COPY.family.bad[0]));
+ assert.equal(result.years[1].narrative.dates[0].ranges[0].start,start);
 });

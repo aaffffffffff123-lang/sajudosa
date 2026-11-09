@@ -139,28 +139,29 @@
   for(const x of v.luck.cycles)periods.push({id:'decade:'+x.c.i,kind:'decade',start:x.c.start,end:x.c.end});
   return {western:R.western,periods};
  }
- // 같은 해석이 다른 해·대운에도 걸리면 원고를 재생하지 않고 재발 시점을 잇는다.
- const AGAIN={
-  work:{adverse:['확인과 수정 때문에 마감이 다시 밀립니다.','일을 내놓기 전 확인과 설명에 다시 시간이 듭니다.'],support:['막혔던 일을 정리하고 제안을 통과시킬 여지가 다시 생깁니다.','익힌 방법으로 일을 풀고 다른 일에도 적용할 기회가 다시 옵니다.']},
-  money:{adverse:['들어올 돈보다 치를 비용이 먼저 돌아오는 사정이 반복됩니다.','정해 둔 지출에서 줄일 항목을 다시 찾아야 합니다.'],support:['미뤘던 비용을 정리할 여지가 다시 생깁니다.','생활의 셈을 조정할 여유가 다시 생깁니다.']},
-  body:{adverse:['일정과 회복할 시간을 함께 맞추기 어려운 때가 다시 옵니다.','하루 일정에 식사와 휴식이 밀리는 일이 반복됩니다.'],support:['흐트러진 생활의 순서를 다시 잡을 여지가 생깁니다.','몸과 생활을 돌볼 간격을 다시 마련하기 수월해집니다.']},
-  home:{adverse:['서로 기대한 것과 내줄 수 있는 시간의 차이가 다시 드러납니다.','가까운 사람과 정해 둔 약속을 다시 확인하게 됩니다.'],support:['관계의 말을 꺼내고 함께할 조건을 맞출 여지가 다시 생깁니다.','멀어졌던 대화를 다시 잇기가 수월해집니다.']},
-  family:{adverse:['집안의 기대와 내줄 수 있는 몫을 다시 맞춰야 합니다.','가족 안에서 맡아 온 일을 다시 나눌 필요가 생깁니다.'],support:['집안의 도움을 얻고 생활의 몫을 조정할 여지가 다시 생깁니다.','가족과 역할을 정리할 여유가 다시 생깁니다.']},
-  office:{adverse:['결정할 권한보다 결과를 설명할 책임이 커지는 일이 반복됩니다.','기준과 평가를 다시 확인할 일이 늘어납니다.'],support:['판단을 맡거나 신임을 얻을 기회가 다시 옵니다.','절차 안에서 자기 판단을 인정받을 기회가 다시 옵니다.']},
-  gwiin:{adverse:['도움을 받기 전에 갖춰야 할 조건이 다시 늘어납니다.','도움을 받은 뒤에도 자기 힘을 증명할 일이 다시 남습니다.'],support:['사람을 통해 길과 도움을 얻을 여지가 다시 생깁니다.','혼자 찾기 어려운 기회를 소개받을 여지가 다시 넓어집니다.']}
+ // 같은 해석은 처음 한 번 풀고, 뒤에서는 어느 기간에 이어지거나 되돌아오는지만 잇는다.
+ const TOPICS={
+  work:{adverse:['수정에 밀리는 마감','일을 내놓기 전의 재확인'],support:['막힌 일과 제안을 풀 기회','익힌 방법을 다른 일에 쓸 기회']},
+  money:{adverse:['수입과 지출 시점의 어긋남','약속한 지출의 재조정'],support:['미룬 비용을 정리할 여유','생활의 셈을 조정할 여유']},
+  body:{adverse:['일정과 회복 시간의 충돌','식사와 휴식을 미루는 일'],support:['생활 순서를 되찾을 여지','몸을 돌볼 간격']},
+  home:{adverse:['서로의 기대와 내줄 시간의 차이','가까운 사람과 약속을 다시 맞추는 일'],support:['함께할 조건을 맞출 기회','멀어진 대화를 다시 이을 기회']},
+  family:{adverse:['집안의 기대와 내 준비의 충돌','가족 안에서 맡은 일을 다시 나누는 일'],support:['집안의 도움으로 생활을 조정할 여지','가족의 역할을 정리할 여유']},
+  office:{adverse:['결정할 권한보다 큰 설명 책임','평가 기준의 재확인'],support:['판단을 맡고 신임을 얻을 기회','절차 안에서 판단을 인정받을 기회']},
+  gwiin:{adverse:['도움에 앞서 갖춰야 할 조건','도움받은 뒤에도 남는 자기 증명'],support:['사람을 통해 길을 얻을 기회','소개를 통해 얻을 기회']}
  };
  const sentenceList=t=>(String(t||'').match(/[^.!?]+[.!?]+|[^.!?]+$/g)||[]).map(x=>x.trim()).filter(Boolean);
- function shortWindow(r){
-  const a=new Date(r.start+9*3600000),b=new Date(r.end-1+9*3600000),ay=a.getUTCFullYear(),by=b.getUTCFullYear(),am=a.getUTCMonth()+1,bm=b.getUTCMonth()+1;
-  return ay===by?ay+'년 '+am+(am===bm?'월':'~'+bm+'월'):ay+'년 '+am+'월~'+by+'년 '+bm+'월';
+ const periodName=kind=>({past:'그해',year:'이 해',month:'이달',decade:'이 10년 사이'}[kind]||'이 기간');
+ function continuation(items,kind){
+  if(!items.length)return '';
+  const topics=[...new Set(items.map(x=>x.topic))].join(', '),when=periodName(kind);
+  // 읽는 순서와 실제 시간 순서는 다르다. 올해 뒤에 나오는 10년 흐름에
+  // 더 이른 접촉이 들어 있을 때는 이를 새로 되풀이되는 일로 말하지 않는다.
+  if(items.every(x=>x.continued))return '앞서 짚은 '+topics+'도 '+when+'까지 이어집니다.';
+  if(items.every(x=>x.overlap))return '앞서 짚은 '+topics+'도 '+when+'에 겹칩니다.';
+  if(items.every(x=>x.later))return '앞서 짚은 '+topics+'도 '+when+'에 다시 나타납니다.';
+  return '앞서 짚은 '+topics+'도 '+when+'에 나타나는 흐름입니다.';
  }
- function windowLead(ranges){
-  const labels=[...new Set(ranges.map(shortWindow))];
-  if(labels.length<3)return labels.join('과 ')+'에는 ';
-  const first=new Date(ranges[0].start+9*3600000).getUTCFullYear(),last=new Date(ranges[ranges.length-1].end-1+9*3600000).getUTCFullYear();
-  return (first===last?first+'년':first+'~'+last+'년 사이')+'에 몇 차례 ';
- }
- function narrative(p,{kind,base=p.text||'',start,end,seen=new Set(),pastify}={}){
+ function narrative(p,{kind,base=p.text||'',start,end,seen=new Map(),pastify}={}){
   const groups=new Map(),native=[...new Set(sentenceList(base))];
   for(const e of p.starPeriods||[]){
    const key=e.copyKey||e.domain+':'+e.valence+':'+(e.originalText||e.text);
@@ -169,32 +170,34 @@
    for(const w of windows){const range={start:Math.max(w.start,start),end:Math.min(w.end,end)};if(range.end>range.start)g.windows.push(range);}
    g.sourceIds.push(e.id);g.evidence.push(...e.evidence,...(e.recurrences||[]));
   }
-  const pieces=[],dates=[];
+  const pieces=[],repeated=[],dates=[];
   for(const g of [...groups.values()].sort((a,b)=>Math.min(...a.windows.map(w=>w.start))-Math.min(...b.windows.map(w=>w.start)))){
-   const e=g.item,ranges=mergeRanges(g.windows),lead=windowLead(ranges);
-   const variant=Number(String(e.copyKey||'').split(':').pop());
-   let detail=seen.has(g.key)&&AGAIN[e.domain]&&Number.isInteger(variant)?AGAIN[e.domain][e.valence][variant]:e.text;
-   if(kind==='past'&&typeof pastify==='function')detail=pastify(detail);
-   // 선택된 내용이 본문에 이미 있으면 기간만 붙이고 같은 문장을 되풀이하지 않는다.
-   const sentences=sentenceList(detail),fresh=sentences.filter(x=>!native.includes(x));
-   if(!fresh.length&&sentences.length){
-    const i=native.indexOf(sentences[0]);if(i>=0)native[i]=lead+native[i];
-   }else if(fresh.length)pieces.push({text:lead+fresh.join(' '),continued:seen.has(g.key)});
-   seen.add(g.key);
+   const e=g.item,ranges=mergeRanges(g.windows),prior=typeof seen.get==='function'?seen.get(g.key):null;
+   const variant=Number(String(e.copyKey||'').split(':').pop()),topic=TOPICS[e.domain]&&TOPICS[e.domain][e.valence]&&TOPICS[e.domain][e.valence][variant];
+   if(seen.has(g.key)&&topic){
+    repeated.push({topic,continued:!!e.continued,
+     overlap:!!prior&&ranges.every(r=>prior.some(old=>old.start<r.end&&r.start<old.end)),
+     later:!!prior&&ranges.every(r=>r.start>=Math.max(...prior.map(old=>old.end)))});
+   }else{
+    let detail=e.originalText||e.text;
+    if(kind==='past'&&typeof pastify==='function')detail=pastify(detail);
+    const fresh=sentenceList(detail).filter(x=>!native.includes(x));
+    // 정확한 날짜는 상세에 모으고, 10년 안의 접촉을 10년 내내 계속되는 상태로 넓히지 않는다.
+    if(fresh.length)pieces.push(periodName(kind)+'에는 '+fresh.join(' '));
+   }
+   if(typeof seen.set==='function')seen.set(g.key,mergeRanges([...(prior||[]),...ranges]));else seen.add(g.key);
    dates.push({label:e.label,ranges,periods:ranges.map(r=>spanLabel(r.start,r.end)+(e.evidence.some(x=>x.unknownBirthTime)?' 무렵':'')),sourceIds:g.sourceIds,evidence:g.evidence});
   }
-  // 기본 흐름과 첫 시기 설명을 같은 문단에서 이어 읽고, 뒤의 시기는 다음 문단으로 잇는다.
-  const first=pieces.shift(),paragraphs=[[native.join(' '),first&&first.text].filter(Boolean).join(' ')].filter(Boolean);
-  for(const piece of pieces){
-   // 이미 설명한 흐름의 재접촉은 별도 풀이처럼 문단을 다시 시작하지 않는다.
-   if(piece.continued&&paragraphs.length)paragraphs[paragraphs.length-1]+=' '+piece.text;
-   else paragraphs.push(piece.text);
-  }
+  const first=pieces.shift(),paragraphs=[[native.join(' '),first].filter(Boolean).join(' ')].filter(Boolean);
+  paragraphs.push(...pieces);
+  let bridge=continuation(repeated,kind);
+  if(kind==='past'&&typeof pastify==='function')bridge=pastify(bridge);
+  if(bridge){if(paragraphs.length)paragraphs[paragraphs.length-1]+=' '+bridge;else paragraphs.push(bridge);}
   return {paragraphs,dates};
  }
  function apply(out,data,pastify,now=Date.now()){
   if(!data||!data.available)return out;
-  const get=id=>data.periods[id]||[],seen=new Set();
+  const get=id=>data.periods[id]||[],seen=new Map();
   out.past=out.past.map(p=>{
    const range=data.ranges['past:'+p.year],x=reconcile(p,get('past:'+p.year),range.start,range.end);
    if(typeof pastify==='function')x.starPeriods=x.starPeriods.map(e=>({...e,text:pastify(e.text)}));
@@ -211,7 +214,7 @@
    y.narrative=narrative(y,{kind:'year',base,start:y.periodStart,end:y.periodEnd,seen});
    // 화면에는 현재 월운만 나오므로 보이지 않는 달이 다음 본문을 지우지 않는다.
    const shown=y.months.find(m=>m.start<=now&&now<m.end);
-   for(const m of y.months)m.narrative=narrative(m,{kind:'month',start:m.start,end:m.end,seen:m===shown?seen:new Set()});
+   for(const m of y.months)m.narrative=narrative(m,{kind:'month',start:m.start,end:m.end,seen:m===shown?seen:new Map()});
   }
   out.luck.cycles=out.luck.cycles.map(x=>{
    // 다음 대운의 stage는 앞에서 이미 중복을 제거한 본문이다. c.text로 되돌리지 않는다.
@@ -229,7 +232,7 @@
  function prepare(req){
   if(typeof Worker==='undefined')return Promise.reject(new Error('별자리 시기 계산을 이 환경에서 시작하지 못했습니다.'));
   let cancel;const promise=new Promise((resolve,reject)=>{
-   const worker=new Worker('period-worker.js?v=20261109-woven');let done=false;
+   const worker=new Worker('period-worker.js?v=20261109-conditional-flow');let done=false;
    const finish=(fn,value)=>{if(done)return;done=true;clearTimeout(timer);worker.terminate();fn(value);};
    cancel=()=>finish(reject,new Error('풀이 계산이 취소되었습니다.'));
    const timer=setTimeout(()=>finish(reject,new Error('별자리 시기 계산 시간이 초과되었습니다.')),30000);

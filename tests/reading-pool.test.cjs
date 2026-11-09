@@ -120,7 +120,7 @@ test('each card follows its own order of paragraphs and closes on every fate lin
    assert.deepEqual(d.paragraphs,[...opening,...pool,COPY.stability]);
   }else if(OPENING[d.id]){
    const o=OPENING[d.id];
-   assert.deepEqual(d.paragraphs,[o.scene[d.cause]||o.scene.fallback||d.detail,o.blow[d.ruleKey||d.cause]||d.rule,...pool].filter(Boolean),d.id);
+   assert.deepEqual(d.paragraphs,[(o.followWork&&o.followWork[d.cause]||{})[c.cause('work')]||o.scene[d.cause]||o.scene.fallback||d.detail,o.blow[d.ruleKey||d.cause]||d.rule,...pool].filter(Boolean),d.id);
   }else assert.deepEqual(d.paragraphs,[d.detail,d.rule,...pool].filter(Boolean),d.id);
  }
 });
@@ -505,3 +505,39 @@ test('readings without a birth time or without the star chart still get their pa
  assert(core.v5Reading(failed,NOW).domains.every(d=>Array.isArray(d.paragraphs)));
 });
 
+
+
+
+test('child conditions survive the first child reference in every overall conclusion',()=>{
+ const young=read(2006,1,1,{male:false}),cut=structuredClone(young);
+ // 경력 단절 갈래는 다른 총평이 우선될 수 있으므로 조건을 잇는 후보 자체도 검사한다.
+ cut.view.domains.find(d=>d.id==='family').cause='cut';
+ require('../closing-reading.js').compose(cut.view,cut.result);
+ const rows=ALL.concat([cut,young]),reached=new Set();
+ for(const {view} of rows){
+  const family=view.domains.find(d=>d.id==='family');
+  if(!view.verdictEvidence.domains.includes('family')||['old','young'].includes(family.cause))continue;
+  const first=core.sentenceListV2(view.verdict).find(t=>/아이|자식|교육비/.test(t));
+  assert(first,view.verdict);
+  assert.match(first,/(?:아이|자식).{0,40}면/,view.verdict);
+  reached.add(family.cause);
+ }
+ assert.deepEqual([...reached].sort(),['absent','absentPoor','care','cut','shown']);
+ const {view}=rows.at(-1);assert.equal(view.verdictEvidence.thread,'care-and-work');
+ assert.match(view.verdict,/경력을 쌓아도 일터가 바뀌면/);
+ assert.match(view.verdict,/아이를 낳고 일을 이어 가면/);
+ assert.match(view.domains.find(d=>d.id==='work').paragraphs[0],/^한 일터에서 오 년을 일해도/);
+});
+
+test('authority continues an already shown work scene without changing its cause or judgment',()=>{
+ for(const [office,work,detail] of [['hidden','order','경위서'],['mixed','mixed_officer','서명']]){
+  const related=fake({causes:{office,work}}).office;
+  const unrelated=fake({causes:{office,work:'skill'}}).office;
+  assert.equal(related.cause,office);assert.equal(unrelated.cause,office);
+  assert(related.paragraphs[0].includes(detail));
+  assert.equal(unrelated.paragraphs[0],OPENING.office.scene[office]);
+  assert.notEqual(related.paragraphs[0],unrelated.paragraphs[0]);
+  assert.deepEqual(related.poolIds,unrelated.poolIds);
+  assert.deepEqual(related.closing,unrelated.closing);
+ }
+});
