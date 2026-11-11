@@ -9,22 +9,27 @@
  *  - 「되살리기」: 뼈 → 살 → 비늘로 다시 자란다(도마뱀). 되살린 놈은 겁을 먹는다.
  *  - 허리 끊기: 식칼로 배를 가로로 길게 다섯 번. 아랫도리는 조각으로 떨어지고 윗몸은 살아서 계속 맞는다.
  *  - 「새 놈」: 두 손으로 들어 올림 → 갈고리가 내려와 등에 꿰임 → 한 대 밀면 사슬이 끌어올려 레일에 건다.
- *    떨어진 머리는 장대에 꽂고, 바닥의 잘린 부위는 뒤쪽 무더기로 던진다. 그 뒤 새 천지신명이 뒷짐 지고 걸어 나온다.
- *  - 방: 옥좌 없는 넓은 냉장실. 레일 네 줄이 화면 안쪽으로 멀리 뻗고, 걸린 몸이 그 줄을 따라 늘어선다(줄마다 24구).
+ *    떨어진 머리는 장대에 꽂고, 바닥의 잘린 부위는 뒤쪽 무더기로 던진다. 그 뒤 새 천지신명이 손목이 사슬에 묶인 채 끌려 나온다
+ *    (겁에 질려 두 발로 버티다 확 끌려와 선다. 비웃는 건 빈 방에 처음 서 있는 놈뿐이다).
+ *  - 방: 옥좌 없는 어두운 도살장. 레일 두 줄이 내 바로 양옆에서 화면 안쪽으로 멀리 뻗고, 걸린 몸이 그 줄을 따라 늘어선다(줄마다 48구).
+ *    줄 간격은 화면 비율에 맞춘다(세로로 긴 폰에서는 좁혀서 첫 칸부터 화면 안에 들어오게).
+ *  - 이 모드에는 배경음악이 없다.
+ *  - 「청소하기」(설정 창): 걸린 몸·머리·무더기·바닥 자국·기록을 전부 치우고 빈 방에서 다시 시작한다.
  *  - 걸린 몸·무더기 조각은 '그 순간 그 모습 그대로' 굳혀 둔다(본뜨기). 기록은 localStorage, 굳힌 모습은 IndexedDB에 남는다.
  *
  * 고칠 때 찾을 곳(아래 순서대로 들어 있다)
- *  1. 자세: HANG_POSE · freeHangPose(걸리는 몸) · freeWalkPose(걸어 나오는 새 놈)
- *  2. 방과 배치: ROWX·ROW_Z0·ROW_DZ·ROW_CAP(레일 줄) · SPIKES(머리 장대) · build()(벽·천장·형광등) · stage()(옥좌 치우기·안개)
+ *  1. 자세: HANG_POSE · freeHangPose(걸리는 몸) · freeWalkPose(걸어 나오는 새 놈: 끌려오는 놈 / 뒷짐 진 놈)
+ *  2. 방과 배치: rowHalf·setRows·ROW_Z0·ROW_DZ·ROW_CAP(레일 줄) · SPIKES(머리 장대) · build()(벽·천장·형광등·바닥 때) · stage()(옥좌 치우기·안개·조명) · flicker(형광등 깜빡임)
  *  3. 기록: loadRecord · saveRecord
  *  4. 일반 모형: template · proxyBody · proxyHead (저장된 본이 없을 때만 쓴다)
  *  5. 본뜨기: newJob · jobMesh · jobFinish · snapMesh · DB
  *  6. 무더기: toHeap · heapLand · updateHeap
  *  7. 걸이·줄 세우기: makeHolder · layoutLine · ensureMesh(가까우면 자세히, 멀면 성기게)
- *  8. 「되살리기」: revive · flinch · fear
+ *  8. 「되살리기」·겁: revive · flinch · fear · scare(겁먹은 새 놈)
  *  9. 허리 끊기: waistSlash · bisect
- * 10. 「새 놈」 순서: T(시간표) · next · pierce · handover · arrive · seat · updateSeq
- * 11. 매 프레임: updateItems · update · syncUI · camera3
+ * 10. 「새 놈」 순서: T(시간표) · next · pierce · handover · arrive · seat · updateSeq · LEASH(끌고 오는 사슬)
+ * 11. 「청소하기」: clean
+ * 12. 매 프레임: updateItems · update · syncUI · camera3
  */
 (function(root,factory){
  'use strict';
@@ -59,23 +64,27 @@ function freeHangPose(E,out){
  }
 }
 function freeWalkPose(E,out,dt){
- const w=E.walkIn,u=smooth(w.u),end=smooth(clamp(w.sit,0,1));
+ // 도살장에 끌려오는 소: 손목이 사슬에 묶여 앞으로 당겨지고, 엉덩이를 뒤로 빼고 무릎을 굽힌 채 버틴다
+ const w=E.walkIn,end=smooth(clamp(w.sit,0,1)),live=1-end,t=G.time,bk=smooth(clamp(w.balk,0,1));
  poseCopy(STAND,out);
- // 거만: 가슴을 내밀고 턱을 들고 뒷짐을 진다
- out.cF-=.12;out.hF-=.1;out.sF-=.06;out.hR+=.05;
- out.LsF=-.46;out.RsF=-.46;out.LsA=.2;out.RsA=.2;out.LsT=-.55;out.RsT=-.55;out.LeB=1.0;out.ReB=1.0;out.Lcurl=.6;out.Rcurl=.6;
  const moving=w.u>0&&w.u<1&&!w.frozen?1:0;
- w.stepK=damp(w.stepK,moving,12,dt);w.phase+=dt*8.4*w.stepK;
- const a=Math.sin(w.phase)*.44*w.stepK;
- out.LhF+=a;out.RhF-=a;out.LkB+=Math.max(0,a)*1.25;out.RkB+=Math.max(0,-a)*1.25;out.py-=.022*w.stepK*Math.abs(Math.cos(w.phase));
- out.sT+=Math.sin(w.phase)*.05*w.stepK;
- // 뒤에 걸린 몸을 돌아보고 굳는다: 고개와 어깨가 그쪽으로 돌아간다
- const g=smooth(w.lookK);
- out.hT+=w.lookDir*.85*g;out.nT+=w.lookDir*.3*g;out.cT+=w.lookDir*.28*g;out.hF+=.02*g;out.cF+=.07*g;out.sF+=.03*g;
- // 다 와서는 뒷짐을 풀고 평소 선 자세로
- if(end>0)poseLerp(out,STAND,end,out);
- out.tx=lerp(w.side*w.from,0,u);out.tz=w.z;out.ty=0;out.rx=0;out.rz=0;
- out.ry=lerp(-w.side*1.2,0,smooth(clamp((w.u-.4)/.6,0,1)));
+ out.sF+=(.2-.16*bk)*live;out.cF+=(.12-.1*bk)*live;out.nF-=.08*live;out.hF-=(.16+.1*bk)*live;
+ out.LkB+=(.34+.3*bk)*live;out.RkB+=(.34+.3*bk)*live;out.LhF+=(.22+.24*bk)*live;out.RhF+=(.22+.24*bk)*live;out.py-=(.05+.05*bk)*live;
+ // 발: 잰걸음으로 질질 끌려오다, 버틸 때는 두 발을 바닥에 박는다
+ w.stepK=damp(w.stepK,moving*(1-bk),14,dt);w.phase+=dt*12.5*w.stepK;
+ const a=Math.sin(w.phase)*.27*w.stepK;
+ out.LhF+=a;out.RhF-=a;out.LkB+=Math.max(0,a)*1.1;out.RkB+=Math.max(0,-a)*1.1;out.py-=.016*w.stepK*Math.abs(Math.cos(w.phase));
+ // 걸린 몸들 쪽으로 자꾸 고개가 돌아간다
+ const look=Math.sin(t*5.2+E.flailSeed)*.5+.5;
+ out.hT+=w.lookDir*(.5*look+.35*bk)*live;out.nT+=w.lookDir*.16*live;
+ // 덜덜 떤다
+ const q1=Math.sin(t*41),q2=Math.sin(t*33+1.3),q3=Math.sin(t*47+2.1),k=(1+.6*bk)*live;
+ out.hT+=q1*.03*k;out.hR+=q2*.024*k;out.hF+=q3*.018*k;out.cT+=q2*.012*k;out.cR+=q1*.008*k;
+ out.LkB+=Math.max(0,q3)*.1*k;out.RkB+=Math.max(0,-q3)*.1*k;
+ out.tx=lerp(w.side*w.from,0,w.u)+q1*.004*k;out.tz=w.z;out.ty=0;out.rx=0;
+ // 끌려가는 쪽으로 윗몸이 쏠리고, 버틸 때는 반대로 몸을 뒤로 젖힌다
+ out.rz=w.side*(.1-.3*bk)*live;
+ out.ry=-w.side*.5*live;
 }
 const FREE=(()=>{
  const root=grp(scene,null,'free-hall');root.visible=false;
@@ -89,41 +98,69 @@ const FREE=(()=>{
  // 방: 옥좌 없는 넓은 냉장실. 레일 네 줄이 화면 안쪽(−z)으로 멀리 뻗고, 걸린 몸은 그 레일을 따라 한 줄로 늘어선다(도축장 레일).
  // 새로 걸리는 몸이 맨 앞 칸으로 들어오면 그 줄 전체가 한 칸씩 안쪽으로 밀린다
  const HOOK_Y=2.15,RAIL_Y=HOOK_Y+CHAIN;
- const ROWX=[-1.05,1.05,-2.15,2.15];
- const ROW_Z0=-2.0,ROW_DZ=.8,ROW_CAP=24,HALL_END=-46,HALL_W=5.4,CEIL=4.7,KEEP=ROWX.length*ROW_CAP;
- // 효수 장대: 안쪽 두 줄 사이 통로에 지그재그로, 멀수록 높게
+ // 레일은 내 바로 양옆 두 줄뿐이다. 가운데에서 한 줄까지의 거리는 화면 비율에 맞춘다(rowHalf): 세로로 긴 폰에서는 좁혀서 첫 칸의 몸이 화면 안에 다 들어오게
+ const ROW_BASE=1.05,ROWX=[-ROW_BASE,ROW_BASE];
+ const ROW_Z0=-2.0,ROW_DZ=.8,ROW_CAP=48,HALL_END=-46,HALL_W=2.5,CEIL=4.7,KEEP=ROWX.length*ROW_CAP;
+ function rowHalf(){
+  const a=innerWidth/Math.max(1,innerHeight),dist=(a<1?Math.max(2.55,1.7/a):3.05)+1.0-ROW_Z0; // 평소 구도에서 카메라~첫 칸 거리
+  return clamp(dist*Math.tan(camera.fov*PI/360)*a-.47,.72,1.2);
+ }
+ // 효수 장대: 두 줄 사이 통로에 지그재그로, 멀수록 높게(가로 자리는 줄 간격을 따라 좁아진다)
  const SPIKES=[[-.5,2.0,-3.0],[.5,2.0,-3.0],[0,2.25,-3.9],[-.5,2.5,-4.8],[.5,2.5,-4.8],[0,2.75,-5.8],[-.5,3.0,-6.8],[.5,3.0,-6.8]];
  const GEOS={
   chain:cylGeo(.011,.011,CHAIN,6),haul:cylGeo(.011,.011,7,6),trolley:new THREE.BoxGeometry(.09,.06,.12),
   hook:new THREE.TorusGeometry(.058,.0115,7,16,PI*1.3),shank:cylGeo(.0115,.0115,.1,6),tip:new THREE.ConeGeometry(.0115,.05,6),
   pool:new THREE.CircleGeometry(.34,24),pole:cylGeo(.012,.022,1,8)};
  for(const k in GEOS)GEOS[k].userData.shared=true;
- const S={on:false,total:0,items:[],lines:[[],[],[],[]],heads:[],seq:null,reviving:false,railsOn:false,railDrop:null,ui:'',slides:[],jobs:[],gen:0,stageOn:false,tool:''};
+ const S={on:false,wipe:false,total:0,items:[],lines:ROWX.map(()=>[]),heads:[],seq:null,reviving:false,railsOn:false,railDrop:null,ui:'',slides:[],jobs:[],gen:0,stageOn:false,tool:''};
  const _v=V3(),_v2=V3(),_m=new THREE.Matrix4();
 
- /* ---- 레일 ---- */
+ /* ---- 방: 어두운 도살장 ---- */
  const rails=grp(root,null,'rails');rails.visible=false;
  const hall=grp(root,null,'hall');
- const bgCol=col('#b4c0bd');
+ const bgCol=col('#0e1512');
+ const railRow=[],lanes=[],wallGore=[];
+ const TUBE_COL=col('#dfe9b4'),tubeOn=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false}),tubeBad=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false});
+ const dragMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0}),goreMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0});
+ const hallLight=new THREE.HemisphereLight(col('#b7c69a'),col('#1b1610'),.2);
+ const spikeX=i=>SPIKES[i][0]*ROWX[1]/ROW_BASE;
  (function build(){
   const merge=(list,mat,parent)=>{parent.updateMatrixWorld(true);const geo=mergeMeshes(list,new THREE.Matrix4());for(const m of list){m.removeFromParent();m.geometry.dispose();}
    const m=new THREE.Mesh(geo,mat);m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;parent.add(m);return m;};
-  // 레일과 천장 걸이
-  const L=3-HALL_END,list=[];
-  for(const x of ROWX){
-   list.push(mk(new THREE.BoxGeometry(.07,.06,L),ironD,rails,{p:[x,RAIL_Y+.06,3-L/2],cast:false}));
-   for(let z=1;z>HALL_END;z-=4)list.push(mk(cylGeo(.016,.016,CEIL-RAIL_Y,6),ironD,rails,{p:[x,(CEIL+RAIL_Y)/2+.06,z],cast:false}));
+  // 레일과 천장 걸이: 줄마다 한 덩어리로 만들고(가운데 기준) 줄 간격이 바뀌면 x만 옮긴다
+  const L=3-HALL_END;
+  for(let r=0;r<ROWX.length;r++){
+   const g=grp(rails,null,'rail'+r),list=[];
+   list.push(mk(new THREE.BoxGeometry(.07,.06,L),ironD,g,{p:[0,RAIL_Y+.06,3-L/2],cast:false}));
+   for(let z=1;z>HALL_END;z-=4)list.push(mk(cylGeo(.016,.016,CEIL-RAIL_Y,6),ironD,g,{p:[0,(CEIL+RAIL_Y)/2+.06,z],cast:false}));
+   merge(list,ironD,g);g.position.x=ROWX[r];railRow.push(g);
   }
-  merge(list,ironD,rails);metalEnv(rails);
-  // 벽(흰 타일)·천장·맨 끝 벽
-  const tile=canvasTex(256,256,(g,w,h)=>{g.fillStyle='#dfe6e3';g.fillRect(0,0,w,h);
-   for(let j=0;j<4;j++)for(let i=0;i<4;i++){const n=214+Math.random()*22|0;g.fillStyle=`rgb(${n},${n+5},${n+3})`;g.fillRect(i*64+2,j*64+2,60,60);}
-   g.strokeStyle='#9aa5a2';g.lineWidth=2;for(let i=0;i<=4;i++){g.beginPath();g.moveTo(i*64,0);g.lineTo(i*64,h);g.stroke();g.beginPath();g.moveTo(0,i*64);g.lineTo(w,i*64);g.stroke();}});
-  const wallTex=tile.clone();wallTex.needsUpdate=true;wallTex.wrapS=wallTex.wrapT=THREE.RepeatWrapping;wallTex.repeat.set(L/1.6,CEIL/1.6);
-  const endTex=tile.clone();endTex.needsUpdate=true;endTex.wrapS=endTex.wrapT=THREE.RepeatWrapping;endTex.repeat.set(HALL_W*2/1.6,CEIL/1.6);
-  const wallMat=STD('#ffffff',{map:wallTex,roughness:.55}),endMat=STD('#ffffff',{map:endTex,roughness:.55}),ceilMat=STD('#aeb8b5',{roughness:.9});
+  metalEnv(rails);
+  // 벽: 누렇게 뜬 타일. 아래로 갈수록 때가 끼고, 녹물과 물때가 줄줄 흘러내린 자국이 있다(가로 6.4m마다 되풀이)
+  const WALL_U=6.4;
+  const wallDraw=(g,w,h)=>{
+   const cols=16,rows=12,cw=w/cols,rh=h/rows;
+   g.fillStyle='#4f5546';g.fillRect(0,0,w,h);
+   for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
+    const v=150+Math.random()*34|0;g.fillStyle=`rgb(${v+6},${v+8},${v-26})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);
+    if(Math.random()<.1){g.fillStyle=`rgba(46,50,36,${.2+Math.random()*.35})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);}
+    if(Math.random()<.035){g.fillStyle='#343a30';g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);} // 떨어져 나간 타일
+   }
+   let gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(16,20,14,.5)');gr.addColorStop(.22,'rgba(16,20,14,.1)');gr.addColorStop(.58,'rgba(26,22,12,.22)');gr.addColorStop(.86,'rgba(18,14,8,.62)');gr.addColorStop(1,'rgba(8,7,5,.9)');
+   g.fillStyle=gr;g.fillRect(0,0,w,h);
+   for(let n=0;n<34;n++){
+    const x=Math.random()*w,y0=Math.random()*h*.55,len=h*(.18+Math.random()*.6),wd=3+Math.random()*16,rust=Math.random()<.6;
+    const sg=g.createLinearGradient(0,y0,0,y0+len),c=rust?'96,52,18':'22,26,18',al=.22+Math.random()*.34;
+    sg.addColorStop(0,`rgba(${c},0)`);sg.addColorStop(.12,`rgba(${c},${al})`);sg.addColorStop(1,`rgba(${c},0)`);
+    g.fillStyle=sg;g.fillRect(x,y0,wd,len);
+   }
+   for(let n=0;n<60;n++){const x=Math.random()*w,y=h*(.55+Math.random()*.45),r=8+Math.random()*46;
+    const rg=g.createRadialGradient(x,y,1,x,y,r);rg.addColorStop(0,'rgba(20,16,9,.4)');rg.addColorStop(1,'rgba(20,16,9,0)');g.fillStyle=rg;g.fillRect(x-r,y-r,r*2,r*2);}
+  };
   const zc=8-(8-HALL_END)/2,zl=8-HALL_END;
-  wallTex.repeat.set(zl/1.6,CEIL/1.6);
+  const wallTex=canvasTex(1024,1024,wallDraw);wallTex.wrapS=THREE.RepeatWrapping;wallTex.repeat.set(zl/WALL_U,1);
+  const endTex=wallTex.clone();endTex.needsUpdate=true;endTex.wrapS=THREE.RepeatWrapping;endTex.repeat.set(HALL_W*2/WALL_U,1);
+  const wallMat=STD('#ffffff',{map:wallTex,roughness:.42}),endMat=STD('#ffffff',{map:endTex,roughness:.42}),ceilMat=STD('#3a4038',{roughness:.95});
   for(const sd of [-1,1])mk(new THREE.PlaneGeometry(zl,CEIL),wallMat,hall,{p:[sd*HALL_W,CEIL/2,zc],r:[0,-sd*PI/2,0],cast:false});
   mk(new THREE.PlaneGeometry(HALL_W*2,CEIL),endMat,hall,{p:[0,CEIL/2,HALL_END],cast:false});
   mk(new THREE.PlaneGeometry(HALL_W*2,zl),ceilMat,hall,{p:[0,CEIL,zc],r:[PI/2,0,0],cast:false,receive:false});
@@ -131,25 +168,111 @@ const FREE=(()=>{
   const base=COMBAT_STAGE.root.children.find(o=>o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry'&&o.geometry.parameters.width===30);
   if(base){const len=-7.5-HALL_END+2,geo=new THREE.PlaneGeometry(30,len),uv=geo.attributes.uv;for(let i=0;i<uv.count;i++){uv.setX(i,uv.getX(i)*2);uv.setY(i,uv.getY(i)*len/15);}
    mk(geo,base.material,hall,{r:[-PI/2,0,0],p:[0,0,-7.5-len/2],cast:false});}
-  // 천장 형광등: 줄 사이마다 화면 안쪽으로 이어진다(거리감)
-  const tube=new THREE.MeshBasicMaterial({color:col('#f6fcff'),fog:false}),tl=[];
-  for(const x of [-1.6,0,1.6,-3.6,3.6])for(let z=2.5;z>HALL_END+1;z-=3.2)tl.push(mk(new THREE.BoxGeometry(.11,.04,1.7),tube,hall,{p:[x,CEIL-.05,z],cast:false,receive:false}));
-  merge(tl,tube,hall);
-  hall.add(new THREE.HemisphereLight(col('#f4faff'),col('#8f9895'),.62));
+  // 바닥 때: 족치는 자리만 등 아래처럼 밝게 남기고 둘레는 어둡게 덮는다. 가운데 통로에 배수구, 얼룩과 물 자국
+  const GW=11,GL=30,GZ=-9; // 덮는 넓이(m)와 가운데 z
+  const grime=canvasTex(512,1024,(g,w,h)=>{
+   const X=x=>(x/GW+.5)*w,Z=z=>(z-(GZ-GL/2))/GL*h; // 캔버스 아래쪽이 카메라 쪽(+z)
+   g.clearRect(0,0,w,h);g.fillStyle='rgba(6,8,6,.72)';g.fillRect(0,0,w,h);
+   // 족치는 자리(0,1.0) 둘레를 지운다
+   g.globalCompositeOperation='destination-out';
+   g.save();g.translate(X(0),Z(1.0));g.scale(1,(h/GL)/(w/GW)*1.25);
+   const R=w/GW*3.6,hg=g.createRadialGradient(0,0,R*.18,0,0,R);hg.addColorStop(0,'rgba(0,0,0,1)');hg.addColorStop(.55,'rgba(0,0,0,.72)');hg.addColorStop(1,'rgba(0,0,0,0)');
+   g.fillStyle=hg;g.beginPath();g.arc(0,0,R,0,TAU);g.fill();g.restore();
+   g.globalCompositeOperation='source-over';
+   // 얼룩
+   for(let n=0;n<150;n++){const x=Math.random()*w,y=Math.random()*h,r=6+Math.random()*34;
+    const rg=g.createRadialGradient(x,y,1,x,y,r),c=Math.random()<.4?'58,34,14':'12,14,10';rg.addColorStop(0,`rgba(${c},${.16+Math.random()*.26})`);rg.addColorStop(1,`rgba(${c},0)`);
+    g.fillStyle=rg;g.save();g.translate(x,y);g.scale(1,.5+Math.random());g.translate(-x,-y);g.fillRect(x-r,y-r*2,r*2,r*4);g.restore();}
+   // 배수구(가운데 통로)와 거기로 모이는 물 자국
+   const dx=X(0),dz=Z(-.75),ds=w/GW*.34;
+   for(let n=0;n<9;n++){const a=rnd(0,TAU),len=ds*rnd(1.5,5);g.strokeStyle=`rgba(10,12,9,${rnd(.18,.4)})`;g.lineWidth=rnd(2,7);g.beginPath();g.moveTo(dx+Math.cos(a)*len,dz+Math.sin(a)*len*(h/GL)/(w/GW));g.lineTo(dx,dz);g.stroke();}
+   g.fillStyle='rgba(8,9,7,.95)';g.fillRect(dx-ds/2,dz-ds*.3,ds,ds*.6);
+   g.fillStyle='rgba(70,74,64,.9)';for(let k=0;k<5;k++)g.fillRect(dx-ds/2+ds*(.08+k*.18),dz-ds*.3+1,ds*.07,ds*.6-2);
+  });
+  const gm=mk(new THREE.PlaneGeometry(GW,GL),new THREE.MeshBasicMaterial({map:grime,transparent:true,depthWrite:false}),hall,{r:[-PI/2,0,0],p:[0,.0035,GZ],cast:false,receive:false});gm.renderOrder=-4;
+  // 끌고 간 자국: 레일 밑으로 몸에서 떨어진 것이 길게 끌려 있다(피를 끄면 숨긴다)
+  const drag=canvasTex(128,1024,(g,w,h)=>{
+   g.clearRect(0,0,w,h);
+   for(let n=0;n<16;n++){const x=w*(.5+rnd(-.3,.3)),wd=rnd(4,22),y0=h*rnd(0,.8),len=h*rnd(.1,.5);
+    const sg=g.createLinearGradient(0,y0,0,y0+len),al=rnd(.25,.6);sg.addColorStop(0,'rgba(16,40,120,0)');sg.addColorStop(.5,`rgba(16,40,120,${al})`);sg.addColorStop(1,'rgba(12,30,96,0)');
+    g.fillStyle=sg;g.fillRect(x-wd/2,y0,wd,len);}
+   for(let n=0;n<70;n++){const x=w*(.5+rnd(-.42,.42)),y=h*Math.random(),r=rnd(1.5,7);g.fillStyle=`rgba(18,46,138,${rnd(.3,.7)})`;g.beginPath();g.ellipse(x,y,r,r*rnd(1,3),0,0,TAU);g.fill();}
+  });
+  dragMat.map=drag;
+  for(let r=0;r<ROWX.length;r++){const m=mk(new THREE.PlaneGeometry(.95,22),dragMat,hall,{r:[-PI/2,0,0],p:[ROWX[r],.0045,-9.2],cast:false,receive:false});m.renderOrder=-3;lanes.push(m);}
+  // 벽 아랫도리에 튀고 문질러진 자국(피를 끄면 숨긴다)
+  const gore=canvasTex(1024,256,(g,w,h)=>{
+   g.clearRect(0,0,w,h);
+   for(let n=0;n<26;n++){const x=Math.random()*w,y=h*rnd(.25,.95),r=rnd(10,46);
+    const rg=g.createRadialGradient(x,y,1,x,y,r);rg.addColorStop(0,`rgba(16,40,122,${rnd(.45,.8)})`);rg.addColorStop(.6,'rgba(14,34,104,.35)');rg.addColorStop(1,'rgba(14,34,104,0)');g.fillStyle=rg;g.fillRect(x-r,y-r,r*2,r*2);
+    for(let k=0;k<3;k++){const xx=x+rnd(-r,r)*.6,len=rnd(20,h-y+10),sg=g.createLinearGradient(0,y,0,y+len);sg.addColorStop(0,'rgba(16,40,122,.7)');sg.addColorStop(1,'rgba(16,40,122,0)');g.fillStyle=sg;g.fillRect(xx,y,rnd(2,5),len);}}
+   // 손으로 짚고 끌린 자국
+   for(let n=0;n<5;n++){const x=Math.random()*w,y=h*rnd(.4,.7),cx=rnd(15,40),cy=rnd(20,45),ex=rnd(40,95),ey=rnd(70,h*.5);g.lineCap='round';
+    for(let f=0;f<4;f++){const o=f*8,gr=g.createLinearGradient(0,y,0,y+ey);gr.addColorStop(0,'rgba(18,44,130,.6)');gr.addColorStop(1,'rgba(18,44,130,0)');
+     g.strokeStyle=gr;g.lineWidth=5-f*.5;g.beginPath();g.moveTo(x+o,y+(f%2)*4);g.quadraticCurveTo(x+o+cx,y+cy,x+o+ex,y+ey);g.stroke();}}
+  });
+  goreMat.map=gore;
+  for(const sd of [-1,1]){const m=mk(new THREE.PlaneGeometry(16,2.3),goreMat,hall,{p:[sd*(HALL_W-.012),1.15,-5.5],r:[0,-sd*PI/2,0],cast:false,receive:false});m.renderOrder=-2;wallGore.push(m);}
+  // 천장 형광등: 드문드문 켜져 있고(나간 자리는 비어 있다) 몇 개는 껌뻑거린다. 화면 안쪽으로 이어져 거리감을 준다
+  const tOn=[],tBad=[];
+  for(const x of [0,-(HALL_W-.3),HALL_W-.3]){let n=0;
+   for(let z=x?-.5:1.5;z>HALL_END+1;z-=x?7.2:4.2){n++;
+    const near=x===0&&z>-3;if(!near&&n%4===3)continue; // 나간 등
+    (!near&&n%3===1?tBad:tOn).push(mk(new THREE.BoxGeometry(.11,.04,1.5),tubeOn,hall,{p:[x,CEIL-.05,z],cast:false,receive:false}));}}
+  if(tOn.length)merge(tOn,tubeOn,hall);if(tBad.length)merge(tBad,tubeBad,hall);
+  hall.add(hallLight);
  })();
  const spikeRoot=grp(root,null,'spikes');
  const spikeMesh=SPIKES.map(([x,y,z])=>{const h=y-.02,m=mk(GEOS.pole,ironD,spikeRoot,{p:[x,h/2,z],s:[1,h,1],cast:false});m.visible=false;return m;});
  metalEnv(spikeRoot);
- // 옥좌·기둥·벽·현판·지팡이를 치우고 안개와 배경을 밝은 냉장실로 바꾼다. 끄면 원래 궁전으로 되돌린다
- let hidden=[];
+ // 형광등 깜빡임: 몇 초에 한 번, 불량 등이 두어 번 껌뻑이고 방 전체 밝기도 살짝 따라 흔들린다
+ const FL={v:1,t:3,n:0};
+ function flicker(dt){
+  FL.t-=dt;
+  if(FL.t<=0){
+   if(FL.n>0){FL.n--;FL.v=FL.v>.6?rnd(.12,.45):1;FL.t=FL.n?rnd(.03,.1):rnd(2.5,7);if(!FL.n)FL.v=1;}
+   else{FL.n=2*(1+(Math.random()*3|0));FL.t=0;}
+  }
+  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.2*(.8+.2*FL.v);
+ }
+ // 줄 간격을 바꾼다(화면 비율이 바뀌었을 때): 레일·걸린 몸·끌린 자국·머리 장대를 함께 옮긴다
+ function setRows(x){
+  ROWX[0]=-x;ROWX[1]=x;
+  railRow.forEach((g,r)=>{g.position.x=ROWX[r];});lanes.forEach((m,r)=>{m.position.x=ROWX[r];});
+  spikeMesh.forEach((m,i)=>{m.position.x=spikeX(i);});
+  for(let l=0;l<ROWX.length;l++)layoutLine(l,true);
+  for(const hd of S.heads)if(!hd.fly)placeHead(hd);
+ }
+ // 옥좌·기둥·벽·현판·지팡이를 치우고, 안개·배경·조명을 어두운 도살장으로 바꾼다. 끄면 원래 궁전으로 되돌린다.
+ // 조명은 fight.js가 장면에 달아 둔 것을 찾아 값만 바꾼다(등 하나가 족치는 자리만 누렇게 비추고 둘레는 가라앉는다)
+ const LIT=(()=>{const o={hemi:null,key:null,fill:null,rim:null,bounce:null};
+  for(const c of scene.children){
+   if(c.isHemisphereLight){if(!o.hemi)o.hemi=c;}
+   else if(c.isDirectionalLight){if(c.castShadow)o.key=o.key||c;else if(c.position.z<0)o.rim=o.rim||c;else o.fill=o.fill||c;}
+   else if(c.isPointLight&&c.distance===4.5)o.bounce=o.bounce||c;
+  }
+  return o;})();
+ let hidden=[],litKeep=null;
  function stage(on){
   if(on){
    const keep=o=>o===COMBAT_STAGE.contact||(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry');
    for(const c of COMBAT_STAGE.root.children)if(!keep(c)&&c.visible){c.visible=false;hidden.push(c);}
-   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),13,50);camera.far=60;camera.updateProjectionMatrix();S.stageOn=true;
+   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),6,34);camera.far=60;camera.updateProjectionMatrix();
+   const {hemi,key,fill,rim,bounce}=LIT;
+   if(hemi&&key&&fill&&rim&&bounce){
+    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kc:key.color.clone(),ki:key.intensity,fi:fill.intensity,rc:rim.color.clone(),ri:rim.intensity,bi:bounce.intensity};
+    hemi.color.copy(col('#a3b292'));hemi.groundColor.copy(col('#17120c'));hemi.intensity=.36;
+    key.color.copy(col('#fff0c4'));key.intensity=2.5;
+    fill.intensity=.1;rim.color.copy(col('#86c79f'));rim.intensity=1.25;bounce.intensity=.12;
+   }
+   S.stageOn=true;
+   // 걸린 몸이 하나라도 있는 방에 들어선 놈은 처음부터 겁에 질려 있다
+   if(S.items.length&&G.E)scare(G.E);
   }else{
    for(const c of hidden)c.visible=true;hidden=[];
    if(S.stageOn){scene.background=col('#151d1e');scene.fog=new THREE.Fog(col('#202725'),7,18);camera.far=40;camera.updateProjectionMatrix();}
+   if(litKeep){const {hemi,key,fill,rim,bounce}=LIT,k=litKeep;litKeep=null;
+    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.color.copy(k.kc);key.intensity=k.ki;fill.intensity=k.fi;rim.color.copy(k.rc);rim.intensity=k.ri;bounce.intensity=k.bi;}
    S.stageOn=false;
   }
  }
@@ -399,7 +522,7 @@ const FREE=(()=>{
   let pr=null;
   const open=()=>pr||(pr=new Promise(res=>{try{const r=indexedDB.open('palja-free',1);r.onupgradeneeded=()=>{try{r.result.createObjectStore('snap');}catch(_){}};r.onsuccess=()=>res(r.result);r.onerror=r.onblocked=()=>res(null);}catch(_){res(null);}}));
   const tx=(mode,fn)=>open().then(db=>db?new Promise(res=>{try{const t=db.transaction('snap',mode),rq=fn(t.objectStore('snap'));t.oncomplete=()=>res(rq?rq.result:null);t.onerror=t.onabort=()=>res(null);}catch(_){res(null);}}):null);
-  return {put:(k,v)=>tx('readwrite',st=>st.put(v,k)),get:k=>tx('readonly',st=>st.get(k)),del:k=>tx('readwrite',st=>st.delete(k))};
+  return {put:(k,v)=>tx('readwrite',st=>st.put(v,k)),get:k=>tx('readonly',st=>st.get(k)),del:k=>tx('readwrite',st=>st.delete(k)),clear:()=>tx('readwrite',st=>st.clear())};
  })();
  function disposeTree(obj){
   const shared=new Set(Object.values(GEO));
@@ -412,13 +535,14 @@ const FREE=(()=>{
  }
 
  /* ---- 무더기: 잘린 부위는 사라지지 않고 뒤쪽 양옆에 쌓인다 ---- */
- const HEAP_STORE='palja.heap',HEAP_MAX=70,HEAP_C=[1.0,-2.7];
+ const HEAP_STORE='palja.heap',HEAP_MAX=70,HEAP_Z=-1.45; // 무더기는 첫 칸에 걸린 몸 바로 앞 바닥, 양쪽에 하나씩
+ const heapX=()=>Math.max(.56,ROWX[1]*.8);
  const HEAP={list:[],fly:[],wait:[],seq:0};
  function saveHeap(){try{localStorage.setItem(HEAP_STORE,JSON.stringify({q:HEAP.seq,l:HEAP.list.map(h=>[h.id,h.side])}));}catch(_){}}
  function heapSpot(side){
   const n=HEAP.list.filter(h=>h.side===side).length+HEAP.fly.filter(f=>f.side===side).length+HEAP.wait.filter(f=>f.side===side).length;
   const a=rnd(0,TAU),r=.44*Math.sqrt(Math.random()),top=.55*(1-Math.exp(-n/11));
-  return V3(side*HEAP_C[0]+Math.cos(a)*r,.07+top*Math.max(0,1-r/.5),HEAP_C[1]+Math.sin(a)*r*.8);
+  return V3(side*heapX()+Math.cos(a)*r,.07+top*Math.max(0,1-r/.5),HEAP_Z+Math.sin(a)*r*.8);
  }
  function heapAdd(id,side,sn){
   const mesh=snapMesh(sn);root.add(mesh);HEAP.list.push({id,side,mesh});
@@ -590,7 +714,7 @@ const FREE=(()=>{
 
  /* ---- 머리 꼬챙이 ---- */
  function placeHead(hd){
-  const [x,y,z]=SPIKES[hd.idx];
+  const [,y,z]=SPIKES[hd.idx],x=spikeX(hd.idx);
   hd.obj.position.set(x,y-.075,z);
   hd.obj.rotation.set(hd.rx,hd.ry,hd.rz);
   spikeMesh[hd.idx].visible=true;
@@ -619,8 +743,11 @@ const FREE=(()=>{
  function clearAll(){
   S.gen++;
   // 아직 본뜨지 못한 실제 몸과 조각은 나가기 전에 마저 굳혀 저장한다(다음에 그 모습 그대로 걸려 있게)
-  if(S.on){for(const it of S.items)if(it.real&&!it.snap)try{finishSnap(it);}catch(_){}
+  // (청소할 때는 남기지 않는다: 날아가는 중이거나 굳히기를 기다리는 조각도 그대로 버린다)
+  if(S.on&&!S.wipe){for(const it of S.items)if(it.real&&!it.snap)try{finishSnap(it);}catch(_){}
    try{flushHeap();}catch(_){}}
+  if(S.wipe){for(const f of HEAP.fly)if(f.obj.parent)try{releaseObj(f.obj,f.owner);}catch(_){}
+   for(const w of HEAP.wait)if(w.obj.parent)try{releaseObj(w.obj,w.owner);}catch(_){}}
   for(const j of S.jobs)j.cancel=true;S.jobs.length=0;
   clearHeap();
   for(const hd of S.heads)removeHead(hd);S.heads.length=0;
@@ -629,6 +756,7 @@ const FREE=(()=>{
   S.items.length=0;for(const l of S.lines)l.length=0;
   if(S.seq&&S.seq.holder&&!S.seq.item)S.seq.holder.removeFromParent();
   S.seq=null;S.reviving=false;S.railDrop=null;S.slides.length=0;
+  LEASH.hide();
  }
  function begin(){
   clearAll();
@@ -641,15 +769,47 @@ const FREE=(()=>{
    // 저장해 둔 그 몸의 본을 읽는다(있으면 그 모습으로, 없으면 일반 모형으로 건다)
    DB.get('b'+ord).then(sn=>{if(gen!==S.gen)return;if(validSnap(sn))it.snap=sn;it.ready=true;});
   });
-  for(let l=0;l<ROWX.length;l++)layoutLine(l,true);
+  setRows(rowHalf());
   S.on=true;root.visible=true;loadHeap();S.railsOn=S.items.length>0;rails.visible=S.railsOn;rails.position.y=0;
-  S.ui='';S.tool='';syncUI();
+  S.ui='';S.tool='';cleanUI(true);syncUI();
  }
  function suspend(){
-  if(!S.on&&!S.items.length)return;
+  if(!S.on&&!S.items.length){stage(false);cleanUI(false);return;}
   clearAll();S.on=false;root.visible=false;stage(false);
-  $('#freeBar').hidden=true;$('#freeCount').hidden=true;S.ui='';
+  $('#freeBar').hidden=true;$('#freeCount').hidden=true;S.ui='';cleanUI(false);
  }
+
+ /* ---- 「청소하기」: 걸린 몸·머리·무더기·저장해 둔 기록을 전부 지운다. 바닥 자국과 지금 족치던 놈은 그 뒤 판을 새로 시작하면서 치워진다 ---- */
+ function clean(){
+  if(!S.on)return false;
+  S.wipe=true;
+  try{clearAll();}finally{S.wipe=false;}
+  S.total=0;HEAP.seq=0;S.railsOn=false;rails.visible=false;
+  try{localStorage.removeItem(HUNG_STORE);localStorage.removeItem(HEAP_STORE);}catch(_){}
+  DB.clear();
+  S.ui='';
+  return true;
+ }
+ // 설정 창 「처음부터 다시」 밑에 버튼을 단다(이 모드에서만 보인다). 한 번 누르면 되묻고, 한 번 더 누르면 치운다
+ const CLEAN_UI=(()=>{
+  const reset=$('#resetFight');if(!reset)return null;
+  const btn=document.createElement('button');btn.type='button';btn.id='freeClean';btn.className='btn soft';btn.hidden=true;
+  const note=document.createElement('p');note.id='freeCleanNote';note.hidden=true;note.textContent='걸어 둔 몸과 머리, 쌓인 무더기, 바닥 자국을 전부 치웁니다.';
+  reset.insertAdjacentElement('afterend',btn);btn.insertAdjacentElement('afterend',note);
+  let armed=false,timer=0;
+  const label=()=>{btn.textContent=armed?'정말 다 치우기 · 되돌릴 수 없습니다':'청소하기';btn.classList.toggle('armed',armed);};
+  const disarm=()=>{clearTimeout(timer);armed=false;label();};
+  btn.addEventListener('click',()=>{
+   if(!armed){armed=true;label();clearTimeout(timer);timer=setTimeout(disarm,4500);return;}
+   disarm();
+   if(!clean())return;
+   reset.click(); // 설정 창을 닫고 빈 방에서 새 판을 시작한다(fight.js의 「처음부터 다시」와 같은 길)
+   AUDIO.whoosh(1,'hook');AUDIO.railStop(.9);flash(.22);hint('싹 치웠습니다',2.6);
+  });
+  label();
+  return {btn,note,disarm};
+ })();
+ function cleanUI(on){if(!CLEAN_UI)return;CLEAN_UI.btn.hidden=CLEAN_UI.note.hidden=!on;CLEAN_UI.disarm();}
 
  /* ---- 「되살리기」 ---- */
  function canRevive(E){return !!E&&((E.regrowQ&&E.regrowQ.some(r=>!r.built))||(E.regrowHead&&!E.regrowHead.built));}
@@ -670,14 +830,22 @@ const FREE=(()=>{
   return true;
  }
  // 되살린 놈은 내 손이 올라가기만 해도 움찔하며 얼굴을 가린다
+ // 겁먹은 새 놈: 비웃지 않고, 돈다발도 없이, 처음부터 2단계(겁먹은 얼굴·눈물)로 선다
+ function scare(E){
+  E.dread=true;E.taunt=false;if(E.phase<2)E.setPhase(2);
+  if(E.tabletHeld){E.tabletHeld=false;if(E.tabletMesh)E.tabletMesh.visible=false;if(E.tablet)E.tablet.removeFromParent();}
+  E.setEmotion('scared');E.whimperT=G.time+rnd(.7,1.5);
+ }
  function flinch(){
-  const E=G.E;if(!S.on||!E||!(E.reviveCount>0)||!combatActive(E)||E.combat.mode!=='stand'||E.guardCool>0||E.tabletHeld||E.headDestroyed)return;
+  const E=G.E;if(!S.on||!E||!(E.reviveCount>0||E.dread)||!combatActive(E)||E.combat.mode!=='stand'||E.guardCool>0||E.tabletHeld||E.headDestroyed)return;
   E.guardHold=Math.max(E.guardHold,.8);E.doFlinch('shock',.7);E.panic=Math.max(E.panic,.6);
  }
  function fear(E,dt){
   const b=E.combat;if(!b||!combatActive(E))return;
-  const scared=E.reviveCount>0;
-  if(scared){E.taunt=false;if(E.phase<3)E.setPhase(3);
+  const scared=E.reviveCount>0||!!E.dread;
+  // 끌려온 놈: 맞기 전부터 겁에 질려 계속 떤다
+  if(E.dread){E.taunt=false;if(E.phase<2)E.setPhase(2);if(b.mode==='stand')E.tremble=Math.max(E.tremble,1.25);}
+  if(E.reviveCount>0){E.taunt=false;if(E.phase<3)E.setPhase(3);
    // 자라는 도중부터 떤다(두 번째 되살림부터)
    if(S.reviving&&E.reviveCount>=2)E.panic=Math.max(E.panic,Math.min(1,.3*E.reviveCount));}
   // 겁먹으면 물러선다: 서 있으면 뒷걸음질, 누워 있으면 등으로 밀며 달아난다(옥좌 앞에서 막힌다)
@@ -766,7 +934,8 @@ const FREE=(()=>{
  }
 
  /* ---- 「새 놈」: 갈고리에 꿰어 걸고, 새 천지신명이 걸어 나온다 ---- */
- const T={hook:.2,pierce:.9,release:1.08,shove:1.3,haulDur:.55,walkDelay:.3,walk:1.05,sit:.35};
+ // walkA까지 끌려오다 → walkB까지 버티고 → walkC에 확 끌려와 선다
+ const T={hook:.2,pierce:.9,release:1.08,shove:1.3,haulDur:.55,walkDelay:.3,walkA:.6,walkB:1.0,walkC:1.5,sit:.35};
  function canNext(E){return !!E&&!E.taunt&&!E.hang&&!E.walkIn&&!!E.combat;}
  function next(){
   const E=G.E;if(!S.on||S.seq||G.inputLocked||G.paused||!canNext(E))return false;
@@ -833,7 +1002,7 @@ const FREE=(()=>{
    const hb=(old.bits||[]).find(b=>!b.dead&&b.sound==='head'&&b.obj&&b.obj.parent&&(old.severedHeads||[]).includes(b.obj));
    if(hb){old.bits=old.bits.filter(b=>b!==hb);old.severedHeads=old.severedHeads.filter(o=>o!==hb.obj);
     const hd=addHead(it,hb.obj,old);it.head=2;
-    const [x,y,z]=SPIKES[hd.idx];
+    const [,y,z]=SPIKES[hd.idx],x=spikeX(hd.idx);
     hd.fly={t:0,from:hb.obj.position.clone(),q0:hb.obj.quaternion.clone(),to:V3(x,y-.075,z),q1:new THREE.Quaternion().setFromEuler(new THREE.Euler(hd.rx,hd.ry,hd.rz))};}
   }
   S.total++;S.items.push(it);q.item=it;saveRecord();
@@ -841,14 +1010,12 @@ const FREE=(()=>{
   let n=heapBits(old,0);for(const o of S.items)if(o.real&&o.real!==old)n=heapBits(o.real,n);
   // 새 놈
   const E=new Emperor(G.result,PROGRESS.defeated+S.total);
-  E.bloodRawBase=BLOOD.rawLost;E.holdRegrow=E.keepBits=true;E.taunt=true;E.setPhase(0);E.idleT=1e9;E.sobT=1e9;
-  wireEmperor(E);G.E=E;BLOOD.handover(E);
+  E.bloodRawBase=BLOOD.rawLost;E.holdRegrow=E.keepBits=true;E.idleT=1e9;E.sobT=1e9;
+  wireEmperor(E);G.E=E;BLOOD.handover(E);scare(E);E.flailSeed=rnd(0,TAU);
   combatInit(E,false);E.combat.locked=true;E._combatScripted=true;
   if(lite()<2){metalEnv(E.root);metalEnv(E.crown);}
-  const n3=S.items.length;
-  E.walkIn={t:-T.walkDelay,u:0,sit:0,side:-side,from:1.75,z:1.0,stepK:0,phase:0,lookK:0,lookDir:side,frozen:false,
-   pause:n3>=3?Math.min(1.15,.3+.1*(n3-2)):0,step:0};
-  E.root.visible=false;E.tablet.visible=false;
+  E.walkIn={t:-T.walkDelay,u:0,sit:0,side:-side,from:innerWidth<innerHeight?1.5:1.75,z:1.0,stepK:0,phase:0,lookDir:side,frozen:false,balk:0,step:0,cue:0};
+  E.root.visible=false;
   poseCopy(STAND,E.pose);E.pose.tx=-side*1.75;E.pose.tz=1.0;E.applyPose(E.pose);
   q.E=E;
   Object.assign(G,{bar:100,shown:100,lag:100,kd:0,lastHit:-99});
@@ -870,9 +1037,52 @@ const FREE=(()=>{
  }
  // 다 걸어 나오면 그 자리에 선다(옥좌는 없다)
  function seat(q){
-  const E=q.E;E.walkIn=null;E.tablet.visible=true;
-  combatInit(E,false);E.combat.x=0;E.combat.z=1.0;E.idleT=2.2;E.sobT=G.time+3;E.taunt=true;
+  const E=q.E;E.walkIn=null;LEASH.release(E);
+  combatInit(E,false);E.combat.x=0;E.combat.z=1.0;E.idleT=1.6;E.sobT=G.time+3;scare(E);E.panic=Math.max(E.panic,.8);
  }
+ /* 끌고 오는 사슬: 두 손목을 어깨너비 쇠막대(형틀) 양 끝에 채우고, 막대 가운데에서 사슬이 몸 앞 위쪽으로 팽팽하게 뻗는다. 다 오면 풀려서 위로 딸려 올라간다 */
+ const LEASH=(()=>{
+  const g=grp(root,null,'leash');g.visible=false;
+  const chain=mk(cylGeo(.012,.012,1,6),iron,g,{cast:false}),bar=mk(cylGeo(.026,.026,1,8),ironD,g,{cast:false});
+  const cuffs=[0,1].map(()=>mk(cylGeo(.05,.05,.07,10),iron,g,{cast:false}));
+  chain.frustumCulled=bar.frustumCulled=false;for(const c of cuffs)c.frustumCulled=false;metalEnv(g);
+  const st={E:null,up:0},top=V3(),d=V3(),wL=V3(),wR=V3(),m=V3(),t=V3(),fd=V3(),pd=V3(),ax=V3(),lift=V3();
+  function place(){
+   const E=st.E,a=E.arms;a[0].wr.getWorldPosition(wL);a[1].wr.getWorldPosition(wR);
+   m.addVectors(wL,wR).multiplyScalar(.5);
+   // 풀린 뒤에는 막대째 천장 쪽으로 딸려 올라간다
+   if(st.up>0){lift.subVectors(top,m).multiplyScalar(smooth(clamp(st.up,0,1)));m.add(lift);wL.add(lift);wR.add(lift);}
+   ax.subVectors(wR,wL);const wide=Math.max(.05,ax.length());ax.multiplyScalar(1/wide);
+   bar.position.copy(m);bar.quaternion.setFromUnitVectors(UP,ax);bar.scale.set(1,wide+.16,1);
+   cuffs[0].position.copy(wL);cuffs[1].position.copy(wR);for(const c of cuffs)c.quaternion.copy(bar.quaternion);
+   d.subVectors(top,m);const len=Math.max(.01,d.length());
+   chain.position.copy(m).addScaledVector(d,.5);chain.quaternion.setFromUnitVectors(UP,d.multiplyScalar(1/len));chain.scale.set(1,len,1);
+  }
+  function pull(E){
+   const w=E.walkIn;if(!w)return;
+   st.E=E;st.up=0;g.visible=true;
+   E.root.updateMatrixWorld(true);
+   // 두 팔을 어깨높이에서 몸 앞으로 곧게 뻗는다(어깨 자리를 따라가므로 웅크리거나 몸을 젖혀도 얼굴·배에 파묻히지 않는다)
+   const a=E.arms,ry=E.root.rotation.y,fx=Math.sin(ry),fz=Math.cos(ry);
+   a[0].sh.getWorldPosition(wL);a[1].sh.getWorldPosition(wR);
+   const cx=(wL.x+wR.x)*.5,cy=(wL.y+wR.y)*.5,cz=(wL.z+wR.z)*.5;
+   for(const sd of [-1,1]){
+    t.set(cx+fx*.46+fz*sd*.24,cy+.05,cz+fz*.46-fx*sd*.24);E.root.worldToLocal(t);
+    E.setIK(sd<0?'L':'R',{target:t,fd:fd.set(0,.25,1),pd:pd.set(0,-1,0),curl:.8,rate:16});
+   }
+   // 사슬은 몸이 향한 쪽 앞 위로 뻗는다
+   top.set(cx+fx*2.0,3.7,cz+fz*2.0);
+   place();
+  }
+  function release(E){if(st.E!==E||!g.visible)return;E.releaseIK('L',7);E.releaseIK('R',7);st.up=.001;AUDIO.chain(.8,7,.4);}
+  function update(dt){
+   if(!g.visible||st.up<=0)return;
+   st.up+=dt/.32;if(st.up>=1||!st.E||!st.E.root.parent){hide();return;}
+   place();
+  }
+  function hide(){g.visible=false;st.E=null;st.up=0;}
+  return {pull,release,update,hide};
+ })();
  function finish(){
   S.seq=null;G.inputLocked=false;$('#dock').hidden=false;
   hint(HINTS[G.tool],3);focusCanvas();syncUI();
@@ -913,22 +1123,25 @@ const FREE=(()=>{
    q.sw.step(dt);it.holder.rotation.x=q.sw.x*.05;
    if(u>=1)arrive(q);
   }
-  // 새 놈 걸어 나오기
+  // 새 놈: 손목이 묶여 끌려 나온다. 중간에 걸린 몸들을 보고 두 발로 버티다가, 사슬에 확 당겨져 자리에 선다
   const E=q.E,w=E.walkIn;
   if(w){
    w.t+=dt*q.speed;
    if(w.t>=0){
-    if(!E.root.visible){E.root.visible=true;E.tablet.visible=true;}
-    const mid=.5*T.walk,tw=w.t;
+    const tw=w.t;
+    if(!E.root.visible){E.root.visible=true;AUDIO.chain(.7,9,.7);}
     let u;
-    if(tw<mid)u=tw/T.walk;else if(tw<mid+w.pause)u=.5;else u=(tw-w.pause)/T.walk;
-    w.frozen=w.pause>0&&tw>=mid&&tw<mid+w.pause;
-    // 굳는 동안만 고개가 돌아가 있고, 다시 걷기 시작하면 고쳐 든다
-    w.lookK=damp(w.lookK,w.frozen?1:0,w.frozen?14:7,dt);
-    if(w.frozen&&!w.saw){w.saw=true;E.setEmotion('shock');E.shockT=w.pause/q.speed+.05;if(w.pause>.55)AUDIO.voice('gasp',.5);}
+    if(tw<T.walkA)u=.72*tw/T.walkA;
+    else if(tw<T.walkB)u=.72-.05*smooth((tw-T.walkA)/(T.walkB-T.walkA));
+    else{const x=clamp((tw-T.walkB)/(T.walkC-T.walkB),0,1);u=.67+.33*(1-(1-x)*(1-x));}
+    w.frozen=tw>=T.walkA&&tw<T.walkB;
+    w.balk=damp(w.balk,w.frozen?1:0,w.frozen?16:9,dt);
+    if(w.frozen&&w.cue<1){w.cue=1;E.setEmotion('shock');E.shockT=(T.walkB-T.walkA)/q.speed;E.voiceCool=0;AUDIO.voice('yelp',.9);AUDIO.chain(.9,4,.15);}
+    if(tw>=T.walkB&&w.cue<2){w.cue=2;AUDIO.pull(.8);AUDIO.chain(1,6,.3);E.sp.chest.kick(4,0,0);E.sp.head.kick(-3,0,0);camHit({shake:.012});}
     w.u=clamp(u,0,1);
-    const st=Math.floor(w.phase/PI);if(st!==w.step){w.step=st;if(w.stepK>.4)AUDIO.footstep(.7);}
-    if(w.u>=1){w.sit=(tw-w.pause-T.walk)/T.sit;if(w.sit>=1)seat(q);}
+    const st=Math.floor(w.phase/PI);if(st!==w.step){w.step=st;if(w.stepK>.4)AUDIO.footstep(.45);}
+    if(tw>=T.walkC){w.u=1;w.sit=(tw-T.walkC)/T.sit;if(w.sit>=1)seat(q);}
+    if(E.walkIn)LEASH.pull(E);
    }
   }
   if(q.stage===4&&!E.walkIn&&!it.moving)finish();
@@ -969,7 +1182,7 @@ const FREE=(()=>{
    else{const k=easeIn((u-.72)/.28);hd.obj.position.set(f.to.x,f.to.y+.34*(1-k),f.to.z);hd.obj.quaternion.copy(f.q1);}
    if(u>=.72&&!f.shown){f.shown=true;spikeMesh[hd.idx].visible=true;}
    if(u>=1){hd.fly=null;placeHead(hd);AUDIO.chop(.8);AUDIO.squelch(.6);camHit({shake:.016});
-    if(PREF.blood)BLOOD.spray(_v.set(SPIKES[hd.idx][0],SPIKES[hd.idx][1]-.06,SPIKES[hd.idx][2]+.05),V3(0,-.2,1),10,{min:.5,max:1.6,spread:.9});}
+    if(PREF.blood)BLOOD.spray(_v.set(spikeX(hd.idx),SPIKES[hd.idx][1]-.06,SPIKES[hd.idx][2]+.05),V3(0,-.2,1),10,{min:.5,max:1.6,spread:.9});}
   }
  }
  function update(dt){
@@ -977,10 +1190,16 @@ const FREE=(()=>{
   if(S.railDrop){const r=S.railDrop;r.t+=dt/.7;const u=clamp(r.t,0,1);rails.position.y=5.2*(1-backOut(u,1.1));
    if(u>=1){rails.position.y=0;S.railDrop=null;AUDIO.railStop(1);camHit({shake:.02});}}
   for(const c of hidden)if(c.visible)c.visible=false;
+  {const x=rowHalf();if(Math.abs(x-ROWX[1])>.004)setRows(x);}
+  flicker(dt);
+  // 끌린 자국·벽에 튄 자국은 걸린 몸이 늘수록 짙어진다(빈 방은 깨끗하다). 피를 끄면 숨긴다
+  {const on=!!PREF.blood,n=S.items.length;dragMat.opacity=.85*clamp(n/8,0,1);goreMat.opacity=.9*clamp((n-2)/12,0,1);
+   for(const m of lanes)m.visible=on&&n>0;for(const m of wallGore)m.visible=on&&n>2;}
   updateItems(dt);
-  {let n=0;for(const it of S.items){if(n>=2)break;if(!it.real&&it.ready&&(!it.proxy||(it.fine&&it.k>=nearK()))){ensureMesh(it);n++;}}}
+  // 겉모습 만들기는 프레임당 두 구씩, 가까운 칸(나중에 건 몸)부터
+  {let n=0;for(let i=S.items.length-1;i>=0&&n<2;i--){const it=S.items[i];if(!it.real&&it.ready&&(!it.proxy||(it.fine&&it.k>=nearK()))){ensureMesh(it);n++;}}}
   updateHeap(dt);
-  updateSeq(dt);
+  updateSeq(dt);LEASH.update(dt);
   if(!S.seq&&S.jobs.length)stepJobs(5);
   const E=G.E;
   if(E&&!S.seq){
@@ -1010,9 +1229,17 @@ const FREE=(()=>{
   const k=1-Math.exp(-dt*3.4);CAM.pos.lerp(CAM.goalPos,k);CAM.look.lerp(CAM.goalLook,k);
   return true;
  }
+ // 이 모드에는 배경음악이 없다: fight.js가 매 프레임 부르는 음악 켜기를 이 모드 동안만 '끄기'로 바꿔 넘긴다
+ if(typeof AUDIO.updateMusic==='function'){const um=AUDIO.updateMusic;AUDIO.updateMusic=function(wanted,quiet){return um.call(AUDIO,wanted&&!S.on,quiet);};}
+ // 화면 둘레를 어둡게 누르고(도살장), 설정 창의 「청소하기」 버튼 모양을 잡는다
+ {const st=document.createElement('style');st.textContent=
+  '#fight.free-mode::after{background:radial-gradient(ellipse at 50% 44%,transparent 36%,rgba(2,6,4,.58) 100%)!important}'+
+  '#fight #freeClean{margin-top:10px}#fight #freeClean.armed{border-color:#b5553f;box-shadow:0 3px 0 #b5553f;color:#a3301c}'+
+  '#fight #freeCleanNote{margin:8px 2px 0;font-size:12.5px;line-height:1.45;color:#686174}';
+  document.head.appendChild(st);}
  $('#freeNext').addEventListener('click',()=>{AUDIO.unlock();if(next())AUDIO.ui();focusCanvas();});
  $('#freeRevive').addEventListener('click',()=>{AUDIO.unlock();revive();focusCanvas();});
- return {begin,suspend,stage,update,next,revive,flinch,shoveContact,waistSlash,bisect,overflow,heap:HEAP,camera:camera3,canNext,canRevive,get on(){return S.on;},get busy(){return !!S.seq;},get state(){return S;}};
+ return {begin,suspend,stage,update,next,revive,flinch,shoveContact,waistSlash,bisect,overflow,clean,scare,heap:HEAP,camera:camera3,canNext,canRevive,get on(){return S.on;},get busy(){return !!S.seq;},get state(){return S;}};
 })();
 return {FREE,hangPose:freeHangPose,walkPose:freeWalkPose,FREE_FLOOR,FREE_DMG};
 }
