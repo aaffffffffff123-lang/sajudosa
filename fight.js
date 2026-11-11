@@ -10487,6 +10487,7 @@ function resolveHit(tool,kind,info,side,extra={}){
  if(accent&&!extra.through&&!extra.quiet)AUDIO.duck();
  const r=E.takeHit({tool,kind,part:info.part,point:info.point,normal:info.normal,dir,obj:info.obj,power,slashFrom:extra.slashFrom,slashPath:extra.slashPath,strokeId:extra.strokeId,through:extra.through});
  if(stroke){r.dmg=Math.min(r.dmg,stroke.damage);stroke.damage-=r.dmg;}
+ if(G.free&&tool==='knife'&&kind==='slash')FREE.waistSlash(info,extra);
  if(firstStrike)firstStrikeLine();
  // 되살림이 미뤄져 있는 동안(5%에서 누워 있을 때)은 맞아도 균형이 안 깎인다: 일어나는 길에 다시 쓰러지지 않고 서자마자 컷씬으로 간다
  if(combatActive(E)&&!r.halo&&!G.revivalPending){E.combat.hit({kind:extra.stomp?'stomp':kind,dx:dir.x,dz:extra.stomp?0:dir.z,power,blocked:r.blocked});}
@@ -11797,7 +11798,7 @@ const FREE=(()=>{
   hook:new THREE.TorusGeometry(.058,.0115,7,16,PI*1.3),shank:cylGeo(.0115,.0115,.1,6),tip:new THREE.ConeGeometry(.0115,.05,6),
   pool:new THREE.CircleGeometry(.34,24),spike:cylGeo(.004,.017,.36,7),pole:cylGeo(.014,.02,1.72,8)};
  for(const k in GEOS)GEOS[k].userData.shared=true;
- const S={on:false,total:0,items:[],lines:[[],[],[],[]],heads:[],seq:null,reviving:false,railsOn:false,railDrop:null,ui:''};
+ const S={on:false,total:0,items:[],lines:[[],[],[],[]],heads:[],seq:null,reviving:false,railsOn:false,railDrop:null,ui:'',slides:[]};
  const _v=V3(),_v2=V3(),_m=new THREE.Matrix4();
 
  /* ---- 레일 ---- */
@@ -11826,13 +11827,13 @@ const FREE=(()=>{
   try{const r=JSON.parse(localStorage.getItem(HUNG_STORE)||'null');
    if(r&&Number.isSafeInteger(r.n)&&r.n>=0&&Array.isArray(r.list)){n=Math.min(r.n,999999);
     for(const e of r.list.slice(-20)){if(!e||!Array.isArray(e.p)||e.p.length!==4)continue;
-     list.push({l:(e.l|0)>>>0,s:(e.s|0)>>>0,p:e.p.map(v=>clamp(Number(v)||0,0,1)),h:[0,1,2].includes(e.h)?e.h:1});}
+     list.push({l:(e.l|0)>>>0,s:(e.s|0)>>>0,p:e.p.map(v=>clamp(Number(v)||0,0,1)),h:[0,1,2].includes(e.h)?e.h:1,w:e.w?1:0});}
     n=Math.max(n,list.length);}
   }catch(_){}
   return {n,list};
  }
  function saveRecord(){
-  const list=S.items.map(it=>({l:it.look,s:it.seed,p:it.limbs.map(v=>Math.round(v*100)/100),h:it.head}));
+  const list=S.items.map(it=>({l:it.look,s:it.seed,p:it.limbs.map(v=>Math.round(v*100)/100),h:it.head,w:it.waist?1:0}));
   try{localStorage.setItem(HUNG_STORE,JSON.stringify({n:S.total,list}));}catch(_){}
  }
  function rng(seed){let s=(seed>>>0)||1;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
@@ -11906,29 +11907,40 @@ const FREE=(()=>{
   const chain=(names,sfx,f,rad)=>{const n=f>=1?5:f>=.85?4:f>=.6?3:f>=.4?2:f>=.15?1:0;
    for(let i=0;i<n;i++)use.push(names[i]+sfx);
    if(n<5){const a=T.joint[names[n]+sfx],b=T.joint[names[Math.max(0,n-1)]+sfx];caps.push({p:n?a:a.clone(),r:rad*(n>2?.75:1),d:n?a.clone().sub(b).normalize():V3(0,-1,0)});}};
-  chain(ARM,'L',it.limbs[0],.07);chain(ARM,'R',it.limbs[1],.07);chain(LEG,'L',it.limbs[2],.1);chain(LEG,'R',it.limbs[3],.1);
+  chain(ARM,'L',it.limbs[0],.07);chain(ARM,'R',it.limbs[1],.07);
+  // 허리가 끊긴 몸: 다리 없이, 몸통도 허리선 위만 남긴다
+  let wUp=null,wP=null;
+  if(it.waist){wUp=T.joint.chest.clone().sub(T.joint.spine).normalize();wP=T.joint.spine.clone().addScaledVector(wUp,WAIST_Y);
+   caps.push({p:wP.clone().add(V3(0,0,.05)),r:.3,d:wUp.clone().negate(),flat:true});}
+  else{chain(LEG,'L',it.limbs[2],.1);chain(LEG,'R',it.limbs[3],.1);}
   if(it.head===1)use.push('head');else{const up=T.joint.head.clone().sub(T.joint.neck).normalize();caps.push({p:T.joint.head.clone().addScaledVector(up,.035),r:.1,d:up,neck:true});}
   let nv=0,ni=0;const list=use.map(k=>T.parts[k]).filter(Boolean);for(const p of list){nv+=p.cls.length;ni+=p.idx.length;}
   const pos=new Float32Array(nv*3),colA=new Float32Array(nv*3),idx=new Uint32Array(ni);let vo=0,io=0;
   // 흘러내린 피: 몸통 겉면의 몇 군데를 아래로 길게 물들인다(갈고리 박힌 등은 늘 젖어 있다)
   const stains=[{x:0,y:-.02,z:-.02,r:.13}];
   for(let i=0,n=2+Math.floor(r()*3);i<n;i++)stains.push({x:lerp(-.26,.26,r()),y:lerp(-.5,.02,r()),z:lerp(.25,.5,r()),r:lerp(.045,.085,r())});
-  for(const c of caps)stains.push({x:c.p.x,y:c.p.y,z:c.p.z,r:c.r*(c.neck?1.7:1.25),round:true});
+  for(const c of caps)if(!c.flat)stains.push({x:c.p.x,y:c.p.y,z:c.p.z,r:c.r*(c.neck?1.7:1.25),round:true});
   for(const p of list){
    pos.set(p.pos,vo*3);
    for(let i=0;i<p.cls.length;i++){
     const x=p.pos[i*3],y=p.pos[i*3+1],z=p.pos[i*3+2];let c=pal[p.cls[i]];
-    for(const s of stains){const dy=y-s.y,dx=x-s.x,dz=z-s.z,d=s.round?dx*dx+dy*dy+dz*dz:dx*dx+dz*dz*.5+(dy>0?dy*dy*6:dy*dy*.05);if(d<s.r*s.r){c=pal[BLOODC];break;}}
+    // 허리 단면 둘레는 피에 젖어 있다
+    if(wUp&&p===T.parts.torso&&(x-wP.x)*wUp.x+(y-wP.y)*wUp.y+(z-wP.z)*wUp.z<.045)c=pal[BLOODC];
+    else for(const s of stains){const dy=y-s.y,dx=x-s.x,dz=z-s.z,d=s.round?dx*dx+dy*dy+dz*dz:dx*dx+dz*dz*.5+(dy>0?dy*dy*6:dy*dy*.05);if(d<s.r*s.r){c=pal[BLOODC];break;}}
     colA[(vo+i)*3]=c.r;colA[(vo+i)*3+1]=c.g;colA[(vo+i)*3+2]=c.b;
    }
-   for(let i=0;i<p.idx.length;i++)idx[io+i]=p.idx[i]+vo;
-   vo+=p.cls.length;io+=p.idx.length;
+   if(wUp&&p===T.parts.torso){
+    // 세 꼭짓점이 모두 허리선 아래인 삼각형은 버린다
+    const up=i=>(p.pos[i*3]-wP.x)*wUp.x+(p.pos[i*3+1]-wP.y)*wUp.y+(p.pos[i*3+2]-wP.z)*wUp.z>-.01;
+    for(let i=0;i<p.idx.length;i+=3){const a=p.idx[i],b=p.idx[i+1],c=p.idx[i+2];if(up(a)||up(b)||up(c)){idx[io++]=a+vo;idx[io++]=b+vo;idx[io++]=c+vo;}}
+   }else{for(let i=0;i<p.idx.length;i++)idx[io+i]=p.idx[i]+vo;io+=p.idx.length;}
+   vo+=p.cls.length;
   }
-  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(colA,3));geo.setIndex(new THREE.BufferAttribute(idx,1));
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.BufferAttribute(pos,3));geo.setAttribute('color',new THREE.BufferAttribute(colA,3));geo.setIndex(new THREE.BufferAttribute(io<idx.length?idx.slice(0,io):idx,1));
   geo.computeVertexNormals();geo.computeBoundingSphere();
   const mesh=new THREE.Mesh(geo,proxyMat);mesh.castShadow=false;mesh.receiveShadow=false;
   // 잘린 자리의 단면
-  for(const c of caps){const m=mk(sg(10),capMat,mesh,{p:[c.p.x,c.p.y,c.p.z],s:[c.r,c.r*.45,c.r],cast:false,receive:false});m.quaternion.setFromUnitVectors(UP,c.d);}
+  for(const c of caps){const m=mk(sg(10),capMat,mesh,{p:[c.p.x,c.p.y,c.p.z],s:[c.r,c.r*(c.flat?.12:.45),c.r],cast:false,receive:false});m.quaternion.setFromUnitVectors(UP,c.d);}
   return mesh;
  }
  function proxyHead(seed){
@@ -12050,14 +12062,14 @@ const FREE=(()=>{
   for(const it of S.items)disposeItem(it);
   S.items.length=0;for(const l of S.lines)l.length=0;
   if(S.seq&&S.seq.holder&&!S.seq.item)S.seq.holder.removeFromParent();
-  S.seq=null;S.reviving=false;S.railDrop=null;
+  S.seq=null;S.reviving=false;S.railDrop=null;S.slides.length=0;
  }
  function begin(){
   clearAll();
   const rec=loadRecord();S.total=rec.n;
   template();
   rec.list.forEach((e,i)=>{
-   const ord=S.total-rec.list.length+i,it=newItem(ord,e.l,e.s,e.p,e.h);
+   const ord=S.total-rec.list.length+i,it=newItem(ord,e.l,e.s,e.p,e.h);it.waist=!!e.w;
    it.proxy=proxyBody(it);it.holder.userData.drop.add(it.proxy);it.poolK=1;
    S.items.push(it);S.lines[it.line].unshift(it);
    if(e.h===2)placeHead(addHead(it,null,null));
@@ -12106,6 +12118,84 @@ const FREE=(()=>{
    if(b.mode==='stand'&&b.idle>.3)b.vz=Math.min(b.vz,scared?-.55:-.32);
    else if(b.mode==='ground'&&b.idle>.45&&b.idle<1.2)b.vz=Math.min(b.vz,-.3);
   }
+ }
+
+ /* ---- 허리 끊기: 식칼로 배를 가로로 길게 다섯 번 그으면 허리가 끊긴다. 아랫도리는 조각으로 떨어지고 윗몸은 살아서 계속 맞는다 ---- */
+ const WAIST_CUTS=5,WAIST_Y=.09;
+ function waistSlash(info,extra){
+  const E=G.E;if(!S.on||!E||E.bisected||E.hang||!combatActive(E)||!info||!extra||!extra.slashFrom||info.part!=='belly')return;
+  const sp=E.bones.spine;sp.updateWorldMatrix(true,false);
+  const a=sp.worldToLocal(extra.slashFrom.clone()),b=sp.worldToLocal(info.point.clone());
+  if(b.y<-.1||b.y>.34)return;
+  const dx=Math.abs(b.x-a.x),dy=Math.abs(b.y-a.y);if(dx<dy*1.6)return;
+  // 한 번 긋는 동안 배 위를 가로로 지나간 길이를 모은다. 배 너비의 절반쯤 지나가야 한 번으로 친다
+  const id=extra.strokeId==null?-1:extra.strokeId;
+  const w=E.waist||(E.waist={n:0,id:null,len:0,done:false});
+  if(w.id!==id){w.id=id;w.len=0;w.done=false;}
+  if(w.done)return;
+  w.len+=dx;if(w.len<.3)return;
+  w.done=true;w.n++;
+  AUDIO.rip(.9);AUDIO.squelch(.7);
+  if(PREF.blood)BLOOD.spray(info.point,info.normal,12+w.n*3,{min:1,max:3.2,spread:1});
+  E.panic=1;
+  if(w.n>=WAIST_CUTS)bisect(E,info);
+  else hint('허리 '+w.n+'/'+WAIST_CUTS+' · 배를 가로로 더 그으면 끊깁니다',1.6);
+ }
+ function bisect(E,info){
+  const B=E.bones,spine=B.spine,pelvis=B.pelvis,f=E.belly&&E.belly.userData.flesh;
+  if(!f||E.bisected)return false;
+  spine.updateWorldMatrix(true,true);
+  const q=spine.getWorldQuaternion(new THREE.Quaternion()),up=V3(0,1,0).applyQuaternion(q),nW=up.clone().negate();
+  const pW=spine.localToWorld(V3(0,WAIST_Y,0));
+  // 1) 배 살을 허리선에서 가른다(못 가르면 아무것도 건드리지 않는다)
+  const cut=E._planeCut(f,nW,pW);
+  if(cut.kind!=='split')return false;
+  E.bisected=true;
+  const piece=new THREE.Group();piece.position.copy(pW);piece.quaternion.copy(q);piece.userData.detached=true;scene.add(piece);piece.updateMatrixWorld(true);
+  piece.attach(cut.piece);
+  // 2) 허리선 아래 것들을 조각으로 옮긴다: 골반에 달린 옷자락·다리 전부, 척추에 달린 것 가운데 아래쪽에 있는 것
+  BLOOD.clearSegment('spine');BLOOD.clearSegment('pelvis');
+  const below=o=>{o.updateWorldMatrix(true,false);const c=o.isMesh&&o.geometry?(o.geometry.boundingSphere||(o.geometry.computeBoundingSphere(),o.geometry.boundingSphere)).center.clone().applyMatrix4(o.matrixWorld):o.getWorldPosition(V3());return nW.dot(c.sub(pW))>0;};
+  const twitch=[];
+  for(const c of pelvis.children.slice()){if(c===spine)continue;E._detachHeadTree(c,piece);}
+  for(const c of spine.children.slice()){if(c===E.belly||c===B.chest||c.userData.bone)continue;if(below(c))E._detachHeadTree(c,piece);}
+  for(const c of E.belly.children.slice()){if(below(c))E._detachHeadTree(c,piece);}
+  piece.traverse(o=>{const bn=o.userData.bone;if(bn&&/^(hip|knee)/.test(bn))twitch.push({o,ax:'x',k:bn.startsWith('knee')?1:-1,f:rnd(6,10),a:rnd(.3,.55)});});
+  for(const t of twitch){t.b=t.o.rotation[t.ax];t.ph=rnd(0,TAU);}
+  for(const l of E.legs)E.detached.add(l.hip.userData.bone||('hip'+l.nm));
+  // 3) 단면: 윗몸 아래쪽과 아랫도리 위쪽
+  const capPos=V3(0,WAIST_Y,.055),R=.305;
+  try{
+   E.makeCutCap(spine,capPos,new THREE.Quaternion(),R,false,E.M.robe,false,.004,false);
+   E.makeCutCap(piece,V3(0,0,.055),new THREE.Quaternion(),R,true,E.M.robe,false,.004,false);
+  }catch(_){}
+  // 4) 아랫도리는 바닥에 남는 조각. 다리는 한동안 버둥댄다
+  const d=info&&info.dir?info.dir:V3(0,0,-1);
+  E.bits=E.bits||[];
+  // 아랫도리는 옆으로 나가떨어진다(카메라 앞에 남으면 윗몸을 가린다)
+  const sd=(Math.abs(d.x)>.25?Math.sign(d.x):(Math.random()<.5?-1:1));
+  E.bits.push({obj:piece,body:true,v:V3(sd*.6,.5,0),w:V3(rnd(-.6,.6),rnd(-.8,.8),-sd*rnd(1,2)),r:.16,bounce:.08,sound:'limb',corners:E.limbCorners(piece),
+   twitch:{list:twitch,t:0,dur:rnd(5,7),hop:rnd(.3,.6)},bleed:{lp:V3(0,.02,.055),ln:V3(0,1,0),t:0,life:12}});
+  // 발이 바닥에 닿아 있어 던져도 그 자리에 주저앉는다 → 바닥을 미끄러져 옆으로 밀려나게 직접 옮긴다
+  S.slides.push({obj:piece,dx:sd*rnd(1.25,1.5),dz:-rnd(.35,.6),t:0,dur:.6,last:0,spin:-sd*rnd(.5,.9)});
+  // 5) 윗몸: 쓰러지고 다시는 못 일어선다
+  const b=E.combat;
+  if(b){b.canRise=false;if(b.mode!=='ground'&&b.mode!=='fall')b.fall(d.x,-1,1.25);}
+  E.taunt=false;if(E.phase<3)E.setPhase(3);
+  const body=pW.clone().addScaledVector(nW,.01);
+  BLOOD.addWound('spine',body,nW,{rate:.09,tau:70,artery:true,kind:'cut'});
+  if(PREF.blood){
+   BLOOD.spray(body,nW,44,{min:1.4,max:5,spread:1.3});BLOOD.spray(body,up,26,{min:1.2,max:4,spread:1.2});
+   CHUNKS.burst(body,12,nW,.05,'cloth',{speed:2});CHUNKS.burst(body,8,up,.04,'flesh',{speed:1.6});
+  }else BLOOD.spray(body,UP,16,{kind:'dust',max:1.5});
+  AUDIO.chop(1.3);AUDIO.rip(1.2);AUDIO.squelch(1.1);AUDIO.spurt(1.3);AUDIO.crack(1);
+  if(!E.headDestroyed||deityHasReptileVoice(E)){E.setEmotion('shock');E.shockT=1.4;E.voiceCool=0;AUDIO.voice('scream',1.5);}
+  E.hitFlash=1;E.panic=1;
+  camHit({shake:.065});G.hitstop=Math.max(G.hitstop,.17);G.slow=Math.max(G.slow,.45);flash(.2);
+  if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([40,20,70]);}catch(_){}
+  hint('허리가 끊겼습니다 · 윗몸은 아직 살아 있습니다',2.4);
+  S.ui='';
+  return true;
  }
 
  /* ---- 「새 놈」: 갈고리에 꿰어 걸고, 새 천지신명이 걸어 나온다 ---- */
@@ -12161,7 +12251,7 @@ const FREE=(()=>{
    if(b.dead||!b.body||!b.obj.parent)continue;
    const p=b.obj.position;if(Math.abs(p.x)>1.5||p.z<-.3)continue;
    const s=Math.abs(p.x)>.12?Math.sign(p.x):(n%2?1:-1)*(side||1);
-   b.rest=false;b.v.set(s*rnd(2.6,3.9),rnd(.7,1.4),rnd(-1.5,-.2));b.w.set(rnd(-9,9),rnd(-9,9),rnd(-9,9));b.landed=false;n++;
+   b.rest=false;b.v.set(s*rnd(3,4.2),rnd(.8,1.4),rnd(-2.6,-1.1));b.w.set(rnd(-9,9),rnd(-9,9),rnd(-9,9));b.landed=false;n++;
   }
   return n;
  }
@@ -12173,7 +12263,7 @@ const FREE=(()=>{
   old.root.updateMatrixWorld(true);holder.updateMatrixWorld(true);holder.userData.drop.attach(old.root);
   old.root.traverse(o=>{if(o.isMesh)o.castShadow=false;});
   dimBody(old);
-  const it=newItem(S.total,old.lookIndex,(Math.random()*1e9)>>>0,limbFracs(old),old.headGone?0:1);
+  const it=newItem(S.total,old.lookIndex,(Math.random()*1e9)>>>0,limbFracs(old),old.headGone?0:1);it.waist=!!old.bisected;
   it.holder.removeFromParent();it.holder=holder;it.real=old;it.free=true;it.cur.copy(holder.position);
   // 떨어진 머리(가장 최근 것)는 꼬챙이로
   if(old.headGone){
@@ -12282,6 +12372,12 @@ const FREE=(()=>{
 
  function updateItems(dt){
   const time=G.time;
+  for(let i=S.slides.length-1;i>=0;i--){
+   const sl=S.slides[i];if(!sl.obj.parent){S.slides.splice(i,1);continue;}
+   sl.t+=dt/sl.dur;const k=backOut(clamp(sl.t,0,1),.6),d=k-sl.last;sl.last=k;
+   sl.obj.position.x+=sl.dx*d;sl.obj.position.z+=sl.dz*d;sl.obj.rotation.y+=sl.spin*d;
+   if(sl.t>=1)S.slides.splice(i,1);
+  }
   for(const it of S.items){
    if(it.real)it.real.updateBits(dt);
    if(it.free)continue;
@@ -12343,7 +12439,7 @@ const FREE=(()=>{
  }
  $('#freeNext').addEventListener('click',()=>{AUDIO.unlock();if(next())AUDIO.ui();focusCanvas();});
  $('#freeRevive').addEventListener('click',()=>{AUDIO.unlock();revive();focusCanvas();});
- return {begin,suspend,update,next,revive,flinch,shoveContact,camera:camera3,canNext,canRevive,get on(){return S.on;},get busy(){return !!S.seq;},get state(){return S;}};
+ return {begin,suspend,update,next,revive,flinch,shoveContact,waistSlash,bisect,camera:camera3,canNext,canRevive,get on(){return S.on;},get busy(){return !!S.seq;},get state(){return S;}};
 })();
 
 /* ---- 라운드 ---- */
