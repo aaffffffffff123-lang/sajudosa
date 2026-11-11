@@ -278,7 +278,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
  </header>
- <div id="freeBar" role="group" aria-label="원없이 족치기" hidden><button type="button" id="freeNext" disabled>새 놈</button><button type="button" id="freeRevive" disabled>되살리기</button></div>
+ <div id="freeBar" role="group" aria-label="원없이 족치기" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button></div>
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
   <div class="panel tools" id="tools" role="group" aria-label="무기">
@@ -1866,6 +1866,8 @@ const AUDIO=(()=>{
  // 아래턱이 없으면 말·비명 대신 목구멍에서 꾸르륵거리는 소리만 난다
  let jawGoneV=false;function setJawGone(v){jawGoneV=!!v;}
  function say(name,k=1,raw){
+  // 사과하는 동안에는 같은 천지신명의 비명이 음절 목소리 위로 겹치지 않는다.
+  if(G.free&&TALK.cur?.quip&&G.time<(G.E?.talkUntil||0))return;
   if(!ready())return;
   if(!raw&&!baking&&(combatPlayerVoiceBusy()||uncannyVoiceBusy()))return;
   // The base voice changes only after a severed head regrows as a reptile.
@@ -2780,6 +2782,7 @@ const LINES={
  cheer:[[1,'살아나셨다!',0],[4,'천지신명님 만세!',.45]],
  back:'암백ㅋ', // 작가가 지정한 부활 대사. 화면 문구를 그대로 보존한다.
  quip:'운명 최고', // 설교와 같은 천지신명의 음절 목소리로 뱉는 한마디
+ freeApology:['좆같은 운명을 줘서 미안해','천지신명도 천지신명이 처음이라 미안해'],
  // 운명을 받아들인 사람들 앞에서 되풀이하는 설교. 한 마디씩만 재생한다.
  submit:[
   ['저마다 태어난 자리가 있고, 받아야 할 몫이 있느니라.',4,.8],
@@ -2828,7 +2831,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.freeApology.join('')+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -10284,6 +10287,7 @@ function bossTalkLeft(){
 // 설계자 말풍선 자리: 꼬리는 입을 가리키고, 아랫변은 면류관 위에. 위에 자리가 없으면 머리 옆에 띄운다
 function bossAnchor(E){const rep=E.headKind==='rep';return {obj:rep?E.repFaceG:E.face,off:rep?V3(0,-.118,.17):V3(0,-.1,.2),top:rep?.38:.50,r:rep?.16:.2,cam:'main',speaker:E};}
 function updateTalk(dt){
+ if(G.free&&TALK.cur?.quip&&(!G.E||G.E.headGone||G.E.jawGone||(G.E.headDestroyed&&!deityHasReptileVoice(G.E))))clearTalk();
  if(G.mode==='fight'&&!G.opening&&!G.walking&&!(G.revival&&G.revival.spoken)){
   // 족치는 중에는 첫 타격의 내 외침과 설계자의 추임새만 추가로 허용한다.
   const allowed=(TALK.cur&&(TALK.cur.quip||TALK.cur.who==='player'))||(TALK.q.length&&(TALK.q[0].quip||TALK.q[0].who==='player'));
@@ -10315,7 +10319,7 @@ function updateTalk(dt){
  // 글자가 찍히는 동안 입이 움직인다
  if(!player)E.talkUntil=G.time+typeTime(n.text,VOICE.boss.speed)+.08;
  // 추임새는 아프다가도 그 순간만 비웃는 얼굴로 돌아와 말한다(허둥대던 손도 그 동안만 멈추고, 떨림도 잦아든다)
- if(n.quip){E.setEmotion('smug');E.shockT=Math.max(E.shockT||0,1.7);E.panic=0;E.calmUntil=G.time+1.7;if(E.act&&E.act.prio<2)E.endAct();}
+ if(n.quip&&!G.free){E.setEmotion('smug');E.shockT=Math.max(E.shockT||0,1.7);E.panic=0;E.calmUntil=G.time+1.7;if(E.act&&E.act.prio<2)E.endAct();}
 }
 
 function startEncounter(){
@@ -10412,19 +10416,23 @@ const QUIP={next:0,last:-99,n:0};
 function quipReset(){QUIP.next=0;QUIP.last=-99;QUIP.n=0;}
 function quipAllowed(){
  const E=G.E;
- return G.mode==='fight'&&G.started&&!G.opening&&!G.ended&&!G.inputLocked&&!G.revival&&!G.revivalPending&&!G.crowdBeatUntil&&!G.offerPending&&!G.offerOpen
+ return G.mode==='fight'&&G.started&&!G.paused&&!G.walking&&!G.opening&&!G.ended&&!G.inputLocked&&!G.revival&&!G.revivalPending&&!G.crowdBeatUntil&&!G.offerPending&&!G.offerOpen
+  &&(!G.free||(!FREE.busy&&!!E&&(!E.headDestroyed||deityHasReptileVoice(E))))
   &&!!E&&!E.headGone&&!E.jawGone&&E.state!=='dead'&&!(E.down&&E.down.type==='final')&&!talkBusy()&&!uncannyVoiceBusy()&&!combatPlayerVoiceBusy();
 }
 function sayQuip(){
  QUIP.last=G.time;QUIP.n++;
- queueTalk([['boss',LINES.quip,1.3,0,1.35,null,true]]);
+ const text=G.free?LINES.freeApology[(QUIP.n-1)%LINES.freeApology.length]:LINES.quip;
+ if(G.free)AUDIO.hushCombatAccent(true);
+ queueTalk([['boss',text,G.free?0:1.3,0,G.free?1:1.35,null,true]]);
 }
 function updateQuip(){
- if(G.mode!=='fight'||!G.started||G.ended||G.free)return;
+ if(G.mode!=='fight'||!G.started||G.ended||G.paused)return;
+ // 원없이 족치기에서는 지정된 사과 두 마디만 번갈아, 충분한 간격을 두고 말한다.
  if(!QUIP.next)QUIP.next=G.time+rnd(10,18);
  if(G.time<QUIP.next)return;
  if(!quipAllowed()){QUIP.next=G.time+rnd(2,5);return;}
- sayQuip();QUIP.next=G.time+rnd(22,40);
+ sayQuip();QUIP.next=G.time+(G.free?rnd(24,38):rnd(22,40));
 }
 // 큰 사건 직후: 가끔 한마디(마지막 추임새에서 14초는 지나야 한다)
 function quipChance(){
@@ -11915,6 +11923,7 @@ window.PaljaGame={enter,leave,pause,prepare,peek,pull,arrive,paperRect(){return 
   trophyPortrait:(spec)=>trophyPortrait(spec),trophyCard:(n,p)=>TROPHIES.draw(n,p),standCam(){setFrame('stand',true);},beyond(){BEYOND.begin();},fall(type){const E=G.E;if(!E)return;const i=KD_TYPE.indexOf(type);G.kd=i;G.bar=G.shown=G.lag=KD_AT[i];E.taunt=false;E.setPhase(Math.min(4,i+1));knockdown();},frame:setFrame}};
 }
 })();
+
 
 
 

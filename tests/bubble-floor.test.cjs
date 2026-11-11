@@ -30,7 +30,7 @@ function bubbleRig(w,h){
  let now=0;const context=canvasContext(),canvas={width:0,height:0,getContext:()=>context},G={time:0},scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,w/h,.1,100);camera.position.set(0,1.3,3);camera.lookAt(0,1.3,0);camera.updateMatrixWorld(true);
  const ctx={THREE,V3,PI:Math.PI,TAU:Math.PI*2,ZERO3:V3(),clamp,G,camera,vmCam:camera,innerWidth:w,innerHeight:h,window:{devicePixelRatio:1},document:{},performance:{now:()=>now},
  $:s=>s==='#speech'?canvas:s==='#fight .ftop'?{hidden:false,getBoundingClientRect:()=>({bottom:40})}:null,
- LINES:{grab:[],wall:[],wail:[],pray:[],cheer:[],submit:[],whisper:[]},VOICE:{crowd:[{speed:1}]},typeSteps:()=>({total:0,steps:[]}),uncannyVoiceBusy:()=>false,
+  LINES:{grab:[],wall:[],wail:[],pray:[],cheer:[],submit:[],whisper:[],freeApology:[]},VOICE:{crowd:[{speed:1}]},typeSteps:()=>({total:0,steps:[]}),uncannyVoiceBusy:()=>false,
  AUDIO:{speak:()=>({stop(){this.stopped=true}})},visibleChain:o=>{for(;o;o=o.parent)if(!o.visible)return false;return true}};
  const api=vm.runInNewContext(slice('const BUB=','/* 팔 붙잡기 장면 배치')+slice('function bossAnchor(E){','function updateTalk(dt){')+';({BUB,bossAnchor})',ctx);
  const face=new THREE.Group(),repFaceG=new THREE.Group();scene.add(face,repFaceG);face.position.y=repFaceG.position.y=1.3;
@@ -44,3 +44,4 @@ test('quip follows the current face, keeps its side through recoil, and stops fo
   const tail=[b.tx,b.ty],voice=b.voice;r.repFaceG.userData.detached=true;r.repFaceG.position.x=2;r.draw();assert(voice.stopped);assert.equal(b.voice,null);assert.deepEqual([b.tx,b.ty],tail,'tail never follows the loose head');
  }
 });
+
