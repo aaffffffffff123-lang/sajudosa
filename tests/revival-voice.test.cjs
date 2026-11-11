@@ -66,7 +66,7 @@ test('player greeting can complete normally',async()=>{
 
 test('combat calls use preloaded male clips, end naturally and respect mute',async()=>{
  const h=setup();h.scope.preloadCombat();h.release();await flush();
- for(const text of ['탈운명 펀치!','탈운명 칼빵!','탈운명 샷!']){
+ for(const text of ['탈운명 펀치!','탈운명 칼빵!','탈운명 샷!','베나이다.']){
   const before=h.played.length,voice=h.scope.speak(text);
   assert.equal(h.played.length,before+1);assert(voice.started);
   h.played.at(-1).onended();assert(!voice.busy);
@@ -81,4 +81,5 @@ test('missing or still-loading combat clips stay silent and never play later',as
   h.release();await flush();assert.equal(h.played.length,0);assert.equal(h.spoken.length,0);
  }
 });
+
 

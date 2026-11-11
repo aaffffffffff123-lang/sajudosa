@@ -66,6 +66,23 @@ test('skipped opportunities never build a delayed queue or consume the round quo
  h.setRandom(0);assert(h.hit());h.clearCombatAccent();assert.equal(h.TALK.q.length,0);
  h.G.time+=4;assert(!h.hit('knife'),'cooldown remains after an interrupted line');
 });
+
+test('benaida is exclusive to successful knife slashes in both modes, without consuming stab dialogue',()=>{
+ for(const free of [false,true]){
+  const h=setup();h.G.free=free;assert(h.hit('knife','slash',{}, {strokeId:1}));
+  assert.equal(h.TALK.q[0].text,'베나이다.');assert.equal(h.TALK.q[0].tts,'베나이다.');assert.equal(h.COMBAT_VOICE.n,0);
+  h.finish();assert(h.hit('knife','stab'));assert.equal(h.TALK.q[0].text,'탈운명 칼빵!');
+ }
+});
+test('one drag gets one chance and blocked, silent, or missing-clip slashes never queue benaida',()=>{
+ const h=setup();h.setRandom(.9);assert(!h.hit('knife','slash',{}, {strokeId:4}));h.setRandom(0);
+ assert(!h.hit('knife','slash',{}, {strokeId:4}));assert(h.hit('knife','slash',{}, {strokeId:5}));
+ h.clearCombatAccent();assert.equal(h.TALK.q.length,0);h.G.time+=23;assert(!h.hit('knife','slash',{}, {strokeId:6}));
+ h.G.time+=2;assert(h.hit('knife','slash',{}, {strokeId:7}));
+ for(const result of [{blocked:true},{halo:true},{dmg:0}])assert(!setup().hit('knife','slash',result));
+ for(const extra of [{quiet:true},{through:true},{stomp:true}])assert(!setup().hit('knife','slash',{},extra));
+ const missing=setup();missing.setReady(false);assert(!missing.hit('knife','slash'));assert.equal(missing.TALK.q.length,0);
+});
 test('all deployed optional audio is local and the cry index fits the actual PCM file',()=>{
  const root=path.join(__dirname,'../assets');
  for(const tool of ['punch','knife','shot'])assert(fs.statSync(path.join(root,`player-unfate-${tool}-ko-male.mp3`)).size>4000);
@@ -106,3 +123,4 @@ test('unmasking keeps human cries; regrowth switches to reptile cries with 420 m
   assert.equal(played.at(-1),'uncanny-'+form);
  }
 });
+

@@ -32,3 +32,11 @@ Three human-led cries derived from the game's existing fight-sounds-v1 bank.
 The second throat starts 150 ms after the human cry and briefly outlasts it.
 Rebuild with tools/render-uncanny-cries.py (ffmpeg, numpy, scipy).
 No new synthesis, decoding, or download is started in the hit handler.
+
+Optional slash-only line added 2026-11-11
+  player-unfate-benaida-ko-male.mp3: 베나이다.
+Provider: AI Doc Maker / AI Voice Generator; voice_id: deep.
+Postprocessing: trim only leading/trailing silence at -48 dB, add 70 ms tail;
+peak limiter at 0.89 without makeup gain; mono 24 kHz, MP3 128 kbps.
+The clip is preloaded and only plays on a successful knife slash.
+

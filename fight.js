@@ -236,6 +236,9 @@ const FIGHT_CSS = `
 #fight #freeBar button:active{transform:translateY(1px);background:rgba(69,57,37,.94)}
 #fight #freeBar button:disabled{opacity:.36;color:#a59f90}
 #fight #freeBar #freeNext{border-color:#b5553f;color:#ffd9c9}
+#fight #freeBar #freeView[aria-pressed=true]{border-color:#d6c79b;color:#fff0c4;background:#394137}
+#fight.free-view #freeCount{font-size:17px;font-weight:700;letter-spacing:.3px;color:#f4e5c9;text-shadow:0 2px 5px #000}
+#fight.free-view #hint{display:none}
 #fight #freeCount{font-size:11px;letter-spacing:1px;color:#cfc3a8;line-height:1.3;text-align:center;font-variant-numeric:tabular-nums}
 #fight.free-mode .gauge{background:none;border-color:transparent;justify-content:center}
 #fight.free-mode .gauge .grow,#fight.free-mode .gauge .bar,#fight.free-mode #defeatCount{display:none}
@@ -278,7 +281,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
  </header>
- <div id="freeBar" role="group" aria-label="원없이 족치기" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button></div>
+ <div id="freeBar" role="group" aria-label="원없이 족치기" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button><button type="button" id="freeView" aria-pressed="false" disabled>둘러보기</button></div>
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
   <div class="panel tools" id="tools" role="group" aria-label="무기">
@@ -1414,7 +1417,8 @@ const AUDIO=(()=>{
  const combatClips={
   '탈운명 펀치!':{file:'punch',buffer:null,load:null},
   '탈운명 칼빵!':{file:'knife',buffer:null,load:null},
-  '탈운명 샷!':{file:'shot',buffer:null,load:null}
+  '탈운명 샷!':{file:'shot',buffer:null,load:null},
+  '베나이다.':{file:'benaida',buffer:null,load:null}
  };
  function loadCombatVoices(){
   if(!ctx)return;
@@ -2831,7 +2835,7 @@ const BUB=(()=>{
  // 손글씨 폰트는 글자 묶음마다 따로 받아 온다. 받아지면 말풍선 크기를 다시 잰다
  if(document.fonts){try{document.fonts.addEventListener('loadingdone',()=>{fontGen++;});}catch(_){}}
  function preload(text){try{if(document.fonts&&document.fonts.load)document.fonts.load(fontOf(20),text).then(()=>{fontGen++;},()=>{});}catch(_){}}
- const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.freeApology.join('')+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say).join('');
+ const allText=()=>[...LINES.grab,...LINES.wall,...LINES.wail,...LINES.pray,...LINES.cheer].map(x=>x[1]).join('')+LINES.greeting+LINES.opening+LINES.firstHit+LINES.victory+LINES.retort+LINES.back+LINES.freeApology.join('')+'베나이다.'+LINES.submit.map(x=>x[0]).join('')+LINES.interrupt+LINES.yield+LINES.whisper.map(w=>w.aside+w.say).join('');
  preload(allText());
  function fit(){
   if(!cv){cv=$('#speech');g=cv.getContext('2d');}
@@ -10355,12 +10359,13 @@ function firstStrikeLine(){
 /* Optional combat accents: successful hits only, never a playlist or a queued
  * reward. A round has at most two player lines and two non-human leaks. */
 const COMBAT_LINES={hand:'탈운명 펀치!',knife:'탈운명 칼빵!',gun:'탈운명 샷!'};
+const SLASH_LINE='베나이다.';
 // headDestroyed keeps the detached human face inactive after regrowth, too.
 // headGone clears only when the replacement head has finished growing.
 function deityHasReptileVoice(E){return !!E&&!E.headGone&&E.headKind==='rep';}
-const COMBAT_VOICE={n:0,last:-99,used:new Set(),playerUntil:0,uncannyN:0,uncannyForms:new Set(),uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
+const COMBAT_VOICE={n:0,last:-99,used:new Set(),slashLast:-99,slashStroke:null,playerUntil:0,uncannyN:0,uncannyForms:new Set(),uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99};
 function combatVoiceReset(){
- Object.assign(COMBAT_VOICE,{n:0,last:-99,playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99});
+ Object.assign(COMBAT_VOICE,{n:0,last:-99,slashLast:-99,slashStroke:null,playerUntil:0,uncannyN:0,uncannyLast:-99,uncannyUntil:0,uncannyCheck:-99});
  COMBAT_VOICE.used.clear();
  COMBAT_VOICE.uncannyForms.clear();
 }
@@ -10387,11 +10392,12 @@ function uncannyVoiceStarted(){
 }
 function clearCombatAccent(){
  const c=COMBAT_VOICE;c.playerUntil=0;c.uncannyUntil=0;
- const isAccent=n=>n&&Object.values(COMBAT_LINES).includes(n.text);
+ const isAccent=n=>n&&(n.text===SLASH_LINE||Object.values(COMBAT_LINES).includes(n.text));
  if(isAccent(TALK.cur)||TALK.q.some(isAccent))clearTalk();
  AUDIO.hushCombatAccent();
 }
 function combatHitLine(tool,kind,info,r,extra={}){
+ if(tool==='knife'&&kind==='slash')return slashHitLine(info,r,extra);
  const c=COMBAT_VOICE,text=COMBAT_LINES[tool];
  if(!text||!combatVoiceWindow()||uncannyVoiceBusy()||G.time-c.uncannyLast<4||c.n>=2
   ||c.used.has(tool)||G.time-G.t0<8||G.time-c.last<18||G.time-QUIP.last<4
@@ -10404,6 +10410,23 @@ function combatHitLine(tool,kind,info,r,extra={}){
  c.n++;c.last=G.time;c.used.add(tool);c.playerUntil=G.time+2.5;
  AUDIO.hushCombatAccent(true);
  queueTalk([['player',text,1.3,0,1.15,text]]);
+ QUIP.next=Math.max(QUIP.next,G.time+6);
+ return true;
+}
+
+// 실제로 벨 때만, 같은 드래그에서는 한 번만 추첨한다. 찌르기와 빗나간 칼질에는 나오지 않는다.
+function slashHitLine(info,r,extra={}){
+ const c=COMBAT_VOICE;
+ if(!combatVoiceWindow()||uncannyVoiceBusy()||combatPlayerVoiceBusy()||G.time-G.t0<5
+  ||G.time-c.slashLast<24||G.time-c.last<8||G.time-QUIP.last<4||G.time-c.uncannyLast<4
+  ||r.blocked||r.halo||!(r.dmg>0)||extra.through||extra.quiet||extra.stomp
+  ||/^(crown|halo|tablet)$/.test(info.part)||!AUDIO.combatLineReady(SLASH_LINE))return false;
+ if(extra.strokeId!=null&&c.slashStroke===extra.strokeId)return false;
+ c.slashStroke=extra.strokeId??null;
+ if(Math.random()>.3)return false;
+ c.slashLast=c.last=G.time;c.playerUntil=G.time+2.5;
+ AUDIO.hushCombatAccent(true);
+ queueTalk([['player',SLASH_LINE,1.3,0,1.15,SLASH_LINE]]);
  QUIP.next=Math.max(QUIP.next,G.time+6);
  return true;
 }
@@ -11805,7 +11828,7 @@ function step(dt){
  // 멈춤(히트스톱)·느린 화면
  let sim=dt;if(G.hitstop>0){const u=Math.min(dt,G.hitstop);G.hitstop-=u;sim=dt-u;}
  if(G.slow>0){G.slow-=dt;sim*=.45;}
- if(E){
+ if(E&&!(G.free&&FREE.viewing)){
   E._rdt=dt;E.update(sim,G.time);
   STAFF.update(sim,G.mode==='fight'&&(E.state==='fall'||E.state==='down'));
  }
