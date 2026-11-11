@@ -15,7 +15,7 @@
  *  6. 천지신명(모양·얼굴 표정·자세·맞는 반응·팔다리 자르기·도마뱀 팔다리·다운·후광·정체)
  *  7. 내 손과 무기(맨주먹·식칼·권총)
  *  8. 진행(버팀 게이지·다운 세 번·마지막)과 입력
- *  9. 원없이 족치기 연결(모드의 내용은 fight-free.js에 따로 있다)
+ *  9. 천지신명 정육공장 연결(모드의 내용은 fight-free.js에 따로 있다)
  */
 (function(){
 'use strict';
@@ -287,7 +287,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
  </header>
- <div id="freeBar" role="group" aria-label="원없이 족치기" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button><button type="button" id="freeView" aria-pressed="false" disabled>둘러보기</button></div>
+ <div id="freeBar" role="group" aria-label="천지신명 정육공장" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button><button type="button" id="freeView" aria-pressed="false" disabled>둘러보기</button></div>
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
   <div class="panel tools" id="tools" role="group" aria-label="무기">
@@ -315,7 +315,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="freeBtn" aria-live="polite">원없이 족치기</button><p id="freeEntryError" role="alert" hidden></p><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="freeBtn" aria-live="polite">천지신명 정육공장</button><p id="freeEntryError" role="alert" hidden></p><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
@@ -2073,7 +2073,7 @@ const AUDIO=(()=>{
   for(let i=0;i<7;i++)nz(out(R(-.7,.7),.3),t+R(.1,1),{dur:R(.04,.08),peak:R(.1,.2)*k,f:R(360,560),type:'lowpass',q:.6});
   for(let i=0;i<3;i++)nz(out(R(-.6,.6),.12,true),t+R(.08,.5),{dur:R(.1,.16),peak:R(.06,.1)*k,a:.035,f:R(900,1300),f1:R(1700,2300),q:1.3,curve:'lin'});
  }
- // 원없이 족치기: 사슬 · 갈고리가 살에 박힘 · 레일 구르는 소리 · 레일에서 덜컹 멎는 소리
+ // 천지신명 정육공장: 사슬 · 갈고리가 살에 박힘 · 레일 구르는 소리 · 레일에서 덜컹 멎는 소리
  function chain(p=1,n=6,span=.35){if(!ready())return;const t=ctx.currentTime,o=out(R(-.25,.25),.24);
   for(let i=0;i<n;i++){const tt=t+i*span/n+R(0,.018),f=R(1650,2700);ring(o,tt,[f,f*1.51,f*2.27],R(.035,.075),.05*p);nz(o,tt,{dur:.006,peak:.17*p,f:5200,q:2});}}
  function hookIn(p=1){if(!ready())return;const t=ctx.currentTime,o=out(0,.16),d=drive(o,2.2);
@@ -4798,7 +4798,7 @@ rims.length=0;
   for(const m of rims)m.removeFromParent();rims.length=0;
   for(const l of lumps)l.mesh.removeFromParent();lumps.length=0;
  }
- // 원없이 족치기: 걸어 둘 옛 몸의 자국·핏줄기는 그 몸에 붙인 채 남기고(더는 갱신하지 않는다) 출혈원만 끊고 새 몸으로 갈아탄다
+ // 천지신명 정육공장: 걸어 둘 옛 몸의 자국·핏줄기는 그 몸에 붙인 채 남기고(더는 갱신하지 않는다) 출혈원만 끊고 새 몸으로 갈아탄다
  function handover(emp){
   E=emp;bankList.length=0;fading.length=0;for(const key in banks)delete banks[key];
   rivs.length=0;drips.length=0;wounds.length=0;beads.length=0;decals.length=0;rims.length=0;lumps.length=0;
@@ -10457,7 +10457,7 @@ function sayQuip(){
 }
 function updateQuip(){
  if(G.mode!=='fight'||!G.started||G.ended||G.paused)return;
- // 원없이 족치기에서는 지정된 사과 두 마디만 번갈아, 충분한 간격을 두고 말한다.
+ // 천지신명 정육공장에서는 지정된 사과 두 마디만 번갈아, 충분한 간격을 두고 말한다.
  if(!QUIP.next)QUIP.next=G.time+rnd(10,18);
  if(G.time<QUIP.next)return;
  if(!quipAllowed()){QUIP.next=G.time+rnd(2,5);return;}
@@ -11586,11 +11586,11 @@ function retortAndRestart(){
  queueTalk([['player',LINES.retort,1.6,.1,1.4,LINES.retort]],true);
 }
 $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAndRestart();});
-// 엔딩을 본 뒤에 열리는 「원없이 족치기」
+// 엔딩을 본 뒤에 열리는 「천지신명 정육공장」
 $('#freeBtn').addEventListener('click',async()=>{
  const b=$('#freeBtn'),err=$('#freeEntryError');if(G.retorting||b.disabled)return;
  const controls=[$('#againBtn'),$('#trophyBtn')],disabled=controls.map(el=>el.disabled);
- b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='족치러 가는 중…';err.hidden=true;
+ b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='공장 들어가는 중…';err.hidden=true;
  controls.forEach(el=>el.disabled=true);
  try{
   AUDIO.unlock();AUDIO.ui();
@@ -11600,7 +11600,7 @@ $('#freeBtn').addEventListener('click',async()=>{
  }catch(error){
   if(!$('#fight').hidden){showAgain();err.textContent='화면을 열지 못했습니다. 다시 눌러 주세요.';err.hidden=false;}
  }finally{
-  b.disabled=false;b.removeAttribute('aria-busy');b.textContent='원없이 족치기';
+  b.disabled=false;b.removeAttribute('aria-busy');b.textContent='천지신명 정육공장';
   controls.forEach((el,i)=>el.disabled=disabled[i]);
  }
 });
@@ -11779,8 +11779,8 @@ $('#offerPaper').addEventListener('click',e=>{
  AUDIO.unlock();AUDIO.paper(1.1);AUDIO.hit('hand','hook','chest',1.1,false);flash(.16);camHit({shake:.02});
  if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([18,10,26]);}catch(_){}
 });
-/* ===== 9. 원없이 족치기: 따로 뺀 fight-free.js에 이 파일의 내부 도구를 넘겨 연결한다 =====
- * 모드의 내용은 전부 fight-free.js에 있다. 그 파일이 없으면 본편은 그대로 돌고 「원없이 족치기」 버튼만 숨긴다. */
+/* ===== 9. 천지신명 정육공장: 따로 뺀 fight-free.js에 이 파일의 내부 도구를 넘겨 연결한다 =====
+ * 모드의 내용은 전부 fight-free.js에 있다. 그 파일이 없으면 본편은 그대로 돌고 「천지신명 정육공장」 버튼만 숨긴다. */
 const FREE_MOD=window.FateFree?window.FateFree.create({THREE,scene,camera,G,CAM,VM,AUDIO,BLOOD,CHUNKS,PROGRESS,PREF,OUTFITS,HINTS,GEO,HEADGEO,COMBAT_STAGE,Emperor,Spring,P,STAND,poseCopy,poseLerp,combatInit,combatActive,combatVoiceReset,wireEmperor,metalEnv,mk,grp,STD,col,cylGeo,sphereGeo,mergeMeshes,mirrorX,canvasTex,V3,rnd,clamp,lerp,smooth,damp,easeIn,backOut,PI,TAU,UP,$,hint,flash,camHit,clearPointers,clearCombatAccent,clearTalk,focusCanvas,deityHasReptileVoice,MOBILE_GPU,lite:()=>lite}):null;
 const FREE=FREE_MOD?FREE_MOD.FREE:{begin(){},suspend(){},stage(){},update(){},flinch(){},shoveContact(){return false;},waistSlash(){},overflow(){return false;},camera(){return false;},state:{total:0}};
 const freeHangPose=FREE_MOD?FREE_MOD.hangPose:()=>{},freeWalkPose=FREE_MOD?FREE_MOD.walkPose:()=>{},FREE_FLOOR=FREE_MOD?FREE_MOD.FREE_FLOOR:8,FREE_DMG=FREE_MOD?FREE_MOD.FREE_DMG:.5;
