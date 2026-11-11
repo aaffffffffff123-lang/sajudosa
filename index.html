@@ -52,9 +52,12 @@ button{cursor:pointer;touch-action:manipulation}
 
 /* ===== 오락실 얼굴 ===== */
 /* 엔딩을 한 번 본 뒤에만 보이는 「원없이 족치기」 입구 */
-.free-enter{display:block;margin:18px auto 0;padding:10px 20px;min-height:44px;border:1px solid currentColor;border-radius:999px;background:none;color:inherit;font:inherit;font-size:14px;opacity:.72;cursor:pointer;touch-action:manipulation}
-.free-enter:active{transform:translateY(1px);opacity:1}
-.free-enter:disabled{opacity:.4}
+.free-enter{display:block;margin:18px auto 5px;padding:12px 22px;min-width:196px;min-height:48px;border:1px solid #ad5947;border-radius:999px;background:linear-gradient(#974938,#65281f);color:#fff0d7;font:inherit;font-size:14px;font-weight:700;text-shadow:0 1px 1px #421911;box-shadow:inset 0 1px 0 #ffd1a66b,inset 0 -2px 0 #4f1c1670,0 5px 0 #401e1a,0 7px 10px #32130c33;cursor:pointer;touch-action:manipulation;transition:transform .1s,box-shadow .1s}
+.free-enter:active,.free-enter[aria-busy=true]{transform:translateY(4px);background:linear-gradient(#713025,#58231c);box-shadow:inset 0 2px 5px #2b100b66,0 1px 0 #401e1a,0 2px 3px #32130c33}
+.free-enter:disabled{opacity:1;cursor:wait}
+.free-enter[aria-busy=true]::before{content:'';display:inline-block;width:12px;height:12px;margin-right:9px;vertical-align:-2px;border:2px solid #fff0d74d;border-top-color:#fff0d7;border-radius:50%;animation:freeEntrySpin .8s linear infinite}
+@keyframes freeEntrySpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.free-enter{transition:none}.free-enter[aria-busy=true]::before{animation:none;border-color:#fff0d7}}
 #arcadeFace{position:fixed;z-index:61;right:calc(3px + env(safe-area-inset-right,0px));top:calc(4px + var(--safe-t));display:block;width:46px;height:52px;padding:4px 3px;line-height:0;touch-action:manipulation}
 #arcadeFace svg{display:block;width:100%;height:100%;overflow:visible;filter:drop-shadow(1px 2px 1.5px rgba(0,0,0,.28))}
 #arcadeFace:active svg{transform:scale(.88)}
@@ -758,7 +761,7 @@ html.edge-dragging #result-screen,html.edge-dragging .edge-sheet{transition:none
    <p id="form-error" class="error" role="alert" hidden></p>
    <button type="submit" class="cta">내 운세 풀이 보기</button>
       <p class="privacy-note">입력 정보는 저장되지 않습니다.</p>
-   <button type="button" id="freeEnter" class="free-enter" hidden>원없이 족치기</button>
+   <button type="button" id="freeEnter" class="free-enter" aria-live="polite" hidden>원없이 족치기</button>
    <p id="freeEnterError" class="error" role="alert" hidden></p>
   </form>
  </div>
@@ -4815,7 +4818,7 @@ function loadScript(sources,ready){
 }
 function loadFight(){
  if(!fightScripts){
-  const v='?v=20261111-free-gallery';
+  const v='?v=20261112-free-entry';
   fightScripts=loadScript(THREE_SRC,()=>!!window.THREE)
    .then(()=>loadScript(['fight-motion.js'+v],()=>!!window.FateMotion))
    .then(()=>loadScript(['ceremonial-staff.js'+v],()=>!!window.CeremonialStaff))
@@ -5060,21 +5063,27 @@ function freeUnlocked(){try{return Number(localStorage.getItem('palja.defeated')
 function syncFreeEnter(){$('freeEnter').hidden=!freeUnlocked();}
 async function enterFree(){
  const b=$('freeEnter'),err=$('freeEnterError');if(b.disabled)return;
- b.disabled=true;err.hidden=true;
+ b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='족치러 가는 중…';err.hidden=true;
+ let primed=null;
  try{
   // 소리 재생 권한은 이 누름에서 받아 둔다(파일을 받는 동안 권한이 끝날 수 있다)
-  let primed=null;
   if(window.PaljaGame?.unlock)window.PaljaGame.unlock();
   else{const AC=window.AudioContext||window.webkitAudioContext;if(AC)try{primed=new AC();primed.resume().catch(()=>{});}catch(_){}}
+  // 캐시된 파일이어도 무거운 3D 준비 전에 눌린 버튼과 대기 문구를 먼저 그린다.
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   await loadFight();
   window.PaljaBoot();
   const game=window.PaljaGame;if(!game||!game.enter||game.failed)throw new Error(game&&game.failed||'3D 화면을 열지 못했습니다.');
-  game.unlock(primed);
-  fateOff();stopLoading();screens.forEach(s=>$(s).hidden=true);window.scrollTo(0,0);
-  game.enter(current,'free');pushNav('fight');
+  game.unlock(primed);primed=null;
+  fateOff();stopLoading();window.scrollTo(0,0);
+  game.enter(current,'free');screens.forEach(s=>$(s).hidden=true);pushNav('fight');
  }catch(error){
+  window.PaljaGame?.pause?.();const fight=$('fight');if(fight)fight.hidden=true;
   err.textContent='화면을 열지 못했습니다. '+String(error&&error.message||error).slice(0,120);err.hidden=false;
- }finally{b.disabled=false;}
+ }finally{
+  if(primed)primed.close().catch(()=>{});
+  b.disabled=false;b.removeAttribute('aria-busy');b.textContent='원없이 족치기';
+ }
 }
 $('freeEnter').addEventListener('click',enterFree);
 syncFreeEnter();

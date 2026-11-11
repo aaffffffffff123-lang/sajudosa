@@ -242,7 +242,13 @@ const FIGHT_CSS = `
 #fight #freeCount{font-size:11px;letter-spacing:1px;color:#cfc3a8;line-height:1.3;text-align:center;font-variant-numeric:tabular-nums}
 #fight.free-mode .gauge{background:none;border-color:transparent;justify-content:center}
 #fight.free-mode .gauge .grow,#fight.free-mode .gauge .bar,#fight.free-mode #defeatCount{display:none}
-#fight #again #freeBtn{min-height:44px;font-size:14px;color:#ffd9c9;background:#25201ce8;border:1px solid #b5553f;box-shadow:none}
+#fight #again #freeBtn{min-height:48px;margin-bottom:5px;font-size:14px;font-weight:700;color:#fff0d7;background:linear-gradient(#974938,#65281f);border:1px solid #ad5947;text-shadow:0 1px 1px #421911;box-shadow:inset 0 1px 0 #ffd1a66b,inset 0 -2px 0 #4f1c1670,0 5px 0 #401e1a,0 7px 10px #0005;transition:transform .1s,box-shadow .1s}
+#fight #again #freeBtn:active,#fight #again #freeBtn[aria-busy=true]{transform:translateY(4px);background:linear-gradient(#713025,#58231c);box-shadow:inset 0 2px 5px #2b100b66,0 1px 0 #401e1a,0 2px 3px #0005}
+#fight #again #freeBtn:disabled{opacity:1;cursor:wait}
+#fight #again #freeBtn[aria-busy=true]::before{content:'';display:inline-block;width:12px;height:12px;margin-right:9px;vertical-align:-2px;border:2px solid #fff0d74d;border-top-color:#fff0d7;border-radius:50%;animation:fightFreeEntrySpin .8s linear infinite}
+#fight #freeEntryError{margin:0;max-width:280px;color:#ffd9c9;font-size:12px;line-height:1.5;text-align:center}
+@keyframes fightFreeEntrySpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#fight #again #freeBtn{transition:none}#fight #again #freeBtn[aria-busy=true]::before{animation:none;border-color:#fff0d7}}
 @media(max-width:480px){#fight.close-combat .ftop{padding-right:48px;gap:5px}#fight.close-combat .pill{width:35px;min-width:35px}#fight.close-combat .hint{font-size:10px}#fight.close-combat .gname{letter-spacing:1px}}
 /* 설정은 전투 색상과 분리하고, 작은 화면에서도 마지막 버튼까지 스크롤한다. */
 #fight #settingsModal{--ink:#241c3a;--muted:#686174;--line:#e5ded2;height:100%;max-height:100dvh;padding:calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b));overscroll-behavior:contain;color:var(--ink)}
@@ -309,7 +315,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <button class="btn soft" id="resetFight" type="button" style="margin-top:16px">처음부터 다시</button>
   </div>
  </div>
- <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="freeBtn">원없이 족치기</button><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
+ <div id="again" hidden><p class="defeat-total" id="endDefeatCount" aria-live="polite" hidden>족친 천지신명 0놈</p><button type="button" class="btn danger" id="againBtn">후임 천지신명도 족치러 가기</button><button type="button" class="btn" id="freeBtn" aria-live="polite">원없이 족치기</button><p id="freeEntryError" role="alert" hidden></p><button type="button" class="btn" id="trophyBtn">족친 기록</button></div>
  <div class="modal" id="trophyModal" hidden>
   <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="trophyTitle">
    <header class="trophy-top"><h2 id="trophyTitle">족친 기록</h2><button type="button" id="trophyClose" aria-label="닫기">×</button></header>
@@ -11581,7 +11587,23 @@ function retortAndRestart(){
 }
 $('#againBtn').addEventListener('click',()=>{AUDIO.unlock();AUDIO.ui();retortAndRestart();});
 // 엔딩을 본 뒤에 열리는 「원없이 족치기」
-$('#freeBtn').addEventListener('click',()=>{if(G.retorting)return;AUDIO.unlock();AUDIO.ui();hideAgain();startRound('free');});
+$('#freeBtn').addEventListener('click',async()=>{
+ const b=$('#freeBtn'),err=$('#freeEntryError');if(G.retorting||b.disabled)return;
+ const controls=[$('#againBtn'),$('#trophyBtn')],disabled=controls.map(el=>el.disabled);
+ b.disabled=true;b.setAttribute('aria-busy','true');b.textContent='족치러 가는 중…';err.hidden=true;
+ controls.forEach(el=>el.disabled=true);
+ try{
+  AUDIO.unlock();AUDIO.ui();
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+  if($('#fight').hidden||G.retorting)return;
+  startRound('free');hideAgain();
+ }catch(error){
+  if(!$('#fight').hidden){showAgain();err.textContent='화면을 열지 못했습니다. 다시 눌러 주세요.';err.hidden=false;}
+ }finally{
+  b.disabled=false;b.removeAttribute('aria-busy');b.textContent='원없이 족치기';
+  controls.forEach((el,i)=>el.disabled=disabled[i]);
+ }
+});
 /* ===== 순응 장면 → 족치러 걸어가기 =====
  * 풀이 화면(index.html)이 스크롤에 맞춰 손에 든 종이로 줄어들면서 이 장면이 된다.
  * 가만히 있으면 추종자들 사이에서 설교를 듣는 순응이고, 종이를 꾹 눌러 구기면 떨어뜨리고
