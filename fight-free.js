@@ -9,7 +9,7 @@
  *  - 「되살리기」: 뼈 → 살 → 비늘로 다시 자란다(도마뱀). 되살린 놈은 겁을 먹는다.
  *  - 허리 끊기: 식칼로 배를 가로로 길게 다섯 번. 아랫도리는 조각으로 떨어지고 윗몸은 살아서 계속 맞는다.
  *  - 「새 놈」: 두 손으로 들어 올림 → 갈고리가 내려와 등에 꿰임 → 한 대 밀면 사슬이 끌어올려 레일에 건다.
- *    떨어진 머리는 장대에 꽂고, 바닥의 잘린 부위는 뒤쪽 무더기로 던진다. 그 뒤 새 천지신명이 손목이 사슬에 묶인 채 끌려 나온다
+ *    떨어진 머리와 잘린 부위는 바닥으로 던져, 가까운 곳부터 방 끝까지 낮게 쌓는다. 그 뒤 새 천지신명이 손목이 사슬에 묶인 채 끌려 나온다
  *    (겁에 질려 두 발로 버티다 확 끌려와 선다. 비웃는 건 빈 방에 처음 서 있는 놈뿐이다).
  *  - 방: 옥좌 없는 어두운 도살장. 레일 두 줄이 내 바로 양옆에서 화면 안쪽으로 멀리 뻗고, 걸린 몸이 그 줄을 따라 늘어선다(줄마다 48구).
  *    줄 간격은 화면 비율에 맞춘다(세로로 긴 폰에서는 좁혀서 첫 칸부터 화면 안에 들어오게).
@@ -19,7 +19,7 @@
  *
  * 고칠 때 찾을 곳(아래 순서대로 들어 있다)
  *  1. 자세: HANG_POSE · freeHangPose(걸리는 몸) · freeWalkPose(걸어 나오는 새 놈: 끌려오는 놈 / 뒷짐 진 놈)
- *  2. 방과 배치: rowHalf·setRows·ROW_Z0·ROW_DZ·ROW_CAP(레일 줄) · SPIKES(머리 장대) · build()(벽·천장·형광등·바닥 때) · stage()(옥좌 치우기·안개·조명) · flicker(형광등 깜빡임)
+ *  2. 방과 배치: rowHalf·setRows·ROW_Z0·ROW_DZ·ROW_CAP(레일 줄) · heapSpot(바닥 조각 배치) · build()(벽·천장·형광등·바닥 때) · stage()(옥좌 치우기·안개·조명) · flicker(형광등 깜빡임)
  *  3. 기록: loadRecord · saveRecord
  *  4. 일반 모형: template · proxyBody · proxyHead (저장된 본이 없을 때만 쓴다)
  *  5. 본뜨기: newJob · jobMesh · jobFinish · snapMesh · DB
@@ -105,14 +105,12 @@ const FREE=(()=>{
   const a=innerWidth/Math.max(1,innerHeight),dist=(a<1?Math.max(2.55,1.7/a):3.05)+1.0-ROW_Z0; // 평소 구도에서 카메라~첫 칸 거리
   return clamp(dist*Math.tan(camera.fov*PI/360)*a-.47,.72,1.2);
  }
- // 효수 장대: 두 줄 사이 통로에 지그재그로, 멀수록 높게(가로 자리는 줄 간격을 따라 좁아진다)
- const SPIKES=[[-.5,2.0,-3.0],[.5,2.0,-3.0],[0,2.25,-3.9],[-.5,2.5,-4.8],[.5,2.5,-4.8],[0,2.75,-5.8],[-.5,3.0,-6.8],[.5,3.0,-6.8]];
  const GEOS={
   chain:cylGeo(.011,.011,CHAIN,6),haul:cylGeo(.011,.011,7,6),trolley:new THREE.BoxGeometry(.09,.06,.12),
   hook:new THREE.TorusGeometry(.058,.0115,7,16,PI*1.3),shank:cylGeo(.0115,.0115,.1,6),tip:new THREE.ConeGeometry(.0115,.05,6),
-  pool:new THREE.CircleGeometry(.34,24),pole:cylGeo(.012,.022,1,8)};
+  pool:new THREE.CircleGeometry(.34,24)};
  for(const k in GEOS)GEOS[k].userData.shared=true;
- const S={on:false,wipe:false,total:0,items:[],lines:ROWX.map(()=>[]),heads:[],seq:null,reviving:false,railsOn:false,railDrop:null,ui:'',slides:[],jobs:[],gen:0,stageOn:false,tool:'',view:false,viewHidden:[]};
+ const S={on:false,wipe:false,total:0,items:[],lines:ROWX.map(()=>[]),seq:null,reviving:false,railsOn:false,railDrop:null,ui:'',slides:[],jobs:[],gen:0,stageOn:false,tool:'',view:false,viewHidden:[]};
  const _v=V3(),_v2=V3(),_m=new THREE.Matrix4();
 
  /* ---- 방: 어두운 도살장 ---- */
@@ -125,7 +123,6 @@ const FREE=(()=>{
  const hallLight=new THREE.HemisphereLight(col('#b7c69a'),col('#1b1610'),.34);
  const hallFill=new THREE.DirectionalLight(col('#c2d6b8'),.46);
  hallFill.position.set(0,CEIL-.6,3);hallFill.target.position.set(0,1.4,-16);
- const spikeX=i=>SPIKES[i][0]*ROWX[1]/ROW_BASE;
  (function build(){
   const merge=(list,mat,parent)=>{parent.updateMatrixWorld(true);const geo=mergeMeshes(list,new THREE.Matrix4());for(const m of list){m.removeFromParent();m.geometry.dispose();}
    const m=new THREE.Mesh(geo,mat);m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;parent.add(m);return m;};
@@ -224,9 +221,6 @@ const FREE=(()=>{
   if(tOn.length)merge(tOn,tubeOn,hall);if(tBad.length)merge(tBad,tubeBad,hall);
   hall.add(hallLight,hallFill,hallFill.target);
  })();
- const spikeRoot=grp(root,null,'spikes');
- const spikeMesh=SPIKES.map(([x,y,z])=>{const h=y-.02,m=mk(GEOS.pole,ironD,spikeRoot,{p:[x,h/2,z],s:[1,h,1],cast:false});m.visible=false;return m;});
- metalEnv(spikeRoot);
  // 형광등 깜빡임: 몇 초에 한 번, 불량 등이 두어 번 껌뻑이고 방 전체 밝기도 살짝 따라 흔들린다
  const FL={v:1,t:3,n:0};
  function flicker(dt){
@@ -237,13 +231,11 @@ const FREE=(()=>{
   }
   tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.34*(.9+.1*FL.v);
  }
- // 줄 간격을 바꾼다(화면 비율이 바뀌었을 때): 레일·걸린 몸·끌린 자국·머리 장대를 함께 옮긴다
+ // 줄 간격을 바꾼다(화면 비율이 바뀌었을 때): 레일·걸린 몸·끌린 자국을 함께 옮긴다. 바닥 조각은 그대로 둔다
  function setRows(x){
   ROWX[0]=-x;ROWX[1]=x;
   railRow.forEach((g,r)=>{g.position.x=ROWX[r];});lanes.forEach((m,r)=>{m.position.x=ROWX[r];});
-  spikeMesh.forEach((m,i)=>{m.position.x=spikeX(i);});
   for(let l=0;l<ROWX.length;l++)layoutLine(l,true);
-  for(const hd of S.heads)if(!hd.fly)placeHead(hd);
  }
  // 옥좌·기둥·벽·현판·지팡이를 치우고, 안개·배경·조명을 어두운 도살장으로 바꾼다. 끄면 원래 궁전으로 되돌린다.
  // 조명은 fight.js가 장면에 달아 둔 것을 찾아 값만 바꾼다(등 하나가 족치는 자리만 누렇게 비추고 둘레는 가라앉는다)
@@ -536,33 +528,83 @@ const FREE=(()=>{
   disposeTree(obj);
  }
 
- /* ---- 무더기: 잘린 부위는 사라지지 않고 뒤쪽 양옆에 쌓인다 ---- */
- const HEAP_STORE='palja.heap',HEAP_MAX=70,HEAP_Z=-1.45; // 무더기는 첫 칸에 걸린 몸 바로 앞 바닥, 양쪽에 하나씩
- const heapX=()=>Math.max(.56,ROWX[1]*.8);
- const HEAP={list:[],fly:[],wait:[],seq:0};
- function saveHeap(){try{localStorage.setItem(HEAP_STORE,JSON.stringify({q:HEAP.seq,l:HEAP.list.map(h=>[h.id,h.side])}));}catch(_){}}
- function heapSpot(side){
-  const n=HEAP.list.filter(h=>h.side===side).length+HEAP.fly.filter(f=>f.side===side).length+HEAP.wait.filter(f=>f.side===side).length;
-  const a=rnd(0,TAU),r=.44*Math.sqrt(Math.random()),top=.55*(1-Math.exp(-n/11));
-  return V3(side*heapX()+Math.cos(a)*r,.07+top*Math.max(0,1-r/.5),HEAP_Z+Math.sin(a)*r*.8);
+ /* ---- 바닥 조각: 머리와 팔다리를 낮게 눕혀 가까운 바닥부터 방 끝까지 흩어 쌓는다 ---- */
+ const HEAP_STORE='palja.heap',HEAP_MAX=280,HEAP_BAND=10,HEAP_STEP=1.45;
+ const HEAP={list:[],fly:[],wait:[],seq:0,batches:new Map(),pending:new Map(),legacy:[]};
+ function saveHeap(){
+  const entries=new Map(HEAP.pending);for(const h of HEAP.list)entries.set(h.id,[h.id,h.side,2]);
+  const l=[...entries.values()].sort((a,b)=>a[0]-b[0]).slice(-HEAP_MAX);
+  try{localStorage.setItem(HEAP_STORE,JSON.stringify({v:2,q:HEAP.seq,l}));}catch(_){}
+ }
+ // 열 조각마다 조금씩 더 먼 바닥을 쓴다. 방향·간격을 흩뜨려 줄이나 두 개의 탑이 되지 않게 한다.
+ // 방이 찬 뒤에는 오래된 조각의 자리를 다시 채운다(거리별 묶음으로 그려 오래 해도 부하가 늘지 않는다).
+ function heapSpot(id,side){
+  const k=(id-1)%HEAP_MAX,band=Math.floor(k/HEAP_BAND),r=rng(id*7919+23);
+  return V3(side*(.18+r()*1.65),.012,-1.7-band*HEAP_STEP-r()*1.35);
+ }
+ function heapBounds(obj,corners,q){
+  const box=new THREE.Box3();
+  for(const p of corners)box.expandByPoint(p.clone().multiply(obj.scale).applyQuaternion(q));
+  return box;
+ }
+ function heapPose(obj,corners,id,side){
+  const box=new THREE.Box3();for(const p of corners)box.expandByPoint(p);
+  const size=box.getSize(V3()),axis=size.x>size.y?(size.x>size.z?'x':'z'):(size.y>size.z?'y':'z');
+  const r=rng(id*3571+61),a=r()*TAU,dir=V3(Math.cos(a),0,Math.sin(a)),along=V3();along[axis]=1;
+  // 가장 긴 방향을 바닥에 눕힌 뒤 그 축으로 굴린다. 팔·다리가 서 있는 모양으로 굳지 않는다.
+  const q=new THREE.Quaternion().setFromAxisAngle(dir,r()*TAU).multiply(new THREE.Quaternion().setFromUnitVectors(along,dir));
+  const bounds=heapBounds(obj,corners,q),center=bounds.getCenter(V3()),to=heapSpot(id,side);
+  to.x=clamp(to.x,-HALL_W+.12+(bounds.max.x-bounds.min.x)/2,HALL_W-.12-(bounds.max.x-bounds.min.x)/2)-center.x;
+  to.z-=center.z;to.y-=bounds.min.y;
+  bounds.translate(to);
+  // 겹친 자리는 아래 조각에 얹되 낮은 더미로 제한한다. 바닥과의 접촉 높이는 조각의 실제 크기로 정한다.
+  let support=0;
+  for(const h of [...HEAP.list,...HEAP.fly,...HEAP.wait]){
+   const b=h.bounds;if(!b||b.max.y>.32)continue;
+   const dx=Math.min(bounds.max.x,b.max.x)-Math.max(bounds.min.x,b.min.x),dz=Math.min(bounds.max.z,b.max.z)-Math.max(bounds.min.z,b.min.z);
+   if(dx>.08&&dz>.08)support=Math.max(support,b.max.y);
+  }
+  to.y+=support;bounds.translate(V3(0,support,0));
+  return {to,q,bounds};
+ }
+ // 먼 조각은 여러 개를 메시 하나로 그린다. 개별 본은 저장·교체용으로만 남긴다.
+ function heapBatchKey(bounds){return bounds.max.z>-6?-1:Math.floor((-bounds.min.z-1.7)/(HEAP_STEP*2));}
+ function dirtyHeapBatch(key){if(key<0)return;let b=HEAP.batches.get(key);if(!b){b={mesh:null,dirty:true};HEAP.batches.set(key,b);}b.dirty=true;}
+ function updateHeapBatches(){
+  for(const [key,b] of HEAP.batches){if(!b.dirty)continue;
+   const list=HEAP.list.filter(h=>h.batch===key).map(h=>h.mesh);
+   if(b.mesh){b.mesh.removeFromParent();b.mesh.geometry.dispose();b.mesh=null;}
+   if(list.length){
+    root.updateMatrixWorld(true);
+    const geo=mergeMeshes(list,new THREE.Matrix4()),colors=new Uint8Array(geo.attributes.position.count*3);
+    // r128의 getX()는 normalized 색도 0~255로 반환한다. 저장된 바이트를 그대로 이어 밝기를 보존한다.
+    let offset=0;for(const m of list){const c=m.geometry.attributes.color.array;colors.set(c,offset);offset+=c.length;}
+    geo.setAttribute('color',new THREE.BufferAttribute(colors,3,true));geo.deleteAttribute('uv');
+    b.mesh=new THREE.Mesh(geo,snapMat);b.mesh.castShadow=false;b.mesh.receiveShadow=false;root.add(b.mesh);
+    for(const m of list)m.visible=false;
+   }
+   b.dirty=false;break; // 한 프레임에 거리 구간 하나만 갱신
+  }
  }
  function heapAdd(id,side,sn){
-  const mesh=snapMesh(sn);root.add(mesh);HEAP.list.push({id,side,mesh});
-  while(HEAP.list.length>HEAP_MAX){const o=HEAP.list.shift();o.mesh.removeFromParent();o.mesh.geometry.dispose();DB.del('h'+o.id);}
+  const mesh=snapMesh(sn);mesh.geometry.computeBoundingBox();const bounds=mesh.geometry.boundingBox.clone(),batch=heapBatchKey(bounds);
+  root.add(mesh);HEAP.list.push({id,side,mesh,bounds,batch});HEAP.list.sort((a,b)=>a.id-b.id);dirtyHeapBatch(batch);
+  while(HEAP.list.length>HEAP_MAX){const o=HEAP.list.shift();o.mesh.removeFromParent();o.mesh.geometry.dispose();dirtyHeapBatch(o.batch);DB.del('h'+o.id);}
  }
- // 바닥의 조각 하나를 무더기로 던진다
- function toHeap(owner,b,delay=0){
-  if(!S.on||!b||!b.obj||!b.obj.parent)return false;
-  owner.bits=(owner.bits||[]).filter(x=>x!==b);
-  for(const key of ['severed','severedHeads','headPieces','looseEyes'])if(owner[key])owner[key]=owner[key].filter(o=>o!==b.obj);
-  b.twitch=null;b.bleed=null;
-  const p=b.obj.position,side=Math.abs(p.x)>.15?Math.sign(p.x):(HEAP.seq+HEAP.fly.length)%2?1:-1;
+ function queueHeap(owner,b,delay=0){
+  if(!S.on||!b||!b.obj||!b.obj.parent)return null;
+  if(owner){owner.bits=(owner.bits||[]).filter(x=>x!==b);
+   for(const key of ['severed','severedHeads','headPieces','looseEyes'])if(owner[key])owner[key]=owner[key].filter(o=>o!==b.obj);}
+  b.twitch=null;b.bleed=null;scene.attach(b.obj);
+  const id=++HEAP.seq,p=b.obj.position,side=Math.abs(p.x)>.15?Math.sign(p.x):id%2?1:-1;
+  const corners=b.corners||(owner&&owner.limbCorners(b.obj))||Emperor.prototype.limbCorners.call(null,b.obj);
+  if(!corners)return null;
+  const target=heapPose(b.obj,corners,id,side),distance=p.distanceTo(target.to);
   for(let i=S.slides.length-1;i>=0;i--)if(S.slides[i].obj===b.obj)S.slides.splice(i,1);
-  HEAP.fly.push({obj:b.obj,owner,side,t:-delay,dur:rnd(.5,.7),from:p.clone(),to:heapSpot(side),q0:b.obj.quaternion.clone(),
-   q1:new THREE.Quaternion().setFromEuler(new THREE.Euler(rnd(-1.2,1.2),rnd(0,TAU),rnd(-1.4,1.4))),big:b.r>.1});
-  return true;
+  return {id,obj:b.obj,owner,side,t:-delay,dur:clamp(.55+distance*.018,.6,1.3),from:p.clone(),to:target.to,bounds:target.bounds,q0:b.obj.quaternion.clone(),q1:target.q,big:b.r>.1};
  }
- // 한 몸에서 여섯 조각이 넘게 떨어져 나오면 가장 오래된 것부터 무더기로 보낸다(본편에서는 그냥 사라지던 것)
+ // 머리도 다른 신체 조각과 같은 경로로 바닥으로 보낸다.
+ function toHeap(owner,b,delay=0){const f=queueHeap(owner,b,delay);if(!f)return false;HEAP.fly.push(f);return true;}
  function overflow(owner,obj){
   if(!S.on||!owner.keepBits)return false;
   const b=(owner.bits||[]).find(x=>x.obj===obj);
@@ -570,45 +612,69 @@ const FREE=(()=>{
  }
  function heapLand(f){
   f.obj.position.copy(f.to);f.obj.quaternion.copy(f.q1);
-  const id=++HEAP.seq,w={obj:f.obj,owner:f.owner,side:f.side,id,job:null};
-  w.job=newJob(f.obj,root,(MOBILE_GPU||lite()>0)?.034:.027,sn=>{
+  const id=f.id,w={obj:f.obj,owner:f.owner,side:f.side,id,bounds:f.bounds,job:null};
+  const cell=f.to.z<-18?.085:f.to.z<-6?.05:(MOBILE_GPU||lite()>0)?.034:.027;
+  w.job=newJob(f.obj,root,cell,sn=>{
    const k=HEAP.wait.indexOf(w);if(k>=0)HEAP.wait.splice(k,1);
    releaseObj(w.obj,w.owner);
-   if(validSnap(sn)){heapAdd(id,w.side,sn);DB.put('h'+id,sn);saveHeap();}
+   if(validSnap(sn)){heapAdd(id,w.side,sn);DB.put('h'+id,sn);saveHeap();
+    if(f.legacyItem){f.legacyItem.head=0;saveRecord();}}
   });
   HEAP.wait.push(w);S.jobs.unshift(w.job);
  }
  function updateHeap(dt){
+  if(!S.seq&&HEAP.legacy.length)migrateHead(HEAP.legacy.shift());
   for(let i=HEAP.fly.length-1;i>=0;i--){
    const f=HEAP.fly[i];if(!f.obj.parent){HEAP.fly.splice(i,1);continue;}
    f.t+=dt;if(f.t<0)continue;
    if(!f.go){f.go=true;AUDIO.whoosh(f.big?.9:.6,'hook');}
-   const u=clamp(f.t/f.dur,0,1);
-   f.obj.position.lerpVectors(f.from,f.to,u);f.obj.position.y+=Math.sin(u*PI)*(f.big?1.0:1.35);
-   f.obj.quaternion.copy(f.q0).slerp(f.q1,u);
+   const u=clamp(f.t/f.dur,0,1),roll=smooth(u);
+   f.obj.position.lerpVectors(f.from,f.to,u);f.obj.position.y+=Math.sin(u*PI)*(f.big?.55:.7);
+   f.obj.quaternion.copy(f.q0).slerp(f.q1,roll);
    if(u>=1){HEAP.fly.splice(i,1);heapLand(f);AUDIO.slap(f.big?.8:.45,f.side*.5);if(f.big)AUDIO.squelch(.6);
     if(PREF.blood)BLOOD.spray(f.to,UP,f.big?10:5,{min:.4,max:1.4,spread:1.2});}
   }
+  updateHeapBatches();
  }
- // 나가거나 다시 시작할 때: 날아가는 중이거나 아직 굳히지 않은 조각을 그 자리에서 마저 굳혀 남긴다
  function flushHeap(){
   for(const f of HEAP.fly.splice(0)){if(f.obj.parent)heapLand(f);}
   for(const w of HEAP.wait.slice()){const k=S.jobs.indexOf(w.job);if(k>=0)S.jobs.splice(k,1);jobRun(w.job);}
  }
  function clearHeap(){
   for(const h of HEAP.list){h.mesh.removeFromParent();h.mesh.geometry.dispose();}
-  HEAP.list.length=0;HEAP.fly.length=0;HEAP.wait.length=0;
+  for(const b of HEAP.batches.values())if(b.mesh){b.mesh.removeFromParent();b.mesh.geometry.dispose();}
+  HEAP.batches.clear();HEAP.list.length=0;HEAP.fly.length=0;HEAP.wait.length=0;HEAP.pending.clear();HEAP.legacy.length=0;
+ }
+ function relocateLegacyHeap(sn,id,side){
+  const b=new THREE.Box3();for(let i=0;i<sn.p.length;i+=3)b.expandByPoint(V3(sn.p[i],sn.p[i+1],sn.p[i+2]));
+  const c=b.getCenter(V3()),to=heapSpot(id,side).sub(V3(c.x,b.min.y,c.z)),p=sn.p.slice();
+  for(let i=0;i<p.length;i+=3){p[i]+=to.x;p[i+1]+=to.y;p[i+2]+=to.z;}
+  return {p,c:sn.c,i:sn.i};
+ }
+ function migrateHeads(){
+  // 기존 저장의 꼬챙이 머리도 버리지 않고 바닥으로 옮긴다. 성공한 것만 기록을 바꿔 다음 접속에 중복되지 않게 한다.
+  HEAP.legacy=S.items.filter(it=>it.head===2);
+ }
+ function migrateHead(it){
+  const obj=proxyHead(it.seed);root.add(obj);
+  const f=queueHeap(null,{obj,r:.18},0);if(f){f.legacyItem=it;heapLand(f);}else releaseObj(obj,null);
  }
  function loadHeap(){
   let rec=null;try{rec=JSON.parse(localStorage.getItem(HEAP_STORE)||'null');}catch(_){}
-  if(!rec||!Array.isArray(rec.l))return;
+  if(!rec||!Array.isArray(rec.l)){migrateHeads();return;}
   HEAP.seq=Math.max(HEAP.seq,Number.isSafeInteger(rec.q)?rec.q:0);
   const gen=S.gen;
-  for(const e of rec.l.slice(-HEAP_MAX)){
-   if(!Array.isArray(e)||!Number.isSafeInteger(e[0]))continue;
-   const id=e[0],side=e[1]<0?-1:1;HEAP.seq=Math.max(HEAP.seq,id);
-   DB.get('h'+id).then(sn=>{if(gen!==S.gen||!S.on||!validSnap(sn)||HEAP.list.some(h=>h.id===id))return;heapAdd(id,side,sn);HEAP.list.sort((a,b)=>a.id-b.id);});
-  }
+  const entries=rec.l.slice(-HEAP_MAX).filter(e=>Array.isArray(e)&&Number.isSafeInteger(e[0])&&e[0]>0);
+  for(const e of entries){HEAP.seq=Math.max(HEAP.seq,e[0]);HEAP.pending.set(e[0],[e[0],e[1],e[2]||rec.v||1]);}
+  Promise.all(entries.map(async e=>{
+   const id=e[0],side=e[1]<0?-1:1;let sn=await DB.get('h'+id);
+   if(gen!==S.gen||!S.on)return;
+   if(validSnap(sn)&&!HEAP.list.some(h=>h.id===id)){
+    if((e[2]||rec.v)!==2){sn=relocateLegacyHeap(sn,id,side);await DB.put('h'+id,sn);if(gen!==S.gen||!S.on)return;}
+    heapAdd(id,side,sn);
+   }
+   HEAP.pending.delete(id);
+  })).then(()=>{if(gen!==S.gen||!S.on)return;saveHeap();migrateHeads();});
  }
 
  /* ---- 걸이(레일 바퀴 + 사슬 + 갈고리). 원점은 레일에 닿는 바퀴, 몸은 drop 밑에 매달린다 ---- */
@@ -652,7 +718,6 @@ const FREE=(()=>{
  }
  function gone(old){
   old._hungGone=true;
-  for(const hd of S.heads)if(hd.owner===old)hd.owner=null;
  }
  // 실제 몸을 내리고, 같은 몸을 본뜬 가벼운 것으로 바꿔 건다(없으면 일반 모형)
  function toProxy(it){
@@ -680,7 +745,7 @@ const FREE=(()=>{
  const nearK=()=>(MOBILE_GPU||lite()>0)?3:6;
  function layoutLine(line,instant){
   const arr=S.lines[line];
-  while(arr.length>ROW_CAP){const it=arr.pop();const i=S.items.indexOf(it);if(i>=0)S.items.splice(i,1);dropHeadOf(it);disposeItem(it);DB.del('b'+it.ord);}
+  while(arr.length>ROW_CAP){const it=arr.pop();const i=S.items.indexOf(it);if(i>=0)S.items.splice(i,1);disposeItem(it);DB.del('b'+it.ord);}
   arr.forEach((it,k)=>{slot(line,k,it.pos);it.k=k;if(instant){it.cur.copy(it.pos);it.holder.position.copy(it.cur);}});
  }
  // 걸린 몸의 겉모습을 만든다: 가까우면 굳힌 그 모습(없으면 일반 모형), 멀면 그것을 성기게 다시 묶은 것
@@ -714,33 +779,6 @@ const FREE=(()=>{
    pos:V3(),cur:V3(),swx:new Spring(15,1.5),swz:new Spring(15,1.5),ph:(seed%628)/100,poolK:0,fine:false,ready:true};
  }
 
- /* ---- 머리 꼬챙이 ---- */
- function placeHead(hd){
-  const [,y,z]=SPIKES[hd.idx],x=spikeX(hd.idx);
-  hd.obj.position.set(x,y-.075,z);
-  hd.obj.rotation.set(hd.rx,hd.ry,hd.rz);
-  spikeMesh[hd.idx].visible=true;
- }
- function freeSpike(){
-  const used=new Set(S.heads.map(h=>h.idx));
-  for(let i=0;i<SPIKES.length;i++)if(!used.has(i))return i;
-  // 다 찼으면 가장 오래된 머리를 내린다
-  const old=S.heads.shift();removeHead(old);return old.idx;
- }
- function removeHead(hd){
-  if(hd.proxy){hd.obj.removeFromParent();hd.obj.geometry.dispose();}
-  else releaseObj(hd.obj,hd.owner);
- }
- function dropHeadOf(it){
-  for(let i=S.heads.length-1;i>=0;i--)if(S.heads[i].item===it){const hd=S.heads[i];S.heads.splice(i,1);removeHead(hd);if(!S.heads.some(h=>h.idx===hd.idx))spikeMesh[hd.idx].visible=false;}
- }
- function addHead(it,obj,owner){
-  const r=rng(it.seed+97),idx=freeSpike();
-  const hd={item:it,idx,proxy:!obj,owner:owner||null,obj:obj||proxyHead(it.seed),rx:lerp(-.16,.12,r()),ry:lerp(-.45,.45,r()),rz:lerp(-.22,.22,r()),fly:null};
-  if(obj)scene.attach(obj);else root.add(hd.obj);
-  S.heads.push(hd);return hd;
- }
-
  /* ---- 켜고 끄기 ---- */
  function clearAll(){
   setView(false);
@@ -753,8 +791,6 @@ const FREE=(()=>{
    for(const w of HEAP.wait)if(w.obj.parent)try{releaseObj(w.obj,w.owner);}catch(_){}}
   for(const j of S.jobs)j.cancel=true;S.jobs.length=0;
   clearHeap();
-  for(const hd of S.heads)removeHead(hd);S.heads.length=0;
-  for(const m of spikeMesh)m.visible=false;
   for(const it of S.items)disposeItem(it);
   S.items.length=0;for(const l of S.lines)l.length=0;
   if(S.seq&&S.seq.holder&&!S.seq.item)S.seq.holder.removeFromParent();
@@ -768,7 +804,6 @@ const FREE=(()=>{
   rec.list.forEach((e,i)=>{
    const ord=S.total-rec.list.length+i,it=newItem(ord,e.l,e.s,e.p,e.h);it.waist=!!e.w;it.poolK=1;it.ready=false;
    S.items.push(it);S.lines[it.line].unshift(it);
-   if(e.h===2)placeHead(addHead(it,null,null));
    // 저장해 둔 그 몸의 본을 읽는다(있으면 그 모습으로, 없으면 일반 모형으로 건다)
    DB.get('b'+ord).then(sn=>{if(gen!==S.gen)return;if(validSnap(sn))it.snap=sn;it.ready=true;});
   });
@@ -797,7 +832,7 @@ const FREE=(()=>{
  const CLEAN_UI=(()=>{
   const reset=$('#resetFight');if(!reset)return null;
   const btn=document.createElement('button');btn.type='button';btn.id='freeClean';btn.className='btn soft';btn.hidden=true;
-  const note=document.createElement('p');note.id='freeCleanNote';note.hidden=true;note.textContent='걸어 둔 몸과 머리, 쌓인 무더기, 바닥 자국을 전부 치웁니다.';
+  const note=document.createElement('p');note.id='freeCleanNote';note.hidden=true;note.textContent='걸어 둔 몸과 바닥의 머리·신체 조각, 바닥 자국을 전부 치웁니다.';
   reset.insertAdjacentElement('afterend',btn);btn.insertAdjacentElement('afterend',note);
   let armed=false,timer=0;
   const label=()=>{btn.textContent=armed?'정말 다 치우기 · 되돌릴 수 없습니다':'청소하기';btn.classList.toggle('armed',armed);};
@@ -1016,14 +1051,6 @@ const FREE=(()=>{
   dimBody(old);
   const it=newItem(S.total,old.lookIndex,(Math.random()*1e9)>>>0,limbFracs(old),old.headGone?0:1);it.waist=!!old.bisected;
   it.holder.removeFromParent();it.holder=holder;it.real=old;it.free=true;it.cur.copy(holder.position);
-  // 떨어진 머리(가장 최근 것)는 꼬챙이로
-  if(old.headGone){
-   const hb=(old.bits||[]).find(b=>!b.dead&&b.sound==='head'&&b.obj&&b.obj.parent&&(old.severedHeads||[]).includes(b.obj));
-   if(hb){old.bits=old.bits.filter(b=>b!==hb);old.severedHeads=old.severedHeads.filter(o=>o!==hb.obj);
-    const hd=addHead(it,hb.obj,old);it.head=2;
-    const [,y,z]=SPIKES[hd.idx],x=spikeX(hd.idx);
-    hd.fly={t:0,from:hb.obj.position.clone(),q0:hb.obj.quaternion.clone(),to:V3(x,y-.075,z),q1:new THREE.Quaternion().setFromEuler(new THREE.Euler(hd.rx,hd.ry,hd.rz))};}
-  }
   S.total++;S.items.push(it);q.item=it;saveRecord();
   // 바닥 조각은 무더기로
   let n=heapBits(old,0);for(const o of S.items)if(o.real&&o.real!==old)n=heapBits(o.real,n);
@@ -1193,16 +1220,7 @@ const FREE=(()=>{
     it.pool.position.set(it.cur.x,.005,it.cur.z+.1);it.pool.scale.set(s,s*(.8+.2*Math.sin(it.ph)),1);
    }else it.pool.visible=false;
   }
-  for(const hd of S.heads){
-   const f=hd.fly;if(!f)continue;
-   f.t+=dt/.5;const u=clamp(f.t,0,1);
-   // 집어 올려 꼬챙이 위까지 가져간 다음 내리꽂는다
-   if(u<.72){const k=smooth(u/.72);hd.obj.position.lerpVectors(f.from,_v.copy(f.to).setY(f.to.y+.34),k);hd.obj.position.y+=Math.sin(k*PI)*.35;hd.obj.quaternion.copy(f.q0).slerp(f.q1,k);}
-   else{const k=easeIn((u-.72)/.28);hd.obj.position.set(f.to.x,f.to.y+.34*(1-k),f.to.z);hd.obj.quaternion.copy(f.q1);}
-   if(u>=.72&&!f.shown){f.shown=true;spikeMesh[hd.idx].visible=true;}
-   if(u>=1){hd.fly=null;placeHead(hd);AUDIO.chop(.8);AUDIO.squelch(.6);camHit({shake:.016});
-    if(PREF.blood)BLOOD.spray(_v.set(spikeX(hd.idx),SPIKES[hd.idx][1]-.06,SPIKES[hd.idx][2]+.05),V3(0,-.2,1),10,{min:.5,max:1.6,spread:.9});}
-  }
+
  }
  function update(dt){
   if(!S.on)return;
