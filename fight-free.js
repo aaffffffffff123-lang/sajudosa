@@ -126,9 +126,20 @@ const FREE=(()=>{
  const railRow=[],lanes=[],wallGore=[];
  const TUBE_COL=col('#dfe9b4'),tubeOn=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false}),tubeBad=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false});
  const dragMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0}),goreMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0});
- const hallLight=new THREE.HemisphereLight(col('#b7c69a'),col('#1b1610'),.34);
- const hallFill=new THREE.DirectionalLight(col('#c2d6b8'),.46);
- hallFill.position.set(0,CEIL-.6,3);hallFill.target.position.set(0,1.4,-16);
+ /* 조명: 빛은 등이 달린 자리에서만 나온다.
+  *  lamp      족치는 자리 위의 등 하나. 여기만 환하고 그림자도 여기서만 진다(맞는 놈이 잘 보여야 한다)
+  *  tubeLights 복도 안쪽, 켜져 있는 형광등 자리의 빛. 등에서 멀어지면 어두워져서 걸린 몸이 밝았다 어두웠다 하며 멀어진다(둘째가 껌뻑거리는 등)
+  *  hallFill  천장에서 곧게 내려오는 아주 옅은 바탕빛. 평소엔 거의 없고, 「둘러보기」 때만 올려서 걸어 둔 몸이 끝까지 보이게 한다
+  * 밝기를 손볼 곳: LAMP_I(족치는 자리) · TUBE_SPOTS(복도) · HEMI_I/FILL_I([평소, 둘러보기]) */
+ const LAMP_I=3.5,HEMI_I=[.15,.32],FILL_I=[.08,.5];
+ const TUBE_SPOTS=[[-2.7,3.1,9],[-11.1,1.8,9],[-17.4,1.7,10],[-30,1.7,12]]; // [z, 세기, 닿는 거리]
+ const hallFill=new THREE.DirectionalLight(col('#b9c8ad'),FILL_I[0]);
+ hallFill.position.set(0,CEIL+6,-18);hallFill.target.position.set(0,0,-18);
+ const lamp=new THREE.SpotLight(col("#f6f1d2"),LAMP_I,12,.76,.85,1);
+ lamp.position.set(-.2,CEIL-.4,3.2);lamp.target.position.set(0,.9,1.1);
+ lamp.castShadow=true;lamp.shadow.mapSize.set(MOBILE_GPU?512:1024,MOBILE_GPU?512:1024);lamp.shadow.camera.near=.8;lamp.shadow.camera.far=10;lamp.shadow.bias=-.0006;lamp.shadow.normalBias=.03;
+ const tubeLights=TUBE_SPOTS.map(([z,i,d])=>{const l=new THREE.PointLight(col('#cfe0b8'),i,d,1.6);l.position.set(0,CEIL-.3,z);l.userData.base=i;return l;});
+ let viewK=0,floorMat=null,floorKeep=null;
  (function build(){
   const merge=(list,mat,parent)=>{parent.updateMatrixWorld(true);const geo=mergeMeshes(list,new THREE.Matrix4());for(const m of list){m.removeFromParent();m.geometry.dispose();}
    const m=new THREE.Mesh(geo,mat);m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;parent.add(m);return m;};
@@ -172,12 +183,12 @@ const FREE=(()=>{
   // 바닥: 싸우는 자리의 돌바닥을 같은 무늬로 방 끝까지 잇는다
   const base=COMBAT_STAGE.root.children.find(o=>o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry'&&o.geometry.parameters.width===30);
   if(base){const len=-7.5-HALL_END+2,geo=new THREE.PlaneGeometry(30,len),uv=geo.attributes.uv;for(let i=0;i<uv.count;i++){uv.setX(i,uv.getX(i)*2);uv.setY(i,uv.getY(i)*len/15);}
-   mk(geo,base.material,hall,{r:[-PI/2,0,0],p:[0,0,-7.5-len/2],cast:false});}
+   mk(geo,base.material,hall,{r:[-PI/2,0,0],p:[0,0,-7.5-len/2],cast:false});floorMat=base.material;}
   // 바닥 때: 족치는 자리만 등 아래처럼 밝게 남기고 둘레는 어둡게 덮는다. 가운데 통로에 배수구, 얼룩과 물 자국
   const GW=11,GL=30,GZ=-9; // 덮는 넓이(m)와 가운데 z
   const grime=canvasTex(512,1024,(g,w,h)=>{
    const X=x=>(x/GW+.5)*w,Z=z=>(z-(GZ-GL/2))/GL*h; // 캔버스 아래쪽이 카메라 쪽(+z)
-   g.clearRect(0,0,w,h);g.fillStyle='rgba(6,8,6,.72)';g.fillRect(0,0,w,h);
+   g.clearRect(0,0,w,h);g.fillStyle='rgba(6,8,6,.42)';g.fillRect(0,0,w,h);
    // 족치는 자리(0,1.0) 둘레를 지운다
    g.globalCompositeOperation='destination-out';
    g.save();g.translate(X(0),Z(1.0));g.scale(1,(h/GL)/(w/GW)*1.25);
@@ -225,9 +236,9 @@ const FREE=(()=>{
     const near=x===0&&z>-3;if(!near&&n%4===3)continue; // 나간 등
     (!near&&n%3===1?tBad:tOn).push(mk(new THREE.BoxGeometry(.11,.04,1.5),tubeOn,hall,{p:[x,CEIL-.05,z],cast:false,receive:false}));}}
   if(tOn.length)merge(tOn,tubeOn,hall);if(tBad.length)merge(tBad,tubeBad,hall);
-  hall.add(hallLight,hallFill,hallFill.target);
+  hall.add(hallFill,hallFill.target,lamp,lamp.target,...tubeLights);
  })();
- // 형광등 깜빡임: 몇 초에 한 번, 불량 등이 두어 번 껌뻑이고 방 전체 밝기도 살짝 따라 흔들린다
+ // 형광등 깜빡임: 몇 초에 한 번, 불량 등이 두어 번 껌뻑이고 그 등 밑의 빛도 같이 꺼졌다 켜진다(방 전체 밝기도 아주 살짝 따라 흔들린다)
  const FL={v:1,t:3,n:0};
  function flicker(dt){
   FL.t-=dt;
@@ -235,7 +246,9 @@ const FREE=(()=>{
    if(FL.n>0){FL.n--;FL.v=FL.v>.6?rnd(.12,.45):1;FL.t=FL.n?rnd(.03,.1):rnd(2.5,7);if(!FL.n)FL.v=1;}
    else{FL.n=2*(1+(Math.random()*3|0));FL.t=0;}
   }
-  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.34*(.9+.1*FL.v);
+  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);tubeLights[1].intensity=tubeLights[1].userData.base*FL.v;
+  viewK=damp(viewK,S.view?1:0,5,dt);hallFill.intensity=lerp(FILL_I[0],FILL_I[1],viewK);
+  if(S.stageOn&&litKeep&&LIT.hemi)LIT.hemi.intensity=lerp(HEMI_I[0],HEMI_I[1],viewK)*(.95+.05*FL.v);
  }
  // 줄 간격을 바꾼다(화면 비율이 바뀌었을 때): 레일·걸린 몸·끌린 자국을 함께 옮긴다. 바닥 조각은 그대로 둔다
  function setRows(x){
@@ -244,7 +257,7 @@ const FREE=(()=>{
   for(let l=0;l<ROWX.length;l++)layoutLine(l,true);
  }
  // 옥좌·기둥·벽·현판·지팡이를 치우고, 안개·배경·조명을 어두운 도살장으로 바꾼다. 끄면 원래 궁전으로 되돌린다.
- // 조명은 fight.js가 장면에 달아 둔 것을 찾아 값만 바꾼다(등 하나가 족치는 자리만 누렇게 비추고 둘레는 가라앉는다)
+ // fight.js가 장면에 달아 둔 궁전 조명(key·fill·rim)은 이 방에서 끄고, 위에서 만든 등 빛(lamp·tubeLights)만 쓴다. 바닥은 물청소한 것처럼 번들거리게 한다
  const LIT=(()=>{const o={hemi:null,key:null,fill:null,rim:null,bounce:null};
   for(const c of scene.children){
    if(c.isHemisphereLight){if(!o.hemi)o.hemi=c;}
@@ -257,14 +270,17 @@ const FREE=(()=>{
   if(on){
    const keep=o=>o===COMBAT_STAGE.contact||(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry');
    for(const c of COMBAT_STAGE.root.children)if(!keep(c)&&c.visible){c.visible=false;hidden.push(c);}
-   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),10,54);camera.far=65;camera.updateProjectionMatrix();
+   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),8,50);camera.far=65;camera.updateProjectionMatrix();
    const {hemi,key,fill,rim,bounce}=LIT;
    if(hemi&&key&&fill&&rim&&bounce){
-    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kc:key.color.clone(),ki:key.intensity,fi:fill.intensity,rc:rim.color.clone(),ri:rim.intensity,bi:bounce.intensity};
-    hemi.color.copy(col('#a3b292'));hemi.groundColor.copy(col('#17120c'));hemi.intensity=.36;
-    key.color.copy(col('#fff0c4'));key.intensity=2.5;
-    fill.intensity=.24;rim.color.copy(col('#86c79f'));rim.intensity=1.25;bounce.intensity=.12;
+    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kv:key.visible,fv:fill.visible,rv:rim.visible,bc:bounce.color.clone(),bp:bounce.position.clone(),bi:bounce.intensity};
+    hemi.color.copy(col('#8fa392'));hemi.groundColor.copy(col('#0d100c'));hemi.intensity=HEMI_I[0];
+    key.visible=fill.visible=rim.visible=false;
+    // 바닥에서 되비친 옅은 빛: 턱 밑·눈두덩이 새까맣게 죽지 않게 한다
+    bounce.color.copy(col('#b9c9b2'));bounce.position.set(0,.3,2.5);bounce.intensity=.95;
    }
+   if(floorMat&&floorKeep==null){floorKeep=floorMat.roughness;floorMat.roughness=.36;}
+   viewK=0;
    S.stageOn=true;
    // 걸린 몸이 하나라도 있는 방에 들어선 놈은 처음부터 겁에 질려 있다
    if(S.items.length&&G.E)scare(G.E);
@@ -272,7 +288,8 @@ const FREE=(()=>{
    for(const c of hidden)c.visible=true;hidden=[];
    if(S.stageOn){scene.background=col('#151d1e');scene.fog=new THREE.Fog(col('#202725'),7,18);camera.far=40;camera.updateProjectionMatrix();}
    if(litKeep){const {hemi,key,fill,rim,bounce}=LIT,k=litKeep;litKeep=null;
-    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.color.copy(k.kc);key.intensity=k.ki;fill.intensity=k.fi;rim.color.copy(k.rc);rim.intensity=k.ri;bounce.intensity=k.bi;}
+    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.visible=k.kv;fill.visible=k.fv;rim.visible=k.rv;bounce.color.copy(k.bc);bounce.position.copy(k.bp);bounce.intensity=k.bi;}
+   if(floorMat&&floorKeep!=null){floorMat.roughness=floorKeep;floorKeep=null;}
    S.stageOn=false;
   }
  }
