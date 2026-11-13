@@ -34,6 +34,12 @@ test('a dent moves only the affected end of a long scar',()=>{
  let moved=0,fixed=0;for(const i of new Set(scar.geometry.index.array)){const dz=P.getZ(i)-before[i*3+2];if(before[i*3]>0){assert(Math.abs(dz+.01)<1e-7);moved++;}else{assert.equal(dz,0);fixed++;}}
  assert(moved&&fixed);
 });
+test('unrelated scars skip all vertex queries during a local hit',()=>{
+ const h=decalsRig(),m=h.decal('cut','head',V3(0,0,.2),V3(0,0,1),.03,{aspect:3,angle:0});assert(m);const before=m.geometry.attributes.position.array.slice();let queries=0;
+ h.deformOverlays(h.bone,v=>{queries++;v.z-=.01;return true;},new THREE.Box3(V3(1,1,1),V3(2,2,2)));
+ assert.equal(queries,0);assert.deepEqual(m.geometry.attributes.position.array,before);
+ const original=m.geometry;h.clearPlane('head',V3(1,0,0),.4);assert.equal(m.geometry,original,'an unchanged decal is not rebuilt on a distant head cut');
+});
 function brainRig(){
  const scene=new THREE.Scene(),ctx={THREE,V3,scene,PI:Math.PI,TAU:Math.PI*2,clamp,lerp:(a,b,t)=>a+(b-a)*t,col:c=>new THREE.Color(c),PREF:{blood:true},isFleshMat:()=>false,ensureDmg(){},_dfv2:V3(),_dfv3:V3()};
  const api=vm.runInNewContext(cut('function mk(geo,','/* 여러 메시')+cut('const SLICE=','/* ===== 2-3. 조각칼')+';({SLICE,methods:({'+cut(' clipBrainCap(nW,pW,piece){',' blowTop(pt,n,dir){')+cut(' _follow(f){','\n});\n/* ===== 6-4-3.')+'})})',ctx);
@@ -58,6 +64,11 @@ test('exposed brain follows a rotated skull and subsequent local dents',()=>{
  const meshes=E.brainCap.children,points=meshes.map(m=>{const v=V3().fromBufferAttribute(m.geometry.attributes.position,0);return skull.worldToLocal(m.localToWorld(v));});
  E._follow({mesh:skull,last:{vs:[0,1],p:[-1,-1,-1,1,1,1]},deltaAt(x,y,z,out){out.set(.01,0,0)}});
  meshes.forEach((m,i)=>{const v=skull.worldToLocal(m.localToWorld(V3().fromBufferAttribute(m.geometry.attributes.position,0)));assert(v.distanceTo(points[i].clone().add(V3(.01,0,0)))<1e-7);});
+});
+test('a hit below the exposed brain does not query or rebuild its vertices',()=>{
+ const {E,skull}=brainRig();let queries=0;const before=E.brainCap.children.map(m=>m.geometry.attributes.position.version);
+ E._follow({mesh:skull,last:{vs:[0,1],p:[-.02,-.2,-.02,.02,-.16,.02]},deltaAt(x,y,z,out){queries++;out.set(.01,0,0)}});
+ assert.equal(queries,0);E.brainCap.children.forEach((m,i)=>assert.equal(m.geometry.attributes.position.version,before[i]));
 });
 test('a later side cut splits both the exposed brain and its border on the skull plane',()=>{
  const {E,scene,F}=brainRig();F.position.set(1,.7,-2);F.rotation.set(.2,.4,-.3);F.updateMatrixWorld(true);

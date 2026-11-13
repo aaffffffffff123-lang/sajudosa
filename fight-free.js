@@ -131,7 +131,7 @@ const FREE=(()=>{
   *  tubeLights 복도 안쪽, 켜져 있는 형광등 자리의 빛. 등에서 멀어지면 어두워져서 걸린 몸이 밝았다 어두웠다 하며 멀어진다(둘째가 껌뻑거리는 등)
   *  hallFill  천장에서 곧게 내려오는 아주 옅은 바탕빛. 평소엔 거의 없고, 「둘러보기」 때만 올려서 걸어 둔 몸이 끝까지 보이게 한다
   * 밝기를 손볼 곳: LAMP_I(족치는 자리) · TUBE_SPOTS(복도) · HEMI_I/FILL_I([평소, 둘러보기]) */
- const LAMP_I=3.5,HEMI_I=[.15,.32],FILL_I=[.08,.5];
+ const LAMP_I=3.0,HEMI_I=[.30,.34],FILL_I=[.20,.42];
  const TUBE_SPOTS=[[-2.7,3.1,9],[-11.1,1.8,9],[-17.4,1.7,10],[-30,1.7,12]]; // [z, 세기, 닿는 거리]
  const hallFill=new THREE.DirectionalLight(col('#b9c8ad'),FILL_I[0]);
  hallFill.position.set(0,CEIL+6,-18);hallFill.target.position.set(0,0,-18);
@@ -274,12 +274,12 @@ const FREE=(()=>{
    const {hemi,key,fill,rim,bounce}=LIT;
    if(hemi&&key&&fill&&rim&&bounce){
     if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kv:key.visible,fv:fill.visible,rv:rim.visible,bc:bounce.color.clone(),bp:bounce.position.clone(),bi:bounce.intensity};
-    hemi.color.copy(col('#8fa392'));hemi.groundColor.copy(col('#0d100c'));hemi.intensity=HEMI_I[0];
+    hemi.color.copy(col('#a8b2a4'));hemi.groundColor.copy(col('#30382d'));hemi.intensity=HEMI_I[0];
     key.visible=fill.visible=rim.visible=false;
     // 바닥에서 되비친 옅은 빛: 턱 밑·눈두덩이 새까맣게 죽지 않게 한다
-    bounce.color.copy(col('#b9c9b2'));bounce.position.set(0,.3,2.5);bounce.intensity=.95;
+    bounce.color.copy(col('#c2c7b4'));bounce.position.set(0,.3,2.5);bounce.intensity=.35;
    }
-   if(floorMat&&floorKeep==null){floorKeep=floorMat.roughness;floorMat.roughness=.36;}
+   if(floorMat&&floorKeep==null){floorKeep=floorMat.roughness;floorMat.roughness=.55;}
    viewK=0;
    S.stageOn=true;
    // 걸린 몸이 하나라도 있는 방에 들어선 놈은 처음부터 겁에 질려 있다
@@ -480,18 +480,21 @@ const FREE=(()=>{
   return {src,space,cell,done,meshes,i:0,pos:[],col:[],wt:[],idx:[],n:0};
  }
  const _sv=V3();
- function jobMesh(job,o){
-  const mat=Array.isArray(o.material)?o.material[0]:o.material;if(!mat||mat.visible===false||!mat.color||!o.parent)return;
-  const blood=!!o.userData.bloodOverlay;
-  if(mat.blending!==THREE.NormalBlending||mat.colorWrite===false)return;
-  if(!blood&&mat.transparent&&mat.opacity<.5)return;
-  const f=o.userData.flesh;if(f&&f.bake)try{f.bake();}catch(_){}
-  const g=o.geometry,A=g.attributes.position,U=g.attributes.uv,VC=mat.vertexColors?g.attributes.color:null,td=U?texData(mat.map):null,c=mat.color;
-  o.updateWorldMatrix(true,false);job.space.updateWorldMatrix(true,false);
-  _m.copy(job.space.matrixWorld).invert().multiply(o.matrixWorld);
-  const base=job.n,w=blood?4:1,P=job.pos,C=job.col,W=job.wt,alpha=[],vcScale=VC&&VC.normalized&&VC.array instanceof Uint8Array?1/255:1;
-  for(let i=0;i<A.count;i++){
-   _sv.fromBufferAttribute(A,i).applyMatrix4(_m);P.push(_sv.x,_sv.y,_sv.z);
+ function jobMesh(job,o,until=Infinity){
+  let work=job.meshWork;
+  if(!work){
+   const mat=Array.isArray(o.material)?o.material[0]:o.material;if(!mat||mat.visible===false||!mat.color||!o.parent)return true;
+   const blood=!!o.userData.bloodOverlay;
+   if(mat.blending!==THREE.NormalBlending||mat.colorWrite===false||!blood&&mat.transparent&&mat.opacity<.5)return true;
+   const f=o.userData.flesh;if(f&&f.bake)try{f.bake();}catch(_){}
+   const g=o.geometry,A=g.attributes.position,U=g.attributes.uv,VC=mat.vertexColors?g.attributes.color:null;
+   o.updateWorldMatrix(true,false);job.space.updateWorldMatrix(true,false);
+   work=job.meshWork={g,A,U,VC,mat,td:U?texData(mat.map):null,m:new THREE.Matrix4().copy(job.space.matrixWorld).invert().multiply(o.matrixWorld),
+    base:job.n,w:blood?4:1,alpha:new Uint8Array(A.count),v:0,t:0,vcScale:VC&&VC.normalized&&VC.array instanceof Uint8Array?1/255:1};
+  }
+  const {g,A,U,VC,mat,td,m,base,w,alpha,vcScale}=work,c=mat.color,P=job.pos,C=job.col,W=job.wt;
+  while(work.v<A.count){const i=work.v++;
+   _sv.fromBufferAttribute(A,i).applyMatrix4(m);P.push(_sv.x,_sv.y,_sv.z);
    let r=c.r,gg=c.g,b=c.b,opacity=mat.opacity;
    if(td){
     let u=U.getX(i)*td.rx+td.ox,v=U.getY(i)*td.ry+td.oy;u-=Math.floor(u);v-=Math.floor(v);if(td.flip)v=1-v;
@@ -499,14 +502,16 @@ const FREE=(()=>{
     if(td.srgb){r*=LIN[D[k]];gg*=LIN[D[k+1]];b*=LIN[D[k+2]];}else{r*=D[k]/255;gg*=D[k+1]/255;b*=D[k+2]/255;}
    }
    if(VC){r*=VC.getX(i)*vcScale;gg*=VC.getY(i)*vcScale;b*=VC.getZ(i)*vcScale;}
-   alpha.push(opacity>=Math.max(.1,mat.alphaTest||0));
+   alpha[i]=opacity>=Math.max(.1,mat.alphaTest||0)?1:0;
    C.push(r,gg,b);W.push(alpha[i]?w:0);
+   if(!(work.v&255)&&performance.now()>until)return false;
   }
-  const I=job.idx;
-  const add=(a,b,c)=>{if(alpha[a]&&alpha[b]&&alpha[c])I.push(base+a,base+b,base+c);};
-  if(g.index){const ia=g.index.array;for(let i=0;i+2<ia.length;i+=3)add(ia[i],ia[i+1],ia[i+2]);}
-  else for(let i=0;i+2<A.count;i+=3)add(i,i+1,i+2);
-  job.n+=A.count;
+  const I=job.idx,ia=g.index&&g.index.array,count=ia?ia.length:A.count;
+  while(work.t+2<count){const i=work.t;work.t+=3;const a=ia?ia[i]:i,b=ia?ia[i+1]:i+1,c=ia?ia[i+2]:i+2;
+   if(alpha[a]&&alpha[b]&&alpha[c])I.push(base+a,base+b,base+c);
+   if(!(work.t%768)&&performance.now()>until)return false;
+  }
+  job.n+=A.count;job.meshWork=null;return true;
  }
  // 묶기도 나눠서 한다(한 번에 하면 휴대폰에서 0.1초 넘게 멈춘다). until 시각을 넘기면 멈췄다가 다음 프레임에 이어 한다
  function jobFinish(job,until){
@@ -517,17 +522,29 @@ const FREE=(()=>{
    const k=((Math.round(x/cell)+2048)*4096+(Math.round(y/cell)+2048))*4096+(Math.round(z/cell)+2048);
    let j=map.get(k);if(j===undefined){j=cnt.length;map.set(k,j);np.push(0,0,0);nc.push(0,0,0);cnt.push(0);ws.push(0);}
    const w=W[i];np[j*3]+=x;np[j*3+1]+=y;np[j*3+2]+=z;nc[j*3]+=C[i*3]*w;nc[j*3+1]+=C[i*3+1]*w;nc[j*3+2]+=C[i*3+2]*w;cnt[j]++;ws[j]+=w;remap[i]=j;
-   if(!(i&2047)&&performance.now()>until)return null;
+   if(!(F.i&255)&&performance.now()>until)return null;
   }
   const I=job.idx,out=F.out;
   while(F.t<I.length){
    const t=F.t;F.t+=3;const a=remap[I[t]],b=remap[I[t+1]],c=remap[I[t+2]];if(a!==b&&b!==c&&a!==c)out.push(a,b,c);
-   if(!(t&4095)&&performance.now()>until)return null;
+   if(!(F.t%768)&&performance.now()>until)return null;
   }
-  const m=cnt.length,pos=new Float32Array(m*3),col=new Uint8Array(m*3);
-  for(let j=0;j<m;j++)for(let a=0;a<3;a++){pos[j*3+a]=np[j*3+a]/cnt[j];col[j*3+a]=Math.round(255*clamp(nc[j*3+a]/ws[j],0,1));}
+  const m=cnt.length;
+  if(!F.pos){F.pos=new Float32Array(m*3);F.col=new Uint8Array(m*3);F.ci=0;}
+  const pos=F.pos,col=F.col;
+  while(F.ci<m){const j=F.ci++;for(let a=0;a<3;a++){pos[j*3+a]=np[j*3+a]/cnt[j];col[j*3+a]=Math.round(255*clamp(nc[j*3+a]/ws[j],0,1));}
+   if(!(F.ci&255)&&performance.now()>until)return null;
+  }
+  // Packing used to run in one unbounded pass after the timed work finished.
+  // Keep the same index-order remapping, but yield during packing too.
+  if(!F.pack)F.pack={map:new Int32Array(m).fill(-1),p:[],c:[],i:new Uint32Array(out.length),k:0};
+  const packed=F.pack;
+  while(packed.k<out.length){const k=packed.k++,i=out[k];let j=packed.map[i];
+   if(j<0){j=packed.p.length/3;packed.map[i]=j;packed.p.push(pos[i*3],pos[i*3+1],pos[i*3+2]);packed.c.push(col[i*3],col[i*3+1],col[i*3+2]);}packed.i[k]=j;
+   if(!(packed.k&511)&&performance.now()>until)return null;
+  }
   job.fin=null;job.pos=job.col=job.wt=job.idx=null;TEXS.clear();
-  return packSnapshot({p:pos,c:col,i:new Uint32Array(out),v:3});
+  return {p:new Float32Array(packed.p),c:new Uint8Array(packed.c),i:packed.i,v:3};
  }
 
  // Old snapshots welded the shoulder halo into nearby clothing. Its old dock
@@ -610,7 +627,7 @@ const FREE=(()=>{
   while(S.jobs.length&&performance.now()<until){
    const job=S.jobs[0];
    if(job.cancel){S.jobs.shift();continue;}
-   if(job.i<job.meshes.length){jobMesh(job,job.meshes[job.i++]);continue;}
+   if(job.i<job.meshes.length){if(jobMesh(job,job.meshes[job.i],until))job.i++;else break;continue;}
    const r=job.n?jobFinish(job,until):{};
    if(r===null)break; // 다음 프레임에 이어서
    S.jobs.shift();job.finished=true;if(job.done)job.done(job.n?r:null);
@@ -865,7 +882,7 @@ const FREE=(()=>{
  }
  function trimReals(){
   const reals=S.items.filter(it=>it.real);
-  while(reals.length>realCap())toProxy(reals.shift());
+  for(const it of reals.slice(0,Math.max(0,reals.length-realCap()))){if(it.snap)toProxy(it);else startSnap(it);}
  }
  function disposeItem(it){
   if(it.job){it.job.cancel=true;it.job=null;}
@@ -1403,7 +1420,7 @@ const FREE=(()=>{
   {let n=0;for(let i=S.items.length-1;i>=0&&n<2;i--){const it=S.items[i];if(!it.real&&it.ready&&(!it.proxy||(it.fine&&it.k>=nearK()))){ensureMesh(it);n++;}}}
   updateHeap(dt);
   updateSeq(dt);LEASH.update(dt);
-  if(!S.seq&&S.jobs.length)stepJobs(5);
+  if(!S.seq&&S.jobs.length)stepJobs(MOBILE_GPU?1.5:2.5);
   const E=G.E;
   if(E&&!S.seq){
    if(S.reviving&&!canRevive(E)&&!(E.regrowQ&&E.regrowQ.length)&&!E.regrowHead){S.reviving=false;E.holdRegrow=true;}

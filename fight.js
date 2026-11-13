@@ -4792,12 +4792,17 @@ floorRoot.visible=gv;
  }
  // 머리 한 조각이 잘려 나갈 때: 뼈 좌표 평면(n·p-d>0 쪽)에 있던 자국·상처·핏줄기만 없앤다
  function clearPlane(seg,nL,dL){
-  if(!E)return;const bone=E.bones[seg];if(!bone)return;const over=p=>nL.x*p.x+nL.y*p.y+nL.z*p.z-dL>0;
+  if(!E)return;const bone=E.bones[seg];if(!bone)return;const over=p=>nL.x*p.x+nL.y*p.y+nL.z*p.z-dL>0,center=V3();
   for(let i=decals.length-1;i>=0;i--){const m=decals[i];if(m.parent!==bone)continue;
    // Clip every crossing scar at the same cut plane. Testing only its centre
    // left the rest of a long scar hanging over the removed skull.
    m.updateMatrix();const plane=new THREE.Plane(nL.clone(),-dL).applyMatrix4(m.matrix.clone().invert());
-   const old=m.geometry,cut=SLICE.slice(old,plane.normal,-plane.constant,false,true);
+   const old=m.geometry;if(!old.boundingBox)old.computeBoundingBox();
+   if(!old.boundingBox.intersectsPlane(plane)){
+    if(plane.distanceToPoint(old.boundingBox.getCenter(center))<=0)continue;
+    m.removeFromParent();old.dispose();decals.splice(i,1);continue;
+   }
+   const cut=SLICE.slice(old,plane.normal,-plane.constant,false,true);
    if(cut.keep){m.geometry=cut.keep;old.dispose();}
    else{m.removeFromParent();old.dispose();decals.splice(i,1);}
   }
@@ -4851,13 +4856,14 @@ rims.length=0;
  }
  /* 살이 찌그러지면 그 뼈에 붙은 피(자국·줄기·방울·상처 자리)도 같이 옮긴다. fn(v: 뼈 좌표 점)이 v를 옮기고 옮겼으면 true */
  const _ov=V3(),_ov0=V3(),_ovD=V3();
- function deformOverlays(bone,fn){
+ function deformOverlays(bone,fn,bounds=null){
   // Long cuts follow the locally deformed skin. Moving an entire strip by its
   // centre's displacement leaves its other end suspended outside the face.
   for(const m of decals){if(m.parent!==bone||!m.userData.center)continue;
+   if(bounds){if(!m.geometry.boundingBox)m.geometry.computeBoundingBox();if(!bounds.intersectsBox(m.geometry.boundingBox))continue;}
    _ov.copy(m.userData.center);_ov0.copy(_ov);if(fn(_ov)){_ovD.subVectors(_ov,_ov0);m.userData.center.copy(_ov);if(m.userData.grow)m.userData.grow.center.add(_ovD);}
    const P=m.geometry.attributes.position;let changed=false;
-   for(let i=0;i<P.count;i++){_ov.fromBufferAttribute(P,i);if(fn(_ov)){P.setXYZ(i,_ov.x,_ov.y,_ov.z);changed=true;}}
+   for(let i=0;i<P.count;i++){_ov.fromBufferAttribute(P,i);if(bounds&&!bounds.containsPoint(_ov))continue;if(fn(_ov)){P.setXYZ(i,_ov.x,_ov.y,_ov.z);if(m.geometry.boundingBox)m.geometry.boundingBox.expandByPoint(_ov);changed=true;}}
    if(changed){P.needsUpdate=true;m.geometry.computeVertexNormals();m.geometry.computeBoundingSphere();}}
   for(const b of bankList){if(b.bone!==bone||!b.pts)continue;let ch=false;
    for(let i=0;i<b.count;i++){const q=b.pts[i];_ov0.copy(q.p);if(fn(q.p)){ch=true;_ovD.subVectors(q.p,_ov0);const k=i*6;for(const o of [0,3]){b.P[k+o]+=_ovD.x;b.P[k+o+1]+=_ovD.y;b.P[k+o+2]+=_ovD.z;}}}
@@ -7122,13 +7128,16 @@ Object.assign(Emperor.prototype,{
   const moveIn=(v,max)=>{if(v.x<x0||v.x>x1||v.y<y0||v.y>y1||v.z<z0||v.z>z1)return false;f.deltaAt(v.x,v.y,v.z,dl,max);if(dl.lengthSq()<1e-12)return false;v.add(dl);return true;};
   if(bone){m.updateWorldMatrix(true,false);bone.updateWorldMatrix(true,false);
    const Mbm=_dfm.copy(m.matrixWorld).invert().multiply(bone.matrixWorld),Mmb=_dfm2.copy(Mbm).invert();_dfm3.setFromMatrix4(Mmb);const tmp=V3();
-   BLOOD.deformOverlays(bone,v=>{tmp.copy(v).applyMatrix4(Mbm);if(tmp.x<x0||tmp.x>x1||tmp.y<y0||tmp.y>y1||tmp.z<z0||tmp.z>z1)return false;f.deltaAt(tmp.x,tmp.y,tmp.z,dl,.03);if(dl.lengthSq()<1e-12)return false;dl.applyMatrix3(_dfm3);v.add(dl);return true;});}
+   const bounds=new THREE.Box3(V3(x0,y0,z0),V3(x1,y1,z1)).applyMatrix4(Mmb);
+   BLOOD.deformOverlays(bone,v=>{tmp.copy(v).applyMatrix4(Mbm);if(tmp.x<x0||tmp.x>x1||tmp.y<y0||tmp.y>y1||tmp.z<z0||tmp.z>z1)return false;f.deltaAt(tmp.x,tmp.y,tmp.z,dl,.03);if(dl.lengthSq()<1e-12)return false;dl.applyMatrix3(_dfm3);v.add(dl);return true;},bounds);}
   // The exposed organ and rim belong to the cut skull too. Follow later local
   // dents once per hit, not per frame, so the skin cannot slide out from under them.
   if(this.brainCap&&this.brainCap.parent===m){
-   m.updateWorldMatrix(true,true);const inv=m.matrixWorld.clone().invert(),rel=new THREE.Matrix4(),back=new THREE.Matrix4(),v=V3();
-   this.brainCap.traverse(o=>{if(!o.isMesh||!o.geometry)return;rel.multiplyMatrices(inv,o.matrixWorld);back.copy(rel).invert();const P=o.geometry.attributes.position;let changed=false;
-    for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i).applyMatrix4(rel);if(moveIn(v,.035)){v.applyMatrix4(back);P.setXYZ(i,v.x,v.y,v.z);changed=true;}}
+   m.updateWorldMatrix(true,true);const inv=m.matrixWorld.clone().invert(),rel=new THREE.Matrix4(),back=new THREE.Matrix4(),v=V3(),bounds=new THREE.Box3(V3(x0,y0,z0),V3(x1,y1,z1)),meshBounds=new THREE.Box3();
+   this.brainCap.traverse(o=>{if(!o.isMesh||!o.geometry)return;rel.multiplyMatrices(inv,o.matrixWorld);
+    if(!o.geometry.boundingBox)o.geometry.computeBoundingBox();if(!meshBounds.copy(o.geometry.boundingBox).applyMatrix4(rel).intersectsBox(bounds))return;
+    back.copy(rel).invert();const P=o.geometry.attributes.position;let changed=false;
+    for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i).applyMatrix4(rel);if(moveIn(v,.035)){v.applyMatrix4(back);P.setXYZ(i,v.x,v.y,v.z);o.geometry.boundingBox.expandByPoint(v);changed=true;}}
     if(changed){P.needsUpdate=true;o.geometry.computeVertexNormals();o.geometry.computeBoundingSphere();}
    });
   }
@@ -7723,6 +7732,7 @@ Object.assign(Emperor.prototype,{
   }return Number.isFinite(best)?best:0;};
   const radii=Array.from({length:64},(_,i)=>radius(Math.cos(i*TAU/64),Math.sin(i*TAU/64)));
   const rMin=Math.min(...radii),rMax=Math.max(...radii);if(rMin<.008)return;
+  const human=this.headKind!=='rep',brainWidth=human?.78:.64,brainHeight=human?.48:.4;
   const g=grp(skull,center.toArray());g.quaternion.copy(q);g.userData.noHit=true;
   // 뇌: 울퉁불퉁한 덩어리에 가운데 고랑
   const bg=new THREE.SphereGeometry(1,40,26),bp=bg.attributes.position,bc=new Float32Array(bp.count*3),base=col('#43607f'),dark=col('#1e2d45');
@@ -7732,12 +7742,12 @@ Object.assign(Emperor.prototype,{
   bg.setAttribute('color',new THREE.BufferAttribute(bc,3));bg.computeVertexNormals();this.disposables.push(bg);
   for(let i=0;i<bp.count;i++){
    const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),angle=(Math.atan2(z,x)+TAU)%TAU*64/TAU,k=Math.floor(angle),r=lerp(radii[k%64],radii[(k+1)%64],angle-k);
-   bp.setXYZ(i,x*r*.64,y*rMin*.4,z*r*.64);
+   bp.setXYZ(i,x*r*brainWidth,y*rMin*brainHeight,z*r*brainWidth);
   }
   bg.computeVertexNormals();
   const brain=mk(bg,this.M.brain,g,{p:[0,-Math.min(.022,rMin*.14),0],cast:false});brain.userData.noHit=true;brain.userData.gore=true;brain.visible=PREF.blood;this.goreMeshes.push(brain);
   // The dark recess follows the same rim, rather than a separate round plate.
-  const gp=[],gi=[];for(const p of loop)for(const scale of [.58,.9])gp.push(p.x*scale,.0015,p.z*scale);
+  const gp=[],gi=[],gapScales=human?[.72,.92]:[.58,.9];for(const p of loop)for(const scale of gapScales)gp.push(p.x*scale,.0015,p.z*scale);
   for(let i=0;i<loop.length;i++){const a=i*2,b=((i+1)%loop.length)*2;gi.push(a,b,a+1,b,b+1,a+1);}
   if(area<0)gi.reverse();
   const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(gp,3));gg.setIndex(gi);gg.computeVertexNormals();this.disposables.push(gg);
@@ -7750,7 +7760,9 @@ Object.assign(Emperor.prototype,{
   const l=F.worldToLocal(pt.clone());
   // 자르는 평면(얼굴 좌표): 앞에서 맞은 높이를 지나고 뒤로 갈수록 올라간다(눈썹·눈은 남고, 단면이 카메라 쪽을 본다)
   const zF=rep?.12:.2,nL=V3(0,1,.25).normalize();
-  const yFront=clamp(l.y-.25*(zF-l.z),rep?.112:.128,rep?.16:.19);
+  // Human forehead curvature is lower than the reptilian crown. At .19 the
+  // plane missed the human skull entirely and only clipped its hair shell.
+  const yFront=clamp(l.y-.25*(zF-l.z),.112,rep?.16:.128);
   const pL=V3(0,yFront,zF);
   const piece=this.sliceHead(nL,pL,{kind:'top',dir:V3(dir.x*.5,.6,-.9),speed:1.5});
   if(!piece)return false;
