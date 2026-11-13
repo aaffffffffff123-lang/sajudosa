@@ -1251,7 +1251,7 @@ const SLICE=(()=>{
    if(loop.length>=3)loops.push(loop.map(q=>pk.get(q)));}
   // 단면 막기: 두 쪽에 각각(남는 쪽은 +n, 떨어지는 쪽은 -n을 본다)
   if(close)for(const loop of loops)for(const s of (keepOnly?[0]:[0,1]))cap(B[s],loop,s===0?n.clone():n.clone().negate());
-  return {keep:build(B[0]),cut:keepOnly?null:build(B[1]),loops:loops.length};
+  return {keep:build(B[0]),cut:keepOnly?null:build(B[1]),loops:loops.length,contours:loops.map(loop=>loop.map(m=>m.p.slice()))};
   function cap(b,loop,nn){
    const U=Math.abs(nn.x)>.8?V3(0,1,0):V3(1,0,0);U.addScaledVector(nn,-U.dot(nn)).normalize();const Vv=V3().crossVectors(nn,U);
    const L=loop.length;let cx=0,cy=0,cz=0;for(const m of loop){cx+=m.p[0];cy+=m.p[1];cz+=m.p[2];}cx/=L;cy/=L;cz/=L;
@@ -4582,11 +4582,15 @@ const BLOOD=(()=>{
   }
   const n=nW.clone().normalize(),u=V3().crossVectors(n,Math.abs(n.y)>.9?V3(1,0,0):V3(0,1,0)).normalize(),v=V3().crossVectors(n,u);
   const ang=o.angle!=null?o.angle:rnd(0,TAU);const cu=u.clone().multiplyScalar(Math.cos(ang)).addScaledVector(v,Math.sin(ang)),cv=v.clone().multiplyScalar(Math.cos(ang)).addScaledVector(u,-Math.sin(ang));
-  const sx=size*(o.aspect||1),sy=size,G=o.grid||5,rows=o.rows||G,pos=[],uv=[],idx=[],inv=_inv(bone).clone();
+  const sx=size*(o.aspect||1),sy=size,G=o.grid||5,rows=o.rows||G,pos=[],uv=[],idx=[],valid=[],inv=_inv(bone).clone();
+  const meshes=o.meshes||(E.flow&&E.flow[seg])||[];
   for(let j=0;j<=rows;j++)for(let i=0;i<=G;i++){const a=i/G-.5,b=j/rows-.5;const guess=pW.clone().addScaledVector(cu,a*sx*2).addScaledVector(cv,b*sy*2);
-   const hit=project(guess,n,.05,o.meshes),hp=hit?hit.point:guess,hn=hit?hit.normal:n;
+   const hit=project(guess,n,.05,meshes),on=!!hit&&hit.seg===seg&&hit.normal.dot(n)>.05;
+   valid.push(on);const hp=on?hit.point:guess,hn=on?hit.normal:n;
 const p=hp.clone().addScaledVector(hn,DLIFT[type]||.0012);p.applyMatrix4(inv);pos.push(p.x,p.y,p.z);uv.push(i/G,j/rows);}
-  for(let j=0;j<rows;j++)for(let i=0;i<G;i++){const a=j*(G+1)+i,b=a+1,c=a+G+1,d=c+1;idx.push(a,b,c,b,d,c);}
+  // A missed surface sample is empty space, never a floating fallback plane.
+  for(let j=0;j<rows;j++)for(let i=0;i<G;i++){const a=j*(G+1)+i,b=a+1,c=a+G+1,d=c+1;if(valid[a]&&valid[b]&&valid[c])idx.push(a,b,c);if(valid[b]&&valid[d]&&valid[c])idx.push(b,d,c);}
+  if(!idx.length)return null;
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
   const m=new THREE.Mesh(g,DM[type]);m.renderOrder=DORDER[type]||3;m.castShadow=false;m.receiveShadow=true;m.userData.gore=type==='hole'||type==='cut'||type==='soak'||type==='holeSkin'||type==='cutSkin';m.userData.bloodOverlay=true;m.userData.decal=type;if(o.pin)m.userData.pin=true;m.userData.seg=seg;m.userData.center=bone.worldToLocal(pW.clone());bone.add(m);
   // 뒤집힌 법선이면 뒤집기
@@ -4789,7 +4793,14 @@ floorRoot.visible=gv;
  // 머리 한 조각이 잘려 나갈 때: 뼈 좌표 평면(n·p-d>0 쪽)에 있던 자국·상처·핏줄기만 없앤다
  function clearPlane(seg,nL,dL){
   if(!E)return;const bone=E.bones[seg];if(!bone)return;const over=p=>nL.x*p.x+nL.y*p.y+nL.z*p.z-dL>0;
-  for(let i=decals.length-1;i>=0;i--){const m=decals[i];if(m.parent!==bone||!m.userData.center||!over(m.userData.center))continue;m.removeFromParent();m.geometry.dispose();decals.splice(i,1);}
+  for(let i=decals.length-1;i>=0;i--){const m=decals[i];if(m.parent!==bone)continue;
+   // Clip every crossing scar at the same cut plane. Testing only its centre
+   // left the rest of a long scar hanging over the removed skull.
+   m.updateMatrix();const plane=new THREE.Plane(nL.clone(),-dL).applyMatrix4(m.matrix.clone().invert());
+   const old=m.geometry,cut=SLICE.slice(old,plane.normal,-plane.constant,false,true);
+   if(cut.keep){m.geometry=cut.keep;old.dispose();}
+   else{m.removeFromParent();old.dispose();decals.splice(i,1);}
+  }
   for(let i=rims.length-1;i>=0;i--){const m=rims[i];if(m.parent!==bone||!over(m.position))continue;m.removeFromParent();rims.splice(i,1);}
   for(let i=lumps.length-1;i>=0;i--){const l=lumps[i];if(l.bone!==bone||!over(l.mesh.position))continue;l.mesh.removeFromParent();lumps.splice(i,1);}
   for(let i=wounds.length-1;i>=0;i--){const w=wounds[i];if(w.bone===bone&&over(w.lp))wounds.splice(i,1);}
@@ -4841,11 +4852,13 @@ rims.length=0;
  /* 살이 찌그러지면 그 뼈에 붙은 피(자국·줄기·방울·상처 자리)도 같이 옮긴다. fn(v: 뼈 좌표 점)이 v를 옮기고 옮겼으면 true */
  const _ov=V3(),_ov0=V3(),_ovD=V3();
  function deformOverlays(bone,fn){
-  // 작은 상처 스티커는 중심의 이동량만 한 번 구해 통째로 옮긴다. 꼭짓점마다 같은 근처 변형을 다시 찾지 않는다.
-  for(const m of decals){if(m.parent!==bone||!m.userData.center)continue;_ov.copy(m.userData.center);_ov0.copy(_ov);if(!fn(_ov))continue;
-   _ovD.subVectors(_ov,_ov0);m.userData.center.add(_ovD);if(m.userData.grow)m.userData.grow.center.add(_ovD);
-   const P=m.geometry.attributes.position;for(let i=0;i<P.count;i++)P.setXYZ(i,P.getX(i)+_ovD.x,P.getY(i)+_ovD.y,P.getZ(i)+_ovD.z);
-   P.needsUpdate=true;if(m.geometry.boundingSphere)m.geometry.boundingSphere.center.add(_ovD);else m.geometry.computeBoundingSphere();}
+  // Long cuts follow the locally deformed skin. Moving an entire strip by its
+  // centre's displacement leaves its other end suspended outside the face.
+  for(const m of decals){if(m.parent!==bone||!m.userData.center)continue;
+   _ov.copy(m.userData.center);_ov0.copy(_ov);if(fn(_ov)){_ovD.subVectors(_ov,_ov0);m.userData.center.copy(_ov);if(m.userData.grow)m.userData.grow.center.add(_ovD);}
+   const P=m.geometry.attributes.position;let changed=false;
+   for(let i=0;i<P.count;i++){_ov.fromBufferAttribute(P,i);if(fn(_ov)){P.setXYZ(i,_ov.x,_ov.y,_ov.z);changed=true;}}
+   if(changed){P.needsUpdate=true;m.geometry.computeVertexNormals();m.geometry.computeBoundingSphere();}}
   for(const b of bankList){if(b.bone!==bone||!b.pts)continue;let ch=false;
    for(let i=0;i<b.count;i++){const q=b.pts[i];_ov0.copy(q.p);if(fn(q.p)){ch=true;_ovD.subVectors(q.p,_ov0);const k=i*6;for(const o of [0,3]){b.P[k+o]+=_ovD.x;b.P[k+o+1]+=_ovD.y;b.P[k+o+2]+=_ovD.z;}}}
    if(ch){b.g.attributes.position.needsUpdate=true;b.g.computeBoundingSphere();}}
@@ -7109,6 +7122,15 @@ Object.assign(Emperor.prototype,{
   if(bone){m.updateWorldMatrix(true,false);bone.updateWorldMatrix(true,false);
    const Mbm=_dfm.copy(m.matrixWorld).invert().multiply(bone.matrixWorld),Mmb=_dfm2.copy(Mbm).invert();_dfm3.setFromMatrix4(Mmb);const tmp=V3();
    BLOOD.deformOverlays(bone,v=>{tmp.copy(v).applyMatrix4(Mbm);if(tmp.x<x0||tmp.x>x1||tmp.y<y0||tmp.y>y1||tmp.z<z0||tmp.z>z1)return false;f.deltaAt(tmp.x,tmp.y,tmp.z,dl,.03);if(dl.lengthSq()<1e-12)return false;dl.applyMatrix3(_dfm3);v.add(dl);return true;});}
+  // The exposed organ and rim belong to the cut skull too. Follow later local
+  // dents once per hit, not per frame, so the skin cannot slide out from under them.
+  if(this.brainCap&&this.brainCap.parent===m){
+   m.updateWorldMatrix(true,true);const inv=m.matrixWorld.clone().invert(),rel=new THREE.Matrix4(),back=new THREE.Matrix4(),v=V3();
+   this.brainCap.traverse(o=>{if(!o.isMesh||!o.geometry)return;rel.multiplyMatrices(inv,o.matrixWorld);back.copy(rel).invert();const P=o.geometry.attributes.position;let changed=false;
+    for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i).applyMatrix4(rel);if(moveIn(v,.035)){v.applyMatrix4(back);P.setXYZ(i,v.x,v.y,v.z);changed=true;}}
+    if(changed){P.needsUpdate=true;o.geometry.computeVertexNormals();o.geometry.computeBoundingSphere();}
+   });
+  }
   // 머리 살(얼굴 좌표): 눈·코·콧수염·눈썹·입술
   if(m.parent===this.face&&this.feat){
    for(const ft of this.feat){if(!ft.o.parent||ft.o.userData.detached||ft.o.parent!==this.face||ft.o===this._holdFeat)continue;const a=ft.a||ft.anc||(ft.anc=ft.o.position.clone().add(V3(0,0,ft.o===this.noseG?0:.042)));
@@ -7590,6 +7612,7 @@ Object.assign(Emperor.prototype,{
   const piece=new THREE.Mesh(res.cut,m.material);piece.castShadow=false;piece.receiveShadow=true;piece.userData.noHit=true;piece.userData.detached=true;
   piece.applyMatrix4(m.matrixWorld);scene.add(piece);this.disposables.push(res.cut);
   const oldGeo=m.geometry;m.geometry=res.keep;f.setGeometry(res.keep,true);this.disposables.push(res.keep);this.releaseGeometry(oldGeo);
+  f.cutSurface={n:nL.clone(),contours:res.contours};
   return {kind:'split',piece};
  },
  // 머리에 붙어 있던 메시 하나를 조각으로 옮긴다(맞히기 목록·피 투영 목록·살 목록에서 뺀다)
@@ -7649,6 +7672,7 @@ Object.assign(Emperor.prototype,{
    this._detachHeadMesh(m,piece);any=true;
   }
   if(!any){piece.removeFromParent();return null;}
+  this.clipBrainCap(nW,pW,piece);
   // 조각 날리기
   const push=(o.dir?o.dir.clone():nW.clone()).normalize().multiplyScalar(o.speed||1.3).addScaledVector(nW,.9);
   push.y=Math.max(push.y+1.2,1.1);push.x+=rnd(-.35,.35);
@@ -7660,26 +7684,64 @@ Object.assign(Emperor.prototype,{
   BLOOD.clearPlane('head',nL,nL.dot(pL.clone().add(HEAD_OFF)));
   return piece;
  },
+ // Later side cuts must remove the exposed organ at the same plane as the skull.
+ clipBrainCap(nW,pW,piece){
+  const cap=this.brainCap;if(!cap||!cap.parent||cap.parent.userData.detached)return;
+  const meshes=[];cap.traverse(o=>{if(o.isMesh)meshes.push(o);});
+  for(const m of meshes){
+   m.updateWorldMatrix(true,false);const world=m.matrixWorld.clone(),plane=new THREE.Plane(nW.clone(),-nW.dot(pW)).applyMatrix4(world.clone().invert());
+   const res=SLICE.slice(m.geometry,plane.normal,-plane.constant,m.material===this.M.brain);
+   if(!res.cut){if(res.keep)res.keep.dispose();continue;}
+   if(!res.keep){res.cut.dispose();piece.attach(m);continue;}
+   const old=m.geometry;m.geometry=res.keep;this.releaseGeometry(old);this.disposables.push(res.keep,res.cut);
+   const off=new THREE.Mesh(res.cut,m.material);off.userData.noHit=true;off.userData.gore=true;off.visible=m.visible;off.applyMatrix4(world);scene.add(off);piece.attach(off);
+  }
+  if(!cap.children.length){cap.removeFromParent();this.brainCap=null;}
+ },
  // 단면 위로 뇌가 비져나온다(윗머리가 날아갔을 때)
  capBrain(F,nL,pL){
   const skull=this.headKind==='rep'?this.repSkull:this.skull,f=skull&&skull.userData.flesh;if(!f)return;
-  const P=f.pos,d=nL.dot(pL);let cx=0,cy=0,cz=0,n=0,rMax=0;
-  for(let i=0;i<f.n;i++){const x=P[i*3],y=P[i*3+1],z=P[i*3+2];if(Math.abs(nL.x*x+nL.y*y+nL.z*z-d)<.004){cx+=x;cy+=y;cz+=z;n++;}}
-  if(n<8){cx=pL.x;cy=pL.y;cz=pL.z;}else{cx/=n;cy/=n;cz/=n;}
-  for(let i=0;i<f.n;i++){const x=P[i*3],y=P[i*3+1],z=P[i*3+2];if(Math.abs(nL.x*x+nL.y*y+nL.z*z-d)<.004){const r=Math.hypot(x-cx,y-cy,z-cz);if(r>rMax)rMax=r;}}
-  if(rMax<.03)rMax=.08;rMax=Math.min(rMax,.16);
-  const g=grp(F,[cx,cy,cz]);g.quaternion.setFromUnitVectors(V3(0,1,0),nL);g.userData.noHit=true;
+  const cut=f.cutSurface;if(!cut||!cut.contours||!cut.contours.length)return;
+  // Use the cutter's actual closed rim in skull-local coordinates. Averaging
+  // every cap vertex biases the centre, and one circular radius overhangs an oval.
+  const q=new THREE.Quaternion().setFromUnitVectors(V3(0,1,0),cut.n),inv=q.clone().invert();
+  let loop=null,area=0,cx=0,cz=0;
+  for(const contour of cut.contours){
+   const points=contour.map(p=>V3(...p).applyQuaternion(inv));let ar=0,x=0,z=0;
+   for(let i=0;i<points.length;i++){const a=points[i],b=points[(i+1)%points.length],w=a.x*b.z-b.x*a.z;ar+=w;x+=(a.x+b.x)*w;z+=(a.z+b.z)*w;}
+   if(Math.abs(ar)>Math.abs(area)){loop=points;area=ar;cx=x/(3*ar);cz=z/(3*ar);}
+  }
+  if(!loop||Math.abs(area)<1e-8)return;
+  const cy=loop.reduce((sum,p)=>sum+p.y,0)/loop.length,center=V3(cx,cy,cz).applyQuaternion(q);
+  for(const p of loop){p.x-=cx;p.z-=cz;}
+  // Radius to the real rim in each direction; use its first intersection so a
+  // dented contour cannot leave an organ protruding across a missing piece.
+  const radius=(x,z)=>{let best=Infinity;for(let i=0;i<loop.length;i++){
+   const a=loop[i],b=loop[(i+1)%loop.length],dx=b.x-a.x,dz=b.z-a.z,den=x*dz-z*dx;if(Math.abs(den)<1e-10)continue;
+   const t=(a.x*dz-a.z*dx)/den,u=(a.x*z-a.z*x)/den;if(t>0&&u>=-1e-6&&u<=1.000001)best=Math.min(best,t);
+  }return Number.isFinite(best)?best:0;};
+  const radii=Array.from({length:64},(_,i)=>radius(Math.cos(i*TAU/64),Math.sin(i*TAU/64)));
+  const rMin=Math.min(...radii),rMax=Math.max(...radii);if(rMin<.008)return;
+  const g=grp(skull,center.toArray());g.quaternion.copy(q);g.userData.noHit=true;
   // 뇌: 울퉁불퉁한 덩어리에 가운데 고랑
   const bg=new THREE.SphereGeometry(1,40,26),bp=bg.attributes.position,bc=new Float32Array(bp.count*3),base=col('#43607f'),dark=col('#1e2d45');
   for(let i=0;i<bp.count;i++){const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i);const k=1+.045*Math.sin(x*14+z*6)*Math.sin(y*11+1.3)+.035*Math.sin((x+z)*23+y*9)+.02*Math.sin(x*37-z*29),fis=Math.exp(-(x*x)/.01)*.12*(y>0?1:.3),s=k*(1-fis);bp.setXYZ(i,x*s,y*s,z*s);
    // 고랑(들어간 곳)은 어둡게, 이랑(나온 곳)은 밝게
    const t=clamp((s-.9)/.2,0,1);bc[i*3]=lerp(dark.r,base.r,t);bc[i*3+1]=lerp(dark.g,base.g,t);bc[i*3+2]=lerp(dark.b,base.b,t);}
   bg.setAttribute('color',new THREE.BufferAttribute(bc,3));bg.computeVertexNormals();this.disposables.push(bg);
-  const brain=mk(bg,this.M.brain,g,{p:[0,-.022,0],s:[rMax*.64,rMax*.4,rMax*.7],cast:false});brain.userData.noHit=true;brain.userData.gore=true;brain.visible=PREF.blood;this.goreMeshes.push(brain);
-  // 뇌 둘레의 어두운 틈(두개골 안쪽 빈 공간)
-  const gap=mk(new THREE.RingGeometry(rMax*.58,rMax*.9,40),this.M.socket,g,{p:[0,.0015,0],r:[-PI/2,0,0],cast:false});gap.userData.noHit=true;gap.userData.gore=true;gap.visible=PREF.blood;this.goreMeshes.push(gap);
-  // 단면(살 셰이더 고리)은 피에 젖은 색으로
-  f.paint(V3(cx,cy,cz),rMax*1.1,3,.9,'max');
+  for(let i=0;i<bp.count;i++){
+   const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),angle=(Math.atan2(z,x)+TAU)%TAU*64/TAU,k=Math.floor(angle),r=lerp(radii[k%64],radii[(k+1)%64],angle-k);
+   bp.setXYZ(i,x*r*.64,y*rMin*.4,z*r*.64);
+  }
+  bg.computeVertexNormals();
+  const brain=mk(bg,this.M.brain,g,{p:[0,-Math.min(.022,rMin*.14),0],cast:false});brain.userData.noHit=true;brain.userData.gore=true;brain.visible=PREF.blood;this.goreMeshes.push(brain);
+  // The dark recess follows the same rim, rather than a separate round plate.
+  const gp=[],gi=[];for(const p of loop)for(const scale of [.58,.9])gp.push(p.x*scale,.0015,p.z*scale);
+  for(let i=0;i<loop.length;i++){const a=i*2,b=((i+1)%loop.length)*2;gi.push(a,b,a+1,b,b+1,a+1);}
+  if(area<0)gi.reverse();
+  const gg=new THREE.BufferGeometry();gg.setAttribute('position',new THREE.Float32BufferAttribute(gp,3));gg.setIndex(gi);gg.computeVertexNormals();this.disposables.push(gg);
+  const gap=mk(gg,this.M.socket,g,{cast:false});gap.userData.noHit=true;gap.userData.gore=true;gap.visible=PREF.blood;this.goreMeshes.push(gap);
+  f.paint(center,rMax*1.1,3,.9,'max');
   this.brainCap=g;
  },
  blowTop(pt,n,dir){
@@ -10939,6 +11001,7 @@ function slashSample(p,x,y,list){
  const info=pickAt(x,y,list),now=G.time;
  const lk=info&&limbKey(info.part);
  const seg=info&&info.obj&&info.obj.userData.seg;
+ if(info){slashKeep(info);info.seg=seg;info.t=now;}
  // 짧게 몸 경계만 통과한 선도 사라지지 않게, 다른 물체로 넘어가는 순간 미완성 선분을 확정한다.
  if(p.body&&(!info||lk||p.body.seg!==seg))finishBody(p);
  // 팔다리에서 벗어나면 그 팔다리를 벤 것으로 친다
@@ -10946,10 +11009,9 @@ function slashSample(p,x,y,list){
  // 귀·턱수염처럼 얇은 것 위를 지나간 선은 거기서 벗어나는 순간 한 번 가로지른 것으로 친다(얼굴 선과 따로)
  const ear=info&&info.obj&&(info.obj.userData.ear!=null||info.part==='beard')?info.obj:null;
  if(p.ear&&p.ear.obj!==ear)finishEar(p);
- if(ear){if(!p.ear)p.ear={obj:ear,a:info.point.clone(),b:info};else p.ear.b=info;}
+ if(ear){if(!p.ear)p.ear={obj:ear,start:info,b:info};else p.ear.b=info;}
  if(lk){
   // 팔다리 위에서 칼이 지나간 겉면 점(화면에서 보이는 쪽)을 차례로 모아 둔다. 벗어날 때 이 점들을 따라 벤다
-  slashKeep(info);
   if(!p.limb)p.limb={key:lk,a:info.point.clone(),b:info,pts:[info],x0:x,y0:y,x1:x,y1:y};
   else{p.limb.b=info;p.limb.x1=x;p.limb.y1=y;const q=p.limb.pts;if(q.length<48&&q[q.length-1].point.distanceToSquared(info.point)>1e-6)q.push(info);}
   p.lastCut=null;return true;
@@ -10957,34 +11019,39 @@ function slashSample(p,x,y,list){
  // 한 화면 좌표에서는 가장 앞 물체만 고르므로, 팔을 벗어난 뒤 실제로 드러난 몸은 계속 벨 수 있다.
  if(!info){p.lastCut=null;return false;}
  // 다른 부위로 넘어가면 거기서 새로 긋기 시작
- if(!p.lastCut||p.lastCut.seg!==seg){p.lastCut={point:info.point.clone(),t:now,part:info.part,seg};p.body={seg,a:info.point.clone(),b:info,resolved:false};return true;}
+ if(!p.lastCut||p.lastCut.seg!==seg){p.lastCut=info;p.body={seg,start:info,b:info,resolved:false};return true;}
  if(p.body)p.body.b=info;
+ // Body and face hits need the same local anchors as limbs: recoil between
+ // samples must not turn the previous world position into a cut through air.
+ slashRefresh(p.lastCut);
  const d=info.point.distanceTo(p.lastCut.point);
  if(d>.10||now-p.lastCut.t>.12){
   if(d>.015){resolveHit(G.tool,'slash',info,'R',{slashFrom:p.lastCut.point.clone(),strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;if(p.body)p.body.resolved=true;}
-  p.lastCut={point:info.point.clone(),t:now,part:info.part,seg};
+  p.lastCut=info;
  }
  return true;
 }
 function finishBody(p){
  const B=p.body;p.body=null;if(!B||B.resolved)return;p.lastCut=null;
- const info=B.b;if(!info||B.a.distanceTo(info.point)<=.015)return;
- resolveHit(G.tool,'slash',info,'R',{slashFrom:B.a,strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
+ const info=slashRefresh(B.b),start=slashRefresh(B.start);if(!info||!start||start.point.distanceTo(info.point)<=.015)return;
+ resolveHit(G.tool,'slash',info,'R',{slashFrom:start.point.clone(),strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord});p.cutWord=true;
 }
 function finishEar(p){
  const E=p.ear;p.ear=null;if(!E)return;
- const info=E.b;if(!info||!info.obj||!info.obj.parent||info.obj.userData.detached||E.a.distanceTo(info.point)<(info.part==='beard'?.006:.012))return;
- resolveHit(G.tool,'slash',info,'R',{slashFrom:E.a,strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord,quiet:true});p.cutWord=true;
+ const info=slashRefresh(E.b),start=slashRefresh(E.start);if(!info||!start||!info.obj||!info.obj.parent||info.obj.userData.detached||start.point.distanceTo(info.point)<(info.part==='beard'?.006:.012))return;
+ resolveHit(G.tool,'slash',info,'R',{slashFrom:start.point.clone(),strokeId:p.slashId,stroke:p.stroke,firstCut:!p.cutWord,quiet:true});p.cutWord=true;
 }
 // 팔다리 위에서 맞은 점은 그 살 메시 좌표로도 적어 둔다: 지나가는 동안 팔다리가 움직여도 벨 때 같은 살 자리를 가리킨다
 const _slM=new THREE.Matrix4(),_slN=new THREE.Matrix3();
 function slashKeep(info){
  const o=info.obj;if(!o)return info;
+ o.updateWorldMatrix(true,false);
  info.lp=o.worldToLocal(info.point.clone());
  _slN.getNormalMatrix(_slM.copy(o.matrixWorld).invert());info.ln=info.normal.clone().applyMatrix3(_slN).normalize();
  return info;
 }
 function slashRefresh(info){
+ if(!info)return info;
  const o=info.obj;if(!o||!info.lp||!o.parent)return info;
  o.updateWorldMatrix(true,false);info.point.copy(info.lp).applyMatrix4(o.matrixWorld);
  _slN.getNormalMatrix(o.matrixWorld);info.normal.copy(info.ln).applyMatrix3(_slN).normalize();
