@@ -50,7 +50,7 @@ const HANG_POSE=P({pF:.06,sF:.16,cF:.14,nF:.42,hF:.38,hR:.18,hT:.12,
  LhF:.14,RhF:.03,LhA:.05,RhA:.08,LkB:.3,RkB:.14,LaF:-.55,RaF:-.6});
 function freeHangPose(E,out){
  const h=E.hang,u=smooth(h.u),t=G.time;
- poseLerp(h.from,HANG_POSE,u,out);
+ poseLerp(h.from,h.pose||HANG_POSE,u,out);
  out.tx=lerp(h.from.tx,h.x,u);out.tz=lerp(h.from.tz,h.z,u)-h.back;
  out.ty=lerp(h.from.ty,h.lift,u)-h.sag;
  out.rx=lerp(h.from.rx,.2,u)+h.swing;out.ry=lerp(h.from.ry,0,u);out.rz=lerp(h.from.rz,0,u)+h.swingZ;
@@ -91,9 +91,15 @@ const FREE=(()=>{
  const iron=STD('#565b5a',{metalness:.7,roughness:.48,envMapIntensity:.5});
  const ironD=STD('#2c3030',{metalness:.55,roughness:.62,envMapIntensity:.4});
  const proxyMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.86,metalness:0});
- const capMat=STD('#17348c',{roughness:.35});
- const poolTex=canvasTex(128,128,(g,w,h)=>{const r=g.createRadialGradient(64,64,6,64,64,62);r.addColorStop(0,'rgba(20,52,150,.95)');r.addColorStop(.62,'rgba(16,40,120,.85)');r.addColorStop(.86,'rgba(12,30,96,.4)');r.addColorStop(1,'rgba(12,30,96,0)');g.fillStyle=r;g.fillRect(0,0,w,h);});
- const poolMat=new THREE.MeshBasicMaterial({map:poolTex,transparent:true,depthWrite:false,opacity:.8});
+ const capMat=STD('#101d30',{roughness:.55});
+ // A broken-edged stain, lit by the room. No luminous, repeated blue circles.
+ const poolTex=canvasTex(128,128,(g,w,h)=>{
+  const r=rng(19513);g.clearRect(0,0,w,h);
+  g.fillStyle='rgba(15,25,38,.9)';g.beginPath();
+  for(let i=0;i<=64;i++){const a=i/64*TAU,d=43+7*Math.sin(a*3)+5*Math.sin(a*7+.8)+3*Math.sin(a*13);const x=64+Math.cos(a)*d,y=64+Math.sin(a)*d*.81;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.fill();
+  for(let i=0;i<23;i++){g.fillStyle='rgba(12,22,35,.65)';g.beginPath();g.ellipse(13+r()*102,15+r()*98,1+r()*3,1+r()*5,r()*TAU,0,TAU);g.fill();}
+ });
+ const poolMat=STD('#778392',{map:poolTex,transparent:true,depthWrite:false,roughness:.29,metalness:.12,opacity:.85});
  const CHAIN=.57;
  // 방: 옥좌 없는 넓은 냉장실. 레일 네 줄이 화면 안쪽(−z)으로 멀리 뻗고, 걸린 몸은 그 레일을 따라 한 줄로 늘어선다(도축장 레일).
  // 새로 걸리는 몸이 맨 앞 칸으로 들어오면 그 줄 전체가 한 칸씩 안쪽으로 밀린다
@@ -116,13 +122,13 @@ const FREE=(()=>{
  /* ---- 방: 어두운 도살장 ---- */
  const rails=grp(root,null,'rails');rails.visible=false;
  const hall=grp(root,null,'hall');
- const bgCol=col('#0e1512');
+ const bgCol=col('#050908');
  const railRow=[],lanes=[],wallGore=[];
  const TUBE_COL=col('#dfe9b4'),tubeOn=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false}),tubeBad=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false});
  const dragMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0}),goreMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0});
- const hallLight=new THREE.HemisphereLight(col('#b7c69a'),col('#1b1610'),.34);
- const hallFill=new THREE.DirectionalLight(col('#c2d6b8'),.46);
- hallFill.position.set(0,CEIL-.6,3);hallFill.target.position.set(0,1.4,-16);
+ const hallLight=new THREE.HemisphereLight(col('#9aa58d'),col('#080a09'),.16);
+ const hallFill=new THREE.DirectionalLight(col('#c3ccb1'),.68);
+ hallFill.position.set(-.5,CEIL+4,-12);hallFill.target.position.set(0,0,-12);
  (function build(){
   const merge=(list,mat,parent)=>{parent.updateMatrixWorld(true);const geo=mergeMeshes(list,new THREE.Matrix4());for(const m of list){m.removeFromParent();m.geometry.dispose();}
    const m=new THREE.Mesh(geo,mat);m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;parent.add(m);return m;};
@@ -141,7 +147,7 @@ const FREE=(()=>{
    const cols=16,rows=12,cw=w/cols,rh=h/rows;
    g.fillStyle='#4f5546';g.fillRect(0,0,w,h);
    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
-    const v=150+Math.random()*34|0;g.fillStyle=`rgb(${v+6},${v+8},${v-26})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);
+    const v=102+Math.random()*25|0;g.fillStyle=`rgb(${v+6},${v+8},${v-26})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);
     if(Math.random()<.1){g.fillStyle=`rgba(46,50,36,${.2+Math.random()*.35})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);}
     if(Math.random()<.035){g.fillStyle='#343a30';g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);} // 떨어져 나간 타일
    }
@@ -193,9 +199,9 @@ const FREE=(()=>{
   const drag=canvasTex(128,1024,(g,w,h)=>{
    g.clearRect(0,0,w,h);
    for(let n=0;n<16;n++){const x=w*(.5+rnd(-.3,.3)),wd=rnd(4,22),y0=h*rnd(0,.8),len=h*rnd(.1,.5);
-    const sg=g.createLinearGradient(0,y0,0,y0+len),al=rnd(.25,.6);sg.addColorStop(0,'rgba(16,40,120,0)');sg.addColorStop(.5,`rgba(16,40,120,${al})`);sg.addColorStop(1,'rgba(12,30,96,0)');
+    const sg=g.createLinearGradient(0,y0,0,y0+len),al=rnd(.25,.6);sg.addColorStop(0,'rgba(10,19,30,0)');sg.addColorStop(.5,`rgba(10,19,30,${al})`);sg.addColorStop(1,'rgba(7,14,23,0)');
     g.fillStyle=sg;g.fillRect(x-wd/2,y0,wd,len);}
-   for(let n=0;n<70;n++){const x=w*(.5+rnd(-.42,.42)),y=h*Math.random(),r=rnd(1.5,7);g.fillStyle=`rgba(18,46,138,${rnd(.3,.7)})`;g.beginPath();g.ellipse(x,y,r,r*rnd(1,3),0,0,TAU);g.fill();}
+   for(let n=0;n<70;n++){const x=w*(.5+rnd(-.42,.42)),y=h*Math.random(),r=rnd(1.5,7);g.fillStyle=`rgba(12,23,36,${rnd(.3,.7)})`;g.beginPath();g.ellipse(x,y,r,r*rnd(1,3),0,0,TAU);g.fill();}
   });
   dragMat.map=drag;
   for(let r=0;r<ROWX.length;r++){const m=mk(new THREE.PlaneGeometry(.95,22),dragMat,hall,{r:[-PI/2,0,0],p:[ROWX[r],.0045,-9.2],cast:false,receive:false});m.renderOrder=-3;lanes.push(m);}
@@ -203,11 +209,11 @@ const FREE=(()=>{
   const gore=canvasTex(1024,256,(g,w,h)=>{
    g.clearRect(0,0,w,h);
    for(let n=0;n<26;n++){const x=Math.random()*w,y=h*rnd(.25,.95),r=rnd(10,46);
-    const rg=g.createRadialGradient(x,y,1,x,y,r);rg.addColorStop(0,`rgba(16,40,122,${rnd(.45,.8)})`);rg.addColorStop(.6,'rgba(14,34,104,.35)');rg.addColorStop(1,'rgba(14,34,104,0)');g.fillStyle=rg;g.fillRect(x-r,y-r,r*2,r*2);
-    for(let k=0;k<3;k++){const xx=x+rnd(-r,r)*.6,len=rnd(20,h-y+10),sg=g.createLinearGradient(0,y,0,y+len);sg.addColorStop(0,'rgba(16,40,122,.7)');sg.addColorStop(1,'rgba(16,40,122,0)');g.fillStyle=sg;g.fillRect(xx,y,rnd(2,5),len);}}
+    const rg=g.createRadialGradient(x,y,1,x,y,r);rg.addColorStop(0,`rgba(11,20,31,${rnd(.45,.8)})`);rg.addColorStop(.6,'rgba(9,16,26,.35)');rg.addColorStop(1,'rgba(9,16,26,0)');g.fillStyle=rg;g.fillRect(x-r,y-r,r*2,r*2);
+    for(let k=0;k<3;k++){const xx=x+rnd(-r,r)*.6,len=rnd(20,h-y+10),sg=g.createLinearGradient(0,y,0,y+len);sg.addColorStop(0,'rgba(11,20,31,.7)');sg.addColorStop(1,'rgba(11,20,31,0)');g.fillStyle=sg;g.fillRect(xx,y,rnd(2,5),len);}}
    // 손으로 짚고 끌린 자국
    for(let n=0;n<5;n++){const x=Math.random()*w,y=h*rnd(.4,.7),cx=rnd(15,40),cy=rnd(20,45),ex=rnd(40,95),ey=rnd(70,h*.5);g.lineCap='round';
-    for(let f=0;f<4;f++){const o=f*8,gr=g.createLinearGradient(0,y,0,y+ey);gr.addColorStop(0,'rgba(18,44,130,.6)');gr.addColorStop(1,'rgba(18,44,130,0)');
+    for(let f=0;f<4;f++){const o=f*8,gr=g.createLinearGradient(0,y,0,y+ey);gr.addColorStop(0,'rgba(11,22,34,.6)');gr.addColorStop(1,'rgba(11,22,34,0)');
      g.strokeStyle=gr;g.lineWidth=5-f*.5;g.beginPath();g.moveTo(x+o,y+(f%2)*4);g.quadraticCurveTo(x+o+cx,y+cy,x+o+ex,y+ey);g.stroke();}}
   });
   goreMat.map=gore;
@@ -226,10 +232,10 @@ const FREE=(()=>{
  function flicker(dt){
   FL.t-=dt;
   if(FL.t<=0){
-   if(FL.n>0){FL.n--;FL.v=FL.v>.6?rnd(.12,.45):1;FL.t=FL.n?rnd(.03,.1):rnd(2.5,7);if(!FL.n)FL.v=1;}
+   if(FL.n>0){FL.n--;FL.v=FL.v>.6?rnd(.12,.45):1;FL.t=FL.n?rnd(.03,.1):rnd(7,16);if(!FL.n)FL.v=1;}
    else{FL.n=2*(1+(Math.random()*3|0));FL.t=0;}
   }
-  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.34*(.9+.1*FL.v);
+  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.16*(.94+.06*FL.v);
  }
  // 줄 간격을 바꾼다(화면 비율이 바뀌었을 때): 레일·걸린 몸·끌린 자국을 함께 옮긴다. 바닥 조각은 그대로 둔다
  function setRows(x){
@@ -251,13 +257,13 @@ const FREE=(()=>{
   if(on){
    const keep=o=>o===COMBAT_STAGE.contact||(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry');
    for(const c of COMBAT_STAGE.root.children)if(!keep(c)&&c.visible){c.visible=false;hidden.push(c);}
-   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),10,54);camera.far=65;camera.updateProjectionMatrix();
+   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),5,44);camera.far=65;camera.updateProjectionMatrix();
    const {hemi,key,fill,rim,bounce}=LIT;
    if(hemi&&key&&fill&&rim&&bounce){
-    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kc:key.color.clone(),ki:key.intensity,fi:fill.intensity,rc:rim.color.clone(),ri:rim.intensity,bi:bounce.intensity};
-    hemi.color.copy(col('#a3b292'));hemi.groundColor.copy(col('#17120c'));hemi.intensity=.36;
-    key.color.copy(col('#fff0c4'));key.intensity=2.5;
-    fill.intensity=.24;rim.color.copy(col('#86c79f'));rim.intensity=1.25;bounce.intensity=.12;
+    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kc:key.color.clone(),ki:key.intensity,fi:fill.intensity,rc:rim.color.clone(),ri:rim.intensity,bi:bounce.intensity,kp:key.position.clone(),kt:key.target.position.clone()};
+    hemi.color.copy(col('#8e9a87'));hemi.groundColor.copy(col('#090b09'));hemi.intensity=.16;
+    key.color.copy(col('#dce1c6'));key.intensity=1.3;key.position.set(-.5,6.2,1.4);key.target.position.set(0,0,.2);
+    fill.intensity=.055;rim.color.copy(col('#829d91'));rim.intensity=.32;bounce.intensity=.025;
    }
    S.stageOn=true;
    // 걸린 몸이 하나라도 있는 방에 들어선 놈은 처음부터 겁에 질려 있다
@@ -266,7 +272,7 @@ const FREE=(()=>{
    for(const c of hidden)c.visible=true;hidden=[];
    if(S.stageOn){scene.background=col('#151d1e');scene.fog=new THREE.Fog(col('#202725'),7,18);camera.far=40;camera.updateProjectionMatrix();}
    if(litKeep){const {hemi,key,fill,rim,bounce}=LIT,k=litKeep;litKeep=null;
-    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.color.copy(k.kc);key.intensity=k.ki;fill.intensity=k.fi;rim.color.copy(k.rc);rim.intensity=k.ri;bounce.intensity=k.bi;}
+    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.color.copy(k.kc);key.intensity=k.ki;fill.intensity=k.fi;rim.color.copy(k.rc);rim.intensity=k.ri;bounce.intensity=k.bi;key.position.copy(k.kp);key.target.position.copy(k.kt);}
    S.stageOn=false;
   }
  }
@@ -287,6 +293,14 @@ const FREE=(()=>{
   try{localStorage.setItem(HUNG_STORE,JSON.stringify({n:S.total,list}));}catch(_){}
  }
  function rng(seed){let s=(seed>>>0)||1;return ()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
+ function hangingPose(seed){
+  const r=rng(seed),p=P();poseCopy(HANG_POSE,p);
+  p.nF=.37+r()*.2;p.hF=.32+r()*.24;p.hR=(r()-.5)*.48;p.hT=(r()-.5)*.35;
+  p.LsF=.02+r()*.15;p.RsF=.02+r()*.15;p.LsA=.06+r()*.13;p.RsA=.06+r()*.13;
+  p.LeB=.06+r()*.2;p.ReB=.06+r()*.2;p.LwF=.24+r()*.22;p.RwF=.24+r()*.22;
+  p.LkB=.08+r()*.22;p.RkB=.08+r()*.22;return p;
+ }
+
 
  /* ---- 대역 모형(오래된 몸·머리): 색을 꼭짓점에 구워 한 덩어리로 그린다 ---- */
  function dimColor(hex,k=.62,gray=.35){const c=col(hex),l=c.r*.3+c.g*.59+c.b*.11;c.r=lerp(c.r,l,gray)*k;c.g=lerp(c.g,l,gray)*k;c.b=lerp(c.b,l,gray)*k;return c;}
@@ -433,11 +447,17 @@ const FREE=(()=>{
   }catch(_){d=null;}
   TEXS.set(t,d);return d;
  }
+ // Only indexed vertices survive. Invisible/discarded vertices must not enlarge debris bounds.
+ function packSnapshot(sn){
+  const map=new Map(),p=[],c=[],idx=new Uint32Array(sn.i.length);
+  for(let k=0;k<sn.i.length;k++){const i=sn.i[k];let j=map.get(i);if(j===undefined){j=map.size;map.set(i,j);p.push(sn.p[i*3],sn.p[i*3+1],sn.p[i*3+2]);c.push(sn.c[i*3],sn.c[i*3+1],sn.c[i*3+2]);}idx[k]=j;}
+  return {p:new Float32Array(p),c:new Uint8Array(c),i:idx,v:3};
+ }
  function newJob(src,space,cell,done){
   const meshes=[];
   src.traverse(o=>{
    if(!o.isMesh||!o.geometry||!o.geometry.attributes.position)return;
-   for(let n=o;n;n=n.parent){if(!n.visible)return;if(n===src)break;}
+   for(let n=o;n;n=n.parent){if(!n.visible||n.name==='halo'||n.userData.factoryDiscard)return;if(n===src)break;}
    meshes.push(o);
   });
   return {src,space,cell,done,meshes,i:0,pos:[],col:[],wt:[],idx:[],n:0};
@@ -452,21 +472,23 @@ const FREE=(()=>{
   const g=o.geometry,A=g.attributes.position,U=g.attributes.uv,VC=mat.vertexColors?g.attributes.color:null,td=U?texData(mat.map):null,c=mat.color;
   o.updateWorldMatrix(true,false);job.space.updateWorldMatrix(true,false);
   _m.copy(job.space.matrixWorld).invert().multiply(o.matrixWorld);
-  const base=job.n,w=blood?4:1,P=job.pos,C=job.col,W=job.wt;
+  const base=job.n,w=blood?4:1,P=job.pos,C=job.col,W=job.wt,alpha=[],vcScale=VC&&VC.normalized&&VC.array instanceof Uint8Array?1/255:1;
   for(let i=0;i<A.count;i++){
    _sv.fromBufferAttribute(A,i).applyMatrix4(_m);P.push(_sv.x,_sv.y,_sv.z);
-   let r=c.r,gg=c.g,b=c.b;
+   let r=c.r,gg=c.g,b=c.b,opacity=mat.opacity;
    if(td){
     let u=U.getX(i)*td.rx+td.ox,v=U.getY(i)*td.ry+td.oy;u-=Math.floor(u);v-=Math.floor(v);if(td.flip)v=1-v;
-    const k=(Math.min(td.h-1,v*td.h|0)*td.w+Math.min(td.w-1,u*td.w|0))*4,D=td.d;
+    const k=(Math.min(td.h-1,v*td.h|0)*td.w+Math.min(td.w-1,u*td.w|0))*4,D=td.d;opacity*=D[k+3]/255;
     if(td.srgb){r*=LIN[D[k]];gg*=LIN[D[k+1]];b*=LIN[D[k+2]];}else{r*=D[k]/255;gg*=D[k+1]/255;b*=D[k+2]/255;}
    }
-   if(VC){r*=VC.getX(i);gg*=VC.getY(i);b*=VC.getZ(i);}
-   C.push(r,gg,b);W.push(w);
+   if(VC){r*=VC.getX(i)*vcScale;gg*=VC.getY(i)*vcScale;b*=VC.getZ(i)*vcScale;}
+   alpha.push(opacity>=Math.max(.1,mat.alphaTest||0));
+   C.push(r,gg,b);W.push(alpha[i]?w:0);
   }
   const I=job.idx;
-  if(g.index){const ia=g.index.array;for(let i=0;i<ia.length;i++)I.push(ia[i]+base);}
-  else for(let i=0;i+2<A.count;i+=3)I.push(base+i,base+i+1,base+i+2);
+  const add=(a,b,c)=>{if(alpha[a]&&alpha[b]&&alpha[c])I.push(base+a,base+b,base+c);};
+  if(g.index){const ia=g.index.array;for(let i=0;i+2<ia.length;i+=3)add(ia[i],ia[i+1],ia[i+2]);}
+  else for(let i=0;i+2<A.count;i+=3)add(i,i+1,i+2);
   job.n+=A.count;
  }
  // 묶기도 나눠서 한다(한 번에 하면 휴대폰에서 0.1초 넘게 멈춘다). until 시각을 넘기면 멈췄다가 다음 프레임에 이어 한다
@@ -474,7 +496,7 @@ const FREE=(()=>{
   const F=job.fin||(job.fin={map:new Map(),np:[],nc:[],cnt:[],ws:[],remap:new Uint32Array(job.n),i:0,t:0,out:[]});
   const cell=job.cell,P=job.pos,C=job.col,W=job.wt,n=job.n,{map,np,nc,cnt,ws,remap}=F;
   while(F.i<n){
-   const i=F.i++,x=P[i*3],y=P[i*3+1],z=P[i*3+2];
+   const i=F.i++;if(!W[i])continue;const x=P[i*3],y=P[i*3+1],z=P[i*3+2];
    const k=((Math.round(x/cell)+2048)*4096+(Math.round(y/cell)+2048))*4096+(Math.round(z/cell)+2048);
    let j=map.get(k);if(j===undefined){j=cnt.length;map.set(k,j);np.push(0,0,0);nc.push(0,0,0);cnt.push(0);ws.push(0);}
    const w=W[i];np[j*3]+=x;np[j*3+1]+=y;np[j*3+2]+=z;nc[j*3]+=C[i*3]*w;nc[j*3+1]+=C[i*3+1]*w;nc[j*3+2]+=C[i*3+2]*w;cnt[j]++;ws[j]+=w;remap[i]=j;
@@ -488,7 +510,74 @@ const FREE=(()=>{
   const m=cnt.length,pos=new Float32Array(m*3),col=new Uint8Array(m*3);
   for(let j=0;j<m;j++)for(let a=0;a<3;a++){pos[j*3+a]=np[j*3+a]/cnt[j];col[j*3+a]=Math.round(255*clamp(nc[j*3+a]/ws[j],0,1));}
   job.fin=null;job.pos=job.col=job.wt=job.idx=null;TEXS.clear();
-  return {p:pos,c:col,i:new Uint32Array(out)};
+  return packSnapshot({p:pos,c:col,i:new Uint32Array(out),v:3});
+ }
+
+ // Old snapshots welded the shoulder halo into nearby clothing. Its old dock
+ // is fixed by HANG_POSE; fit only the small random tilt and require a full ring.
+ // Keep the original IndexedDB snapshot intact: this is a display migration.
+ function stripStoredHalo(sn){
+  if(sn.v>=3)return sn;
+  const P=sn.p,I=sn.i,n=P.length/3,near=[];
+  for(let i=0;i<n;i++){const x=P[i*3],y=P[i*3+1]-.14823,z=P[i*3+2]-.33735,r=Math.hypot(x,y,z);if(r>.222&&r<.348)near.push([i,x,y,z]);}
+  let best=0,nx=0,nz=1;
+  const scoreTilt=x=>{
+   const z=Math.sqrt(1-x*x-.42*.42);let score=0;
+   for(const p of near){const d=Math.abs(p[1]*x+p[2]*.42+p[3]*z);if(d<.008)score+=1-d/.008;}
+   if(score>best){best=score;nx=x;nz=z;}
+  };
+  for(let k=-12;k<=12;k++)scoreTilt(k*.02);
+  const coarse=nx;for(let k=-5;k<=5;k++)scoreTilt(coarse+k*.002);
+  if(best>120){
+   const normal=V3(nx,.42,nz),axis=V3(1,0,0).cross(normal).normalize(),other=V3().crossVectors(normal,axis),bins=new Uint16Array(16),mark=new Uint8Array(n),v=V3();
+   for(const p of near){v.set(p[1],p[2],p[3]);const d=v.dot(normal),r=Math.sqrt(Math.max(0,v.lengthSq()-d*d));if(Math.abs(d)<.013&&r>.222&&r<.348){mark[p[0]]=1;bins[Math.floor((Math.atan2(v.dot(other),v.dot(axis))+PI)/TAU*16)%16]++;}}
+   if(Array.from(bins).filter(x=>x>=3).length>=15){
+    const kept=[];for(let i=0;i<I.length;i+=3)if(!(mark[I[i]]&&mark[I[i+1]]&&mark[I[i+2]]))kept.push(I[i],I[i+1],I[i+2]);
+    return {p:P,c:sn.c,i:new Uint32Array(kept),v:3};
+   }
+  }
+  // Earlier saves can retain separate annuli. Restrict this fallback to thin,
+  // hollow components so face ornaments and cut surfaces remain untouched.
+  const parent=new Int32Array(n);for(let i=0;i<n;i++)parent[i]=i;
+  const find=x=>{while(parent[x]!==x){parent[x]=parent[parent[x]];x=parent[x];}return x;};
+  for(let i=0;i<I.length;i+=3){const a=find(I[i]);parent[find(I[i+1])]=a;parent[find(I[i+2])]=a;}
+  const groups=new Map();for(let i=0;i<n;i++){const k=find(i);let g=groups.get(k);if(!g)groups.set(k,g=[]);g.push(i);}
+  const remove=new Set(),v=V3(),u=V3(),normal=V3(),center=V3(),axis=V3();
+  for(const [key,ids] of groups){
+   if(ids.length<36)continue;center.set(0,0,0);for(const i of ids)center.add(v.fromArray(P,i*3));center.multiplyScalar(1/ids.length);
+   if(Math.abs(center.x)>.38||center.y<-.35||center.y>1.4)continue;
+   // A radius at least 22 cm and a hollow center distinguish these from eyes/cut caps.
+   let maxR=0,minR=Infinity;for(const i of ids){const d=v.fromArray(P,i*3).distanceTo(center);maxR=Math.max(maxR,d);minR=Math.min(minR,d);}
+   if(maxR<.22||maxR>.49||minR<.15||maxR/minR>2.1)continue;
+   v.fromArray(P,ids[0]*3).sub(center);normal.set(0,0,0);let area=0;
+   for(const i of ids){u.fromArray(P,i*3).sub(center);axis.crossVectors(v,u);const a=axis.lengthSq();if(a>area){area=a;normal.copy(axis);}}
+   normal.normalize();let thick=0;const bins=new Set();v.normalize();axis.crossVectors(normal,v).normalize();
+   for(const i of ids){u.fromArray(P,i*3).sub(center);thick=Math.max(thick,Math.abs(u.dot(normal)));bins.add(Math.floor((Math.atan2(u.dot(axis),u.dot(v))+PI)/TAU*16)%16);}
+   if(thick<.027&&bins.size>=13)remove.add(key);
+  }
+  const kept=[];for(let i=0;i<I.length;i+=3)if(!remove.has(find(I[i])))kept.push(I[i],I[i+1],I[i+2]);
+  return {p:P,c:sn.c,i:new Uint32Array(kept),v:3};
+ }
+ // Legacy geometry filtering runs off the render thread on browsers with workers.
+ let haloWorker=null,haloTicket=0;
+ const haloPending=new Map();
+ function stopHaloWorker(){
+  if(haloWorker)haloWorker.terminate();haloWorker=null;
+  for(const job of haloPending.values())job.resolve(job.sn);haloPending.clear();
+ }
+ function migrateStoredHalo(sn){
+  if(sn.v>=3)return Promise.resolve(sn);
+  if(typeof Worker==='undefined')return Promise.resolve(stripStoredHalo(sn));
+  try{
+   if(!haloWorker){
+    const code='importScripts('+JSON.stringify(new URL('three.min.js',document.baseURI).href)+');const PI=Math.PI,TAU=PI*2,V3=(...a)=>new THREE.Vector3(...a);'+stripStoredHalo.toString()+';onmessage=e=>{const {id,sn}=e.data;try{postMessage({id,sn:stripStoredHalo(sn)})}catch(_){postMessage({id,sn})}};';
+    const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
+    try{haloWorker=new Worker(url);}finally{URL.revokeObjectURL(url);}
+    haloWorker.onmessage=e=>{const job=haloPending.get(e.data.id);if(job){haloPending.delete(e.data.id);job.resolve(e.data.sn);} };
+    haloWorker.onerror=()=>stopHaloWorker();
+   }
+   return new Promise(resolve=>{const id=++haloTicket;haloPending.set(id,{resolve,sn});try{haloWorker.postMessage({id,sn});}catch(_){haloPending.delete(id);resolve(sn);}});
+  }catch(_){stopHaloWorker();return Promise.resolve(sn);}
  }
  function snapMesh(sn){
   const geo=new THREE.BufferGeometry();
@@ -532,9 +621,9 @@ const FREE=(()=>{
  const HEAP_STORE='palja.heap',HEAP_MAX=280,HEAP_BAND=10,HEAP_STEP=1.45;
  const HEAP={list:[],fly:[],wait:[],seq:0,batches:new Map(),pending:new Map(),legacy:[]};
  function saveHeap(){
-  const entries=new Map(HEAP.pending);for(const h of HEAP.list)entries.set(h.id,[h.id,h.side,2]);
+  const entries=new Map(HEAP.pending);for(const h of HEAP.list)entries.set(h.id,[h.id,h.side,3]);
   const l=[...entries.values()].sort((a,b)=>a[0]-b[0]).slice(-HEAP_MAX);
-  try{localStorage.setItem(HEAP_STORE,JSON.stringify({v:2,q:HEAP.seq,l}));}catch(_){}
+  try{localStorage.setItem(HEAP_STORE,JSON.stringify({v:3,q:HEAP.seq,l}));}catch(_){}
  }
  // 열 조각마다 조금씩 더 먼 바닥을 쓴다. 방향·간격을 흩뜨려 줄이나 두 개의 탑이 되지 않게 한다.
  // 방이 찬 뒤에는 오래된 조각의 자리를 다시 채운다(거리별 묶음으로 그려 오래 해도 부하가 늘지 않는다).
@@ -597,7 +686,7 @@ const FREE=(()=>{
    for(const key of ['severed','severedHeads','headPieces','looseEyes'])if(owner[key])owner[key]=owner[key].filter(o=>o!==b.obj);}
   b.twitch=null;b.bleed=null;scene.attach(b.obj);
   const id=++HEAP.seq,p=b.obj.position,side=Math.abs(p.x)>.15?Math.sign(p.x):id%2?1:-1;
-  const corners=b.corners||(owner&&owner.limbCorners(b.obj))||Emperor.prototype.limbCorners.call(null,b.obj);
+  const corners=(owner&&owner.limbCorners(b.obj))||Emperor.prototype.limbCorners.call(null,b.obj)||b.corners;
   if(!corners)return null;
   const target=heapPose(b.obj,corners,id,side),distance=p.distanceTo(target.to);
   for(let i=S.slides.length-1;i>=0;i--)if(S.slides[i].obj===b.obj)S.slides.splice(i,1);
@@ -651,6 +740,16 @@ const FREE=(()=>{
   for(let i=0;i<p.length;i+=3){p[i]+=to.x;p[i+1]+=to.y;p[i+2]+=to.z;}
   return {p,c:sn.c,i:sn.i};
  }
+ function groundStoredPiece(sn){
+  const box=new THREE.Box3(),v=V3();for(let i=0;i<sn.p.length;i+=3)box.expandByPoint(v.fromArray(sn.p,i));
+  const size=box.getSize(V3()),center=box.getCenter(V3()),q=new THREE.Quaternion();
+  // Rotate rigidly, never rescale a cut surface or stretch the original vertices.
+  if(size.y>Math.min(size.x,size.z)*1.2&&size.y>.2)q.setFromAxisAngle(size.x<size.z?V3(0,0,1):V3(1,0,0),PI/2);
+  const p=sn.p.slice();let floor=Infinity;
+  for(let i=0;i<p.length;i+=3){v.fromArray(p,i).sub(center).applyQuaternion(q);p[i]=v.x+center.x;p[i+1]=v.y;p[i+2]=v.z+center.z;floor=Math.min(floor,v.y);}
+  for(let i=1;i<p.length;i+=3)p[i]+=.012-floor;
+  return {p,c:sn.c,i:sn.i,v:3};
+ }
  function migrateHeads(){
   // 기존 저장의 꼬챙이 머리도 버리지 않고 바닥으로 옮긴다. 성공한 것만 기록을 바꿔 다음 접속에 중복되지 않게 한다.
   HEAP.legacy=S.items.filter(it=>it.head===2);
@@ -670,7 +769,7 @@ const FREE=(()=>{
    const id=e[0],side=e[1]<0?-1:1;let sn=await DB.get('h'+id);
    if(gen!==S.gen||!S.on)return;
    if(validSnap(sn)&&!HEAP.list.some(h=>h.id===id)){
-    if((e[2]||rec.v)!==2){sn=relocateLegacyHeap(sn,id,side);await DB.put('h'+id,sn);if(gen!==S.gen||!S.on)return;}
+    if((e[2]||rec.v)!==3){if((e[2]||rec.v)!==2)sn=relocateLegacyHeap(sn,id,side);sn=groundStoredPiece(sn);await DB.put('h'+id,sn);if(gen!==S.gen||!S.on)return;}
     heapAdd(id,side,sn);
    }
    HEAP.pending.delete(id);
@@ -773,7 +872,8 @@ const FREE=(()=>{
   it.fine=fine;it.holder.userData.drop.add(it.proxy);
  }
  function newItem(ord,look,seed,limbs,head){
-  const holder=makeHolder(),pool=mk(GEOS.pool,poolMat,root,{r:[-PI/2,0,0],cast:false,receive:false});
+  const holder=makeHolder(),pool=mk(GEOS.pool,poolMat,root,{r:[-PI/2,0,0],cast:false,receive:true});
+  holder.userData.restYaw=(rng(seed+73)()-.5)*.22;pool.rotation.z=rng(seed+19)()*TAU;
   pool.renderOrder=1;pool.visible=false;root.add(holder);
   return {ord,look,seed,limbs,head,line:ord%ROWX.length,k:0,holder,pool,real:null,proxy:null,free:false,moving:false,
    pos:V3(),cur:V3(),swx:new Spring(15,1.5),swz:new Spring(15,1.5),ph:(seed%628)/100,poolK:0,fine:false,ready:true};
@@ -782,7 +882,7 @@ const FREE=(()=>{
  /* ---- 켜고 끄기 ---- */
  function clearAll(){
   setView(false);
-  S.gen++;
+  S.gen++;stopHaloWorker();
   // 아직 본뜨지 못한 실제 몸과 조각은 나가기 전에 마저 굳혀 저장한다(다음에 그 모습 그대로 걸려 있게)
   // (청소할 때는 남기지 않는다: 날아가는 중이거나 굳히기를 기다리는 조각도 그대로 버린다)
   if(S.on&&!S.wipe){for(const it of S.items)if(it.real&&!it.snap)try{finishSnap(it);}catch(_){}
@@ -805,13 +905,14 @@ const FREE=(()=>{
    const ord=S.total-rec.list.length+i,it=newItem(ord,e.l,e.s,e.p,e.h);it.waist=!!e.w;it.poolK=1;it.ready=false;
    S.items.push(it);S.lines[it.line].unshift(it);
    // 저장해 둔 그 몸의 본을 읽는다(있으면 그 모습으로, 없으면 일반 모형으로 건다)
-   DB.get('b'+ord).then(sn=>{if(gen!==S.gen)return;if(validSnap(sn))it.snap=sn;it.ready=true;});
+   DB.get('b'+ord).then(async sn=>{if(gen!==S.gen)return;if(validSnap(sn)){it.snap=await migrateStoredHalo(sn);if(gen!==S.gen)return;}it.ready=true;});
   });
   setRows(rowHalf());
   S.on=true;root.visible=true;loadHeap();S.railsOn=S.items.length>0;rails.visible=S.railsOn;rails.position.y=0;
   S.ui='';S.tool='';cleanUI(true);syncUI();
  }
  function suspend(){
+  if(AUDIO.factoryRoom)AUDIO.factoryRoom(false,false,0);
   if(!S.on&&!S.items.length){stage(false);cleanUI(false);return;}
   clearAll();S.on=false;root.visible=false;stage(false);
   $('#freeBar').hidden=true;$('#freeCount').hidden=true;S.ui='';cleanUI(false);
@@ -1000,7 +1101,7 @@ const FREE=(()=>{
   E.endAct();E.guardHold=0;E.guard=0;E.releaseIK('L',14);E.releaseIK('R',14);E.taunt=false;
   if(E.tabletHeld)E.dropTablet(V3(rnd(-1.2,1.2),.7,.8));
   E.state='down';E.down={type:'floor',stay:1e9};E.stateT=0;
-  E.hang={from,u:0,x:clamp(b.x,-.55,.55),z:clamp(b.z,.95,1.45),lift:.3,sag:0,back:0,swing:0,swingZ:0,kick:E.headDestroyed&&!deityHasReptileVoice(E)?.55:1};
+  E.hang={from,pose:hangingPose((S.total+1)*7919+E.lookIndex*137),u:0,x:clamp(b.x,-.55,.55),z:clamp(b.z,.95,1.45),lift:.3,sag:0,back:0,swing:0,swingZ:0,kick:E.headDestroyed&&!deityHasReptileVoice(E)?.55:1};
   E.flailSeed=rnd(0,TAU);
   if(!E.headDestroyed||deityHasReptileVoice(E)){E.setEmotion('scared');E.shockT=1.2;AUDIO.voice('yelp',1);}
   S.seq={t:0,speed:S.total>0?1.3:1,old:E,holder:null,item:null,stage:0,sw:new Spring(26,3.2),swz:new Spring(22,3),E:null,cam:0};
@@ -1018,6 +1119,15 @@ const FREE=(()=>{
   if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate(22);}catch(_){}
   return true;
  }
+ function dropFactoryHalo(E){
+  const h=E.halo;if(!h||h.root.userData.factoryDiscard)return;
+  const r=h.root;r.userData.factoryDiscard=true;r.updateWorldMatrix(true,true);scene.attach(r);
+  h.on=false;h.dark=1;h.goDark=true;h.falling={t:0,loose:true};h.plate.visible=h.glow.visible=h.flames.visible=false;
+  E.haloPaint(.3);const side=S.total%2?1:-1;
+  const corners=[];for(let i=0;i<12;i++){const a=i/12*TAU;corners.push(V3(Math.cos(a)*.42,Math.sin(a)*.42,0));}
+  E.bits=E.bits||[];E.bits=E.bits.filter(b=>b.obj!==r);
+  E.bits.push({obj:r,v:V3(side*1.25,.25,-.7),w:V3(2,.4,side*2),r:.025,corners,bounce:.1,sound:'halo',flat:true});
+ }
  function pierce(q){
   const E=q.old,p=attachPoint(E,_v).clone(),front=E.bones.chest.localToWorld(V3(0,.1,.2));
   AUDIO.hookIn(1.1);AUDIO.spurt(1.1);AUDIO.chain(.7,4,.2);
@@ -1029,7 +1139,7 @@ const FREE=(()=>{
   }else BLOOD.spray(p,UP,10,{kind:'dust',max:1.2});
   E.hitFlash=1;E.sp.chest.kick(5,rnd(-1.5,1.5),rnd(-1.5,1.5));E.sp.spine.kick(3,0,0);E.sp.head.kick(-4,0,0);
   if(!E.headDestroyed||deityHasReptileVoice(E)){E.setEmotion('shock');E.shockT=.9;E.voiceCool=0;AUDIO.voice('scream',1.3);}
-  if(E.halo&&E.halo.on&&!E.halo.falling)E.haloDrop();
+  dropFactoryHalo(E);
   camHit({shake:.04});G.hitstop=Math.max(G.hitstop,.09);flash(.14);
   q.sw.kick(3.2);
   if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([30,20,45]);}catch(_){}
@@ -1211,13 +1321,13 @@ const FREE=(()=>{
    it.holder.position.copy(it.cur);
    if(it.k<10||it.moving){
     it.swx.step(dt);it.swz.step(dt);
-    it.holder.rotation.set(it.swx.x*.05+Math.sin(time*.83+it.ph)*.014,0,it.swz.x*.05+Math.sin(time*.67+it.ph*1.7)*.012);
+    it.holder.rotation.set(it.swx.x*.05+Math.sin(time*.43+it.ph)*.0025,it.holder.userData.restYaw||0,it.swz.x*.05+Math.sin(time*.37+it.ph*1.7)*.002);
    }
    // 발밑에 고인 피: 다 밀려가 멈춘 뒤 천천히 번진다
    if(PREF.blood&&it.k<5){
     if(!it.moving)it.poolK=Math.min(1,it.poolK+dt*.12);
     it.pool.visible=it.poolK>.02;const s=.35+.65*it.poolK;
-    it.pool.position.set(it.cur.x,.005,it.cur.z+.1);it.pool.scale.set(s,s*(.8+.2*Math.sin(it.ph)),1);
+    it.pool.position.set(it.cur.x,.005,it.cur.z+.1);it.pool.scale.set(s*(.8+.3*Math.cos(it.ph)),s*(.6+.3*Math.sin(it.ph)),1);
    }else it.pool.visible=false;
   }
 
@@ -1229,6 +1339,7 @@ const FREE=(()=>{
   for(const c of hidden)if(c.visible)c.visible=false;
   {const x=rowHalf();if(Math.abs(x-ROWX[1])>.004)setRows(x);}
   flicker(dt);
+  if(AUDIO.factoryRoom)AUDIO.factoryRoom(!document.hidden&&!G.paused,S.items.length>0,dt);
   // 끌린 자국·벽에 튄 자국은 걸린 몸이 늘수록 짙어진다(빈 방은 깨끗하다). 피를 끄면 숨긴다
   {const on=!!PREF.blood,n=S.items.length;dragMat.opacity=.85*clamp(n/8,0,1);goreMat.opacity=.9*clamp((n-2)/12,0,1);
    for(const m of lanes)m.visible=on&&n>0;for(const m of wallGore)m.visible=on&&n>2;}
@@ -1256,6 +1367,7 @@ const FREE=(()=>{
   $('#freeBar').hidden=!show;
   $('#freeNext').disabled=S.view||!canNext(E);
   $('#freeRevive').disabled=S.view||!(canRevive(E)&&!S.reviving);
+  $('#freeNext').hidden=$('#freeRevive').hidden=S.view;$('#freePhoto').hidden=!S.view;
   const view=$('#freeView');view.disabled=!S.total;view.textContent=S.view?'돌아가기':'둘러보기';view.setAttribute('aria-pressed',String(S.view));
   const c=$('#freeCount');c.hidden=!S.on||S.total<1;c.textContent='걸어 둔 천지신명 '+S.total.toLocaleString('ko-KR')+'놈';
  }

@@ -13,10 +13,10 @@ function setup(width=390,height=844){
 }
 test('overview keeps the return control reachable and restores the same opponent and tool',()=>{
  const h=setup(),E=h.G.E;assert(h.setView(true));assert(h.G.inputLocked);assert(!E.root.visible);assert(!h.VM.root.visible);
- assert.equal(h.$('#freeBar').hidden,false);assert.equal(h.$('#freeView').textContent,'돌아가기');assert(h.$('#freeNext').disabled&&h.$('#freeRevive').disabled);
+ assert.equal(h.$('#freeBar').hidden,false);assert.equal(h.$('#freeView').textContent,'돌아가기');assert(h.$('#freeNext').disabled&&h.$('#freeRevive').disabled);assert(h.$('#freeNext').hidden&&h.$('#freeRevive').hidden);assert(!h.$('#freePhoto').hidden);
  assert.equal(h.$('#freeCount').textContent,'걸어 둔 천지신명 24놈');assert.equal(h.$('#dock').hidden,true);
  assert(h.setView(false));assert(!h.G.inputLocked);assert.equal(h.G.E,E);assert.equal(h.G.tool,'hand');assert(E.root.visible);assert(!E.crown.visible);assert(E.tablet.visible);assert(h.VM.root.visible);
- assert.equal(h.S.viewHidden.length,0);assert.equal(h.$('#freeView').textContent,'둘러보기');assert.equal(h.cleared,2);
+ assert.equal(h.S.viewHidden.length,0);assert.equal(h.$('#freeView').textContent,'둘러보기');assert(h.$('#freePhoto').hidden);assert(!h.$('#freeNext').hidden);assert.equal(h.cleared,2);
 });
 test('overview cannot interrupt a hanging sequence, pause, or an empty collection',()=>{
  for(const [where,change] of [['S',{seq:{}}],['S',{total:0}],['S',{on:false}],['G',{paused:true}],['G',{inputLocked:true}]]){

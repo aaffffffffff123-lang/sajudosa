@@ -56,7 +56,7 @@ test('old two-pile saves and spike heads migrate once; reload retains the exact 
  const h=rig(),{owner,b}=piece(h);h.toHeap(owner,b);h.flushHeap();const before=h.db.get('h1');
  h.clearHeap();h.storage.set('palja.heap',JSON.stringify({q:1,l:[[1,1]]}));h.S.items.push({head:2,seed:19});h.loadHeap();await settle();
  assert.equal(h.HEAP.legacy.length,1);h.updateHeap(.016);h.drain();assert.equal(h.S.items[0].head,0);assert.equal(h.HEAP.list.length,2);
- const saved=Array.from(h.db.get('h1').p);assert.equal(JSON.parse(h.storage.get('palja.heap')).v,2);
+ const saved=Array.from(h.db.get('h1').p);assert.equal(JSON.parse(h.storage.get('palja.heap')).v,3);
  h.clearHeap();h.loadHeap();await settle();h.updateHeap(.016);h.drain();assert.equal(h.HEAP.list.length,2);assert.deepEqual(Array.from(h.db.get('h1').p),saved);
 });
 test('saving during asynchronous restore keeps unread records and cancelled reads do not reappear after cleaning',async()=>{

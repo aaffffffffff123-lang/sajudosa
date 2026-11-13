@@ -5,7 +5,7 @@ function setup(count=7){
  const elements=new Map(),calls={draws:[],texts:[],images:0,portraits:[],revoked:[],download:0,holds:[],resets:0,reads:0};
  class Element{constructor(id){this.id=id;this.hidden=false;this.disabled=false;this.listeners={};this.isConnected=true;this.textContent='';this.attrs={};}addEventListener(k,f){this.listeners[k]=f}click(){if(this.id==='#trophySave')calls.download++;return this.listeners.click?.({target:this})}focus(){document.activeElement=this}removeAttribute(k){delete this[k]}getClientRects(){return this.hidden?[]:[{}]}querySelectorAll(){return [...elements.values()]}}
  const $=id=>{if(!elements.has(id))elements.set(id,new Element(id));return elements.get(id)};
- $('#trophyModal').hidden=true;$('#settingsModal').hidden=true;$('#again').hidden=false;
+ $('#trophyModal').hidden=true;$('#settingsModal').hidden=true;$('#factoryPhotoModal').hidden=true;$('#again').hidden=false;
  const ctx=new Proxy({fillText(text){calls.texts.push(text)},drawImage(...args){if(args[0]&&args[0].trophyHead)calls.draws.push(args)},createLinearGradient(){return {addColorStop(){}}},createRadialGradient(){return {addColorStop(){}}},getImageData(x,y,w,h){calls.reads++;return {data:new Uint8ClampedArray(w*h*4)}}},{get(t,p){return p in t?t[p]:()=>{}},set(t,p,v){t[p]=v;return true}});
  const document={activeElement:$('#trophyBtn'),createElement(){return {width:0,height:0,getContext:()=>ctx,toBlob(cb){queueMicrotask(()=>cb(new Blob(['PNG'],{type:'image/png'})))}}}};
  class Image{set src(value){calls.images++;this.url=value;queueMicrotask(()=>calls.failImages?this.onerror():this.onload())}}

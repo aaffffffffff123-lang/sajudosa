@@ -239,6 +239,11 @@ const FIGHT_CSS = `
 #fight #freeBar #freeView[aria-pressed=true]{border-color:#d6c79b;color:#fff0c4;background:#394137}
 #fight.free-view #freeCount{font-size:17px;font-weight:700;letter-spacing:.3px;color:#f4e5c9;text-shadow:0 2px 5px #000}
 #fight.free-view #hint{display:none}
+#fight #factoryPhotoModal{z-index:35;background:rgba(5,9,8,.96);padding:12px;overscroll-behavior:contain}
+#fight #factoryPhotoImage{display:block;max-width:100%;max-height:65vh;max-height:65dvh;width:auto;height:auto;margin:auto;object-fit:contain;user-select:auto;-webkit-user-select:auto;-webkit-touch-callout:default;touch-action:auto}
+#fight #factoryPhotoStatus,#fight .factory-photo-tip{font-size:12px;line-height:1.5;text-align:center;color:#bcbeb3;margin:10px 0}
+#fight #factoryPhotoClose{border:1px solid #777b70;background:#171e1b;color:#eee8d9;border-radius:6px;width:42px;height:42px;font-size:27px;cursor:pointer}
+#fight #freePhoto{border-color:#899480;color:#ebefda}
 #fight #freeCount{font-size:11px;letter-spacing:1px;color:#cfc3a8;line-height:1.3;text-align:center;font-variant-numeric:tabular-nums}
 #fight.free-mode .gauge{background:none;border-color:transparent;justify-content:center}
 #fight.free-mode .gauge .grow,#fight.free-mode .gauge .bar,#fight.free-mode #defeatCount{display:none}
@@ -287,7 +292,7 @@ const FIGHT_HTML = `<section id="fight" hidden>
   <button class="pill" id="soundBtn" type="button" aria-label="소리 끄고 켜기" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5c2.2 2 2.2 5 0 7M18.8 5.5c4.2 3.6 4.2 9.4 0 13"/><path class="mute" d="M16.5 9.5l5 5M21.5 9.5l-5 5"/></svg></button>
   <button class="pill" id="settingsBtn" type="button" aria-label="설정"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="2.6" fill="#fff"/><circle cx="15" cy="17" r="2.6" fill="#fff"/></svg></button>
  </header>
- <div id="freeBar" role="group" aria-label="천지신명 정육공장" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button><button type="button" id="freeView" aria-pressed="false" disabled>둘러보기</button></div>
+ <div id="freeBar" role="group" aria-label="천지신명 정육공장" hidden><button type="button" id="freeNext" disabled>걸기</button><button type="button" id="freeRevive" disabled>재생</button><button type="button" id="freeView" aria-pressed="false" disabled>둘러보기</button><button type="button" id="freePhoto" hidden>사진 저장</button></div>
  <div class="dock" id="dock">
   <div class="hint off" id="hint"></div>
   <div class="panel tools" id="tools" role="group" aria-label="무기">
@@ -324,6 +329,15 @@ const FIGHT_HTML = `<section id="fight" hidden>
    <div class="trophy-actions"><a class="btn danger" id="trophySave" hidden>이미지 저장</a></div>
    <p id="trophyStatus" role="status" aria-live="polite"></p>
    <div class="trophy-reset"><button type="button" id="trophyReset">기록 초기화</button><div id="trophyResetConfirm" hidden><p id="trophyResetQuestion"></p><button type="button" id="trophyResetNo">취소</button><button type="button" id="trophyResetYes">초기화</button></div></div>
+  </section>
+ </div>
+ <div class="modal" id="factoryPhotoModal" hidden>
+  <section class="trophy-sheet" role="dialog" aria-modal="true" aria-labelledby="factoryPhotoTitle">
+   <header class="trophy-top"><h2 id="factoryPhotoTitle">천지신명 정육공장</h2><button type="button" id="factoryPhotoClose" aria-label="닫기">×</button></header>
+   <div class="trophy-view"><img id="factoryPhotoImage" alt="천지신명 정육공장 경관" hidden></div>
+   <div class="trophy-actions"><a class="btn danger" id="factoryPhotoSave" hidden>이미지 저장</a></div>
+   <p id="factoryPhotoStatus" role="status" aria-live="polite"></p>
+   <p class="factory-photo-tip">휴대폰에서는 사진을 길게 눌러 저장할 수도 있습니다.</p>
   </section>
  </div>
  <div id="fallback" role="alert" aria-live="assertive" hidden><div id="fallbackTitle">들어가는 중…</div><small id="fallbackDetail">잠깐만요.</small><button class="btn soft" id="retryGame" type="button" hidden style="width:auto;margin-top:10px">다시 시도</button></div>
@@ -1518,7 +1532,7 @@ const AUDIO=(()=>{
  }
  const live=new Set();
  function track(n){if(baking)return;live.add(n);n.onended=()=>live.delete(n);}
- function stop(keepMusic=false){stopMusic(!keepMusic,0);if(tts)tts.stop();for(const n of live){try{n.stop();}catch(_){}}live.clear();reactionLive.length=0;lastV=-99;}
+ function stop(keepMusic=false){stopFactoryRoom();stopMusic(!keepMusic,0);if(tts)tts.stop();for(const n of live){try{n.stop();}catch(_){}}live.clear();reactionLive.length=0;lastV=-99;}
  function out(pan=0,wet=.2,voice=false){
   const g=ctx.createGain();let node=g;
   if(ctx.createStereoPanner){const p=ctx.createStereoPanner();p.pan.value=clamp(pan,-1,1);g.connect(p);node=p;}
@@ -2073,6 +2087,27 @@ const AUDIO=(()=>{
   for(let i=0;i<7;i++)nz(out(R(-.7,.7),.3),t+R(.1,1),{dur:R(.04,.08),peak:R(.1,.2)*k,f:R(360,560),type:'lowpass',q:.6});
   for(let i=0;i<3;i++)nz(out(R(-.6,.6),.12,true),t+R(.08,.5),{dur:R(.1,.16),peak:R(.06,.1)*k,a:.035,f:R(900,1300),f1:R(1700,2300),q:1.3,curve:'lin'});
  }
+ // Two quiet looping sources, created once on entry. Never synthesize a buffer per frame.
+ let factoryHum=null,factoryCue=8;
+ function stopFactoryRoom(){
+  const h=factoryHum;factoryHum=null;factoryCue=8;if(!h)return;
+  for(const n of h.sources){try{n.stop();}catch(_){}live.delete(n);}
+  for(const n of h.nodes)try{n.disconnect();}catch(_){}
+ }
+ function factoryRoom(wanted,occupied,dt=0){
+  if(!wanted||!ready()){if(factoryHum)stopFactoryRoom();return;}
+  if(!factoryHum){
+   const g=ctx.createGain(),filter=ctx.createBiquadFilter(),fan=ctx.createBufferSource(),motor=ctx.createOscillator(),mg=ctx.createGain();
+   g.gain.setValueAtTime(0,ctx.currentTime);g.gain.linearRampToValueAtTime(.022,ctx.currentTime+2);
+   filter.type='lowpass';filter.frequency.value=160;filter.Q.value=.5;fan.buffer=noise;fan.loop=true;
+   fan.connect(filter);filter.connect(g);motor.type='sine';motor.frequency.value=58;mg.gain.value=.22;motor.connect(mg);mg.connect(g);g.connect(bus);
+   fan.start();motor.start();track(fan);track(motor);factoryHum={sources:[fan,motor],nodes:[fan,motor,filter,mg,g]};
+  }
+  factoryCue-=dt;if(factoryCue>0)return;factoryCue=R(9,19);
+  const t=ctx.currentTime,pan=(Math.random()<.5?-1:1)*R(.5,.85),o=out(pan,.65);
+  if(occupied&&Math.random()<.48){ring(o,t,[640,1337,2190],.7,.012);nz(o,t,{dur:.035,peak:.022,f:1750,q:1.4,a:.008});}
+  else{osc(o,t,{f0:1150,f1:520,dur:.09,peak:.022,a:.003});nz(o,t,{dur:.025,peak:.012,f:2700,q:.8});}
+ }
  // 천지신명 정육공장: 사슬 · 갈고리가 살에 박힘 · 레일 구르는 소리 · 레일에서 덜컹 멎는 소리
  function chain(p=1,n=6,span=.35){if(!ready())return;const t=ctx.currentTime,o=out(R(-.25,.25),.24);
   for(let i=0;i<n;i++){const tt=t+i*span/n+R(0,.018),f=R(1650,2700);ring(o,tt,[f,f*1.51,f*2.27],R(.035,.075),.05*p);nz(o,tt,{dur:.006,peak:.17*p,f:5200,q:2});}}
@@ -2088,7 +2123,7 @@ const AUDIO=(()=>{
  function railStop(p=1){if(!ready())return;const t=ctx.currentTime,o=out(R(-.3,.3),.32);
   osc(o,t,{f0:130,f1:60,dur:.12,peak:.5*p});ring(o,t,[470,1130,1890,2760],.55,.1*p);clicks(o,t,6,.12,4300,.2*p);
   ring(o,t+.16,[1900,2870],.05,.04*p);ring(o,t+.31,[2100,3170],.04,.03*p);}
- return {unlock,hold,crowdSob,whisper,crowdTurn,charge,twinkle,boom,stamp,paper,crumple,crunch,paperDrop,footstep,crowdShuffle,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,staffLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,chain,hookIn,railRoll,railStop,
+ return {unlock,hold,factoryRoom,crowdSob,whisper,crowdTurn,charge,twinkle,boom,stamp,paper,crumple,crunch,paperDrop,footstep,crowdShuffle,beyond,omen,gaze,membrane,speak,setOn,setVolumes,stop,updateMusic,stopMusic,whoosh,hit,duck,block(){if(ready())fx('block',.9,R(-.2,.2),1);},crown,crownLand,staffLand,tooth,toothBounce,crack,gunshot,dry,reload(){},spurt,pull,drip,fall,chain,hookIn,railRoll,railStop,
   whiff(){},voice:say,voiceRaw(name,k=1){say(name,k,true);},tts:speakTTS,gasp(k=1){say('gasp',k);},hushCombatAccent,
   combatLineReady(text){return ready()&&volumes.voice>0&&!!combatClips[text]?.buffer;},
   haloCrack,haloBuzz,haloLand,haloTap,hiss,coin,coinGush,rip,peel,chop,squelch,pop,boneOut,scaleSet,unmask,pat,slap,behead,skullCrush,jawRip,blowout,snip,jawPop,setJawGone,ui(){if(!ready())return;const t=ctx.currentTime,o=out(0,.02);osc(o,t,{f0:880,f1:660,dur:.04,peak:.12,type:'triangle'});},
@@ -11080,7 +11115,7 @@ $('#soundBtn').addEventListener('click',()=>{AUDIO.unlock();toggle('sound');});
 function setFightModal(modal,open){
  modal.hidden=!open;
  const face=$('#arcadeFace');
- if(face)face.hidden=!$('#fight').hidden&&(!$('#settingsModal').hidden||!$('#trophyModal').hidden);
+ if(face)face.hidden=!$('#fight').hidden&&(!$('#settingsModal').hidden||!$('#trophyModal').hidden||!$('#factoryPhotoModal').hidden);
 }
 $('#settingsBtn').addEventListener('click',()=>{G.paused=true;clearPointers();AUDIO.hold(true);setFightModal($('#settingsModal'),true);});
 function closeModal(){setFightModal($('#settingsModal'),false);G.paused=false;AUDIO.hold(false);last=performance.now();}
@@ -11788,7 +11823,7 @@ if(!FREE_MOD)$('#freeBtn').hidden=true;
 /* ---- 라운드 ---- */
 function startRound(mode){
  const free=mode==='free'&&!!FREE_MOD;if(mode==='free')mode='fight';
- TROPHIES.close(false);
+ TROPHIES.close(false);FACTORY_PHOTO.close(false);
  G.round++;
  SUBMISSION.reset();
  AUDIO.stop();
@@ -11942,7 +11977,7 @@ function arrive(){
  focusCanvas();return true;
 }
 function leave(home){
- TROPHIES.close(false);
+ TROPHIES.close(false);FACTORY_PHOTO.close(false);
  pause();
  INTRO.stage='off';crumpleReset();$('#fight').classList.remove('behind');$('#crumpleHint').classList.add('off');
  SUBMISSION.reset();CROWD.reset();FREE.suspend();
@@ -11952,6 +11987,54 @@ function leave(home){
 }
 let rsT=0;addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{if(!$('#fight').hidden){fitView();VM.computeRest();}},40);});
 addEventListener('blur',clearPointers);
+
+
+/* Factory photo: use the displayed overview, with no HUD, hands or new camera framing. */
+function captureFactoryPhoto(){
+ const size=renderer.getSize(new THREE.Vector2()),scale=Math.min(1.6,1800/Math.max(size.x,size.y));
+ const w=Math.max(1,Math.round(size.x*scale)),h=Math.max(1,Math.round(size.y*scale));
+ const target=new THREE.WebGLRenderTarget(w,h,{depthBuffer:true,stencilBuffer:false});target.texture.encoding=THREE.sRGBEncoding;
+ const saved={target:renderer.getRenderTarget(),viewport:renderer.getViewport(new THREE.Vector4()),scissor:renderer.getScissor(new THREE.Vector4()),test:renderer.getScissorTest(),auto:renderer.autoClear,xr:renderer.xr.enabled};
+ const pixels=new Uint8Array(w*h*4);
+ try{
+  renderer.xr.enabled=false;renderer.setRenderTarget(target);renderer.setViewport(0,0,w,h);renderer.setScissorTest(false);renderer.autoClear=true;
+  renderer.clear();renderer.render(scene,camera);renderer.readRenderTargetPixels(target,0,0,w,h,pixels);
+ }finally{
+  renderer.setRenderTarget(saved.target);renderer.setViewport(saved.viewport);renderer.setScissor(saved.scissor);renderer.setScissorTest(saved.test);renderer.autoClear=saved.auto;renderer.xr.enabled=saved.xr;target.dispose();
+ }
+ const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+ const context=canvas.getContext('2d'),data=context.createImageData(w,h),stride=w*4;
+ for(let y=0;y<h;y++)data.data.set(pixels.subarray((h-1-y)*stride,(h-y)*stride),y*stride);
+ context.putImageData(data,0,0);
+ return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('PNG export failed')),'image/png'));
+}
+const FACTORY_PHOTO=(()=>{
+ const modal=$('#factoryPhotoModal'),img=$('#factoryPhotoImage'),save=$('#factoryPhotoSave'),status=$('#factoryPhotoStatus');
+ let open=false,serial=0,url='',wasPaused=false,returnFocus=null;
+ function release(){if(url)URL.revokeObjectURL(url);url='';img.removeAttribute('src');save.removeAttribute('href');}
+ function close(focus=true){
+  if(!open)return;open=false;serial++;release();setFightModal(modal,false);G.paused=wasPaused;AUDIO.hold(wasPaused);last=performance.now();
+  if(focus&&returnFocus&&returnFocus.isConnected)returnFocus.focus({preventScroll:true});
+ }
+ async function show(){
+  if(open||!G.free||!FREE.viewing||FREE.busy||G.paused)return;
+  open=true;const ticket=++serial;wasPaused=G.paused;returnFocus=document.activeElement;G.paused=true;clearPointers();AUDIO.hold(true);
+  release();img.hidden=save.hidden=true;status.textContent='사진 만드는 중…';setFightModal(modal,true);$('#factoryPhotoClose').focus({preventScroll:true});
+  try{
+   await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+   if(!open||ticket!==serial)return;
+   const blob=await captureFactoryPhoto();if(!open||ticket!==serial)return;
+   url=URL.createObjectURL(blob);img.src=url;img.hidden=false;save.href=url;save.download='천지신명_정육공장_'+FREE.state.total+'놈.png';save.hidden=false;status.textContent='';
+  }catch(error){if(open&&ticket===serial)status.textContent='사진을 만들지 못했어요. 닫았다가 다시 눌러 주세요.';console.warn('Factory photo failed',error);}
+ }
+ $('#freePhoto').addEventListener('click',show);$('#factoryPhotoClose').addEventListener('click',()=>close());
+ modal.addEventListener('click',e=>{if(e.target===modal)close();});
+ modal.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}
+  if(e.key==='Tab'){const controls=[...modal.querySelectorAll('button:not(:disabled),a[href]')].filter(e=>e.getClientRects().length);const first=controls[0],end=controls[controls.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();end.focus();}else if(!e.shiftKey&&document.activeElement===end){e.preventDefault();first.focus();}}
+ });
+ return {close};
+})();
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearPointers();crumpleRelease();AUDIO.stop(true);}else{last=performance.now();if(G.running){fitView();if(BEYOND.active){AUDIO.unlock();setTimeout(()=>{if(BEYOND.active&&!document.hidden)AUDIO.beyond();},250);}}}});
 
 warmCombatAssets();
