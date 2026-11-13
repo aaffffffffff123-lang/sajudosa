@@ -14,13 +14,13 @@ function rig(){
  releaseObj(obj){obj.removeFromParent();released.push(obj);obj.traverse(o=>o.geometry?.dispose())},
  proxyHead(){return new THREE.Mesh(new THREE.SphereGeometry(.18,12,8),new THREE.MeshStandardMaterial({color:0x947e62}))},
  _mgM:new THREE.Matrix4()};
- const code=slice(fight,'function mergeMeshes(','/* 한 부모 아래')+slice(src,' function rng(seed){',' /* ---- 대역 모형')+slice(src,' function packSnapshot(sn){',' function newJob(')+slice(src,' function snapMesh(sn){',' // 한 번에 끝까지')+slice(src,' /* ---- 바닥 조각:',' /* ---- 걸이(');
+ const code=slice(fight,'function mergeMeshes(','/* 한 부모 아래')+slice(src,' function rng(seed){',' /* ---- 대역 모형')+slice(src,' function packSnapshot(sn){',' function newJob(')+slice(src,' function repairStoredWaist(',' // Legacy geometry filtering')+slice(src,' function snapMesh(sn){',' // 한 번에 끝까지')+slice(src,' /* ---- 바닥 조각:',' /* ---- 걸이(');
  // Snapshot scheduling is asynchronous in the game; keep that lifecycle, and bake real transformed geometry for these tests.
  scope.newJob=(obj,space,cell,done)=>({obj,cell,done});
  scope.jobRun=job=>{job.obj.updateWorldMatrix(true,true);const meshes=[];job.obj.traverse(o=>{if(o.isMesh)meshes.push(o)});
   const geo=scope.merge(meshes,new THREE.Matrix4(),m=>m.material.color),c=Uint8Array.from(geo.attributes.color.array,x=>Math.round(x*255));
   job.done({p:geo.attributes.position.array,c,i:geo.index.array});geo.dispose();};
- const api=vm.runInNewContext(code+';({HEAP,HEAP_MAX,heapSpot,heapVertices,heapPose,heapAdd,toHeap,overflow,updateHeap,updateHeapBatches,flushHeap,clearHeap,loadHeap,saveHeap,migrateHeads,mergeMeshes})',scope);scope.merge=api.mergeMeshes;
+ const api=vm.runInNewContext(code+';({HEAP,HEAP_MAX,heapSpot,heapVertices,heapPose,heapAdd,toHeap,overflow,updateHeap,updateHeapBatches,flushHeap,clearHeap,loadHeap,saveHeap,migrateHeads,mergeMeshes,repairStoredWaist})',scope);scope.merge=api.mergeMeshes;scope.migrateStoredHalo=sn=>Promise.resolve(api.repairStoredWaist(sn));
  return {...api,S,scene,root,storage,db,released,scope,drain(){while(S.jobs.length)scope.jobRun(S.jobs.shift())}};
 }
 function piece(h,dimensions=[.16,.9,.2]){
@@ -28,7 +28,7 @@ function piece(h,dimensions=[.16,.9,.2]){
  const owner={bits:[],severed:[obj],severedHeads:[obj],headPieces:[obj],looseEyes:[],keepBits:true,limbCorners:corners};
  const b={obj,body:true,r:.15,sound:'head',corners:corners(obj),twitch:{},bleed:{}};owner.bits.push(b);return {obj,owner,b};
 }
-async function settle(){for(let i=0;i<8;i++)await Promise.resolve()}
+async function settle(){await new Promise(setImmediate)}
 test('debris spreads toward the back wall, stays on the floor, and preserves deterministic positions',()=>{
  const h=rig();let far=0;const xs=[];
  for(let id=1;id<=280;id++){

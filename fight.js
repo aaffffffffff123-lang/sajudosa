@@ -759,12 +759,12 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
   const K=KIND[kind]||KIND.skin;
   const U={uBr:{value:col(K.bruise)},uBr2:{value:col(K.bruise2)},uRim:{value:col(K.rim)},uDirty:{value:K.dirty},
    uDeep:{value:MEAT.deep},uMid:{value:MEAT.mid},uHi:{value:MEAT.hi},uFat:{value:MEAT.fat},uSc:{value:MEAT.scale},uScD:{value:MEAT.scaleD},uSoak:{value:MEAT.soak},
-   uMeatScale:{value:o.meatScale||70},uLiz:{value:kind==='liz'?1:0},uSSS:{value:o.sss||0}};
+   uMeatScale:{value:o.meatScale||70},uLiz:{value:kind==='liz'?1:0},uSSS:{value:o.sss||0},uMatte:{value:0}};
   mat.userData.fleshKind=kind;mat.userData.fleshU=U;
   mat.onBeforeCompile=sh=>{
    Object.assign(sh.uniforms,U);
    sh.vertexShader='attribute vec4 aDmg;\nvarying vec4 vDmg;\nvarying vec3 vOP;\n'+sh.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvDmg=aDmg;vOP=position;');
-   sh.fragmentShader='varying vec4 vDmg;\nvarying vec3 vOP;\nuniform vec3 uBr,uBr2,uRim,uDeep,uMid,uHi,uFat,uSc,uScD,uSoak;uniform float uDirty,uMeatScale,uLiz,uSSS;\n'+NOISE3+
+   sh.fragmentShader='varying vec4 vDmg;\nvarying vec3 vOP;\nuniform vec3 uBr,uBr2,uRim,uDeep,uMid,uHi,uFat,uSc,uScD,uSoak;uniform float uDirty,uMeatScale,uLiz,uSSS,uMatte;\n'+NOISE3+
     sh.fragmentShader.replace('#include <emissivemap_fragment>',`#include <emissivemap_fragment>
  {float ndv=clamp(dot(normal,normalize(vViewPosition)),0.,1.);totalEmissiveRadiance+=diffuseColor.rgb*vec3(1.,.4,.34)*(pow(1.-ndv,2.6)*.34+.05)*uSSS;}`).replace('#include <color_fragment>',`#include <color_fragment>
  if(vDmg.x+vDmg.y+vDmg.z+vDmg.w>.0005){
@@ -791,9 +791,9 @@ float fscale(vec3 p){vec3 q=p*vec3(1.,1.25,1.);vec2 uv=vec2(q.x+q.z*.7,q.y-q.z*.
   float so=clamp(vDmg.w,0.,1.);
   diffuseColor.rgb=mix(diffuseColor.rgb,uSoak*(.6+.5*nA),smoothstep(.1,.8,so+(nA-.5)*.4)*.8);
  }`).replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
- {float rw=smoothstep(.46,.62,clamp(vDmg.y,0.,1.));roughnessFactor=mix(roughnessFactor,.2,rw);roughnessFactor=mix(roughnessFactor,.28,smoothstep(.2,.8,vDmg.w)*.7);}`);
+ {float rw=smoothstep(.46,.62,clamp(vDmg.y,0.,1.));roughnessFactor=mix(roughnessFactor,.2,rw);roughnessFactor=mix(roughnessFactor,.28,smoothstep(.2,.8,vDmg.w)*.7);roughnessFactor=max(roughnessFactor,uMatte);}`);
   };
-  mat.customProgramCacheKey=()=>'flesh2';
+  mat.customProgramCacheKey=()=>'flesh3';
   mat.needsUpdate=true;return mat;
  }
 
@@ -1250,8 +1250,9 @@ const SLICE=(()=>{
    for(let g=0;g<20000;g++){const nb=adj.get(cur).filter(x=>x!==prev&&(!used.has(x)||(x===st&&loop.length>2)));if(!nb.length)break;const nx=nb.find(x=>!used.has(x))||nb[0];if(nx===st)break;loop.push(nx);used.add(nx);prev=cur;cur=nx;}
    if(loop.length>=3)loops.push(loop.map(q=>pk.get(q)));}
   // 단면 막기: 두 쪽에 각각(남는 쪽은 +n, 떨어지는 쪽은 -n을 본다)
+  const capStart=B.map(b=>b.idx.length);
   if(close)for(const loop of loops)for(const s of (keepOnly?[0]:[0,1]))cap(B[s],loop,s===0?n.clone():n.clone().negate());
-  return {keep:build(B[0]),cut:keepOnly?null:build(B[1]),loops:loops.length,contours:loops.map(loop=>loop.map(m=>m.p.slice()))};
+  return {keep:build(B[0]),cut:keepOnly?null:build(B[1]),loops:loops.length,contours:loops.map(loop=>loop.map(m=>m.p.slice())),capStart};
   function cap(b,loop,nn){
    const U=Math.abs(nn.x)>.8?V3(0,1,0):V3(1,0,0);U.addScaledVector(nn,-U.dot(nn)).normalize();const Vv=V3().crossVectors(nn,U);
    const L=loop.length;let cx=0,cy=0,cz=0;for(const m of loop){cx+=m.p[0];cy+=m.p[1];cz+=m.p[2];}cx/=L;cy/=L;cz/=L;
@@ -2162,7 +2163,7 @@ const ENV=(()=>{try{
   face(side),face((g,n)=>{side(g,n);g.strokeStyle='#b8341f';g.lineWidth=3;for(let i=0;i<=4;i++){g.beginPath();g.moveTo(i*16,0);g.lineTo(i*16,40);g.stroke();}})];
  const t=new THREE.CubeTexture(imgs);t.encoding=THREE.sRGBEncoding;t.needsUpdate=true;return t;}catch(_){return null;}})();
 /* 주변 반사는 금속에만 준다(전체에 주면 휴대폰에서 무겁다) */
-function metalEnv(root){root.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms)if(m.isMeshStandardMaterial&&m.metalness>.3&&ENV&&!m.envMap){m.envMap=ENV;m.needsUpdate=true;}});}
+function metalEnv(root){root.traverse(o=>{const ms=o.material?(Array.isArray(o.material)?o.material:[o.material]):[];for(const m of ms)if(m.isMeshStandardMaterial&&m.metalness>.3&&ENV&&!m.envMap&&!m.userData.factoryMatte){m.envMap=ENV;m.needsUpdate=true;}});}
 const hemi=new THREE.HemisphereLight(col('#eef5ff'),col('#a88458'),.4);scene.add(hemi);
 const key=new THREE.DirectionalLight(col('#fff1da'),2.05);key.position.set(-1.7,3.4,2.8);key.target.position.set(0,1,-.2);scene.add(key);scene.add(key.target);
 key.castShadow=true;key.shadow.mapSize.set(MOBILE_GPU?512:1024,MOBILE_GPU?512:1024);Object.assign(key.shadow.camera,{left:-1.9,right:1.9,top:2.4,bottom:-1.1,near:.6,far:9});key.shadow.bias=-.0005;key.shadow.normalBias=.025;
@@ -7623,7 +7624,7 @@ Object.assign(Emperor.prototype,{
   piece.applyMatrix4(m.matrixWorld);scene.add(piece);this.disposables.push(res.cut);
   const oldGeo=m.geometry;m.geometry=res.keep;f.setGeometry(res.keep,true);this.disposables.push(res.keep);this.releaseGeometry(oldGeo);
   f.cutSurface={n:nL.clone(),contours:res.contours};
-  return {kind:'split',piece};
+  return {kind:'split',piece,capStart:res.capStart};
  },
  // 머리에 붙어 있던 메시 하나를 조각으로 옮긴다(맞히기 목록·피 투영 목록·살 목록에서 뺀다)
  _detachHeadMesh(m,piece){
@@ -9382,8 +9383,9 @@ Object.assign(Emperor.prototype,{
  haloPaint(b){
   const h=this.halo,M=h.M,d=h.dark;
   for(const m of [M.zod,M.tri,M.plate])m.color.setRGB(b,b*(1-d*.1),b*(1-d*.2));
-  M.flame.color.setScalar(b);M.flame.opacity=1-d;M.glow.opacity=(1-d)*(.45+.55*b);h.flames.visible=d<.98;h.glow.visible=d<.98;
-  M.gold.color.copy(_haloGold).lerp(_haloDull,d);M.gold.roughness=.28+d*.4;
+  const lit=!h.factoryMatte;
+  M.flame.color.setScalar(b);M.flame.opacity=lit?1-d:0;M.glow.opacity=lit?(1-d)*(.45+.55*b):0;h.flames.visible=lit&&d<.98;h.glow.visible=lit&&d<.98;
+  M.gold.color.copy(_haloGold).lerp(_haloDull,d);M.gold.roughness=h.factoryMatte?.94:.28+d*.4;
  },
  // 머리를 맞으면 후광도 맞은 쪽으로 흔들린다
  haloJolt(dir,p){const h=this.halo;if(!h||!h.on)return;const k=Math.min(p,2.2);h.sp.kick(-dir.y*2*k+rnd(-.6,.6),dir.x*2.6*k,-dir.x*3.2*k+rnd(-.8,.8));},

@@ -88,10 +88,10 @@ function freeWalkPose(E,out,dt){
 }
 const FREE=(()=>{
  const root=grp(scene,null,'free-hall');root.visible=false;
- const iron=STD('#565b5a',{metalness:.7,roughness:.48,envMapIntensity:.5});
- const ironD=STD('#2c3030',{metalness:.55,roughness:.62,envMapIntensity:.4});
+ const iron=STD('#565b5a',{metalness:.7,roughness:.94,envMapIntensity:0});
+ const ironD=STD('#2c3030',{metalness:.55,roughness:.96,envMapIntensity:0});
  const proxyMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.86,metalness:0});
- const capMat=STD('#101d30',{roughness:.55});
+ const capMat=STD('#101d30',{roughness:.94});
  // A broken-edged stain, lit by the room. No luminous, repeated blue circles.
  const poolTex=canvasTex(128,128,(g,w,h)=>{
   const r=rng(19513);g.clearRect(0,0,w,h);
@@ -99,7 +99,7 @@ const FREE=(()=>{
   for(let i=0;i<=64;i++){const a=i/64*TAU,d=43+7*Math.sin(a*3)+5*Math.sin(a*7+.8)+3*Math.sin(a*13);const x=64+Math.cos(a)*d,y=64+Math.sin(a)*d*.81;i?g.lineTo(x,y):g.moveTo(x,y);}g.closePath();g.fill();
   for(let i=0;i<23;i++){g.fillStyle='rgba(12,22,35,.65)';g.beginPath();g.ellipse(13+r()*102,15+r()*98,1+r()*3,1+r()*5,r()*TAU,0,TAU);g.fill();}
  });
- const poolMat=STD('#778392',{map:poolTex,transparent:true,depthWrite:false,roughness:.29,metalness:.12,opacity:.85});
+ const poolMat=STD('#778392',{map:poolTex,transparent:true,depthWrite:false,roughness:.86,metalness:0,opacity:.85});
  const CHAIN=.57;
  // 방: 옥좌 없는 넓은 냉장실. 레일 네 줄이 화면 안쪽(−z)으로 멀리 뻗고, 걸린 몸은 그 레일을 따라 한 줄로 늘어선다(도축장 레일).
  // 새로 걸리는 몸이 맨 앞 칸으로 들어오면 그 줄 전체가 한 칸씩 안쪽으로 밀린다
@@ -124,15 +124,15 @@ const FREE=(()=>{
  const hall=grp(root,null,'hall');
  const bgCol=col('#0e1512');
  const railRow=[],lanes=[],wallGore=[];
- const TUBE_COL=col('#dfe9b4'),tubeOn=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false}),tubeBad=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false});
+ const TUBE_COL=col('#9ca88a'),tubeOn=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false}),tubeBad=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false});
  const dragMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0}),goreMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0});
  /* 조명: 빛은 등이 달린 자리에서만 나온다.
   *  lamp      족치는 자리 위의 등 하나. 여기만 환하고 그림자도 여기서만 진다(맞는 놈이 잘 보여야 한다)
   *  tubeLights 복도 안쪽, 켜져 있는 형광등 자리의 빛. 등에서 멀어지면 어두워져서 걸린 몸이 밝았다 어두웠다 하며 멀어진다(둘째가 껌뻑거리는 등)
   *  hallFill  천장에서 곧게 내려오는 아주 옅은 바탕빛. 평소엔 거의 없고, 「둘러보기」 때만 올려서 걸어 둔 몸이 끝까지 보이게 한다
   * 밝기를 손볼 곳: LAMP_I(족치는 자리) · TUBE_SPOTS(복도) · HEMI_I/FILL_I([평소, 둘러보기]) */
- const LAMP_I=3.0,HEMI_I=[.30,.34],FILL_I=[.20,.42];
- const TUBE_SPOTS=[[-2.7,3.1,9],[-11.1,1.8,9],[-17.4,1.7,10],[-30,1.7,12]]; // [z, 세기, 닿는 거리]
+ const LAMP_I=1.55,HEMI_I=[.18,.22],FILL_I=[.12,.18];
+ const TUBE_SPOTS=[[-2.7,1.15,9],[-11.1,.70,9],[-17.4,.65,10],[-30,.60,12]]; // [z, 세기, 닿는 거리]
  const hallFill=new THREE.DirectionalLight(col('#b9c8ad'),FILL_I[0]);
  hallFill.position.set(0,CEIL+6,-18);hallFill.target.position.set(0,0,-18);
  const lamp=new THREE.SpotLight(col("#f6f1d2"),LAMP_I,12,.76,.85,1);
@@ -176,7 +176,7 @@ const FREE=(()=>{
   const zc=8-(8-HALL_END)/2,zl=8-HALL_END;
   const wallTex=canvasTex(1024,1024,wallDraw);wallTex.wrapS=THREE.RepeatWrapping;wallTex.repeat.set(zl/WALL_U,1);
   const endTex=wallTex.clone();endTex.needsUpdate=true;endTex.wrapS=THREE.RepeatWrapping;endTex.repeat.set(HALL_W*2/WALL_U,1);
-  const wallMat=STD('#ffffff',{map:wallTex,roughness:.42}),endMat=STD('#ffffff',{map:endTex,roughness:.42}),ceilMat=STD('#3a4038',{roughness:.95});
+  const wallMat=STD('#ffffff',{map:wallTex,roughness:.96}),endMat=STD('#ffffff',{map:endTex,roughness:.96}),ceilMat=STD('#3a4038',{roughness:.95});
   for(const sd of [-1,1])mk(new THREE.PlaneGeometry(zl,CEIL),wallMat,hall,{p:[sd*HALL_W,CEIL/2,zc],r:[0,-sd*PI/2,0],cast:false});
   mk(new THREE.PlaneGeometry(HALL_W*2,CEIL),endMat,hall,{p:[0,CEIL/2,HALL_END],cast:false});
   mk(new THREE.PlaneGeometry(HALL_W*2,zl),ceilMat,hall,{p:[0,CEIL,zc],r:[PI/2,0,0],cast:false,receive:false});
@@ -257,7 +257,7 @@ const FREE=(()=>{
   for(let l=0;l<ROWX.length;l++)layoutLine(l,true);
  }
  // 옥좌·기둥·벽·현판·지팡이를 치우고, 안개·배경·조명을 어두운 도살장으로 바꾼다. 끄면 원래 궁전으로 되돌린다.
- // fight.js가 장면에 달아 둔 궁전 조명(key·fill·rim)은 이 방에서 끄고, 위에서 만든 등 빛(lamp·tubeLights)만 쓴다. 바닥은 물청소한 것처럼 번들거리게 한다
+ // fight.js가 장면에 달아 둔 궁전 조명(key·fill·rim)은 이 방에서 끄고, 위에서 만든 등 빛(lamp·tubeLights)만 쓴다. 벽과 바닥은 거친 무광으로 맞춘다
  const LIT=(()=>{const o={hemi:null,key:null,fill:null,rim:null,bounce:null};
   for(const c of scene.children){
    if(c.isHemisphereLight){if(!o.hemi)o.hemi=c;}
@@ -277,10 +277,11 @@ const FREE=(()=>{
     hemi.color.copy(col('#a8b2a4'));hemi.groundColor.copy(col('#30382d'));hemi.intensity=HEMI_I[0];
     key.visible=fill.visible=rim.visible=false;
     // 바닥에서 되비친 옅은 빛: 턱 밑·눈두덩이 새까맣게 죽지 않게 한다
-    bounce.color.copy(col('#c2c7b4'));bounce.position.set(0,.3,2.5);bounce.intensity=.35;
+    bounce.color.copy(col('#c2c7b4'));bounce.position.set(0,.3,2.5);bounce.intensity=.12;
    }
-   if(floorMat&&floorKeep==null){floorKeep=floorMat.roughness;floorMat.roughness=.55;}
+   if(floorMat&&floorKeep==null){floorKeep=floorMat.roughness;floorMat.roughness=.94;}
    viewK=0;
+   if(G.E)factoryLook(G.E);
    S.stageOn=true;
    // 걸린 몸이 하나라도 있는 방에 들어선 놈은 처음부터 겁에 질려 있다
    if(S.items.length&&G.E)scare(G.E);
@@ -451,7 +452,7 @@ const FREE=(()=>{
   * 꼭짓점을 작은 칸으로 묶고, 재질 색 × 텍스처 색을 꼭짓점 색으로 구워 메시 하나로 만든다.
   * 일반 모형으로 갈아 끼우는 게 아니라 같은 몸을 가볍게 만든 것이라 실루엣·상처·잘린 자리·핏자국이 그대로 남는다.
   * 여러 프레임에 나눠 처리하고(프레임당 몇 ms), 결과는 IndexedDB에 넣어 다음에 들어와도 그 모습으로 걸려 있게 한다. */
- const snapMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.8,metalness:0,side:THREE.DoubleSide});
+ const snapMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,metalness:0,side:THREE.DoubleSide});
  const LIN=new Float32Array(256);for(let i=0;i<256;i++)LIN[i]=Math.pow(i/255,2.2);
  const TEXS=new Map();
  function texData(t){
@@ -544,7 +545,7 @@ const FREE=(()=>{
    if(!(packed.k&511)&&performance.now()>until)return null;
   }
   job.fin=null;job.pos=job.col=job.wt=job.idx=null;TEXS.clear();
-  return {p:new Float32Array(packed.p),c:new Uint8Array(packed.c),i:packed.i,v:3};
+  return {p:new Float32Array(packed.p),c:new Uint8Array(packed.c),i:packed.i,v:3,waistSurface:1};
  }
 
  // Old snapshots welded the shoulder halo into nearby clothing. Its old dock
@@ -592,6 +593,35 @@ const FREE=(()=>{
   const kept=[];for(let i=0;i<I.length;i+=3)if(!remove.has(find(I[i])))kept.push(I[i],I[i+1],I[i+2]);
   return {p:P,c:sn.c,i:new Uint32Array(kept),v:3};
  }
+ // Saved meshes have lost their material IDs. A waist cap is still identifiable
+ // as a broad planar fan with a central hub; clothes, limbs and small caps are
+ // excluded. Recolor a copy only: positions, indices and the saved file survive.
+ function repairStoredWaist(sn){
+  if(sn.waistSurface)return sn;
+  const P=sn.p,I=sn.i,planes=new Map(),a=V3(),b=V3(),c=V3(),ab=V3(),ac=V3(),normal=V3();
+  for(let k=0;k<I.length;k+=3){
+   a.fromArray(P,I[k]*3);b.fromArray(P,I[k+1]*3);c.fromArray(P,I[k+2]*3);normal.crossVectors(ab.subVectors(b,a),ac.subVectors(c,a));
+   const area=normal.length()*.5;if(area<1e-8)continue;normal.normalize();
+   const major=Math.abs(normal.x)>.7?normal.x:Math.abs(normal.y)>.7?normal.y:normal.z;if(major<0)normal.negate();
+   const d=normal.dot(a),key=[normal.x,normal.y,normal.z,d].map((v,i)=>Math.round(v*(i===3?100:40))).join(',');
+   let g=planes.get(key);if(!g)planes.set(key,g={area:0,ids:new Map(),normal:normal.clone()});g.area+=area;
+   for(let j=0;j<3;j++)g.ids.set(I[k+j],(g.ids.get(I[k+j])||0)+1);
+  }
+  let color=null;
+  for(const g of planes.values()){
+   if(g.area<.12||g.area>.46||g.ids.size<24)continue;
+   let hub=-1,degree=0;for(const [i,n] of g.ids)if(n>degree){hub=i;degree=n;}if(degree<14)continue;
+   const center=V3().fromArray(P,hub*3);let maxR=0,minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+   for(const i of g.ids.keys()){a.fromArray(P,i*3);maxR=Math.max(maxR,a.distanceTo(center));minX=Math.min(minX,a.x);maxX=Math.max(maxX,a.x);minY=Math.min(minY,a.y);maxY=Math.max(maxY,a.y);minZ=Math.min(minZ,a.z);maxZ=Math.max(maxZ,a.z);}
+   if(maxR<.22||maxR>.46||Math.hypot(center.x-(minX+maxX)/2,center.y-(minY+maxY)/2,center.z-(minZ+maxZ)/2)>.07)continue;
+   if(!color)color=sn.c.slice();
+   for(const i of g.ids.keys()){
+    a.fromArray(P,i*3).sub(center);const grain=.5+.24*Math.sin(a.x*79+a.y*43)*Math.sin(a.z*67-a.x*31)+.15*Math.sin(a.z*23-a.y*37);
+    color[i*3]=Math.round(4+grain*10);color[i*3+1]=Math.round(8+grain*14);color[i*3+2]=Math.round(12+grain*15);
+   }
+  }
+  return {...sn,c:color||sn.c,waistSurface:1};
+ }
  // Legacy geometry filtering runs off the render thread on browsers with workers.
  let haloWorker=null,haloTicket=0;
  const haloPending=new Map();
@@ -600,11 +630,11 @@ const FREE=(()=>{
   for(const job of haloPending.values())job.resolve(job.sn);haloPending.clear();
  }
  function migrateStoredHalo(sn){
-  if(sn.v>=3)return Promise.resolve(sn);
-  if(typeof Worker==='undefined')return Promise.resolve(stripStoredHalo(sn));
+  if(sn.v>=3&&sn.waistSurface)return Promise.resolve(sn);
+  if(typeof Worker==='undefined')return new Promise(resolve=>setTimeout(()=>resolve(repairStoredWaist(stripStoredHalo(sn))),0));
   try{
    if(!haloWorker){
-    const code='importScripts('+JSON.stringify(new URL('three.min.js',document.baseURI).href)+');const PI=Math.PI,TAU=PI*2,V3=(...a)=>new THREE.Vector3(...a);'+stripStoredHalo.toString()+';onmessage=e=>{const {id,sn}=e.data;try{postMessage({id,sn:stripStoredHalo(sn)})}catch(_){postMessage({id,sn})}};';
+    const code='importScripts('+JSON.stringify(new URL('three.min.js',document.baseURI).href)+');const PI=Math.PI,TAU=PI*2,V3=(...a)=>new THREE.Vector3(...a);'+stripStoredHalo.toString()+';'+repairStoredWaist.toString()+';onmessage=e=>{const {id,sn}=e.data;try{postMessage({id,sn:repairStoredWaist(stripStoredHalo(sn))})}catch(_){postMessage({id,sn})}};';
     const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
     try{haloWorker=new Worker(url);}finally{URL.revokeObjectURL(url);}
     haloWorker.onmessage=e=>{const job=haloPending.get(e.data.id);if(job){haloPending.delete(e.data.id);job.resolve(e.data.sn);} };
@@ -789,7 +819,7 @@ const FREE=(()=>{
   const b=new THREE.Box3();for(let i=0;i<sn.p.length;i+=3)b.expandByPoint(V3(sn.p[i],sn.p[i+1],sn.p[i+2]));
   const c=b.getCenter(V3()),to=heapSpot(id,side).sub(V3(c.x,b.min.y,c.z)),p=sn.p.slice();
   for(let i=0;i<p.length;i+=3){p[i]+=to.x;p[i+1]+=to.y;p[i+2]+=to.z;}
-  return {p,c:sn.c,i:sn.i};
+  return {...sn,p};
  }
  function groundStoredPiece(sn,lay=true){
   sn=packSnapshot(sn);
@@ -800,7 +830,7 @@ const FREE=(()=>{
   const p=sn.p.slice();let floor=Infinity;
   for(let i=0;i<p.length;i+=3){v.fromArray(p,i).sub(center).applyQuaternion(q);p[i]=v.x+center.x;p[i+1]=v.y;p[i+2]=v.z+center.z;floor=Math.min(floor,v.y);}
   for(let i=1;i<p.length;i+=3)p[i]+=.012-floor;
-  return {p,c:sn.c,i:sn.i,v:3};
+  return {...sn,p,v:3};
  }
  function migrateHeads(){
   // 기존 저장의 꼬챙이 머리도 버리지 않고 바닥으로 옮긴다. 성공한 것만 기록을 바꿔 다음 접속에 중복되지 않게 한다.
@@ -823,6 +853,7 @@ const FREE=(()=>{
    if(validSnap(sn)&&!HEAP.list.some(h=>h.id===id)){
     const version=e[2]||rec.v||1;
     if(version<HEAP_VERSION){if(version<2)sn=relocateLegacyHeap(sn,id,side);sn=groundStoredPiece(sn,version<3);await DB.put('h'+id,sn);if(gen!==S.gen||!S.on)return;}
+    sn=await migrateStoredHalo(sn);if(gen!==S.gen||!S.on)return;
     heapAdd(id,side,sn);
    }
    HEAP.pending.delete(id);
@@ -1037,6 +1068,28 @@ const FREE=(()=>{
   hint('다시 자라는 중 · 그대로 계속 족쳐도 됩니다',2.6);
   return true;
  }
+ // The bright palace cube map cannot reflect a dark factory. Apply once per
+ // opponent; detached parts share these same materials and retain this finish.
+ function factoryLook(E){
+  if(E._factoryLook)return;E._factoryLook=true;
+  for(const m of Object.values(E.M)){
+   if(!m||!m.isMeshStandardMaterial)continue;
+   m.userData.factoryMatte=true;m.envMap=null;m.envMapIntensity=0;
+   if(m.userData.fleshU){m.userData.fleshU.uMatte.value=.86;m.userData.fleshU.uSSS.value=0;}
+   m.roughness=Math.max(m.roughness,.86);m.metalness=Math.min(m.metalness,.22);
+   if(m.emissive)m.emissiveIntensity=0;
+   m.needsUpdate=true;
+  }
+  const h=E.halo;if(!h)return;h.factoryMatte=true;
+  // Keep the rotating symbol and damage behavior, but make the ring receive
+  // the room's light. No unlit glow disc or flame fringe survives a repaint.
+  for(const [key,mesh] of [['zod',h.outer],['tri',h.inner],['plate',h.plate]]){
+   const old=h.M[key],m=new THREE.MeshStandardMaterial({map:old.map,color:old.color.clone(),transparent:true,alphaTest:old.alphaTest,side:THREE.DoubleSide,roughness:.96,metalness:0});
+   h.M[key]=mesh.material=m;E.disposables.push(m);
+  }
+  h.M.gold.userData.factoryMatte=true;h.M.gold.envMap=null;h.M.gold.envMapIntensity=0;h.M.gold.metalness=.18;h.M.gold.roughness=.94;h.M.gold.needsUpdate=true;
+  E.haloPaint(h.bright);
+ }
  // 되살린 놈은 내 손이 올라가기만 해도 움찔하며 얼굴을 가린다
  // 겁먹은 새 놈: 비웃지 않고, 돈다발도 없이, 처음부터 2단계(겁먹은 얼굴·눈물)로 선다
  function scare(E){
@@ -1065,6 +1118,31 @@ const FREE=(()=>{
 
  /* ---- 허리 끊기: 식칼로 배를 가로로 길게 다섯 번 그으면 허리가 끊긴다. 아랫도리는 조각으로 떨어지고 윗몸은 살아서 계속 맞는다 ---- */
  const WAIST_CUTS=5,WAIST_Y=.09;
+ // Split the sealing triangles from the clothing mesh. Reusing its UVs pulls
+ // the robe's gold stripes into a candy-wrapper fan, especially after baking.
+ function finishWaistSurface(E,mesh,start){
+  const g=mesh.geometry,I=g.index,A=g.attributes;
+  if(!Number.isInteger(start)||!I||start>=I.count)return;
+  const map=new Map(),p=[],n=[],colors=[],idx=[];
+  const deep=new THREE.Color('#21313d').convertSRGBToLinear(),tissue=new THREE.Color('#52636a').convertSRGBToLinear(),safe=new THREE.Color('#39463b').convertSRGBToLinear(),c=new THREE.Color();
+  for(let k=start;k<I.count;k++){
+   const old=I.getX(k);let i=map.get(old);
+   if(i===undefined){i=map.size;map.set(old,i);const x=A.position.getX(old),y=A.position.getY(old),z=A.position.getZ(old);
+    p.push(x,y,z);n.push(A.normal.getX(old),A.normal.getY(old),A.normal.getZ(old));
+    // Spatial mottling, independent of the rings used to triangulate the cut.
+    const grain=.5+.23*Math.sin(x*79+z*43)*Math.sin(z*67-x*31)+.16*Math.sin(x*23-z*37);
+    c.copy(PREF.blood?deep:safe);if(PREF.blood)c.lerp(tissue,grain);else c.multiplyScalar(.7+grain*.3);
+    colors.push(c.r,c.g,c.b);
+   }
+   idx.push(i);
+  }
+  const face=new THREE.BufferGeometry();face.setAttribute('position',new THREE.Float32BufferAttribute(p,3));face.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));face.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));face.setIndex(idx);face.computeBoundingSphere();
+  const mat=E.M.waistCut||(E.M.waistCut=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.94,metalness:0,side:THREE.DoubleSide}));
+  if(!E.disposables.includes(mat))E.disposables.push(mat);E.disposables.push(face);
+  const cap=new THREE.Mesh(face,mat);cap.name='waist-cut-surface';cap.receiveShadow=true;cap.userData.noHit=true;mesh.add(cap);
+  g.setIndex(new THREE.BufferAttribute(I.array.slice(0,start),1));
+  if(mesh.userData.flesh)mesh.userData.flesh.setGeometry(g,true);
+ }
  // Once the waist is severed, the open coat tails sag against the legs.
  // Keeping the standing coat's flared cylinder makes the fragment look like a stool.
  function foldWaistCloth(E){
@@ -1132,6 +1210,7 @@ const FREE=(()=>{
   for(const l of E.legs)E.detached.add(l.hip.userData.bone||('hip'+l.nm));
   // 3) _planeCut already seals both halves along the actual belly contour.
   // An enlarged circular limb cap obscured that cut with a separate round lid.
+  finishWaistSurface(E,E.belly,cut.capStart[0]);finishWaistSurface(E,cut.piece,cut.capStart[1]);
   foldWaistCloth(E);
   // 4) 아랫도리는 바닥에 남는 조각. 다리는 한동안 버둥댄다
   const d=info&&info.dir?info.dir:V3(0,0,-1);
@@ -1240,7 +1319,7 @@ const FREE=(()=>{
   const E=new Emperor(G.result,PROGRESS.defeated+S.total);
   E.bloodRawBase=BLOOD.rawLost;E.holdRegrow=E.keepBits=true;E.idleT=1e9;E.sobT=1e9;
   wireEmperor(E);G.E=E;BLOOD.handover(E);scare(E);E.flailSeed=rnd(0,TAU);
-  combatInit(E,false);E.combat.locked=true;E._combatScripted=true;
+  combatInit(E,false);factoryLook(E);E.combat.locked=true;E._combatScripted=true;
   if(lite()<2){metalEnv(E.root);metalEnv(E.crown);}
   E.walkIn={t:-T.walkDelay,u:0,sit:0,side:-side,from:innerWidth<innerHeight?1.5:1.75,z:1.0,stepK:0,phase:0,lookDir:side,frozen:false,balk:0,step:0,cue:0};
   E.root.visible=false;

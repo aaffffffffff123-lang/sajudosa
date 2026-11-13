@@ -27,7 +27,7 @@ test('legacy migration uses one worker and exit resolves queued work without los
  const workers=[],revoked=[];
  class Worker{constructor(url){this.url=url;workers.push(this)}postMessage(data){(this.sent||(this.sent=[])).push(data)}terminate(){this.stopped=true}}
  const URLMock=class extends URL{};URLMock.createObjectURL=()=> 'blob:worker';URLMock.revokeObjectURL=x=>revoked.push(x);
- const api=vm.runInNewContext(cut(src,' let haloWorker=',' function snapMesh(')+';({migrateStoredHalo,stopHaloWorker})',{Worker,Blob,URL:URLMock,document:{baseURI:'https://example.com/game/'},stripStoredHalo:strip});
+ const api=vm.runInNewContext(cut(src,' let haloWorker=',' function snapMesh(')+';({migrateStoredHalo,stopHaloWorker})',{Worker,Blob,URL:URLMock,document:{baseURI:'https://example.com/game/'},stripStoredHalo:strip,repairStoredWaist:x=>x});
  const a={v:2,p:[1]},b={v:2,p:[2]},pa=api.migrateStoredHalo(a),pb=api.migrateStoredHalo(b);assert.equal(workers.length,1);assert.deepEqual(revoked,['blob:worker']);
  workers[0].onmessage({data:{id:workers[0].sent[0].id,sn:{v:3}}});assert.equal((await pa).v,3);
  api.stopHaloWorker();assert.equal(await pb,b);assert(workers[0].stopped);
@@ -90,4 +90,19 @@ test('factory hits do not add body emission or full-screen flashes; normal fight
  G.free=false;E.hitFlash=E.whiteFlash=1;update.call(E,1/60);assert(m.emissive.r>0);
  const el={style:{}},frames=[],flash=vm.runInNewContext(cut(fight,'function flash(a=','/* ---- 무기와 연결 ---- */')+';flash',{G,$:()=>el,requestAnimationFrame:f=>frames.push(f)});
  G.free=true;flash(.5);assert.equal(el.style.opacity,0);assert.equal(frames.length,0);G.free=false;flash(.5);assert.equal(el.style.opacity,.5);assert.equal(frames.length,1);
+});
+test('factory materials lose the palace reflection and halo glow stays off after damage repaints',()=>{
+ const look=vm.runInNewContext(cut(src,' function factoryLook(E){',' // 되살린 놈')+';factoryLook',{THREE});
+ const paint=vm.runInNewContext('({'+cut(fight,' haloPaint(b){',' // 머리를 맞으면 후광도')+'})',{_haloGold:new THREE.Color('#ecb84a'),_haloDull:new THREE.Color('#5c4a36')}).haloPaint;
+ const material=()=>new THREE.MeshStandardMaterial({roughness:.3,metalness:.8,envMap:new THREE.CubeTexture(),emissive:0xffffff,emissiveIntensity:1});
+ const skin=material();skin.userData.fleshU={uMatte:{value:0},uSSS:{value:1}};
+ const h={M:{gold:material()},outer:new THREE.Mesh(),inner:new THREE.Mesh(),plate:new THREE.Mesh(),glow:new THREE.Mesh(),flames:new THREE.Mesh(),bright:1,dark:0,root:new THREE.Group()};
+ for(const k of ['zod','tri','plate','flame','glow'])h.M[k]=new THREE.MeshBasicMaterial({map:new THREE.Texture(),transparent:true,opacity:1});
+ const E={M:{skin,gold:material()},halo:h,disposables:[],haloPaint:paint};look(E);
+ for(const m of [skin,E.M.gold,h.M.gold]){assert.equal(m.envMap,null);assert.equal(m.envMapIntensity,0);assert(m.roughness>=.86);assert(m.metalness<=.22);}
+ assert.equal(skin.userData.fleshU.uSSS.value,0);assert.equal(skin.userData.fleshU.uMatte.value,.86);
+ for(const mesh of [h.outer,h.inner,h.plate])assert(mesh.material.isMeshStandardMaterial,'ring receives room lighting');
+ for(const dark of [0,.2,.7,1]){h.dark=dark;paint.call(E,.6);assert(!h.glow.visible);assert(!h.flames.visible);assert.equal(h.M.glow.opacity,0);assert(h.root.visible,'the new opponent retains the ring');}
+ const count=E.disposables.length;look(E);assert.equal(E.disposables.length,count,'no per-frame material allocation');
+ h.factoryMatte=false;h.dark=0;paint.call(E,1);assert(h.glow.visible&&h.flames.visible,'normal fights retain their original glow');
 });
