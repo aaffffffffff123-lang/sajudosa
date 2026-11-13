@@ -1048,6 +1048,30 @@ const FREE=(()=>{
 
  /* ---- 허리 끊기: 식칼로 배를 가로로 길게 다섯 번 그으면 허리가 끊긴다. 아랫도리는 조각으로 떨어지고 윗몸은 살아서 계속 맞는다 ---- */
  const WAIST_CUTS=5,WAIST_Y=.09;
+ // Once the waist is severed, the open coat tails sag against the legs.
+ // Keeping the standing coat's flared cylinder makes the fragment look like a stool.
+ function foldWaistCloth(E){
+  const apron=E.apronB;if(!apron||apron.userData.waistFolded)return;
+  const replaced=new Map();
+  apron.traverse(m=>{
+   if(!m.isMesh||!m.geometry)return;const old=m.geometry,p=old.parameters;
+   if(!p||p.height==null||p.thetaLength==null)return;
+   let g=replaced.get(old);
+   if(!g){
+    g=new THREE.CylinderGeometry(p.radiusTop,p.radiusBottom,p.height,p.radialSegments,10,p.openEnded,p.thetaStart,p.thetaLength);
+    const P=g.attributes.position;
+    for(let i=0;i<P.count;i++){
+     const x=P.getX(i),y=P.getY(i),z=P.getZ(i),t=clamp((p.height/2-y)/p.height,0,1),k=smooth(t),a=Math.atan2(x,z);
+     P.setXYZ(i,x*(1-.36*k)+.012*k*Math.sin(a*5),y+.026*k*Math.sin(a*3+.7),z*(1-.68*k)+.018*k*Math.sin(a*7+.4));
+    }
+    if(old.attributes.aDmg)g.setAttribute('aDmg',new THREE.BufferAttribute(new Float32Array(P.count*4),4));
+    g.computeVertexNormals();g.computeBoundingSphere();g.computeBoundingBox();replaced.set(old,g);E.disposables.push(g);
+   }
+   m.geometry=g;
+  });
+  for(const old of replaced.keys())E.releaseGeometry(old);
+  apron.userData.waistFolded=true;
+ }
  function waistSlash(info,extra){
   const E=G.E;if(!S.on||!E||E.bisected||E.hang||!combatActive(E)||!info||!extra||!extra.slashFrom||info.part!=='belly')return;
   const sp=E.bones.spine;sp.updateWorldMatrix(true,false);
@@ -1089,12 +1113,9 @@ const FREE=(()=>{
   piece.traverse(o=>{const bn=o.userData.bone;if(bn&&/^(hip|knee)/.test(bn))twitch.push({o,ax:'x',k:bn.startsWith('knee')?1:-1,f:rnd(6,10),a:rnd(.3,.55)});});
   for(const t of twitch){t.b=t.o.rotation[t.ax];t.ph=rnd(0,TAU);}
   for(const l of E.legs)E.detached.add(l.hip.userData.bone||('hip'+l.nm));
-  // 3) 단면: 윗몸 아래쪽과 아랫도리 위쪽
-  const capPos=V3(0,WAIST_Y,.055),R=.305;
-  try{
-   E.makeCutCap(spine,capPos,new THREE.Quaternion(),R,false,E.M.robe,false,.004,false);
-   E.makeCutCap(piece,V3(0,0,.055),new THREE.Quaternion(),R,true,E.M.robe,false,.004,false);
-  }catch(_){}
+  // 3) _planeCut already seals both halves along the actual belly contour.
+  // An enlarged circular limb cap obscured that cut with a separate round lid.
+  foldWaistCloth(E);
   // 4) 아랫도리는 바닥에 남는 조각. 다리는 한동안 버둥댄다
   const d=info&&info.dir?info.dir:V3(0,0,-1);
   E.bits=E.bits||[];

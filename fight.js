@@ -6496,7 +6496,8 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
   }
   // 앞자락은 허벅지를 따라 들린다
   const fl=Math.max(0,(p.LhF+p.RhF)/2+(sp.drop.x<0?-sp.drop.x*1.5:0));
-  this.apronF.rotation.x=-clamp(fl*.92-.05,0,1.5);this.apronB.rotation.x=clamp(-Math.min(p.LhF,p.RhF)*.6,0,.6)+fl*.12;
+  if(!this.apronF.userData.detached)this.apronF.rotation.x=-clamp(fl*.92-.05,0,1.5);
+  if(!this.apronB.userData.detached)this.apronB.rotation.x=clamp(-Math.min(p.LhF,p.RhF)*.6,0,.6)+fl*.12;
   this.belt.rotation.x=.2;
   // 몸 출렁임(배는 가운데를 붙든 채 부풀었다 줄었다)
   const bj=sp.belly,bs=this.bellyScale||(this.bellyScale=V3(1,1,1));bs.set(1+bj.X,1+bj.Y,1+bj.Z);
