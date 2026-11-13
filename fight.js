@@ -6704,8 +6704,8 @@ for(const a of this.arms){const n=a.nm,s=a.s,j=sp[n];
     if(g>0){m.emissive.copy(m.userData.baseEm).multiplyScalar(m.userData.baseEI).add(_glowC.setRGB(g,g*.9,g*.62));m.emissiveIntensity=1;}
     else{m.emissive.copy(m.userData.baseEm);m.emissiveIntensity=m.userData.baseEI;}}
    this._glowWas=g>0;if(g>0)return;}
-  const f=this.hitFlash=Math.max(0,(this.hitFlash||0)-rdt*6);
-  const w=this.whiteFlash=Math.max(0,(this.whiteFlash||0)-rdt*11);
+  const f=this.hitFlash=G.free?0:Math.max(0,(this.hitFlash||0)-rdt*6);
+  const w=this.whiteFlash=G.free?0:Math.max(0,(this.whiteFlash||0)-rdt*11);
   const pale=sat(this.bloodLost/4.4)*.55;
   if(!this.unmasked&&this._pale!==Math.round(pale*50)){this._pale=Math.round(pale*50);this.M.skin.color.copy(col('#eda882')).lerp(col('#d9c0b0'),pale);this.M.flesh.color.copy(this.M.skin.color);this.M.skinD.color.copy(col('#dc9572')).lerp(col('#c4a596'),pale);this.M.blush.color.copy(col('#ef8f7a')).lerp(col('#d8a99e'),pale);this.M.lip.color.copy(col('#c65f55')).lerp(col('#a7787a'),pale);}
   const ww=(w>.6?.24:w*.38);
@@ -10578,21 +10578,21 @@ function resolveHit(tool,kind,info,side,extra={}){
 function impactFX(tool,kind,info,r,dir,s,extra){
  const pt=info.point,n=info.normal,head=r.isHead;
  if(r.blocked){
-  FX.add('star',FX.lift(pt,n,.05),{size:.13,life:.1,color:'#d9d6e6'});FX.word('탁!',pt,{size:34,color:'#e6e2f2'});
+  if(!G.free)FX.add('star',FX.lift(pt,n,.05),{size:.13,life:.1,color:'#d9d6e6'});FX.word('탁!',pt,{size:34,color:'#e6e2f2'});
   camHit({shake:.012});return;
  }
  // 후광: 불꽃 튀는 금속
  if(r.halo){
-  FX.add('star',FX.lift(pt,n,.03),{size:.12,life:.09,color:'#fff3b8'});
-  for(let i=0;i<7;i++)FX.add('glint',FX.lift(pt,n,.03),{size:rnd(.025,.045),life:rnd(.18,.32),start:1,grow:-.6,fade:1.5,vel:V3(rnd(-1.4,1.4),rnd(-.4,1.6),rnd(.2,1)),drag:3,color:'#ffd35a'});
+  if(!G.free)FX.add('star',FX.lift(pt,n,.03),{size:.12,life:.09,color:'#fff3b8'});
+  if(!G.free)for(let i=0;i<7;i++)FX.add('glint',FX.lift(pt,n,.03),{size:rnd(.025,.045),life:rnd(.18,.32),start:1,grow:-.6,fade:1.5,vel:V3(rnd(-1.4,1.4),rnd(-.4,1.6),rnd(.2,1)),drag:3,color:'#ffd35a'});
   FX.word(pick(['깡!','쨍!','팅!']),pt,{size:tool==='gun'?44:50,color:'#ffe066',dx:-s*rnd(60,100),dy:-24});
   camHit({shake:.012});return;
  }
  if(tool==='hand'){
   const big=kind!=='jab';
-  FX.add('star',FX.lift(pt,n,.05),{size:big?.17:.12,life:big?.12:.1});
-  FX.add('glint',FX.lift(pt,n,.07),{size:.07,life:.09,start:.4,grow:1.2});
-  if(kind==='upper'||r.heavy)FX.add('ring',FX.lift(pt,n,.04),{size:.17,life:.16,start:.4,grow:1.6,fade:1});
+  if(!G.free)FX.add('star',FX.lift(pt,n,.05),{size:big?.17:.12,life:big?.12:.1});
+  if(!G.free)FX.add('glint',FX.lift(pt,n,.07),{size:.07,life:.09,start:.4,grow:1.2});
+  if(!G.free&&(kind==='upper'||r.heavy))FX.add('ring',FX.lift(pt,n,.04),{size:.17,life:.16,start:.4,grow:1.6,fade:1});
   const list=head?(WORDS[kind]||WORDS.jab):WORDS.body;
   // 글자는 얼굴을 덮지 않게 주먹이 날아온 반대쪽 옆에 띄운다
   if(!combatActive(G.E))FX.word(pick(list),pt,{size:kind==='jab'?46:kind==='hook'?56:62,color:kind==='upper'?'#ff5640':kind==='hook'?'#ffa23a':'#ffd84a',rot:kind==='hook'?s*-12:undefined,dx:-s*rnd(70,110),dy:-20});
@@ -10610,11 +10610,11 @@ function impactFX(tool,kind,info,r,dir,s,extra){
   }
  }else if(tool==='gun'){
   FX.add('bl',FX.lift(pt,n,.04),{size:.1,life:.08});
-  FX.add('star',FX.lift(pt,n,.05),{size:.07,life:.05,color:'#fff4dc'});
+  if(!G.free)FX.add('star',FX.lift(pt,n,.05),{size:.07,life:.05,color:'#fff4dc'});
   const back=V3().copy(dir);
   for(let i=0;i<2;i++)FX.add('mist',FX.lift(pt,n,.02),{size:rnd(.08,.13),life:rnd(.4,.6),start:.4,grow:1.8,top:false,vel:n.clone().multiplyScalar(rnd(.35,.9)).add(V3(rnd(-.25,.25),rnd(-.05,.3),rnd(-.1,.1))),drag:3.5,fade:1.3});
   for(let i=0;i<2;i++)FX.add('mist',_fxv.copy(pt).addScaledVector(back,.22),{size:rnd(.1,.16),life:rnd(.4,.6),start:.5,grow:1.7,top:false,vel:back.clone().multiplyScalar(rnd(.6,1.4)).add(V3(rnd(-.3,.3),rnd(0,.3),0)),drag:3,fade:1.3});
-  if(head)FX.add('ring',FX.lift(pt,n,.04),{size:.13,life:.13,start:.4,grow:1.5,fade:1,color:'#ffd9cf'});
+  if(!G.free&&head)FX.add('ring',FX.lift(pt,n,.04),{size:.13,life:.13,start:.4,grow:1.5,fade:1,color:'#ffd9cf'});
  }
  if(r.big){camHit({shake:.03});}
 }
@@ -10852,7 +10852,7 @@ function updateLag(dt){
  updateGauge();
 }
 function updateAmmo(){const el=$('#ammo');const r=VM.st.reload>0;el.textContent=r?'장전':VM.st.ammo;el.classList.toggle('reload',r);}
-function flash(a=.25){const el=$('#flash');el.style.transition='none';el.style.opacity=a;requestAnimationFrame(()=>{el.style.transition='opacity .18s';el.style.opacity=0;});}
+function flash(a=.25){const el=$('#flash');if(G.free){el.style.opacity=0;return;}el.style.transition='none';el.style.opacity=a;requestAnimationFrame(()=>{el.style.transition='opacity .18s';el.style.opacity=0;});}
 
 /* ---- 무기와 연결 ---- */
 VM.st.onContact=a=>{
@@ -11900,7 +11900,7 @@ AUDIO.updateMusic(G.mode==='fight'&&!!G.musicStarted&&!G.ended&&!document.hidden
 BEYOND.update(dt);
 updateCamera(dt);SBLOOD.update(dt);updateLag(dt);
  // 총구 불빛: 카메라가 멀리 있어도 설계자를 예전만큼 밝히게 설계자 쪽으로 2.6m 앞까지 당겨 둔다
- gunL.intensity=gunLT>0?1.5:0;
+ gunL.intensity=!G.free&&gunLT>0?1.5:0;
  _cf.subVectors(CAM.look,camera.position);{const dl=_cf.length()||1;_cf.multiplyScalar(Math.max(0,dl-2.6)/dl);}
  gunL.position.set(camera.position.x+.15+_cf.x,camera.position.y-.1+_cf.y,camera.position.z-.3+_cf.z);
  if(G.time>hintUntil)$('#hint').classList.add('off');

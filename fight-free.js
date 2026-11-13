@@ -122,13 +122,13 @@ const FREE=(()=>{
  /* ---- 방: 어두운 도살장 ---- */
  const rails=grp(root,null,'rails');rails.visible=false;
  const hall=grp(root,null,'hall');
- const bgCol=col('#050908');
+ const bgCol=col('#0e1512');
  const railRow=[],lanes=[],wallGore=[];
  const TUBE_COL=col('#dfe9b4'),tubeOn=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false}),tubeBad=new THREE.MeshBasicMaterial({color:TUBE_COL.clone(),fog:false});
  const dragMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0}),goreMat=new THREE.MeshBasicMaterial({transparent:true,depthWrite:false,opacity:0});
- const hallLight=new THREE.HemisphereLight(col('#9aa58d'),col('#080a09'),.16);
- const hallFill=new THREE.DirectionalLight(col('#c3ccb1'),.68);
- hallFill.position.set(-.5,CEIL+4,-12);hallFill.target.position.set(0,0,-12);
+ const hallLight=new THREE.HemisphereLight(col('#b7c69a'),col('#1b1610'),.34);
+ const hallFill=new THREE.DirectionalLight(col('#c2d6b8'),.46);
+ hallFill.position.set(0,CEIL-.6,3);hallFill.target.position.set(0,1.4,-16);
  (function build(){
   const merge=(list,mat,parent)=>{parent.updateMatrixWorld(true);const geo=mergeMeshes(list,new THREE.Matrix4());for(const m of list){m.removeFromParent();m.geometry.dispose();}
    const m=new THREE.Mesh(geo,mat);m.castShadow=false;m.receiveShadow=false;m.frustumCulled=false;parent.add(m);return m;};
@@ -147,7 +147,7 @@ const FREE=(()=>{
    const cols=16,rows=12,cw=w/cols,rh=h/rows;
    g.fillStyle='#4f5546';g.fillRect(0,0,w,h);
    for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){
-    const v=102+Math.random()*25|0;g.fillStyle=`rgb(${v+6},${v+8},${v-26})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);
+    const v=150+Math.random()*34|0;g.fillStyle=`rgb(${v+6},${v+8},${v-26})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);
     if(Math.random()<.1){g.fillStyle=`rgba(46,50,36,${.2+Math.random()*.35})`;g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);}
     if(Math.random()<.035){g.fillStyle='#343a30';g.fillRect(i*cw+2,j*rh+2,cw-4,rh-4);} // 떨어져 나간 타일
    }
@@ -232,10 +232,10 @@ const FREE=(()=>{
  function flicker(dt){
   FL.t-=dt;
   if(FL.t<=0){
-   if(FL.n>0){FL.n--;FL.v=FL.v>.6?rnd(.12,.45):1;FL.t=FL.n?rnd(.03,.1):rnd(7,16);if(!FL.n)FL.v=1;}
+   if(FL.n>0){FL.n--;FL.v=FL.v>.6?rnd(.12,.45):1;FL.t=FL.n?rnd(.03,.1):rnd(2.5,7);if(!FL.n)FL.v=1;}
    else{FL.n=2*(1+(Math.random()*3|0));FL.t=0;}
   }
-  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.16*(.94+.06*FL.v);
+  tubeBad.color.copy(TUBE_COL).multiplyScalar(FL.v);hallLight.intensity=.34*(.9+.1*FL.v);
  }
  // 줄 간격을 바꾼다(화면 비율이 바뀌었을 때): 레일·걸린 몸·끌린 자국을 함께 옮긴다. 바닥 조각은 그대로 둔다
  function setRows(x){
@@ -257,13 +257,13 @@ const FREE=(()=>{
   if(on){
    const keep=o=>o===COMBAT_STAGE.contact||(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry');
    for(const c of COMBAT_STAGE.root.children)if(!keep(c)&&c.visible){c.visible=false;hidden.push(c);}
-   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),5,44);camera.far=65;camera.updateProjectionMatrix();
+   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),10,54);camera.far=65;camera.updateProjectionMatrix();
    const {hemi,key,fill,rim,bounce}=LIT;
    if(hemi&&key&&fill&&rim&&bounce){
-    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kc:key.color.clone(),ki:key.intensity,fi:fill.intensity,rc:rim.color.clone(),ri:rim.intensity,bi:bounce.intensity,kp:key.position.clone(),kt:key.target.position.clone()};
-    hemi.color.copy(col('#8e9a87'));hemi.groundColor.copy(col('#090b09'));hemi.intensity=.16;
-    key.color.copy(col('#dce1c6'));key.intensity=1.3;key.position.set(-.5,6.2,1.4);key.target.position.set(0,0,.2);
-    fill.intensity=.055;rim.color.copy(col('#829d91'));rim.intensity=.32;bounce.intensity=.025;
+    if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kc:key.color.clone(),ki:key.intensity,fi:fill.intensity,rc:rim.color.clone(),ri:rim.intensity,bi:bounce.intensity};
+    hemi.color.copy(col('#a3b292'));hemi.groundColor.copy(col('#17120c'));hemi.intensity=.36;
+    key.color.copy(col('#fff0c4'));key.intensity=2.5;
+    fill.intensity=.24;rim.color.copy(col('#86c79f'));rim.intensity=1.25;bounce.intensity=.12;
    }
    S.stageOn=true;
    // 걸린 몸이 하나라도 있는 방에 들어선 놈은 처음부터 겁에 질려 있다
@@ -272,7 +272,7 @@ const FREE=(()=>{
    for(const c of hidden)c.visible=true;hidden=[];
    if(S.stageOn){scene.background=col('#151d1e');scene.fog=new THREE.Fog(col('#202725'),7,18);camera.far=40;camera.updateProjectionMatrix();}
    if(litKeep){const {hemi,key,fill,rim,bounce}=LIT,k=litKeep;litKeep=null;
-    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.color.copy(k.kc);key.intensity=k.ki;fill.intensity=k.fi;rim.color.copy(k.rc);rim.intensity=k.ri;bounce.intensity=k.bi;key.position.copy(k.kp);key.target.position.copy(k.kt);}
+    hemi.color.copy(k.hc);hemi.groundColor.copy(k.hg);hemi.intensity=k.hi;key.color.copy(k.kc);key.intensity=k.ki;fill.intensity=k.fi;rim.color.copy(k.rc);rim.intensity=k.ri;bounce.intensity=k.bi;}
    S.stageOn=false;
   }
  }
@@ -514,7 +514,7 @@ const FREE=(()=>{
  }
 
  // Old snapshots welded the shoulder halo into nearby clothing. Its old dock
- // is fixed by HANG_POSE; fit only the small random tilt and require a full ring.
+ // is fixed by HANG_POSE; fit the small random tilt and allow the broken wedge.
  // Keep the original IndexedDB snapshot intact: this is a display migration.
  function stripStoredHalo(sn){
   if(sn.v>=3)return sn;
@@ -528,10 +528,10 @@ const FREE=(()=>{
   };
   for(let k=-12;k<=12;k++)scoreTilt(k*.02);
   const coarse=nx;for(let k=-5;k<=5;k++)scoreTilt(coarse+k*.002);
-  if(best>120){
+  if(best>45){
    const normal=V3(nx,.42,nz),axis=V3(1,0,0).cross(normal).normalize(),other=V3().crossVectors(normal,axis),bins=new Uint16Array(16),mark=new Uint8Array(n),v=V3();
    for(const p of near){v.set(p[1],p[2],p[3]);const d=v.dot(normal),r=Math.sqrt(Math.max(0,v.lengthSq()-d*d));if(Math.abs(d)<.013&&r>.222&&r<.348){mark[p[0]]=1;bins[Math.floor((Math.atan2(v.dot(other),v.dot(axis))+PI)/TAU*16)%16]++;}}
-   if(Array.from(bins).filter(x=>x>=3).length>=15){
+   if(Array.from(bins).filter(x=>x>=2).length>=11){
     const kept=[];for(let i=0;i<I.length;i+=3)if(!(mark[I[i]]&&mark[I[i+1]]&&mark[I[i+2]]))kept.push(I[i],I[i+1],I[i+2]);
     return {p:P,c:sn.c,i:new Uint32Array(kept),v:3};
    }
@@ -1119,14 +1119,12 @@ const FREE=(()=>{
   if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate(22);}catch(_){}
   return true;
  }
- function dropFactoryHalo(E){
-  const h=E.halo;if(!h||h.root.userData.factoryDiscard)return;
-  const r=h.root;r.userData.factoryDiscard=true;r.updateWorldMatrix(true,true);scene.attach(r);
-  h.on=false;h.dark=1;h.goDark=true;h.falling={t:0,loose:true};h.plate.visible=h.glow.visible=h.flames.visible=false;
-  E.haloPaint(.3);const side=S.total%2?1:-1;
-  const corners=[];for(let i=0;i<12;i++){const a=i/12*TAU;corners.push(V3(Math.cos(a)*.42,Math.sin(a)*.42,0));}
-  E.bits=E.bits||[];E.bits=E.bits.filter(b=>b.obj!==r);
-  E.bits.push({obj:r,v:V3(side*1.25,.25,-.7),w:V3(2,.4,side*2),r:.025,corners,bounce:.1,sound:'halo',flat:true});
+ function hideFactoryHalo(E){
+  const h=E&&E.halo;if(!h)return;
+  const r=h.root;r.userData.factoryDiscard=true;r.visible=false;r.removeFromParent();
+  h.on=false;h.dark=1;h.goDark=true;h.fallAt=0;h.falling={t:0,loose:true};
+  // No dropped ring or broken wedge remains in the room.
+  E.bits=(E.bits||[]).filter(b=>{if(b.obj!==r&&b.sound!=='halo')return true;if(b.obj){b.obj.visible=false;b.obj.removeFromParent();if(b.obj!==r)releaseObj(b.obj,E);}return false;});
  }
  function pierce(q){
   const E=q.old,p=attachPoint(E,_v).clone(),front=E.bones.chest.localToWorld(V3(0,.1,.2));
@@ -1139,7 +1137,7 @@ const FREE=(()=>{
   }else BLOOD.spray(p,UP,10,{kind:'dust',max:1.2});
   E.hitFlash=1;E.sp.chest.kick(5,rnd(-1.5,1.5),rnd(-1.5,1.5));E.sp.spine.kick(3,0,0);E.sp.head.kick(-4,0,0);
   if(!E.headDestroyed||deityHasReptileVoice(E)){E.setEmotion('shock');E.shockT=.9;E.voiceCool=0;AUDIO.voice('scream',1.3);}
-  dropFactoryHalo(E);
+  hideFactoryHalo(E);
   camHit({shake:.04});G.hitstop=Math.max(G.hitstop,.09);flash(.14);
   q.sw.kick(3.2);
   if(PREF.vibe&&navigator.vibrate)try{navigator.vibrate([30,20,45]);}catch(_){}

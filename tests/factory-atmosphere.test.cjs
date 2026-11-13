@@ -16,7 +16,7 @@ test('old halo rings are removed while the original head, body and cut caps are 
 test('welded legacy shoulder rings are detected without erasing the original saved arrays',()=>{
  const body=new THREE.BoxGeometry(.3,.8,.22).translate(0,-.5,.1),cap=new THREE.CircleGeometry(.12,32).translate(0,.14823,.33735);
  const normal=V3(-.16,.42,Math.sqrt(1-.16*.16-.42*.42)),q=new THREE.Quaternion().setFromUnitVectors(V3(0,0,1),normal);
- const ring=new THREE.RingGeometry(.236,.333,160,3).applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(q)).translate(0,.14823,.33735);
+ const ring=new THREE.RingGeometry(.236,.333,160,3,.8,Math.PI*2-.8).applyMatrix4(new THREE.Matrix4().makeRotationFromQuaternion(q)).translate(0,.14823,.33735);
  const sn=snapshot([body,cap,ring]),saved=sn.i.slice();
  // Connect a halo vertex to the body, as the old vertex clustering did.
  const linked=new Uint32Array(sn.i.length+3);linked.set(sn.i);linked.set([0,1,body.attributes.position.count+cap.attributes.position.count],sn.i.length);sn.i=linked;
@@ -66,4 +66,23 @@ test('factory ambience owns only two looping sources and stops on exit, mute and
  for(let i=0;i<600;i++)api.factoryRoom(true,true,1/60);assert.equal(nodes.length,5);assert.equal(live.size,2);assert(events.length<=3,'sparse events, not per-frame sound sources');
  ready=false;api.factoryRoom(true,true,.1);assert.equal(live.size,0);assert(nodes.every(n=>n.disconnected));ready=true;api.factoryRoom(true,true,.1);assert.equal(live.size,2);api.factoryRoom(false,true,0);assert.equal(live.size,0);
  assert.match(cut(fight,'function stop(keepMusic=',' function out('),/stopFactoryRoom\(\)/);
+});
+
+test('hanging removes the halo and its floor fragments without creating a dropped prop',()=>{
+ const scene=new THREE.Scene(),body=new THREE.Group(),halo=new THREE.Group(),wedge=new THREE.Group(),limb=new THREE.Group();scene.add(body,wedge,limb);body.add(halo);
+ if(!THREE.Object3D.prototype.removeFromParent)THREE.Object3D.prototype.removeFromParent=function(){this.parent?.remove(this);return this};
+ const freed=[],hide=vm.runInNewContext(cut(src,' function hideFactoryHalo(',' function pierce(')+';hideFactoryHalo',{releaseObj:o=>freed.push(o)});
+ const E={halo:{root:halo,on:true},bits:[{obj:halo,sound:'halo'},{obj:wedge,sound:'halo'},{obj:limb,body:true,sound:'limb'}]};
+ assert(halo.parent,'new opponent retains the halo before hanging');hide(E);
+ assert.equal(halo.parent,null);assert.equal(wedge.parent,null);assert.equal(E.halo.on,false);assert.equal(E.bits.length,1);assert.equal(E.bits[0].obj,limb);assert.deepEqual(freed,[wedge]);hide(E);assert.equal(E.bits.length,1);
+ assert(!cut(src,' function scare(E){',' function flinch()').includes('hideFactoryHalo'),'new opponents retain their halo');
+});
+test('factory hits do not add body emission or full-screen flashes; normal fights still do',()=>{
+ const G={free:true},m=new THREE.MeshStandardMaterial(),E={M:{},flashMats:[m],goreMeshes:[],hitFlash:1,whiteFlash:1,bloodLost:0,unmasked:true};
+ const method=cut(fight,' updateMaterials(dt){','const _glowC=').replace(/\n\}\);\s*$/,'');
+ const update=vm.runInNewContext('({'+method+'})',{G,sat:x=>Math.max(0,Math.min(1,x)),PREF:{blood:true}}).updateMaterials;
+ update.call(E,1/60);assert.equal(m.emissive.getHex(),0);assert.equal(E.hitFlash,0);assert.equal(E.whiteFlash,0);
+ G.free=false;E.hitFlash=E.whiteFlash=1;update.call(E,1/60);assert(m.emissive.r>0);
+ const el={style:{}},frames=[],flash=vm.runInNewContext(cut(fight,'function flash(a=','/* ---- 무기와 연결 ---- */')+';flash',{G,$:()=>el,requestAnimationFrame:f=>frames.push(f)});
+ G.free=true;flash(.5);assert.equal(el.style.opacity,0);assert.equal(frames.length,0);G.free=false;flash(.5);assert.equal(el.style.opacity,.5);assert.equal(frames.length,1);
 });
