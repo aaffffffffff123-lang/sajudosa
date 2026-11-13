@@ -635,12 +635,12 @@ const FREE=(()=>{
  }
 
  /* ---- 바닥 조각: 머리와 팔다리를 낮게 눕혀 가까운 바닥부터 방 끝까지 흩어 쌓는다 ---- */
- const HEAP_STORE='palja.heap',HEAP_MAX=280,HEAP_BAND=10,HEAP_STEP=1.45;
+ const HEAP_STORE='palja.heap',HEAP_VERSION=4,HEAP_MAX=280,HEAP_BAND=10,HEAP_STEP=1.45;
  const HEAP={list:[],fly:[],wait:[],seq:0,batches:new Map(),pending:new Map(),legacy:[]};
  function saveHeap(){
-  const entries=new Map(HEAP.pending);for(const h of HEAP.list)entries.set(h.id,[h.id,h.side,3]);
+  const entries=new Map(HEAP.pending);for(const h of HEAP.list)entries.set(h.id,[h.id,h.side,HEAP_VERSION]);
   const l=[...entries.values()].sort((a,b)=>a[0]-b[0]).slice(-HEAP_MAX);
-  try{localStorage.setItem(HEAP_STORE,JSON.stringify({v:3,q:HEAP.seq,l}));}catch(_){}
+  try{localStorage.setItem(HEAP_STORE,JSON.stringify({v:HEAP_VERSION,q:HEAP.seq,l}));}catch(_){}
  }
  // 열 조각마다 조금씩 더 먼 바닥을 쓴다. 방향·간격을 흩뜨려 줄이나 두 개의 탑이 되지 않게 한다.
  // 방이 찬 뒤에는 오래된 조각의 자리를 다시 채운다(거리별 묶음으로 그려 오래 해도 부하가 늘지 않는다).
@@ -648,29 +648,45 @@ const FREE=(()=>{
   const k=(id-1)%HEAP_MAX,band=Math.floor(k/HEAP_BAND),r=rng(id*7919+23);
   return V3(side*(.18+r()*1.65),.012,-1.7-band*HEAP_STEP-r()*1.35);
  }
- function heapBounds(obj,corners,q){
-  const box=new THREE.Box3();
-  for(const p of corners)box.expandByPoint(p.clone().multiply(obj.scale).applyQuaternion(q));
+ // Read the actual surviving surface once when a piece is collected. A rotated
+ // mesh bounding box contains empty corners, and cut meshes can retain unused
+ // vertices: neither is a physical support point.
+ function heapVertices(obj){
+  obj.updateWorldMatrix(true,true);
+  const inv=obj.matrixWorld.clone().invert(),rel=new THREE.Matrix4(),v=V3(),points=[];
+  obj.traverse(o=>{
+   if(!o.isMesh||!o.geometry||!o.geometry.attributes.position)return;
+   for(let n=o;n;n=n.parent){if(!n.visible||n.name==='halo'||n.userData.factoryDiscard)return;if(n===obj)break;}
+   const mat=Array.isArray(o.material)?o.material[0]:o.material;
+   if(!mat||mat.visible===false||!mat.color||mat.colorWrite===false||mat.blending!==THREE.NormalBlending||mat.transparent&&mat.opacity<.5)return;
+   const flesh=o.userData.flesh;if(flesh&&flesh.bake)flesh.bake();
+   const g=o.geometry,A=g.attributes.position,I=g.index,seen=I?new Uint8Array(A.count):null;
+   const start=g.drawRange.start,end=Math.min(I?I.count:A.count,start+g.drawRange.count);
+   rel.multiplyMatrices(inv,o.matrixWorld);
+   for(let k=start;k<end;k++){
+    const i=I?I.getX(k):k;if(seen){if(seen[i])continue;seen[i]=1;}
+    v.fromBufferAttribute(A,i).applyMatrix4(rel);points.push(v.x,v.y,v.z);
+   }
+  });
+  return new Float32Array(points);
+ }
+ function heapBounds(obj,points,q){
+  const box=new THREE.Box3(),v=V3();
+  for(let i=0;i<points.length;i+=3)box.expandByPoint(v.fromArray(points,i).multiply(obj.scale).applyQuaternion(q));
   return box;
  }
- function heapPose(obj,corners,id,side){
-  const box=new THREE.Box3();for(const p of corners)box.expandByPoint(p);
+ function heapPose(obj,points,id,side){
+  const box=heapBounds(obj,points,new THREE.Quaternion());
   const size=box.getSize(V3()),axis=size.x>size.y?(size.x>size.z?'x':'z'):(size.y>size.z?'y':'z');
   const r=rng(id*3571+61),a=r()*TAU,dir=V3(Math.cos(a),0,Math.sin(a)),along=V3();along[axis]=1;
   // 가장 긴 방향을 바닥에 눕힌 뒤 그 축으로 굴린다. 팔·다리가 서 있는 모양으로 굳지 않는다.
   const q=new THREE.Quaternion().setFromAxisAngle(dir,r()*TAU).multiply(new THREE.Quaternion().setFromUnitVectors(along,dir));
-  const bounds=heapBounds(obj,corners,q),center=bounds.getCenter(V3()),to=heapSpot(id,side);
+  const bounds=heapBounds(obj,points,q),center=bounds.getCenter(V3()),to=heapSpot(id,side);
   to.x=clamp(to.x,-HALL_W+.12+(bounds.max.x-bounds.min.x)/2,HALL_W-.12-(bounds.max.x-bounds.min.x)/2)-center.x;
   to.z-=center.z;to.y-=bounds.min.y;
   bounds.translate(to);
-  // 겹친 자리는 아래 조각에 얹되 낮은 더미로 제한한다. 바닥과의 접촉 높이는 조각의 실제 크기로 정한다.
-  let support=0;
-  for(const h of [...HEAP.list,...HEAP.fly,...HEAP.wait]){
-   const b=h.bounds;if(!b||b.max.y>.32)continue;
-   const dx=Math.min(bounds.max.x,b.max.x)-Math.max(bounds.min.x,b.min.x),dz=Math.min(bounds.max.z,b.max.z)-Math.max(bounds.min.z,b.min.z);
-   if(dx>.08&&dz>.08)support=Math.max(support,b.max.y);
-  }
-  to.y+=support;bounds.translate(V3(0,support,0));
+  // Box overlap alone is not contact: never lift a piece onto empty space
+  // between the legs of another piece. Each discarded surface rests on the floor.
   return {to,q,bounds};
  }
  // 먼 조각은 여러 개를 메시 하나로 그린다. 개별 본은 저장·교체용으로만 남긴다.
@@ -703,9 +719,8 @@ const FREE=(()=>{
    for(const key of ['severed','severedHeads','headPieces','looseEyes'])if(owner[key])owner[key]=owner[key].filter(o=>o!==b.obj);}
   b.twitch=null;b.bleed=null;scene.attach(b.obj);
   const id=++HEAP.seq,p=b.obj.position,side=Math.abs(p.x)>.15?Math.sign(p.x):id%2?1:-1;
-  const corners=(owner&&owner.limbCorners(b.obj))||Emperor.prototype.limbCorners.call(null,b.obj)||b.corners;
-  if(!corners)return null;
-  const target=heapPose(b.obj,corners,id,side),distance=p.distanceTo(target.to);
+  const points=heapVertices(b.obj);if(!points.length)return null;
+  const target=heapPose(b.obj,points,id,side),distance=p.distanceTo(target.to);
   for(let i=S.slides.length-1;i>=0;i--)if(S.slides[i].obj===b.obj)S.slides.splice(i,1);
   return {id,obj:b.obj,owner,side,t:-delay,dur:clamp(.55+distance*.018,.6,1.3),from:p.clone(),to:target.to,bounds:target.bounds,q0:b.obj.quaternion.clone(),q1:target.q,big:b.r>.1};
  }
@@ -723,7 +738,9 @@ const FREE=(()=>{
   w.job=newJob(f.obj,root,cell,sn=>{
    const k=HEAP.wait.indexOf(w);if(k>=0)HEAP.wait.splice(k,1);
    releaseObj(w.obj,w.owner);
-   if(validSnap(sn)){heapAdd(id,w.side,sn);DB.put('h'+id,sn);saveHeap();
+   // Vertex clustering can move the lowest point upward. Re-seat the final
+   // rendered snapshot as well, without changing its landing orientation.
+   if(validSnap(sn)){sn=groundStoredPiece(sn,false);heapAdd(id,w.side,sn);DB.put('h'+id,sn);saveHeap();
     if(f.legacyItem){f.legacyItem.head=0;saveRecord();}}
   });
   HEAP.wait.push(w);S.jobs.unshift(w.job);
@@ -757,11 +774,12 @@ const FREE=(()=>{
   for(let i=0;i<p.length;i+=3){p[i]+=to.x;p[i+1]+=to.y;p[i+2]+=to.z;}
   return {p,c:sn.c,i:sn.i};
  }
- function groundStoredPiece(sn){
+ function groundStoredPiece(sn,lay=true){
+  sn=packSnapshot(sn);
   const box=new THREE.Box3(),v=V3();for(let i=0;i<sn.p.length;i+=3)box.expandByPoint(v.fromArray(sn.p,i));
   const size=box.getSize(V3()),center=box.getCenter(V3()),q=new THREE.Quaternion();
   // Rotate rigidly, never rescale a cut surface or stretch the original vertices.
-  if(size.y>Math.min(size.x,size.z)*1.2&&size.y>.2)q.setFromAxisAngle(size.x<size.z?V3(0,0,1):V3(1,0,0),PI/2);
+  if(lay&&size.y>Math.min(size.x,size.z)*1.2&&size.y>.2)q.setFromAxisAngle(size.x<size.z?V3(0,0,1):V3(1,0,0),PI/2);
   const p=sn.p.slice();let floor=Infinity;
   for(let i=0;i<p.length;i+=3){v.fromArray(p,i).sub(center).applyQuaternion(q);p[i]=v.x+center.x;p[i+1]=v.y;p[i+2]=v.z+center.z;floor=Math.min(floor,v.y);}
   for(let i=1;i<p.length;i+=3)p[i]+=.012-floor;
@@ -786,7 +804,8 @@ const FREE=(()=>{
    const id=e[0],side=e[1]<0?-1:1;let sn=await DB.get('h'+id);
    if(gen!==S.gen||!S.on)return;
    if(validSnap(sn)&&!HEAP.list.some(h=>h.id===id)){
-    if((e[2]||rec.v)!==3){if((e[2]||rec.v)!==2)sn=relocateLegacyHeap(sn,id,side);sn=groundStoredPiece(sn);await DB.put('h'+id,sn);if(gen!==S.gen||!S.on)return;}
+    const version=e[2]||rec.v||1;
+    if(version<HEAP_VERSION){if(version<2)sn=relocateLegacyHeap(sn,id,side);sn=groundStoredPiece(sn,version<3);await DB.put('h'+id,sn);if(gen!==S.gen||!S.on)return;}
     heapAdd(id,side,sn);
    }
    HEAP.pending.delete(id);

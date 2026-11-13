@@ -33,12 +33,17 @@ test('legacy migration uses one worker and exit resolves queued work without los
  api.stopHaloWorker();assert.equal(await pb,b);assert(workers[0].stopped);
 });
 test('stored upright fragments rotate rigidly onto the floor, retaining shape and location',()=>{
- const ground=vm.runInNewContext(cut(src,' function groundStoredPiece(',' function migrateHeads(')+';groundStoredPiece',scope);
+ const ground=vm.runInNewContext(cut(src,' function packSnapshot(sn){',' function newJob(')+cut(src,' function groundStoredPiece(',' function migrateHeads(')+';groundStoredPiece',scope);
  const original=snapshot([new THREE.CylinderGeometry(.12,.15,.8,16).translate(.5,.5,-7)]),after=ground(original),b=new THREE.Box3();
  for(let i=0;i<after.p.length;i+=3)b.expandByPoint(V3().fromArray(after.p,i));
  assert(Math.abs(b.min.y-.012)<1e-6);assert(b.max.y<.33);assert(Math.abs(b.getCenter(V3()).x-.5)<1e-6);assert(Math.abs(b.getCenter(V3()).z+7)<1e-6);
- for(let i=3;i<original.p.length;i+=9){const d=V3().fromArray(original.p).distanceTo(V3().fromArray(original.p,i)),e=V3().fromArray(after.p).distanceTo(V3().fromArray(after.p,i));assert(Math.abs(d-e)<1e-6,'no stretching or scale change');}
- assert.deepEqual(Array.from(after.i),Array.from(original.i));
+ // Packing remaps vertex IDs, so compare corresponding rendered vertices.
+ assert.equal(after.i.length,original.i.length);
+ for(let k=0;k<original.i.length;k+=3){
+  const a=original.i[k]*3,b=original.i[k+1]*3,c=after.i[k]*3,d=after.i[k+1]*3;
+  assert(Math.abs(V3().fromArray(original.p,a).distanceTo(V3().fromArray(original.p,b))-V3().fromArray(after.p,c).distanceTo(V3().fromArray(after.p,d)))<1e-6,'no stretching or scale change');
+  assert.deepEqual(Array.from(after.c.slice(c,c+3)),Array.from(original.c.slice(a,a+3)));
+ }
 });
 function baking(){
  const ctx={...scope,performance:{now:()=>0},_m:new THREE.Matrix4(),clamp:(n,a,b)=>Math.max(a,Math.min(b,n))};
