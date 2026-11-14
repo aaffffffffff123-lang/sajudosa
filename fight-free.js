@@ -129,12 +129,13 @@ const FREE=(()=>{
  /* 조명: 빛은 등이 달린 자리에서만 나온다.
   *  lamp      족치는 자리 위의 등 하나. 여기만 환하고 그림자도 여기서만 진다(맞는 놈이 잘 보여야 한다)
   *  tubeLights 복도 안쪽, 켜져 있는 형광등 자리의 빛. 등에서 멀어지면 어두워져서 걸린 몸이 밝았다 어두웠다 하며 멀어진다(둘째가 껌뻑거리는 등)
-  *  hallFill  천장에서 곧게 내려오는 아주 옅은 바탕빛. 평소엔 거의 없고, 「둘러보기」 때만 올려서 걸어 둔 몸이 끝까지 보이게 한다
+  *  hallFill  천장에서 비스듬히 내려오는 옅은 바탕빛. 몸 앞면과 바닥을 함께 밝혀 먼 줄도 공간 안에 붙어 보이게 한다
   * 밝기를 손볼 곳: LAMP_I(족치는 자리) · TUBE_SPOTS(복도) · HEMI_I/FILL_I([평소, 둘러보기]) */
- const LAMP_I=1.55,HEMI_I=[.18,.22],FILL_I=[.12,.18];
- const TUBE_SPOTS=[[-2.7,1.15,9],[-11.1,.70,9],[-17.4,.65,10],[-30,.60,12]]; // [z, 세기, 닿는 거리]
+ const LAMP_I=1.55,HEMI_I=[.18,.22],FILL_I=[.16,.22];
+ // 뒤쪽 등은 빛이 겹쳐 닿도록 넓힌다. 같은 네 광원으로 마지막 줄까지 이어지며 앞쪽 등은 그대로 둔다.
+ const TUBE_SPOTS=[[-2.7,1.15,9],[-11.1,.95,14],[-19.5,.90,18],[-36.3,.85,20]]; // [z, 세기, 닿는 거리]
  const hallFill=new THREE.DirectionalLight(col('#b9c8ad'),FILL_I[0]);
- hallFill.position.set(0,CEIL+6,-18);hallFill.target.position.set(0,0,-18);
+ hallFill.position.set(0,CEIL+6,-12);hallFill.target.position.set(0,0,-18);
  const lamp=new THREE.SpotLight(col("#f6f1d2"),LAMP_I,12,.76,.85,1);
  lamp.position.set(-.2,CEIL-.4,3.2);lamp.target.position.set(0,.9,1.1);
  lamp.castShadow=true;lamp.shadow.mapSize.set(MOBILE_GPU?512:1024,MOBILE_GPU?512:1024);lamp.shadow.camera.near=.8;lamp.shadow.camera.far=10;lamp.shadow.bias=-.0006;lamp.shadow.normalBias=.03;
@@ -270,7 +271,8 @@ const FREE=(()=>{
   if(on){
    const keep=o=>o===COMBAT_STAGE.contact||(o.isMesh&&o.geometry&&o.geometry.type==='PlaneGeometry');
    for(const c of COMBAT_STAGE.root.children)if(!keep(c)&&c.visible){c.visible=false;hidden.push(c);}
-   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),8,50);camera.far=65;camera.updateProjectionMatrix();
+   // 끝줄(약 40m)도 윤곽이 남도록 안개가 사라지는 거리를 방 뒤로 보낸다.
+   scene.background=bgCol;scene.fog=new THREE.Fog(bgCol.clone(),18,78);camera.far=65;camera.updateProjectionMatrix();
    const {hemi,key,fill,rim,bounce}=LIT;
    if(hemi&&key&&fill&&rim&&bounce){
     if(!litKeep)litKeep={hc:hemi.color.clone(),hg:hemi.groundColor.clone(),hi:hemi.intensity,kv:key.visible,fv:fill.visible,rv:rim.visible,bc:bounce.color.clone(),bp:bounce.position.clone(),bi:bounce.intensity};
