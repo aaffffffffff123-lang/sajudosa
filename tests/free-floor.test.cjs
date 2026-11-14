@@ -14,7 +14,7 @@ function rig(){
  releaseObj(obj){obj.removeFromParent();released.push(obj);obj.traverse(o=>o.geometry?.dispose())},
  proxyHead(){return new THREE.Mesh(new THREE.SphereGeometry(.18,12,8),new THREE.MeshStandardMaterial({color:0x947e62}))},
  _mgM:new THREE.Matrix4()};
- const code=slice(fight,'function mergeMeshes(','/* 한 부모 아래')+slice(src,' function rng(seed){',' /* ---- 대역 모형')+slice(src,' function packSnapshot(sn){',' function newJob(')+slice(src,' function repairStoredWaist(',' // Legacy geometry filtering')+slice(src,' function snapMesh(sn){',' // 한 번에 끝까지')+slice(src,' /* ---- 바닥 조각:',' /* ---- 걸이(');
+ const code=slice(fight,'function mergeMeshes(','/* 한 부모 아래')+slice(src,' function rng(seed){',' /* ---- 대역 모형')+slice(src,' function packSnapshot(sn){',' function newJob(')+slice(src,' function waistTissueSample(',' // Legacy geometry filtering')+slice(src,' function snapMesh(sn){',' // 한 번에 끝까지')+slice(src,' /* ---- 바닥 조각:',' /* ---- 걸이(');
  // Snapshot scheduling is asynchronous in the game; keep that lifecycle, and bake real transformed geometry for these tests.
  scope.newJob=(obj,space,cell,done)=>({obj,cell,done});
  scope.jobRun=job=>{job.obj.updateWorldMatrix(true,true);const meshes=[];job.obj.traverse(o=>{if(o.isMesh)meshes.push(o)});

@@ -27,7 +27,7 @@ test('legacy migration uses one worker and exit resolves queued work without los
  const workers=[],revoked=[];
  class Worker{constructor(url){this.url=url;workers.push(this)}postMessage(data){(this.sent||(this.sent=[])).push(data)}terminate(){this.stopped=true}}
  const URLMock=class extends URL{};URLMock.createObjectURL=()=> 'blob:worker';URLMock.revokeObjectURL=x=>revoked.push(x);
- const api=vm.runInNewContext(cut(src,' let haloWorker=',' function snapMesh(')+';({migrateStoredHalo,stopHaloWorker})',{Worker,Blob,URL:URLMock,document:{baseURI:'https://example.com/game/'},stripStoredHalo:strip,repairStoredWaist:x=>x});
+ const api=vm.runInNewContext(cut(src,' let haloWorker=',' function snapMesh(')+';({migrateStoredHalo,stopHaloWorker})',{Worker,Blob,URL:URLMock,document:{baseURI:'https://example.com/game/'},stripStoredHalo:strip,waistTissueSample(){},buildWaistFace(){},repairStoredWaist:x=>x});
  const a={v:2,p:[1]},b={v:2,p:[2]},pa=api.migrateStoredHalo(a),pb=api.migrateStoredHalo(b);assert.equal(workers.length,1);assert.deepEqual(revoked,['blob:worker']);
  workers[0].onmessage({data:{id:workers[0].sent[0].id,sn:{v:3}}});assert.equal((await pa).v,3);
  api.stopHaloWorker();assert.equal(await pb,b);assert(workers[0].stopped);

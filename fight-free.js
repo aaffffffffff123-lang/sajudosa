@@ -545,7 +545,7 @@ const FREE=(()=>{
    if(!(packed.k&511)&&performance.now()>until)return null;
   }
   job.fin=null;job.pos=job.col=job.wt=job.idx=null;TEXS.clear();
-  return {p:new Float32Array(packed.p),c:new Uint8Array(packed.c),i:packed.i,v:3,waistSurface:1};
+  return {p:new Float32Array(packed.p),c:new Uint8Array(packed.c),i:packed.i,v:3,waistSurface:2};
  }
 
  // Old snapshots welded the shoulder halo into nearby clothing. Its old dock
@@ -593,34 +593,99 @@ const FREE=(()=>{
   const kept=[];for(let i=0;i<I.length;i+=3)if(!remove.has(find(I[i])))kept.push(I[i],I[i+1],I[i+2]);
   return {p:P,c:sn.c,i:new Uint32Array(kept),v:3};
  }
+ // Cross-section fields in anatomical coordinates (front is +v). Geometry and
+ // vertex color use the same field, so a frozen snapshot keeps all the detail.
+ function waistTissueSample(u,v,out){
+  const hash=(x,y)=>{const n=Math.sin(x*127.1+y*311.7+19.3)*43758.5453;return n-Math.floor(n);};
+  const noise=(x,y)=>{const i=Math.floor(x),j=Math.floor(y),fx=x-i,fy=y-j,a=fx*fx*(3-2*fx),b=fy*fy*(3-2*fy);return (hash(i,j)*(1-a)+hash(i+1,j)*a)*(1-b)+(hash(i,j+1)*(1-a)+hash(i+1,j+1)*a)*b;};
+  const smooth=(a,b,x)=>{const t=Math.max(0,Math.min(1,(x-a)/(b-a)));return t*t*(3-2*t);};
+  const coarse=noise(u*7+8,v*7+12),grain=noise(u*61+3,v*61+4),warp=(noise(u*13,v*13)-.5)*.045,x=u+warp,y=v-warp,r=Math.hypot(x,y);
+  let color=[26+coarse*20,41+coarse*23,65+coarse*31],depth=.021+coarse*.003;
+  const blend=(c,d,w)=>{for(let i=0;i<3;i++)color[i]+=(c[i]-color[i])*w;depth+=(d-depth)*w;};
+  const muscles=[[-.69,-.04,.21,.61],[.68,.07,.22,.58],[-.32,-.67,.25,.19],[.31,-.65,.26,.2],[-.25,.73,.3,.17],[.29,.71,.26,.18]];
+  for(const [cx,cy,rx,ry] of muscles){
+   const dx=(x-cx)/rx,dy=(y-cy)/ry,e=dx*dx+dy*dy;if(e>1.13)continue;
+   const fiber=noise((x+dy*.04)*89,y*13);
+   blend([99,113,122],.008,1-smooth(.92,1.13,e));
+   blend([32+fiber*27,53+fiber*32,83+fiber*39],.010+(1-fiber)*.0015,1-smooth(.73,.96,e));
+  }
+  const fat=noise(x*28,y*28);blend([127+fat*23,125+fat*20,105+fat*17],.004+fat*.0015,smooth(.87,.94,r+(coarse-.5)*.07));
+  // Recessed lumens and uneven walls share the same continuous depth field.
+  const organs=[[-.31,-.12,.22,.19],[-.05,.17,.25,.18],[.30,.10,.19,.25],[-.32,.34,.18,.13],[.15,.43,.24,.13],[.29,-.28,.17,.16]];
+  for(let k=0;k<organs.length;k++){
+   const [cx,cy,rx,ry]=organs[k],dx=(x-cx)/rx,dy=(y-cy)/ry,e=Math.sqrt(dx*dx+dy*dy)+(noise(x*17+k,y*17)-.5)*.13;
+   if(e>1.08)continue;
+   const fold=noise(x*23+k,y*23);
+   blend([82+fold*21,99+fold*20,115+fold*24],.009+fold*.001,1-smooth(.88,1.08,e));
+   blend([35+fold*20,61+fold*22,94+fold*29],.011+fold*.001,1-smooth(.65,.88,e));
+   blend([18+coarse*12,30+coarse*15,54+coarse*19],.023,1-smooth(.33,.61,e));
+  }
+  const bx=(x-.015)/.145,by=(y+.51)/.17,bone=Math.hypot(bx,by)+(noise(x*31,y*31)-.5)*.07;
+  if(bone<1.1){blend([183+grain*13,176+grain*12,148+grain*13],.003,1-smooth(.88,1.1,bone));const pores=noise(x*113,y*113);blend([44+pores*37,51+pores*39,62+pores*37],.012,1-smooth(.38,.59,bone));}
+  const stain=.85+grain*.22;
+  for(let i=0;i<3;i++){const c=Math.min(1,color[i]*stain/255);out[i]=c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);}out[3]=depth;return out;
+ }
+ function buildWaistFace(source,indices,normal){
+  const remap=new Map(),weld=new Map(),points=[],tris=[],edges=new Map();
+  const edge=(a,b)=>a<b?a+','+b:b+','+a;
+  for(const old of indices){let i=remap.get(old);if(i===undefined){const p=V3().fromArray(source,old*3),key=[p.x,p.y,p.z].map(x=>Math.round(x*1e7)).join(',');i=weld.get(key);if(i===undefined){i=points.length;weld.set(key,i);points.push(p);}remap.set(old,i);}tris.push(i);}
+  for(let k=0;k<tris.length;k+=3){const ids=tris.slice(k,k+3);if(new Set(ids).size<3)continue;for(let j=0;j<3;j++){const a=ids[j],b=ids[(j+1)%3],key=edge(a,b);if(edges.has(key))edges.delete(key);else edges.set(key,[a,b]);}}
+  if(edges.size<3)return null;
+  const ids=new Set();for(const [a,b] of edges.values()){ids.add(a);ids.add(b);}const border=[...ids].map(i=>points[i]),center=V3();for(const p of border)center.add(p);center.divideScalar(border.length);
+  const nn=normal.clone().normalize(),U=V3(1,0,0).addScaledVector(nn,-nn.x).normalize();if(U.lengthSq()<.1)U.set(0,0,1).addScaledVector(nn,-nn.z).normalize();
+  const V=V3().crossVectors(nn,U),front=V.clone();if(front.z<0)front.negate();const d=V3();
+  border.sort((a,b)=>Math.atan2(d.copy(a).sub(center).dot(V),d.dot(U))-Math.atan2(d.copy(b).sub(center).dot(V),d.dot(U)));
+  let ru=0,rv=0;for(const p of border){d.copy(p).sub(center);ru=Math.max(ru,Math.abs(d.dot(U)));rv=Math.max(rv,Math.abs(d.dot(front)));}if(ru<.01||rv<.01)return null;
+  // A mapped square grid keeps sampling uniform through the centre, avoiding
+  // radial wedges. Stitch its perimeter to every exact original cut vertex.
+  const angles=border.map(b=>{d.copy(b).sub(center);return Math.atan2(d.dot(V),d.dot(U));});
+  const ray=(a)=>{let lo=0,hi=angles.length;while(lo<hi){const m=(lo+hi)>>1;if(angles[m]<=a)lo=m+1;else hi=m;}const j=lo%border.length,i=(j+border.length-1)%border.length;
+   const x=Math.cos(a),y=Math.sin(a);d.copy(border[i]).sub(center);const ax=d.dot(U),ay=d.dot(V);d.copy(border[j]).sub(center);const bx=d.dot(U),by=d.dot(V);return (ax*by-ay*bx)/(x*(by-ay)-y*(bx-ax));};
+  const steps=64,side=steps+1,p=[],colors=[],idx=[],sample=[],v=V3(),inner=[];
+  const add=(q,edgeDistance)=>{v.copy(q);d.copy(v).sub(center);waistTissueSample(d.dot(U)/ru,d.dot(front)/rv,sample);v.addScaledVector(nn,-sample[3]*Math.min(1,edgeDistance/.025));p.push(v.x,v.y,v.z);colors.push(sample[0],sample[1],sample[2]);return p.length/3-1;};
+  for(let j=0;j<=steps;j++)for(let i=0;i<=steps;i++){
+   const x=i/steps*2-1,y=j/steps*2-1,dx=x*Math.sqrt(1-y*y*.5),dy=y*Math.sqrt(1-x*x*.5),r=Math.hypot(dx,dy),a=Math.atan2(dy,dx),R=ray(a),k=r*.97;
+   v.copy(center).addScaledVector(U,Math.cos(a)*R*k).addScaledVector(V,Math.sin(a)*R*k);const id=add(v,(1-k)*R);
+   if(i===0||i===steps||j===0||j===steps)inner.push({id,a});
+  }
+  for(let j=0;j<steps;j++)for(let i=0;i<steps;i++){const a=j*side+i,b=a+1,c=a+side,e=c+1;idx.push(a,b,c,b,e,c);}
+  inner.sort((a,b)=>a.a-b.a);const outer=border.map((b,i)=>({id:add(b,0),a:angles[i]}));
+  let i=0,j=0;while(i<inner.length||j<outer.length){const a=inner[i%inner.length].id,b=outer[j%outer.length].id;
+   const ai=i<inner.length?inner[(i+1)%inner.length].a+(i+1===inner.length?Math.PI*2:0):Infinity,aj=j<outer.length?outer[(j+1)%outer.length].a+(j+1===outer.length?Math.PI*2:0):Infinity;
+   if(ai<aj){idx.push(a,b,inner[(++i)%inner.length].id);}else{idx.push(a,b,outer[(++j)%outer.length].id);}
+  }
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setIndex(idx);geo.computeVertexNormals();geo.computeBoundingSphere();return geo;
+ }
  // Saved meshes have lost their material IDs. A waist cap is still identifiable
  // as a broad planar fan with a central hub; clothes, limbs and small caps are
- // excluded. Recolor a copy only: positions, indices and the saved file survive.
+ // excluded. Replace only that fan in a copy; the body and saved source survive.
  function repairStoredWaist(sn){
-  if(sn.waistSurface)return sn;
+  if(sn.waistSurface>=2)return sn;
   const P=sn.p,I=sn.i,planes=new Map(),a=V3(),b=V3(),c=V3(),ab=V3(),ac=V3(),normal=V3();
   for(let k=0;k<I.length;k+=3){
    a.fromArray(P,I[k]*3);b.fromArray(P,I[k+1]*3);c.fromArray(P,I[k+2]*3);normal.crossVectors(ab.subVectors(b,a),ac.subVectors(c,a));
-   const area=normal.length()*.5;if(area<1e-8)continue;normal.normalize();
+   const area=normal.length()*.5;if(area<1e-8)continue;normal.normalize();const facing=normal.clone();
    const major=Math.abs(normal.x)>.7?normal.x:Math.abs(normal.y)>.7?normal.y:normal.z;if(major<0)normal.negate();
    const d=normal.dot(a),key=[normal.x,normal.y,normal.z,d].map((v,i)=>Math.round(v*(i===3?100:40))).join(',');
-   let g=planes.get(key);if(!g)planes.set(key,g={area:0,ids:new Map(),normal:normal.clone()});g.area+=area;
+   let g=planes.get(key);if(!g)planes.set(key,g={area:0,ids:new Map(),normal:normal.clone(),facing,tri:[]});g.area+=area;g.tri.push(k);
    for(let j=0;j<3;j++)g.ids.set(I[k+j],(g.ids.get(I[k+j])||0)+1);
   }
-  let color=null;
+  const replacements=[],remove=new Set();
   for(const g of planes.values()){
    if(g.area<.12||g.area>.46||g.ids.size<24)continue;
    let hub=-1,degree=0;for(const [i,n] of g.ids)if(n>degree){hub=i;degree=n;}if(degree<14)continue;
    const center=V3().fromArray(P,hub*3);let maxR=0,minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
    for(const i of g.ids.keys()){a.fromArray(P,i*3);maxR=Math.max(maxR,a.distanceTo(center));minX=Math.min(minX,a.x);maxX=Math.max(maxX,a.x);minY=Math.min(minY,a.y);maxY=Math.max(maxY,a.y);minZ=Math.min(minZ,a.z);maxZ=Math.max(maxZ,a.z);}
    if(maxR<.22||maxR>.46||Math.hypot(center.x-(minX+maxX)/2,center.y-(minY+maxY)/2,center.z-(minZ+maxZ)/2)>.07)continue;
-   if(!color)color=sn.c.slice();
-   for(const i of g.ids.keys()){
-    a.fromArray(P,i*3).sub(center);const grain=.5+.24*Math.sin(a.x*79+a.y*43)*Math.sin(a.z*67-a.x*31)+.15*Math.sin(a.z*23-a.y*37);
-    color[i*3]=Math.round(4+grain*10);color[i*3+1]=Math.round(8+grain*14);color[i*3+2]=Math.round(12+grain*15);
-   }
+   const ids=[];for(const k of g.tri)ids.push(I[k],I[k+1],I[k+2]);
+   const face=buildWaistFace(P,ids,g.facing);if(!face)continue;
+   replacements.push(face);for(const k of g.tri)remove.add(k);
   }
-  return {...sn,c:color||sn.c,waistSurface:1};
+  if(!replacements.length)return {...sn,waistSurface:2};
+  const count=P.length+replacements.reduce((n,g)=>n+g.attributes.position.array.length,0),positions=new Float32Array(count),colors=new Uint8Array(count),indices=[];positions.set(P);colors.set(sn.c);
+  for(let k=0;k<I.length;k+=3)if(!remove.has(k))indices.push(I[k],I[k+1],I[k+2]);
+  let offset=P.length/3;for(const face of replacements){const p=face.attributes.position.array,c=face.attributes.color.array;positions.set(p,offset*3);for(let k=0;k<c.length;k++)colors[offset*3+k]=Math.round(Math.max(0,Math.min(1,c[k]))*255);for(const i of face.index.array)indices.push(offset+i);offset+=p.length/3;face.dispose();}
+  return {...sn,p:positions,c:colors,i:new Uint32Array(indices),waistSurface:2};
  }
  // Legacy geometry filtering runs off the render thread on browsers with workers.
  let haloWorker=null,haloTicket=0;
@@ -630,11 +695,11 @@ const FREE=(()=>{
   for(const job of haloPending.values())job.resolve(job.sn);haloPending.clear();
  }
  function migrateStoredHalo(sn){
-  if(sn.v>=3&&sn.waistSurface)return Promise.resolve(sn);
+  if(sn.v>=3&&sn.waistSurface>=2)return Promise.resolve(sn);
   if(typeof Worker==='undefined')return new Promise(resolve=>setTimeout(()=>resolve(repairStoredWaist(stripStoredHalo(sn))),0));
   try{
    if(!haloWorker){
-    const code='importScripts('+JSON.stringify(new URL('three.min.js',document.baseURI).href)+');const PI=Math.PI,TAU=PI*2,V3=(...a)=>new THREE.Vector3(...a);'+stripStoredHalo.toString()+';'+repairStoredWaist.toString()+';onmessage=e=>{const {id,sn}=e.data;try{postMessage({id,sn:repairStoredWaist(stripStoredHalo(sn))})}catch(_){postMessage({id,sn})}};';
+    const code='importScripts('+JSON.stringify(new URL('three.min.js',document.baseURI).href)+');const PI=Math.PI,TAU=PI*2,V3=(...a)=>new THREE.Vector3(...a);'+stripStoredHalo.toString()+';'+waistTissueSample.toString()+';'+buildWaistFace.toString()+';'+repairStoredWaist.toString()+';onmessage=e=>{const {id,sn}=e.data;try{postMessage({id,sn:repairStoredWaist(stripStoredHalo(sn))})}catch(_){postMessage({id,sn})}};';
     const url=URL.createObjectURL(new Blob([code],{type:'text/javascript'}));
     try{haloWorker=new Worker(url);}finally{URL.revokeObjectURL(url);}
     haloWorker.onmessage=e=>{const job=haloPending.get(e.data.id);if(job){haloPending.delete(e.data.id);job.resolve(e.data.sn);} };
@@ -1120,28 +1185,17 @@ const FREE=(()=>{
  const WAIST_CUTS=5,WAIST_Y=.09;
  // Split the sealing triangles from the clothing mesh. Reusing its UVs pulls
  // the robe's gold stripes into a candy-wrapper fan, especially after baking.
- function finishWaistSurface(E,mesh,start){
-  const g=mesh.geometry,I=g.index,A=g.attributes;
-  if(!Number.isInteger(start)||!I||start>=I.count)return;
-  const map=new Map(),p=[],n=[],colors=[],idx=[];
-  const deep=new THREE.Color('#21313d').convertSRGBToLinear(),tissue=new THREE.Color('#52636a').convertSRGBToLinear(),safe=new THREE.Color('#39463b').convertSRGBToLinear(),c=new THREE.Color();
-  for(let k=start;k<I.count;k++){
-   const old=I.getX(k);let i=map.get(old);
-   if(i===undefined){i=map.size;map.set(old,i);const x=A.position.getX(old),y=A.position.getY(old),z=A.position.getZ(old);
-    p.push(x,y,z);n.push(A.normal.getX(old),A.normal.getY(old),A.normal.getZ(old));
-    // Spatial mottling, independent of the rings used to triangulate the cut.
-    const grain=.5+.23*Math.sin(x*79+z*43)*Math.sin(z*67-x*31)+.16*Math.sin(x*23-z*37);
-    c.copy(PREF.blood?deep:safe);if(PREF.blood)c.lerp(tissue,grain);else c.multiplyScalar(.7+grain*.3);
-    colors.push(c.r,c.g,c.b);
-   }
-   idx.push(i);
-  }
-  const face=new THREE.BufferGeometry();face.setAttribute('position',new THREE.Float32BufferAttribute(p,3));face.setAttribute('normal',new THREE.Float32BufferAttribute(n,3));face.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));face.setIndex(idx);face.computeBoundingSphere();
-  const mat=E.M.waistCut||(E.M.waistCut=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.94,metalness:0,side:THREE.DoubleSide}));
-  if(!E.disposables.includes(mat))E.disposables.push(mat);E.disposables.push(face);
-  const cap=new THREE.Mesh(face,mat);cap.name='waist-cut-surface';cap.receiveShadow=true;cap.userData.noHit=true;mesh.add(cap);
-  g.setIndex(new THREE.BufferAttribute(I.array.slice(0,start),1));
-  if(mesh.userData.flesh)mesh.userData.flesh.setGeometry(g,true);
+ function finishWaistSurface(E,mesh,start,normal){
+  const g=mesh.geometry,I=g.index;if(!Number.isInteger(start)||!I||start>=I.count)return;
+  const face=buildWaistFace(g.attributes.position.array,Array.from(I.array.slice(start)),normal);if(!face)return;
+  // Keep an exact, flat hidden-gore fallback; the visible tissue has real depth.
+  const safe=face.clone(),P=safe.attributes.position,point=V3().fromBufferAttribute(g.attributes.position,I.getX(start)),n=normal.clone().normalize(),v=V3();
+  for(let i=0;i<P.count;i++){v.fromBufferAttribute(P,i);v.addScaledVector(n,-v.clone().sub(point).dot(n));P.setXYZ(i,v.x,v.y,v.z);}safe.computeVertexNormals();
+  const mat=E.M.waistCut||(E.M.waistCut=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.78,metalness:0,side:THREE.DoubleSide}));
+  if(!E.disposables.includes(mat))E.disposables.push(mat);E.disposables.push(face,safe);
+  const cap=new THREE.Mesh(face,mat);cap.name='waist-cut-surface';cap.receiveShadow=true;cap.userData.noHit=true;cap.userData.gore=true;cap.visible=PREF.blood;mesh.add(cap);E.goreMeshes.push(cap);
+  const cover=new THREE.Mesh(safe,E.M.cutSafe);cover.name='waist-cut-safe';cover.userData.noHit=true;cover.userData.cutSafe=true;cover.visible=!PREF.blood;mesh.add(cover);
+  g.setIndex(new THREE.BufferAttribute(I.array.slice(0,start),1));if(mesh.userData.flesh)mesh.userData.flesh.setGeometry(g,true);
  }
  // Once the waist is severed, the open coat tails sag against the legs.
  // Keeping the standing coat's flared cylinder makes the fragment look like a stool.
@@ -1210,7 +1264,7 @@ const FREE=(()=>{
   for(const l of E.legs)E.detached.add(l.hip.userData.bone||('hip'+l.nm));
   // 3) _planeCut already seals both halves along the actual belly contour.
   // An enlarged circular limb cap obscured that cut with a separate round lid.
-  finishWaistSurface(E,E.belly,cut.capStart[0]);finishWaistSurface(E,cut.piece,cut.capStart[1]);
+  finishWaistSurface(E,E.belly,cut.capStart[0],f.cutSurface.n);finishWaistSurface(E,cut.piece,cut.capStart[1],f.cutSurface.n.clone().negate());
   foldWaistCloth(E);
   // 4) 아랫도리는 바닥에 남는 조각. 다리는 한동안 버둥댄다
   const d=info&&info.dir?info.dir:V3(0,0,-1);
