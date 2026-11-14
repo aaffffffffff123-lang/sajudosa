@@ -3,11 +3,12 @@ const THREE=require('../three.min.js'),src=fs.readFileSync(require('node:path').
 const slice=(s,a,b)=>{const i=s.indexOf(a),j=s.indexOf(b,i);assert(i>=0&&j>i,a);return s.slice(i,j)};
 if(!THREE.Object3D.prototype.removeFromParent)THREE.Object3D.prototype.removeFromParent=function(){if(this.parent)this.parent.remove(this);return this;};
 const V3=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z),clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const createHeapContact=vm.runInNewContext(slice(src,'function createHeapContact(','function create(D){')+';createHeapContact',{performance});
 const corners=vm.runInNewContext('({'+slice(fight,'limbCorners(root){','detachLimb(joint,')+'})',{THREE,V3}).limbCorners;
 function rig(){
  const scene=new THREE.Scene(),root=new THREE.Group();scene.add(root);
  const storage=new Map(),db=new Map(),released=[],S={on:true,items:[],slides:[],jobs:[],gen:1},mat=new THREE.MeshStandardMaterial({vertexColors:true});
- const scope={THREE,Float32Array,Uint8Array,Uint32Array,V3,clamp,scene,root,S,PI:Math.PI,TAU:Math.PI*2,UP:V3(0,1,0),HALL_W:2.5,snapMat:mat,MOBILE_GPU:false,lite:()=>0,
+ const scope={THREE,Float32Array,Uint8Array,Uint32Array,V3,clamp,scene,root,S,PI:Math.PI,TAU:Math.PI*2,UP:V3(0,1,0),HALL_W:2.5,snapMat:mat,MOBILE_GPU:false,lite:()=>0,createHeapContact,
  rnd:(a,b)=>(a+b)/2,smooth:x=>x*x*(3-2*x),AUDIO:new Proxy({},{get:()=>()=>{}}),PREF:{blood:false},Emperor:{prototype:{limbCorners:corners}},
  DB:{get:k=>Promise.resolve(db.get(k)),put:(k,v)=>{db.set(k,v);return Promise.resolve()},del:k=>db.delete(k)},
  localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)},saveRecord(){scope.savedRecords=(scope.savedRecords||0)+1},

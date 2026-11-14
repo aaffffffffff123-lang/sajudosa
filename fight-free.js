@@ -38,6 +38,86 @@
  else root.FateFree=api;
 })(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
+// Saved floor fragments have no live shadow map. Project their actual surface
+// onto the floor once; a single atlas and mesh keep hundreds of pieces cheap.
+function createHeapContact(THREE,root,capacity,now=()=>performance.now()){
+ const TILE=32,COLS=16,W=TILE*COLS,H=2**Math.ceil(Math.log2(TILE*Math.ceil(capacity/COLS)));
+ const records=new Map(),queue=[];let state=null;
+ function init(){
+  if(state)return;
+  const pixels=new Uint8Array(W*H*4),position=new Float32Array(capacity*18),uv=new Float32Array(capacity*12);
+  const texture=new THREE.DataTexture(pixels,W,H,THREE.RGBAFormat);texture.flipY=false;texture.generateMipmaps=false;
+  texture.minFilter=texture.magFilter=THREE.LinearFilter;
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(position,3).setUsage(THREE.DynamicDrawUsage));geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  const material=new THREE.MeshBasicMaterial({map:texture,color:0x000000,transparent:true,depthWrite:false,toneMapped:false});
+  const mesh=new THREE.Mesh(geometry,material);mesh.name='heap-contact-shadows';mesh.frustumCulled=false;mesh.renderOrder=2;root.add(mesh);
+  state={pixels,position,uv,texture,geometry,material,mesh,free:Array.from({length:capacity},(_,i)=>capacity-1-i)};
+ }
+ function remove(id){
+  const r=records.get(id);if(!r)return;r.cancel=true;records.delete(id);
+  state.position.fill(0,r.slot*18,(r.slot+1)*18);state.geometry.attributes.position.needsUpdate=true;state.free.push(r.slot);
+ }
+ function add(id,sn,bounds){
+  init();remove(id);if(!state.free.length)return;
+  const slot=state.free.pop(),pad=.045,dx=Math.max(.06,bounds.max.x-bounds.min.x)+pad*2,dz=Math.max(.06,bounds.max.z-bounds.min.z)+pad*2;
+  const cx=(bounds.min.x+bounds.max.x)/2,cz=(bounds.min.z+bounds.max.z)/2;
+  const r={id,slot,sn,x:cx-dx/2,z:cz-dz/2,dx,dz,i:0,height:new Float32Array(TILE*TILE).fill(Infinity),cancel:false};
+  records.set(id,r);
+  const at=queue.findIndex(q=>q.z+q.dz<r.z+r.dz);if(at<0)queue.push(r);else queue.splice(at,0,r);
+ }
+ function triangle(r,a,b,c){
+  const p=r.sn.p,sx=TILE/r.dx,sz=TILE/r.dz;
+  const ax=(p[a]-r.x)*sx,az=(p[a+2]-r.z)*sz,bx=(p[b]-r.x)*sx,bz=(p[b+2]-r.z)*sz,cx=(p[c]-r.x)*sx,cz=(p[c+2]-r.z)*sz;
+  const det=(bz-cz)*(ax-cx)+(cx-bx)*(az-cz);if(Math.abs(det)<1e-7)return;
+  const x0=Math.max(0,Math.floor(Math.min(ax,bx,cx))),x1=Math.min(TILE-1,Math.ceil(Math.max(ax,bx,cx)));
+  const z0=Math.max(0,Math.floor(Math.min(az,bz,cz))),z1=Math.min(TILE-1,Math.ceil(Math.max(az,bz,cz)));
+  for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
+   const u=((bz-cz)*(x+.5-cx)+(cx-bx)*(z+.5-cz))/det,v=((cz-az)*(x+.5-cx)+(ax-cx)*(z+.5-cz))/det,w=1-u-v;
+   if(u<0||v<0||w<0)continue;
+   const y=u*p[a+1]+v*p[b+1]+w*p[c+1],k=z*TILE+x;if(y<r.height[k])r.height[k]=y;
+  }
+ }
+ function finish(r){
+  // Close surfaces are dark and tight. Raised parts cast a weaker contact
+  // shadow, and gaps between disconnected feet/limbs remain gaps.
+  let alpha=Float32Array.from(r.height,y=>Number.isFinite(y)?.72*Math.exp(-Math.max(0,y-.012)/.16):0);
+  for(let pass=0;pass<2;pass++){
+   const next=new Float32Array(TILE*TILE);
+   for(let z=1;z<TILE-1;z++)for(let x=1;x<TILE-1;x++){
+    const k=z*TILE+x;next[k]=(alpha[k]*4+(alpha[k-1]+alpha[k+1]+alpha[k-TILE]+alpha[k+TILE])*2+alpha[k-TILE-1]+alpha[k-TILE+1]+alpha[k+TILE-1]+alpha[k+TILE+1])/16;
+   }
+   alpha=next;
+  }
+  const tx=r.slot%COLS*TILE,tz=Math.floor(r.slot/COLS)*TILE;
+  for(let z=0;z<TILE;z++)for(let x=0;x<TILE;x++)state.pixels[((tz+z)*W+tx+x)*4+3]=Math.round(alpha[z*TILE+x]*255);
+  // Winding faces upward; UVs use the same +z direction as the height raster.
+  const corners=[[0,0],[0,1],[1,0],[1,0],[0,1],[1,1]];
+  for(let i=0;i<6;i++){
+   const [x,z]=corners[i],v=r.slot*6+i;
+   state.position.set([r.x+x*r.dx,.006,r.z+z*r.dz],v*3);state.uv.set([(tx+x*TILE)/W,(tz+z*TILE)/H],v*2);
+  }
+  state.geometry.attributes.position.needsUpdate=true;state.geometry.attributes.uv.needsUpdate=true;state.texture.needsUpdate=true;
+  r.sn=null;r.height=null;
+ }
+ function update(ms=1.25){
+  if(!queue.length)return;const until=now()+ms;let completed=0,processed=0;
+  while(queue.length&&now()<until&&completed<4){
+   const r=queue[0];if(r.cancel){queue.shift();continue;}
+   const indices=r.sn.i;
+   while(r.i<indices.length){
+    const k=r.i;triangle(r,indices[k]*3,indices[k+1]*3,indices[k+2]*3);r.i+=3;
+    // Bound both elapsed time and triangle work, including a coarse clock.
+    if(++processed%32===0&&(now()>=until||processed>=768))return;
+   }
+   finish(r);queue.shift();completed++;
+  }
+ }
+ function clear(){
+  records.clear();queue.length=0;
+  if(state){state.mesh.removeFromParent();state.geometry.dispose();state.material.dispose();state.texture.dispose();state=null;}
+ }
+ return {add,remove,update,clear,get pending(){return queue.length;},get count(){return records.size;}};
+}
 function create(D){
 const {THREE,scene,camera,G,CAM,VM,AUDIO,BLOOD,CHUNKS,PROGRESS,PREF,OUTFITS,HINTS,GEO,HEADGEO,COMBAT_STAGE,Emperor,Spring,P,STAND,poseCopy,poseLerp,combatInit,combatActive,combatVoiceReset,wireEmperor,metalEnv,mk,grp,STD,col,cylGeo,sphereGeo,mergeMeshes,mirrorX,canvasTex,V3,rnd,clamp,lerp,smooth,damp,easeIn,backOut,PI,TAU,UP,$,hint,flash,camHit,clearPointers,clearCombatAccent,clearTalk,focusCanvas,deityHasReptileVoice,MOBILE_GPU}=D;
 const lite=D.lite; // 성능 단계(0 보통 · 1~2 낮춤)는 fight.js가 실행 중에 바꾸므로 함수로 받는다
@@ -751,6 +831,7 @@ const FREE=(()=>{
  /* ---- 바닥 조각: 머리와 팔다리를 낮게 눕혀 가까운 바닥부터 방 끝까지 흩어 쌓는다 ---- */
  const HEAP_STORE='palja.heap',HEAP_VERSION=4,HEAP_MAX=280,HEAP_BAND=10,HEAP_STEP=1.45;
  const HEAP={list:[],fly:[],wait:[],seq:0,batches:new Map(),pending:new Map(),legacy:[]};
+ const HEAP_CONTACT=createHeapContact(THREE,root,HEAP_MAX);
  function saveHeap(){
   const entries=new Map(HEAP.pending);for(const h of HEAP.list)entries.set(h.id,[h.id,h.side,HEAP_VERSION]);
   const l=[...entries.values()].sort((a,b)=>a[0]-b[0]).slice(-HEAP_MAX);
@@ -825,7 +906,8 @@ const FREE=(()=>{
  function heapAdd(id,side,sn){
   const mesh=snapMesh(sn);mesh.geometry.computeBoundingBox();const bounds=mesh.geometry.boundingBox.clone(),batch=heapBatchKey(bounds);
   root.add(mesh);HEAP.list.push({id,side,mesh,bounds,batch});HEAP.list.sort((a,b)=>a.id-b.id);dirtyHeapBatch(batch);
-  while(HEAP.list.length>HEAP_MAX){const o=HEAP.list.shift();o.mesh.removeFromParent();o.mesh.geometry.dispose();dirtyHeapBatch(o.batch);DB.del('h'+o.id);}
+  while(HEAP.list.length>HEAP_MAX){const o=HEAP.list.shift();HEAP_CONTACT.remove(o.id);o.mesh.removeFromParent();o.mesh.geometry.dispose();dirtyHeapBatch(o.batch);DB.del('h'+o.id);}
+  HEAP_CONTACT.add(id,sn,bounds);
  }
  function queueHeap(owner,b,delay=0){
   if(!S.on||!b||!b.obj||!b.obj.parent)return null;
@@ -872,12 +954,14 @@ const FREE=(()=>{
     if(PREF.blood)BLOOD.spray(f.to,UP,f.big?10:5,{min:.4,max:1.4,spread:1.2});}
   }
   updateHeapBatches();
+  HEAP_CONTACT.update();
  }
  function flushHeap(){
   for(const f of HEAP.fly.splice(0)){if(f.obj.parent)heapLand(f);}
   for(const w of HEAP.wait.slice()){const k=S.jobs.indexOf(w.job);if(k>=0)S.jobs.splice(k,1);jobRun(w.job);}
  }
  function clearHeap(){
+  HEAP_CONTACT.clear();
   for(const h of HEAP.list){h.mesh.removeFromParent();h.mesh.geometry.dispose();}
   for(const b of HEAP.batches.values())if(b.mesh){b.mesh.removeFromParent();b.mesh.geometry.dispose();}
   HEAP.batches.clear();HEAP.list.length=0;HEAP.fly.length=0;HEAP.wait.length=0;HEAP.pending.clear();HEAP.legacy.length=0;
